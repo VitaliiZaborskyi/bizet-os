@@ -1,0 +1,101 @@
+{
+  "expected": "HUMAN_REVIEW",
+  "project": {
+    "object_type": "NEW_BUILD",
+    "configuration": "LEFT_WALL",
+    "opening_system": "PUSH",
+    "room": {
+      "wall_length": {
+        "value_mm": 3168,
+        "source": "USER_CONFIRMED"
+      },
+      "room_height": {
+        "value_mm": 2700,
+        "source": "USER_CONFIRMED"
+      },
+      "wall_depth": {
+        "value_mm": 600,
+        "source": "USER_CONFIRMED"
+      },
+      "left_wall": {
+        "depth_mm": 600,
+        "deviation_mm": 0,
+        "source": "USER_CONFIRMED"
+      },
+      "right_wall": {
+        "depth_mm": 0,
+        "deviation_mm": 0,
+        "source": "USER_CONFIRMED"
+      },
+      "ceiling_type": "OPEN_GAP",
+      "ceiling_gap_mm": 100,
+      "finished_floor": true
+    },
+    "communications": [
+      {
+        "id": "drain",
+        "type": "DRAIN",
+        "x_mm": 1200,
+        "z_mm": 400,
+        "source": "USER_CONFIRMED",
+        "confirmed": true
+      },
+      {
+        "id": "water",
+        "type": "WATER",
+        "x_mm": 1200,
+        "z_mm": 500,
+        "source": "USER_CONFIRMED",
+        "confirmed": true
+      },
+      {
+        "id": "power",
+        "type": "APPLIANCE_POWER",
+        "x_mm": 1500,
+        "z_mm": 500,
+        "source": "USER_CONFIRMED",
+        "confirmed": true
+      },
+      {
+        "id": "gas",
+        "type": "GAS",
+        "x_mm": 2500,
+        "z_mm": 500,
+        "source": "USER_CONFIRMED",
+        "confirmed": true
+      }
+    ],
+    "appliances": [
+      {
+        "type": "FRIDGE_BUILTIN",
+        "width_mm": 600,
+        "built_in": true,
+        "side": "LEFT",
+        "has_door_closer": false
+      },
+      {
+        "type": "SINK",
+        "width_mm": 500
+      },
+      {
+        "type": "DISHWASHER",
+        "width_mm": 450
+      },
+      {
+        "type": "COOKTOP",
+        "width_mm": 600,
+        "cooktop_energy": "GAS"
+      },
+      {
+        "type": "OVEN",
+        "width_mm": 600,
+        "placement": "UNDER_COOKTOP"
+      }
+    ],
+    "preferences": {
+      "budget_priority": true,
+      "users_count": 2,
+      "cutlery_tray": true
+    }
+  }
+}
