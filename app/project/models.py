@@ -134,12 +134,39 @@ class SceneState(BaseModel):
     selected_object: str | None = None
 
 
+class QuestActionStatus(str, Enum):
+    AVAILABLE = "AVAILABLE"
+    CURRENT = "CURRENT"
+    COMPLETED = "COMPLETED"
+    SKIPPED = "SKIPPED"
+    DEFERRED = "DEFERRED"
+    REOPENED = "REOPENED"
+
+
+class QuestActionHistoryEntry(BaseModel):
+    action_id: str
+    status_before: QuestActionStatus | None = None
+    status_after: QuestActionStatus
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    answer_reference: str | None = None
+    affected_fields: list[str] = Field(default_factory=list)
+    triggered_recalculations: list[str] = Field(default_factory=list)
+
+
 class QuestState(BaseModel):
     completed_actions: list[str] = Field(default_factory=list)
     pending_actions: list[str] = Field(default_factory=list)
     current_action: str | None = None
     skipped_actions: list[str] = Field(default_factory=list)
     confirmations: dict[str, Any] = Field(default_factory=dict)
+    current_action_id: str | None = None
+    completed_action_ids: list[str] = Field(default_factory=list)
+    skipped_action_ids: list[str] = Field(default_factory=list)
+    deferred_action_ids: list[str] = Field(default_factory=list)
+    reconfirmation_action_ids: list[str] = Field(default_factory=list)
+    action_history: list[QuestActionHistoryEntry] = Field(default_factory=list)
+    last_decision_trace: dict[str, Any] = Field(default_factory=dict)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ValidationState(BaseModel):

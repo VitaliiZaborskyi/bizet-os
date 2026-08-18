@@ -9,9 +9,14 @@ from app.project.legacy_adapter import LegacyAdapterError, project_state_to_lega
 from app.project.models import ChangeCommand, MutationResult, ProjectState
 from app.project.mutations import ProjectMutationService
 from app.project.repository import repository
+from app.quest.engine import QuestEngine
+from app.quest.mapper import decision_to_client, decision_to_debug
+from app.quest.service import QuestAnswerError, QuestAnswerService
 
 router = APIRouter(prefix="/api/v1.1")
 mutation_service = ProjectMutationService()
+quest_engine = QuestEngine()
+quest_service = QuestAnswerService(engine=quest_engine, mutation_service=mutation_service)
 
 
 class CreateProjectRequest(BaseModel):
@@ -93,3 +98,68 @@ def recalculate_project(project_id: str):
         legacy_engine_status=status,
         legacy_engine_error=error,
     )
+
+
+class QuestAnswerRequest(BaseModel):
+    answer: object
+
+
+@router.get("/projects/{project_id}/quest/next")
+def get_next_quest_action(project_id: str):
+    project = get_project(project_id)
+    return decision_to_client(quest_engine.get_next_action(project))
+
+
+@router.get("/projects/{project_id}/quest/state")
+def get_quest_state(project_id: str):
+    return get_project(project_id).quest
+
+
+@router.get("/projects/{project_id}/quest/debug")
+def get_quest_debug(project_id: str):
+    project = get_project(project_id)
+    return decision_to_debug(quest_engine.get_next_action(project, debug=True))
+
+
+@router.post("/projects/{project_id}/quest/actions/{action_id}/answer")
+def answer_quest_action(project_id: str, action_id: str, payload: QuestAnswerRequest):
+    project = get_project(project_id)
+    try:
+        result = quest_service.submit_answer(project, action_id, payload.answer)
+    except (QuestAnswerError, ValueError, TypeError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    repository.save(result.project)
+    return {"project": result.project, "decision": decision_to_client(result.decision)}
+
+
+@router.post("/projects/{project_id}/quest/actions/{action_id}/skip")
+def skip_quest_action(project_id: str, action_id: str):
+    project = get_project(project_id)
+    try:
+        result = quest_service.skip_action(project, action_id)
+    except QuestAnswerError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    repository.save(result.project)
+    return {"project": result.project, "decision": decision_to_client(result.decision)}
+
+
+@router.post("/projects/{project_id}/quest/actions/{action_id}/defer")
+def defer_quest_action(project_id: str, action_id: str):
+    project = get_project(project_id)
+    try:
+        result = quest_service.defer_action(project, action_id)
+    except QuestAnswerError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    repository.save(result.project)
+    return {"project": result.project, "decision": decision_to_client(result.decision)}
+
+
+@router.post("/projects/{project_id}/quest/actions/{action_id}/reopen")
+def reopen_quest_action(project_id: str, action_id: str):
+    project = get_project(project_id)
+    try:
+        result = quest_service.reopen_action(project, action_id)
+    except QuestAnswerError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    repository.save(result.project)
+    return {"project": result.project, "decision": decision_to_client(result.decision)}
