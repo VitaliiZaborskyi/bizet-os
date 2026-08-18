@@ -32,6 +32,8 @@ class ConfidenceSource(str, Enum):
     USER_ENTERED = "USER_ENTERED"
     USER_CONFIRMED = "USER_CONFIRMED"
     ESTIMATED = "ESTIMATED"
+    SYSTEM_CALCULATED = "SYSTEM_CALCULATED"
+    IMPORTED = "IMPORTED"
 
 
 class ApplianceType(str, Enum):
