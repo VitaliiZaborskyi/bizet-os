@@ -10,7 +10,7 @@ from app.api.routes_v11 import router as router_v11
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
 
-app = FastAPI(title="BIZET OS 1.1", version="1.1-C")
+app = FastAPI(title="BIZET OS 1.1", version="1.1-D")
 app.include_router(router)
 app.include_router(router_v11)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
@@ -19,6 +19,12 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 @app.get("/", include_in_schema=False)
 def index():
     return FileResponse(STATIC / "index.html")
+
+
+@app.get("/room", include_in_schema=False)
+def room_viewport():
+    """BUILD 1.1-D interactive room / viewport shell."""
+    return FileResponse(STATIC / "room.html")
 
 
 @app.get("/legacy", include_in_schema=False)
