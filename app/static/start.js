@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = 'bizet_os_project_id';
 const THEME_KEY = 'bizet_os_theme';
 const LANGUAGE_KEY = 'bizet_os_language';
+const FEEDBACK_KEY = 'bizet_os_pilot_feedback';
 
 const STEPS = [
   {
@@ -20,7 +21,7 @@ const STEPS = [
       {
         value: 'OLD_STOCK',
         title: { ru: 'Старый фонд', en: 'Historic building' },
-        image: 'https://images.unsplash.com/photo-1768202704596-a8a592c32170?auto=format&fit=crop&w=1400&q=82',
+        image: 'https://images.unsplash.com/photo-1778222014071-9234e2a36472?auto=format&fit=crop&w=1400&q=82',
         fallback: 'linear-gradient(145deg,#c8b7a5,#66574b)'
       },
       {
@@ -118,23 +119,25 @@ const COMMERCIAL_ZONE_STEP = {
 const STATIC_COPY = {
   ru: {
     settings: 'Настройки', theme: 'Тема', light: 'Светлая', dark: 'Тёмная', language: 'Язык', login: 'Войти', register: 'Регистрация',
-    step: 'Шаг', of: 'из', summaryEyebrow: 'Основа проекта готова', summaryTitle: 'Можно переходить к помещению', continue: 'Перейти к помещению',
+    feedback: 'Обратная связь', tutorial: 'Как пользоваться системой',
+    step: 'Шаг', of: 'из', summaryTitle: 'Ваш выбор', continue: 'Детали вашего помещения',
     legacy: 'Технический стенд', authPending: 'Вход и регистрация будут подключены отдельным слоем аккаунта. Гостевой режим остаётся доступным.',
-    handoffReady: 'Стартовый блок завершён. Adaptive Quest готов перейти к геометрии помещения.',
-    handoffGeneric: 'Стартовый блок завершён. Следующий этап определит Adaptive Quest.',
-    handoffFallback: 'Стартовый блок завершён. Следующий слой BIZET OS — геометрия помещения.',
-    handoffBoundary: 'BUILD 1.1-C заканчивается здесь. Геометрия помещения будет открыта в BUILD 1.1-D / 1.1-E.',
-    saveError: 'Не удалось сохранить выбор', loadErrorTitle: 'Не удалось открыть проект', loadErrorSubtitle: 'Проверьте подключение к BIZET OS и повторите попытку.'
+    feedbackTitle: 'Обратная связь', feedbackCopy: 'Опишите вопрос, идею или замечание. Канал отправки будет подключён после утверждения интерфейса.',
+    feedbackPlaceholder: 'Ваше сообщение', feedbackSubmit: 'Сохранить для пилота', feedbackSaved: 'Сообщение сохранено в этом браузере для текущего пилота.',
+    tutorialTitle: 'Как пользоваться системой', tutorialCopy: 'Здесь будет запускаться видеоинструкция. Видео подключим после утверждения сценария.',
+    roomDetailsPending: 'Следующий экран — детали помещения. Его подключим в следующем слое BIZET OS.',
+    changeSelection: 'Изменить', saveError: 'Не удалось сохранить выбор', loadErrorTitle: 'Не удалось открыть проект', loadErrorSubtitle: 'Проверьте подключение к BIZET OS и повторите попытку.'
   },
   en: {
     settings: 'Settings', theme: 'Theme', light: 'Light', dark: 'Dark', language: 'Language', login: 'Sign in', register: 'Register',
-    step: 'Step', of: 'of', summaryEyebrow: 'Project foundation is ready', summaryTitle: 'Ready to move to the room', continue: 'Continue to room',
+    feedback: 'Feedback', tutorial: 'How to use the system',
+    step: 'Step', of: 'of', summaryTitle: 'Your choices', continue: 'Your room details',
     legacy: 'Technical stand', authPending: 'Sign in and registration will be connected as a separate account layer. Guest mode remains available.',
-    handoffReady: 'The start block is complete. Adaptive Quest is ready to move to room geometry.',
-    handoffGeneric: 'The start block is complete. Adaptive Quest will determine the next stage.',
-    handoffFallback: 'The start block is complete. The next BIZET OS layer is room geometry.',
-    handoffBoundary: 'BUILD 1.1-C ends here. Room geometry will open in BUILD 1.1-D / 1.1-E.',
-    saveError: 'Could not save the selection', loadErrorTitle: 'Could not open the project', loadErrorSubtitle: 'Check the BIZET OS connection and try again.'
+    feedbackTitle: 'Feedback', feedbackCopy: 'Describe a question, idea, or issue. The sending channel will be connected after the interface is approved.',
+    feedbackPlaceholder: 'Your message', feedbackSubmit: 'Save for pilot', feedbackSaved: 'The message has been saved in this browser for the current pilot.',
+    tutorialTitle: 'How to use the system', tutorialCopy: 'The video guide will launch here. We will connect the video after the script is approved.',
+    roomDetailsPending: 'The next screen is room details. It will be connected in the next BIZET OS layer.',
+    changeSelection: 'Change', saveError: 'Could not save the selection', loadErrorTitle: 'Could not open the project', loadErrorSubtitle: 'Check the BIZET OS connection and try again.'
   }
 };
 
@@ -157,8 +160,10 @@ const LABELS = {
 let project = null;
 let currentStep = 0;
 let busy = false;
+let editingFromSummary = false;
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'ru';
 let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
+let toastTimer = null;
 
 function t(value) {
   if (typeof value === 'string') return value;
@@ -173,6 +178,14 @@ function showError(message) {
   const el = $('errorBanner');
   el.textContent = message;
   el.hidden = !message;
+}
+
+function showToast(message) {
+  const toast = $('toast');
+  clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.hidden = false;
+  toastTimer = setTimeout(() => { toast.hidden = true; }, 3200);
 }
 
 async function request(url, options = {}) {
@@ -232,6 +245,8 @@ function renderStep() {
   $('stepTitle').textContent = t(step.title);
   $('stepSubtitle').textContent = t(step.subtitle);
   renderProgress(currentStep);
+
+  // There is intentionally no back arrow on the very first question.
   $('backButton').hidden = currentStep === 0;
 
   const selected = project.context?.[step.field];
@@ -270,6 +285,15 @@ async function choose(value) {
       body: JSON.stringify({ answer: value }),
     });
     project = result.project;
+
+    if (editingFromSummary) {
+      editingFromSummary = false;
+      currentStep = STEPS.length;
+      await renderSummary();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (currentStep < STEPS.length - 1) {
       currentStep += 1;
       renderStep();
@@ -285,29 +309,45 @@ async function choose(value) {
   }
 }
 
+async function editSummaryStep(index) {
+  if (busy || index < 0 || index >= STEPS.length) return;
+  busy = true;
+  showError('');
+  const step = STEPS[index];
+  try {
+    const result = await request(`/api/v1.1/projects/${project.identity.internal_id}/quest/actions/${step.actionId}/reopen`, {
+      method: 'POST',
+    });
+    project = result.project;
+    editingFromSummary = true;
+    currentStep = index;
+    renderStep();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (error) {
+    showError(`${copy('saveError')}: ${error.message}`);
+  } finally {
+    busy = false;
+  }
+}
+
 async function renderSummary() {
   $('introBlock').hidden = true;
   $('choiceGrid').hidden = true;
   $('backButton').hidden = false;
   $('summaryCard').hidden = false;
-  $('summaryEyebrow').textContent = copy('summaryEyebrow');
   $('summaryTitle').textContent = copy('summaryTitle');
-  $('continueButton').textContent = copy('continue');
+  $('continueLabel').textContent = copy('continue');
 
   const fields = STEPS.map((step) => step.field);
-  $('summaryValues').innerHTML = fields.map((field) => {
+  $('summaryValues').innerHTML = fields.map((field, index) => {
     const value = project.context?.[field];
     const label = t(LABELS[field]?.[value]) || value || '—';
-    return `<span class="summary-chip">${label}</span>`;
+    return `<button class="summary-chip" type="button" data-step-index="${index}" aria-label="${copy('changeSelection')}: ${label}">${label}</button>`;
   }).join('');
 
-  try {
-    const decision = await request(`/api/v1.1/projects/${project.identity.internal_id}/quest/next`);
-    const next = decision.next_action?.action_id;
-    $('handoffNote').textContent = next === 'ASK_ROOM_WALL_LENGTH' ? copy('handoffReady') : copy('handoffGeneric');
-  } catch (_) {
-    $('handoffNote').textContent = copy('handoffFallback');
-  }
+  $('summaryValues').querySelectorAll('.summary-chip').forEach((button) => {
+    button.addEventListener('click', () => editSummaryStep(Number(button.dataset.stepIndex)));
+  });
 }
 
 function applyTheme() {
@@ -323,18 +363,37 @@ function applyStaticLanguage() {
   $('settingsTitle').textContent = copy('settings');
   $('themeLabel').textContent = copy('theme');
   $('languageLabel').textContent = copy('language');
+  $('feedbackButton').textContent = copy('feedback');
+  $('tutorialButton').textContent = copy('tutorial');
   $('loginButton').textContent = copy('login');
   $('registerButton').textContent = copy('register');
   $('legacyLink').textContent = copy('legacy');
   $('themeSelect').options[0].textContent = copy('light');
   $('themeSelect').options[1].textContent = copy('dark');
   $('languageSelect').value = currentLanguage;
+  $('feedbackTitle').textContent = copy('feedbackTitle');
+  $('feedbackCopy').textContent = copy('feedbackCopy');
+  $('feedbackMessage').placeholder = copy('feedbackPlaceholder');
+  $('feedbackSubmit').textContent = copy('feedbackSubmit');
+  $('tutorialTitle').textContent = copy('tutorialTitle');
+  $('tutorialCopy').textContent = copy('tutorialCopy');
   localStorage.setItem(LANGUAGE_KEY, currentLanguage);
 }
 
 function closeSettings() {
   $('settingsPanel').hidden = true;
   $('settingsButton').setAttribute('aria-expanded', 'false');
+}
+
+function openDialog(dialog) {
+  closeSettings();
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+}
+
+function closeDialog(dialog) {
+  if (typeof dialog.close === 'function') dialog.close();
+  else dialog.removeAttribute('open');
 }
 
 $('settingsButton').addEventListener('click', (event) => {
@@ -367,7 +426,29 @@ $('languageSelect').addEventListener('change', async (event) => {
   });
 });
 
+$('feedbackButton').addEventListener('click', () => {
+  $('feedbackStatus').hidden = true;
+  $('feedbackMessage').value = localStorage.getItem(FEEDBACK_KEY) || '';
+  openDialog($('feedbackDialog'));
+});
+$('tutorialButton').addEventListener('click', () => openDialog($('tutorialDialog')));
+$('feedbackClose').addEventListener('click', () => closeDialog($('feedbackDialog')));
+$('tutorialClose').addEventListener('click', () => closeDialog($('tutorialDialog')));
+
+$('feedbackSubmit').addEventListener('click', () => {
+  localStorage.setItem(FEEDBACK_KEY, $('feedbackMessage').value.trim());
+  $('feedbackStatus').textContent = copy('feedbackSaved');
+  $('feedbackStatus').hidden = false;
+});
+
+[$('feedbackDialog'), $('tutorialDialog')].forEach((dialog) => {
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) closeDialog(dialog);
+  });
+});
+
 $('backButton').addEventListener('click', () => {
+  editingFromSummary = false;
   if (currentStep >= STEPS.length) currentStep = STEPS.length - 1;
   else currentStep = Math.max(0, currentStep - 1);
   renderStep();
@@ -375,7 +456,7 @@ $('backButton').addEventListener('click', () => {
 });
 
 $('continueButton').addEventListener('click', () => {
-  $('handoffNote').textContent = copy('handoffBoundary');
+  showToast(copy('roomDetailsPending'));
 });
 
 (async function init() {
