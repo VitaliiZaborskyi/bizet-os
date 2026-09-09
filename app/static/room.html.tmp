@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f4f1" />
+  <title>BIZET OS — Помещение</title>
+  <link rel="stylesheet" href="/static/room.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="icon-button back-button" href="/" aria-label="Назад"><span aria-hidden="true">←</span></a>
+      <a class="brand" href="/" aria-label="BIZET OS">BIZET <span>OS</span></a>
+      <div class="settings-wrap">
+        <button class="icon-button menu-button" id="settingsButton" type="button" aria-label="Настройки" aria-expanded="false"><span aria-hidden="true">•••</span></button>
+        <div class="settings-panel" id="settingsPanel" hidden>
+          <div class="settings-title" id="settingsTitle">Настройки</div>
+          <label class="settings-field"><span id="themeLabel">Тема</span><select id="themeSelect"><option value="light">Светлая</option><option value="dark">Тёмная</option></select></label>
+          <label class="settings-field"><span id="languageLabel">Язык</span><select id="languageSelect"><option value="ru">Русский</option><option value="en">English</option></select></label>
+          <button class="menu-row" id="feedbackButton" type="button">Обратная связь</button>
+          <button class="menu-row" id="tutorialButton" type="button">Как пользоваться системой</button>
+          <div class="account-actions">
+            <button class="account-button" id="loginButton" type="button">Войти</button>
+            <button class="account-button primary-account" id="registerButton" type="button">Регистрация</button>
+          </div>
+          <p class="settings-notice" id="settingsNotice" hidden></p>
+        </div>
+      </div>
+    </header>
+
+    <main class="room-experience">
+      <section class="room-heading">
+        <div>
+          <p class="eyebrow" id="eyebrow">Помещение</p>
+          <h1 id="roomTitle">Ваше помещение</h1>
+          <p id="roomSubtitle">Поверните сцену пальцем или мышью. Нажмите на стену или пол, чтобы указать размеры.</p>
+        </div>
+
+        <div class="quest-summary" id="questSummary">
+          <button class="quest-summary-button" id="questSummaryButton" type="button" aria-expanded="false">
+            <span id="questSummaryLabel">Ваш выбор</span>
+            <span class="chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="quest-summary-panel" id="questSummaryPanel" hidden>
+            <div class="quest-summary-list" id="questSummaryList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="viewport-card" aria-label="Интерактивная 3D-сцена помещения">
+        <canvas id="roomCanvas"></canvas>
+        <div class="viewport-badge" id="viewportBadge">Интерактивная 3D-сцена</div>
+        <div class="dimension-summary" id="dimensionSummary">6000 × 4200 × H 2800 mm</div>
+        <div class="viewport-controls">
+          <button class="viewport-button" id="resetViewButton" type="button" aria-label="Вернуть исходный ракурс">↺ <span id="resetViewLabel">Исходный вид</span></button>
+        </div>
+        <div class="gesture-hint" id="gestureHint">Проведите пальцем для вращения · нажмите стену или пол для размеров</div>
+      </section>
+
+      <section class="room-actions">
+        <div class="scope-note">
+          <strong id="scopeTitle">Геометрия помещения</strong>
+          <span id="scopeCopy">Стены обозначены A–D. Нажмите на стену или пол, чтобы проверить или изменить размеры.</span>
+        </div>
+        <button class="primary-button" id="startMeasurementButton" type="button"><span id="measurementLabel">Продолжить замер помещения</span><span aria-hidden="true">→</span></button>
+      </section>
+
+      <div class="toast" id="toast" role="status" hidden></div>
+      <div class="error-banner" id="errorBanner" role="alert" hidden></div>
+    </main>
+  </div>
+
+  <dialog class="modal" id="dimensionDialog">
+    <div class="modal-card dimension-card">
+      <button class="modal-close" id="dimensionClose" type="button" aria-label="Закрыть">×</button>
+      <p class="modal-eyebrow" id="dimensionEyebrow">Геометрия</p>
+      <h2 id="dimensionTitle">Стена A</h2>
+      <p class="dimension-note" id="dimensionDefaultNote">Показаны размеры по умолчанию. Измените их на фактические.</p>
+      <div class="dimension-fields">
+        <label class="dimension-field">
+          <span id="dimensionPrimaryLabel">Длина</span>
+          <div class="dimension-input-wrap"><input id="dimensionPrimary" type="number" min="100" max="50000" step="10" inputmode="numeric" /><span>mm</span></div>
+        </label>
+        <label class="dimension-field" id="dimensionSecondaryRow">
+          <span id="dimensionSecondaryLabel">Высота</span>
+          <div class="dimension-input-wrap"><input id="dimensionSecondary" type="number" min="100" max="50000" step="10" inputmode="numeric" /><span>mm</span></div>
+        </label>
+      </div>
+      <button class="primary-button modal-action" id="dimensionSave" type="button">Сохранить размеры</button>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="feedbackDialog">
+    <div class="modal-card">
+      <button class="modal-close" id="feedbackClose" type="button" aria-label="Закрыть">×</button>
+      <h2 id="feedbackTitle">Обратная связь</h2>
+      <p id="feedbackCopy">Опишите вопрос, идею или замечание.</p>
+      <textarea id="feedbackMessage" rows="5" placeholder="Ваше сообщение"></textarea>
+      <button class="primary-button modal-action" id="feedbackSubmit" type="button">Сохранить для пилота</button>
+      <p class="modal-status" id="feedbackStatus" hidden></p>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="tutorialDialog">
+    <div class="modal-card">
+      <button class="modal-close" id="tutorialClose" type="button" aria-label="Закрыть">×</button>
+      <h2 id="tutorialTitle">Как пользоваться системой</h2>
+      <div class="video-placeholder" aria-hidden="true"><span>▶</span></div>
+      <p id="tutorialCopy">Видеоинструкция будет подключена после утверждения сценария.</p>
+    </div>
+  </dialog>
+
+  <script type="module" src="/static/room.js"></script>
+</body>
+</html>
