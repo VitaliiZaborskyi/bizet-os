@@ -1,7 +1,8 @@
-/* Latest owner QA refinements: keep 360 orbit, remove the view cube for now, and simplify Scan. */
+/* BIZET OS 1.1-D owner QA: one task per screen. */
 #viewCubeShell { display: none !important; }
+.quest-summary { display: none !important; }
+.viewport-badge { display: none !important; }
 
-/* Mobile orbit must stay inside the viewport instead of scrolling the page. */
 .viewport-card,
 #roomCanvas {
   touch-action: none !important;
@@ -11,6 +12,53 @@
 }
 #roomCanvas { -webkit-touch-callout: none; }
 
+#scanOverlayCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 8;
+}
+.viewport-toolbar { z-index: 14; }
+.gesture-hint { z-index: 13; }
+
+.room-actions {
+  align-items: flex-end;
+  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding-top: 22px;
+}
+.geometry-next-button {
+  min-width: 154px;
+  justify-content: center;
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--ink) 18%, transparent), 0 12px 26px rgba(0,0,0,.08);
+}
+.geometry-next-button.needs-ceiling {
+  opacity: .46;
+  filter: saturate(.65);
+}
+.geometry-next-button.is-ready {
+  opacity: 1;
+  filter: none;
+}
+.geometry-next-button:active {
+  transform: translateY(4px) scale(.99) !important;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 20%, transparent), 0 5px 12px rgba(0,0,0,.06);
+}
+.ceiling-gate-hint {
+  width: 100%;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+#ceilingButton.needs-attention {
+  animation: ceilingPulse .7s ease 2;
+  box-shadow: 0 0 0 4px color-mix(in srgb, #f5c94a 32%, transparent);
+}
+@keyframes ceilingPulse { 50% { transform: translateY(-2px) scale(1.03); } }
+
 .scan-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 14px; }
 .scan-path-button {
   border: 1px solid var(--line); border-radius: 18px; background: var(--bg); color: var(--ink);
@@ -18,7 +66,7 @@
 }
 .scan-path-button strong { font-size: 15px; }
 .scan-path-button span { color: var(--muted); font-size: 12px; line-height: 1.4; }
-.scan-path-button.is-active { border-color: color-mix(in srgb, var(--ink) 52%, var(--line)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent); }
+.scan-path-button.is-active { border-color: color-mix(in srgb, #f5c94a 68%, var(--ink)); background: color-mix(in srgb, #f5c94a 11%, var(--bg)); }
 .scan-path-panel { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 6px; }
 .scan-path-panel[hidden] { display: none; }
 .scan-file-button, .scan-download-button {
@@ -28,8 +76,15 @@
 .scan-file-button strong, .scan-download-button strong { display: block; font-size: 14px; }
 .scan-file-button span, .scan-download-button span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
 .scan-download-grid { display: grid; gap: 9px; }
+.scan-progress { display:flex; gap:7px; flex-wrap:wrap; margin:14px 0; }
+.scan-progress-step { border:1px solid var(--line); border-radius:999px; padding:6px 9px; color:var(--muted); font-size:10px; }
+.scan-progress-step.is-active { background:#f5c94a; color:#171716; border-color:transparent; font-weight:800; }
+.scan-progress-step.is-done { opacity:.55; }
+.scan-import-result { margin:12px 0; padding:12px 13px; border:1px solid var(--line); border-radius:14px; background:color-mix(in srgb, var(--surface-strong) 84%, transparent); font-size:12px; }
+.scan-import-result p { margin:6px 0 0; font-size:11px; }
+.scan-apply-button { width:100%; justify-content:center; margin-top:8px; }
+.scan-file-note { font-size:11px !important; }
 
-/* Buttons should read as physical actions, not just outlined areas. */
 .scan-path-button,
 .scan-file-button,
 .scan-download-button {
@@ -44,5 +99,16 @@
 }
 
 @media (max-width: 700px) {
+  .room-experience { width: min(100% - 22px, 1380px); padding-top: 8px; }
+  .room-heading { margin-bottom: 12px; }
+  .room-heading h1 { font-size: 38px; }
+  .room-heading p:not(.eyebrow) { font-size: 14px; margin-top: 10px; }
+  .viewport-card { height: min(62svh, 560px); min-height: 430px; border-radius: 24px; }
+  .viewport-toolbar { left: 10px; right: 10px; top: 10px; justify-content: center; flex-wrap: wrap; max-width: none; }
+  .viewport-button { min-height: 34px; padding: 7px 10px; }
+  .dimension-summary { top: auto; bottom: 54px; }
+  .room-actions { display:grid; gap:14px; padding:18px 2px 0; }
+  .geometry-next-button { width:100%; }
+  .ceiling-gate-hint { text-align:center; }
   .scan-paths { grid-template-columns: 1fr; }
 }
