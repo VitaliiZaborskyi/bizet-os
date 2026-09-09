@@ -23,8 +23,14 @@ def index():
 
 @app.get("/room", include_in_schema=False)
 def room_viewport():
-    """BUILD 1.1-D interactive room / viewport shell."""
+    """Interactive room / geometry pilot."""
     return FileResponse(STATIC / "room.html")
+
+
+@app.get("/room-elements", include_in_schema=False)
+def room_elements():
+    """Next-step shell for communications and structural room features."""
+    return FileResponse(STATIC / "room-elements.html")
 
 
 @app.get("/legacy", include_in_schema=False)
