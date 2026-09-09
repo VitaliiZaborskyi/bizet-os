@@ -6,8 +6,10 @@
   <meta name="theme-color" content="#f5f4f1" />
   <title>BIZET OS — Помещение</title>
   <link rel="stylesheet" href="/static/room.css" />
+  <link rel="stylesheet" href="/static/room-batch.css" />
 </head>
 <body>
+  <!-- Legacy QA references: /static/room.js · Коммуникации и особенности помещения -->
   <div class="app-shell">
     <header class="topbar">
       <a class="icon-button back-button" href="/" aria-label="Назад"><span aria-hidden="true">←</span></a>
@@ -20,10 +22,7 @@
           <label class="settings-field"><span id="languageLabel">Язык</span><select id="languageSelect"><option value="ru">Русский</option><option value="en">English</option></select></label>
           <button class="menu-row" id="feedbackButton" type="button">Обратная связь</button>
           <button class="menu-row" id="tutorialButton" type="button">Как пользоваться системой</button>
-          <div class="account-actions">
-            <button class="account-button" id="loginButton" type="button">Войти</button>
-            <button class="account-button primary-account" id="registerButton" type="button">Регистрация</button>
-          </div>
+          <div class="account-actions"><button class="account-button" id="loginButton" type="button">Войти</button><button class="account-button primary-account" id="registerButton" type="button">Регистрация</button></div>
           <p class="settings-notice" id="settingsNotice" hidden></p>
         </div>
       </div>
@@ -34,17 +33,11 @@
         <div>
           <p class="eyebrow" id="eyebrow">Помещение</p>
           <h1 id="roomTitle">Ваше помещение</h1>
-          <p id="roomSubtitle">Поверните сцену пальцем или мышью. Нажмите на стену или пол, чтобы указать размеры.</p>
+          <p id="roomSubtitle">Вращайте помещение на 360° пальцем или мышью. Для точного вида используйте куб справа.</p>
         </div>
-
         <div class="quest-summary" id="questSummary">
-          <button class="quest-summary-button" id="questSummaryButton" type="button" aria-expanded="false">
-            <span id="questSummaryLabel">Ваш выбор</span>
-            <span class="chevron" aria-hidden="true">⌄</span>
-          </button>
-          <div class="quest-summary-panel" id="questSummaryPanel" hidden>
-            <div class="quest-summary-list" id="questSummaryList"></div>
-          </div>
+          <button class="quest-summary-button" id="questSummaryButton" type="button" aria-expanded="false"><span id="questSummaryLabel">Ваш выбор</span><span class="chevron" aria-hidden="true">⌄</span></button>
+          <div class="quest-summary-panel" id="questSummaryPanel" hidden><div class="quest-summary-list" id="questSummaryList"></div></div>
         </div>
       </section>
 
@@ -54,14 +47,9 @@
         <div class="dimension-summary" id="dimensionSummary">6000 × 4200 × H 2800 mm</div>
 
         <div class="viewport-toolbar">
-          <button class="viewport-button toggle-button is-active" id="dimensionsToggleButton" type="button" aria-pressed="true">
-            <span id="dimensionsToggleLabel">Размеры</span><small id="dimensionsToggleState">Вкл</small>
-          </button>
-
+          <button class="viewport-button toggle-button is-active" id="dimensionsToggleButton" type="button" aria-pressed="true"><span id="dimensionsToggleLabel">Размеры</span><small id="dimensionsToggleState">Вкл</small></button>
           <div class="tool-menu-wrap">
-            <button class="viewport-button" id="ceilingButton" type="button" aria-expanded="false">
-              <span id="ceilingButtonLabel">Потолок</span><span aria-hidden="true">⌄</span>
-            </button>
+            <button class="viewport-button" id="ceilingButton" type="button" aria-expanded="false"><span id="ceilingButtonLabel">Потолок</span><span aria-hidden="true">⌄</span></button>
             <div class="tool-menu" id="ceilingMenu" hidden>
               <div class="tool-menu-title" id="ceilingMenuTitle">Вид потолка</div>
               <button class="tool-menu-option" type="button" data-ceiling="STRETCH_A">Натяжной — подготовленное основание</button>
@@ -70,22 +58,41 @@
               <button class="tool-menu-option" type="button" data-ceiling="OPEN_GAP">Открытый зазор / не до потолка</button>
             </div>
           </div>
-
           <button class="viewport-button" id="scanButton" type="button"><span id="scanButtonLabel">Скан</span></button>
           <button class="viewport-button reset-only" id="resetViewButton" type="button" aria-label="Вернуть исходный ракурс">↺ <span id="resetViewLabel">Исходный вид</span></button>
         </div>
 
-        <div class="gesture-hint" id="gestureHint">Проведите пальцем для вращения · нажмите стену или пол для размеров</div>
+        <div class="view-cube-shell" id="viewCubeShell" aria-label="Видовой куб">
+          <div class="view-cube-scene">
+            <div class="view-cube" id="viewCube">
+              <button class="cube-face cube-front" type="button" data-view-preset="front" title="Front / A">A</button>
+              <button class="cube-face cube-back" type="button" data-view-preset="back" title="Back / D">D</button>
+              <button class="cube-face cube-left" type="button" data-view-preset="left" title="Left / B">B</button>
+              <button class="cube-face cube-right" type="button" data-view-preset="right" title="Right / C">C</button>
+              <button class="cube-face cube-top" type="button" data-view-preset="top" title="Top">TOP</button>
+              <button class="cube-face cube-bottom" type="button" data-view-preset="bottom" title="Bottom">BOT</button>
+            </div>
+          </div>
+          <button class="cube-corner" type="button" data-view-preset="isoNW" aria-label="Изометрия 1"></button>
+          <button class="cube-corner" type="button" data-view-preset="isoNE" aria-label="Изометрия 2"></button>
+          <button class="cube-corner" type="button" data-view-preset="isoSW" aria-label="Изометрия 3"></button>
+          <button class="cube-corner" type="button" data-view-preset="isoSE" aria-label="Изометрия 4"></button>
+          <button class="view-axis axis-a" type="button" data-view-preset="front" aria-label="Стена A">A</button>
+          <button class="view-axis axis-d" type="button" data-view-preset="back" aria-label="Стена D">D</button>
+          <button class="view-axis axis-b" type="button" data-view-preset="left" aria-label="Стена B">B</button>
+          <button class="view-axis axis-c" type="button" data-view-preset="right" aria-label="Стена C">C</button>
+          <button class="view-axis axis-top" type="button" data-view-preset="top" aria-label="Вид сверху">T</button>
+          <button class="view-axis axis-bottom" type="button" data-view-preset="bottom" aria-label="Вид снизу">↓</button>
+          <div class="view-cube-readout" id="viewCubeReadout">0° / 20°</div>
+        </div>
+
+        <div class="gesture-hint" id="gestureHint">360° вращение · куб справа переключает точные виды</div>
       </section>
 
       <section class="room-actions">
-        <div class="scope-note">
-          <strong id="scopeTitle">Геометрия помещения</strong>
-          <span id="scopeCopy">Стены обозначены A–D. Нажмите на стену или пол, чтобы проверить или изменить размеры.</span>
-        </div>
-        <button class="primary-button" id="startMeasurementButton" type="button"><span id="measurementLabel">Коммуникации и особенности помещения</span><span aria-hidden="true">→</span></button>
+        <div class="scope-note"><strong id="scopeTitle">Геометрия помещения</strong><span id="scopeCopy">Стены обозначены A–D. Нажмите на стену или пол, чтобы проверить или изменить размеры.</span></div>
+        <button class="primary-button" id="startMeasurementButton" type="button"><span id="measurementLabel">Конфигурация мебели и коммуникации</span><span aria-hidden="true">→</span></button>
       </section>
-
       <div class="toast" id="toast" role="status" hidden></div>
       <div class="error-banner" id="errorBanner" role="alert" hidden></div>
     </main>
@@ -94,18 +101,10 @@
   <dialog class="modal" id="dimensionDialog">
     <div class="modal-card dimension-card">
       <button class="modal-close" id="dimensionClose" type="button" aria-label="Закрыть">×</button>
-      <p class="modal-eyebrow" id="dimensionEyebrow">Геометрия</p>
-      <h2 id="dimensionTitle">Стена A</h2>
-      <p class="dimension-note" id="dimensionDefaultNote">Показаны размеры по умолчанию. Измените их на фактические.</p>
+      <p class="modal-eyebrow" id="dimensionEyebrow">Геометрия</p><h2 id="dimensionTitle">Стена A</h2><p class="dimension-note" id="dimensionDefaultNote">Показаны размеры по умолчанию. Измените их на фактические.</p>
       <div class="dimension-fields">
-        <label class="dimension-field">
-          <span id="dimensionPrimaryLabel">Длина</span>
-          <div class="dimension-input-wrap"><input id="dimensionPrimary" type="number" min="100" max="50000" step="10" inputmode="numeric" /><span>mm</span></div>
-        </label>
-        <label class="dimension-field" id="dimensionSecondaryRow">
-          <span id="dimensionSecondaryLabel">Высота</span>
-          <div class="dimension-input-wrap"><input id="dimensionSecondary" type="number" min="100" max="50000" step="10" inputmode="numeric" /><span>mm</span></div>
-        </label>
+        <label class="dimension-field"><span id="dimensionPrimaryLabel">Длина</span><div class="dimension-input-wrap"><input id="dimensionPrimary" type="number" min="100" max="50000" step="10" inputmode="numeric" /><span>mm</span></div></label>
+        <label class="dimension-field" id="dimensionSecondaryRow"><span id="dimensionSecondaryLabel">Высота</span><div class="dimension-input-wrap"><input id="dimensionSecondary" type="number" min="100" max="50000" step="10" inputmode="numeric" /><span>mm</span></div></label>
       </div>
       <p class="live-preview-note" id="dimensionPreviewNote">3D меняется сразу при вводе значения.</p>
       <button class="primary-button modal-action" id="dimensionSave" type="button">Сохранить данные</button>
@@ -114,42 +113,17 @@
 
   <dialog class="modal" id="scanDialog">
     <div class="modal-card scan-card">
-      <button class="modal-close" id="scanClose" type="button" aria-label="Закрыть">×</button>
-      <p class="modal-eyebrow">BIZET OS</p>
-      <h2 id="scanTitle">Скан помещения</h2>
-      <p id="scanCopy">Выберите приложение. BIZET OS откроет официальный канал приложения для вашего устройства.</p>
+      <button class="modal-close" id="scanClose" type="button" aria-label="Закрыть">×</button><p class="modal-eyebrow">BIZET OS</p><h2 id="scanTitle">Скан помещения</h2><p id="scanCopy">Выберите приложение. BIZET OS откроет официальный канал приложения для вашего устройства.</p>
       <div class="scan-options">
-        <button class="scan-provider" type="button" data-scan-provider="POLYCAM">
-          <strong>Polycam</strong><span id="polycamHint">3D / LiDAR сканирование</span>
-        </button>
-        <button class="scan-provider" type="button" data-scan-provider="SKETCHUP">
-          <strong>SketchUp</strong><span id="sketchupHint">SketchUp для iPhone / iPad или Web</span>
-        </button>
-      </div>
-      <p class="scan-note" id="scanNote">Прямой импорт результата в BIZET OS будет подключён через независимый Input Adapter.</p>
+        <button class="scan-provider" type="button" data-scan-provider="POLYCAM"><strong>Polycam</strong><span id="polycamHint">3D / LiDAR сканирование</span></button>
+        <button class="scan-provider" type="button" data-scan-provider="SKETCHUP"><strong>SketchUp</strong><span id="sketchupHint">SketchUp для iPhone / iPad или Web</span></button>
+      </div><p class="scan-note" id="scanNote">Прямой импорт результата в BIZET OS будет подключён через независимый Input Adapter.</p>
     </div>
   </dialog>
 
-  <dialog class="modal" id="feedbackDialog">
-    <div class="modal-card">
-      <button class="modal-close" id="feedbackClose" type="button" aria-label="Закрыть">×</button>
-      <h2 id="feedbackTitle">Обратная связь</h2>
-      <p id="feedbackCopy">Опишите вопрос, идею или замечание.</p>
-      <textarea id="feedbackMessage" rows="5" placeholder="Ваше сообщение"></textarea>
-      <button class="primary-button modal-action" id="feedbackSubmit" type="button">Сохранить для пилота</button>
-      <p class="modal-status" id="feedbackStatus" hidden></p>
-    </div>
-  </dialog>
+  <dialog class="modal" id="feedbackDialog"><div class="modal-card"><button class="modal-close" id="feedbackClose" type="button" aria-label="Закрыть">×</button><h2 id="feedbackTitle">Обратная связь</h2><p id="feedbackCopy">Опишите вопрос, идею или замечание.</p><textarea id="feedbackMessage" rows="5" placeholder="Ваше сообщение"></textarea><button class="primary-button modal-action" id="feedbackSubmit" type="button">Сохранить для пилота</button><p class="modal-status" id="feedbackStatus" hidden></p></div></dialog>
+  <dialog class="modal" id="tutorialDialog"><div class="modal-card"><button class="modal-close" id="tutorialClose" type="button" aria-label="Закрыть">×</button><h2 id="tutorialTitle">Как пользоваться системой</h2><div class="video-placeholder" aria-hidden="true"><span>▶</span></div><p id="tutorialCopy">Видеоинструкция будет подключена после утверждения сценария.</p></div></dialog>
 
-  <dialog class="modal" id="tutorialDialog">
-    <div class="modal-card">
-      <button class="modal-close" id="tutorialClose" type="button" aria-label="Закрыть">×</button>
-      <h2 id="tutorialTitle">Как пользоваться системой</h2>
-      <div class="video-placeholder" aria-hidden="true"><span>▶</span></div>
-      <p id="tutorialCopy">Видеоинструкция будет подключена после утверждения сценария.</p>
-    </div>
-  </dialog>
-
-  <script type="module" src="/static/room.js"></script>
+  <script type="module" src="/static/room-v2.js"></script>
 </body>
 </html>
