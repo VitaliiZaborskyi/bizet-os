@@ -37,6 +37,11 @@
             </select>
           </label>
 
+          <div class="settings-links">
+            <button class="settings-link" id="feedbackButton" type="button">Обратная связь</button>
+            <button class="settings-link" id="tutorialButton" type="button">Как пользоваться системой</button>
+          </div>
+
           <div class="account-actions">
             <button class="account-button" id="loginButton" type="button">Войти</button>
             <button class="account-button primary-account" id="registerButton" type="button">Регистрация</button>
@@ -57,12 +62,12 @@
       <section class="choice-grid" id="choiceGrid" aria-label="Варианты выбора"></section>
 
       <section class="summary-card" id="summaryCard" hidden>
-        <div class="summary-mark" aria-hidden="true">✓</div>
-        <p class="summary-eyebrow" id="summaryEyebrow">Основа проекта готова</p>
-        <h1 id="summaryTitle">Можно переходить к помещению</h1>
-        <div class="summary-values" id="summaryValues"></div>
-        <button class="primary-button" id="continueButton" type="button">Перейти к помещению</button>
-        <p class="handoff-note" id="handoffNote">Следующий слой BIZET OS — геометрия помещения.</p>
+        <h1 id="summaryTitle">Ваш выбор</h1>
+        <div class="summary-values" id="summaryValues" aria-label="Ваши ответы"></div>
+        <button class="primary-button" id="continueButton" type="button">
+          <span id="continueLabel">Детали вашего помещения</span>
+          <span class="button-arrow" aria-hidden="true">→</span>
+        </button>
       </section>
 
       <div class="error-banner" id="errorBanner" role="alert" hidden></div>
@@ -73,6 +78,32 @@
       <a href="/legacy" id="legacyLink">Технический стенд</a>
     </footer>
   </div>
+
+  <dialog class="support-dialog" id="feedbackDialog">
+    <div class="dialog-card">
+      <button class="dialog-close" id="feedbackClose" type="button" aria-label="Закрыть">×</button>
+      <p class="dialog-eyebrow" id="feedbackEyebrow">BIZET OS</p>
+      <h2 id="feedbackTitle">Обратная связь</h2>
+      <p class="dialog-copy" id="feedbackCopy">Опишите вопрос, идею или замечание. Канал отправки будет подключён после утверждения интерфейса.</p>
+      <textarea id="feedbackMessage" rows="5" placeholder="Ваше сообщение"></textarea>
+      <button class="dialog-primary" id="feedbackSubmit" type="button">Сохранить для пилота</button>
+      <p class="dialog-status" id="feedbackStatus" hidden></p>
+    </div>
+  </dialog>
+
+  <dialog class="support-dialog" id="tutorialDialog">
+    <div class="dialog-card tutorial-card">
+      <button class="dialog-close" id="tutorialClose" type="button" aria-label="Закрыть">×</button>
+      <p class="dialog-eyebrow">BIZET OS</p>
+      <h2 id="tutorialTitle">Как пользоваться системой</h2>
+      <div class="video-placeholder" role="img" aria-label="Место для видеоинструкции">
+        <span class="play-mark" aria-hidden="true">▶</span>
+      </div>
+      <p class="dialog-copy" id="tutorialCopy">Здесь будет запускаться видеоинструкция. Видео подключим после утверждения сценария.</p>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
 
   <script type="module" src="/static/start.js"></script>
 </body>
