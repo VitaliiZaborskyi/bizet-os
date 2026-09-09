@@ -14,7 +14,36 @@
         <span aria-hidden="true">←</span>
       </button>
       <a class="brand" href="/" aria-label="BIZET OS">BIZET <span>OS</span></a>
-      <div class="topbar-space" aria-hidden="true"></div>
+      <div class="settings-wrap">
+        <button class="icon-button menu-button" id="settingsButton" type="button" aria-label="Настройки" aria-expanded="false">
+          <span aria-hidden="true">•••</span>
+        </button>
+        <div class="settings-panel" id="settingsPanel" hidden>
+          <div class="settings-title" id="settingsTitle">Настройки</div>
+
+          <label class="settings-field">
+            <span id="themeLabel">Тема</span>
+            <select id="themeSelect">
+              <option value="light">Светлая</option>
+              <option value="dark">Тёмная</option>
+            </select>
+          </label>
+
+          <label class="settings-field">
+            <span id="languageLabel">Язык</span>
+            <select id="languageSelect">
+              <option value="ru">Русский</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+
+          <div class="account-actions">
+            <button class="account-button" id="loginButton" type="button">Войти</button>
+            <button class="account-button primary-account" id="registerButton" type="button">Регистрация</button>
+          </div>
+          <p class="settings-notice" id="settingsNotice" hidden></p>
+        </div>
+      </div>
     </header>
 
     <main class="experience" id="experience" aria-live="polite">
@@ -29,8 +58,8 @@
 
       <section class="summary-card" id="summaryCard" hidden>
         <div class="summary-mark" aria-hidden="true">✓</div>
-        <p class="summary-eyebrow">Основа проекта готова</p>
-        <h1>Можно переходить к помещению</h1>
+        <p class="summary-eyebrow" id="summaryEyebrow">Основа проекта готова</p>
+        <h1 id="summaryTitle">Можно переходить к помещению</h1>
         <div class="summary-values" id="summaryValues"></div>
         <button class="primary-button" id="continueButton" type="button">Перейти к помещению</button>
         <p class="handoff-note" id="handoffNote">Следующий слой BIZET OS — геометрия помещения.</p>
@@ -41,7 +70,7 @@
 
     <footer class="footer">
       <span>BIZET OS</span>
-      <a href="/legacy">Технический стенд</a>
+      <a href="/legacy" id="legacyLink">Технический стенд</a>
     </footer>
   </div>
 
