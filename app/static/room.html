@@ -7,6 +7,7 @@
   <title>BIZET OS — Помещение</title>
   <link rel="stylesheet" href="/static/room.css" />
   <link rel="stylesheet" href="/static/room-batch.css" />
+  <link rel="stylesheet" href="/static/room-latest.css" />
 </head>
 <body>
   <!-- Legacy QA references: /static/room.js · Коммуникации и особенности помещения -->
@@ -33,7 +34,7 @@
         <div>
           <p class="eyebrow" id="eyebrow">Помещение</p>
           <h1 id="roomTitle">Ваше помещение</h1>
-          <p id="roomSubtitle">Вращайте помещение на 360° пальцем или мышью. Для точного вида используйте куб справа.</p>
+          <p id="roomSubtitle">Вращайте помещение на 360° пальцем или мышью.</p>
         </div>
         <div class="quest-summary" id="questSummary">
           <button class="quest-summary-button" id="questSummaryButton" type="button" aria-expanded="false"><span id="questSummaryLabel">Ваш выбор</span><span class="chevron" aria-hidden="true">⌄</span></button>
@@ -86,7 +87,7 @@
           <div class="view-cube-readout" id="viewCubeReadout">0° / 20°</div>
         </div>
 
-        <div class="gesture-hint" id="gestureHint">360° вращение · куб справа переключает точные виды</div>
+        <div class="gesture-hint" id="gestureHint">360° вращение · нажмите стену или пол для размеров</div>
       </section>
 
       <section class="room-actions">
@@ -113,11 +114,11 @@
 
   <dialog class="modal" id="scanDialog">
     <div class="modal-card scan-card">
-      <button class="modal-close" id="scanClose" type="button" aria-label="Закрыть">×</button><p class="modal-eyebrow">BIZET OS</p><h2 id="scanTitle">Скан помещения</h2><p id="scanCopy">Выберите приложение. BIZET OS откроет официальный канал приложения для вашего устройства.</p>
+      <button class="modal-close" id="scanClose" type="button" aria-label="Закрыть">×</button><p class="modal-eyebrow">BIZET OS</p><h2 id="scanTitle">Скан помещения</h2><p id="scanCopy">Выберите, что хотите сделать со сканом.</p>
       <div class="scan-options">
         <button class="scan-provider" type="button" data-scan-provider="POLYCAM"><strong>Polycam</strong><span id="polycamHint">3D / LiDAR сканирование</span></button>
         <button class="scan-provider" type="button" data-scan-provider="SKETCHUP"><strong>SketchUp</strong><span id="sketchupHint">SketchUp для iPhone / iPad или Web</span></button>
-      </div><p class="scan-note" id="scanNote">Прямой импорт результата в BIZET OS будет подключён через независимый Input Adapter.</p>
+      </div><p class="scan-note" id="scanNote">Пилот принимает GLTF/GLB и пробует предварительно распознать габарит помещения.</p>
     </div>
   </dialog>
 
@@ -125,5 +126,6 @@
   <dialog class="modal" id="tutorialDialog"><div class="modal-card"><button class="modal-close" id="tutorialClose" type="button" aria-label="Закрыть">×</button><h2 id="tutorialTitle">Как пользоваться системой</h2><div class="video-placeholder" aria-hidden="true"><span>▶</span></div><p id="tutorialCopy">Видеоинструкция будет подключена после утверждения сценария.</p></div></dialog>
 
   <script type="module" src="/static/room-v2.js"></script>
+  <script type="module" src="/static/room-latest.js"></script>
 </body>
 </html>
