@@ -34,32 +34,62 @@
         <div>
           <p class="eyebrow" id="eyebrow">Помещение</p>
           <h1 id="roomTitle">Ваше помещение</h1>
-          <p id="roomSubtitle">Поверните сцену пальцем или мышью. Масштабируйте колесом или жестом двумя пальцами.</p>
+          <p id="roomSubtitle">Поверните сцену пальцем или мышью. Нажмите на стену или пол, чтобы указать размеры.</p>
         </div>
-        <div class="project-context" id="projectContext" aria-label="Выбранные параметры"></div>
+
+        <div class="quest-summary" id="questSummary">
+          <button class="quest-summary-button" id="questSummaryButton" type="button" aria-expanded="false">
+            <span id="questSummaryLabel">Ваш выбор</span>
+            <span class="chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="quest-summary-panel" id="questSummaryPanel" hidden>
+            <div class="quest-summary-list" id="questSummaryList"></div>
+          </div>
+        </div>
       </section>
 
       <section class="viewport-card" aria-label="Интерактивная 3D-сцена помещения">
         <canvas id="roomCanvas"></canvas>
         <div class="viewport-badge" id="viewportBadge">Интерактивная 3D-сцена</div>
+        <div class="dimension-summary" id="dimensionSummary">6000 × 4200 × H 2800 mm</div>
         <div class="viewport-controls">
           <button class="viewport-button" id="resetViewButton" type="button" aria-label="Вернуть исходный ракурс">↺ <span id="resetViewLabel">Исходный вид</span></button>
         </div>
-        <div class="gesture-hint" id="gestureHint">Перетащите, чтобы осмотреть помещение</div>
+        <div class="gesture-hint" id="gestureHint">Проведите пальцем для вращения · нажмите стену или пол для размеров</div>
       </section>
 
       <section class="room-actions">
         <div class="scope-note">
-          <strong id="scopeTitle">Сейчас — только пространство</strong>
-          <span id="scopeCopy">Размеры и элементы помещения появятся на следующем этапе замера.</span>
+          <strong id="scopeTitle">Геометрия помещения</strong>
+          <span id="scopeCopy">Стены обозначены A–D. Нажмите на стену или пол, чтобы проверить или изменить размеры.</span>
         </div>
-        <button class="primary-button" id="startMeasurementButton" type="button"><span id="measurementLabel">Начать замер помещения</span><span aria-hidden="true">→</span></button>
+        <button class="primary-button" id="startMeasurementButton" type="button"><span id="measurementLabel">Продолжить замер помещения</span><span aria-hidden="true">→</span></button>
       </section>
 
       <div class="toast" id="toast" role="status" hidden></div>
       <div class="error-banner" id="errorBanner" role="alert" hidden></div>
     </main>
   </div>
+
+  <dialog class="modal" id="dimensionDialog">
+    <div class="modal-card dimension-card">
+      <button class="modal-close" id="dimensionClose" type="button" aria-label="Закрыть">×</button>
+      <p class="modal-eyebrow" id="dimensionEyebrow">Геометрия</p>
+      <h2 id="dimensionTitle">Стена A</h2>
+      <p class="dimension-note" id="dimensionDefaultNote">Показаны размеры по умолчанию. Измените их на фактические.</p>
+      <div class="dimension-fields">
+        <label class="dimension-field">
+          <span id="dimensionPrimaryLabel">Длина</span>
+          <div class="dimension-input-wrap"><input id="dimensionPrimary" type="number" min="100" max="50000" step="10" inputmode="numeric" /><span>mm</span></div>
+        </label>
+        <label class="dimension-field" id="dimensionSecondaryRow">
+          <span id="dimensionSecondaryLabel">Высота</span>
+          <div class="dimension-input-wrap"><input id="dimensionSecondary" type="number" min="100" max="50000" step="10" inputmode="numeric" /><span>mm</span></div>
+        </label>
+      </div>
+      <button class="primary-button modal-action" id="dimensionSave" type="button">Сохранить размеры</button>
+    </div>
+  </dialog>
 
   <dialog class="modal" id="feedbackDialog">
     <div class="modal-card">
