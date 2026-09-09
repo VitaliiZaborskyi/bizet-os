@@ -14,7 +14,7 @@ def test_room_route_serves_interactive_viewport():
     assert response.status_code == 200
     assert 'id="roomCanvas"' in response.text
     assert '/static/room.js' in response.text
-    assert 'Начать замер помещения' in response.text
+    assert 'Продолжить замер помещения' in response.text
 
 
 def test_start_summary_handoff_opens_room_route():
@@ -24,20 +24,10 @@ def test_start_summary_handoff_opens_room_route():
     assert "window.location.assign('/room')" in handoff
 
 
-def test_room_viewport_does_not_fake_measurement_inputs():
-    html = (ROOT / 'app/static/room.html').read_text(encoding='utf-8')
-    js = (ROOT / 'app/static/room.js').read_text(encoding='utf-8')
-    assert 'ASK_ROOM_WALL_LENGTH' not in html
-    assert 'ASK_ROOM_WALL_LENGTH' not in js
-    assert 'room.geometry.wall_length' not in js
-    assert 'Размеры и элементы помещения появятся на следующем этапе замера.' in html
-
-
-def test_room_camera_is_persisted_in_project_scene_only():
+def test_room_camera_is_persisted_in_project_scene():
     js = (ROOT / 'app/static/room.js').read_text(encoding='utf-8')
     assert "path: 'scene.camera'" in js
     assert 'BUILD 1.1-D viewport camera' in js
-    assert "path: 'room.geometry" not in js
 
 
 def test_room_viewport_supports_mouse_touch_and_zoom_without_external_3d_dependency():
@@ -47,6 +37,48 @@ def test_room_viewport_supports_mouse_touch_and_zoom_without_external_3d_depende
     assert "addEventListener('wheel'" in js
     assert 'pinchStart' in js
     assert 'three.js' not in js.lower()
+
+
+def test_room_orbit_is_inverted_for_pointer_drag():
+    js = (ROOT / 'app/static/room.js').read_text(encoding='utf-8')
+    assert 'dragStart.yaw - dx * .005' in js
+    assert 'dragStart.pitch + dy * .004' in js
+    assert 'Inverted orbit' in js
+
+
+def test_room_uses_single_quest_summary_dropdown():
+    html = (ROOT / 'app/static/room.html').read_text(encoding='utf-8')
+    js = (ROOT / 'app/static/room.js').read_text(encoding='utf-8')
+    assert 'id="questSummaryButton"' in html
+    assert 'id="questSummaryPanel"' in html
+    assert 'id="questSummaryList"' in html
+    assert "summary: 'Ваш выбор'" in js
+    assert 'context-chip' not in html
+
+
+def test_room_surfaces_are_labelled_and_clickable_for_dimensions():
+    html = (ROOT / 'app/static/room.html').read_text(encoding='utf-8')
+    js = (ROOT / 'app/static/room.js').read_text(encoding='utf-8')
+    assert 'id="dimensionDialog"' in html
+    assert 'id="dimensionPrimary"' in html
+    assert 'id="dimensionSecondary"' in html
+    for surface in ["'A'", "'B'", "'C'", "'D'", "'FLOOR'"]:
+        assert surface in js
+    assert 'surfaceAtPoint' in js
+    assert 'openSurfaceEditor' in js
+
+
+def test_default_dimensions_are_visible_and_geometry_updates_use_project_state():
+    html = (ROOT / 'app/static/room.html').read_text(encoding='utf-8')
+    js = (ROOT / 'app/static/room.js').read_text(encoding='utf-8')
+    assert '6000 × 4200 × H 2800 mm' in html
+    assert 'lengthMm: 6000' in js
+    assert 'widthMm: 4200' in js
+    assert 'heightMm: 2800' in js
+    assert "patchGeometry('room.geometry.wall_length'" in js
+    assert "patchGeometry('room.geometry.wall_depth'" in js
+    assert "patchGeometry('room.geometry.room_height'" in js
+    assert "source: 'USER_ENTERED'" in js
 
 
 def test_room_viewport_keeps_global_settings_entry_points():
