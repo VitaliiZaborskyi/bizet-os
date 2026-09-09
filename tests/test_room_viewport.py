@@ -40,6 +40,15 @@ def test_room_camera_is_persisted_in_project_scene_only():
     assert "path: 'room.geometry" not in js
 
 
+def test_room_viewport_supports_mouse_touch_and_zoom_without_external_3d_dependency():
+    js = (ROOT / 'app/static/room.js').read_text(encoding='utf-8')
+    assert "addEventListener('pointerdown'" in js
+    assert "addEventListener('pointermove'" in js
+    assert "addEventListener('wheel'" in js
+    assert 'pinchStart' in js
+    assert 'three.js' not in js.lower()
+
+
 def test_room_viewport_keeps_global_settings_entry_points():
     html = (ROOT / 'app/static/room.html').read_text(encoding='utf-8')
     for ident in ['settingsButton', 'themeSelect', 'languageSelect', 'feedbackButton', 'tutorialButton', 'loginButton', 'registerButton']:
