@@ -52,9 +52,29 @@
         <canvas id="roomCanvas"></canvas>
         <div class="viewport-badge" id="viewportBadge">Интерактивная 3D-сцена</div>
         <div class="dimension-summary" id="dimensionSummary">6000 × 4200 × H 2800 mm</div>
-        <div class="viewport-controls">
-          <button class="viewport-button" id="resetViewButton" type="button" aria-label="Вернуть исходный ракурс">↺ <span id="resetViewLabel">Исходный вид</span></button>
+
+        <div class="viewport-toolbar">
+          <button class="viewport-button toggle-button is-active" id="dimensionsToggleButton" type="button" aria-pressed="true">
+            <span id="dimensionsToggleLabel">Размеры</span><small id="dimensionsToggleState">Вкл</small>
+          </button>
+
+          <div class="tool-menu-wrap">
+            <button class="viewport-button" id="ceilingButton" type="button" aria-expanded="false">
+              <span id="ceilingButtonLabel">Потолок</span><span aria-hidden="true">⌄</span>
+            </button>
+            <div class="tool-menu" id="ceilingMenu" hidden>
+              <div class="tool-menu-title" id="ceilingMenuTitle">Вид потолка</div>
+              <button class="tool-menu-option" type="button" data-ceiling="STRETCH_A">Натяжной — подготовленное основание</button>
+              <button class="tool-menu-option" type="button" data-ceiling="STRETCH_B">Готовый натяжной потолок</button>
+              <button class="tool-menu-option" type="button" data-ceiling="GYPSUM">Гипсокартонный потолок</button>
+              <button class="tool-menu-option" type="button" data-ceiling="OPEN_GAP">Открытый зазор / не до потолка</button>
+            </div>
+          </div>
+
+          <button class="viewport-button" id="scanButton" type="button"><span id="scanButtonLabel">Скан</span></button>
+          <button class="viewport-button reset-only" id="resetViewButton" type="button" aria-label="Вернуть исходный ракурс">↺ <span id="resetViewLabel">Исходный вид</span></button>
         </div>
+
         <div class="gesture-hint" id="gestureHint">Проведите пальцем для вращения · нажмите стену или пол для размеров</div>
       </section>
 
@@ -63,7 +83,7 @@
           <strong id="scopeTitle">Геометрия помещения</strong>
           <span id="scopeCopy">Стены обозначены A–D. Нажмите на стену или пол, чтобы проверить или изменить размеры.</span>
         </div>
-        <button class="primary-button" id="startMeasurementButton" type="button"><span id="measurementLabel">Продолжить замер помещения</span><span aria-hidden="true">→</span></button>
+        <button class="primary-button" id="startMeasurementButton" type="button"><span id="measurementLabel">Коммуникации и особенности помещения</span><span aria-hidden="true">→</span></button>
       </section>
 
       <div class="toast" id="toast" role="status" hidden></div>
@@ -87,7 +107,26 @@
           <div class="dimension-input-wrap"><input id="dimensionSecondary" type="number" min="100" max="50000" step="10" inputmode="numeric" /><span>mm</span></div>
         </label>
       </div>
-      <button class="primary-button modal-action" id="dimensionSave" type="button">Сохранить размеры</button>
+      <p class="live-preview-note" id="dimensionPreviewNote">3D меняется сразу при вводе значения.</p>
+      <button class="primary-button modal-action" id="dimensionSave" type="button">Сохранить данные</button>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="scanDialog">
+    <div class="modal-card scan-card">
+      <button class="modal-close" id="scanClose" type="button" aria-label="Закрыть">×</button>
+      <p class="modal-eyebrow">BIZET OS</p>
+      <h2 id="scanTitle">Скан помещения</h2>
+      <p id="scanCopy">Выберите приложение. BIZET OS откроет официальный канал приложения для вашего устройства.</p>
+      <div class="scan-options">
+        <button class="scan-provider" type="button" data-scan-provider="POLYCAM">
+          <strong>Polycam</strong><span id="polycamHint">3D / LiDAR сканирование</span>
+        </button>
+        <button class="scan-provider" type="button" data-scan-provider="SKETCHUP">
+          <strong>SketchUp</strong><span id="sketchupHint">SketchUp для iPhone / iPad или Web</span>
+        </button>
+      </div>
+      <p class="scan-note" id="scanNote">Прямой импорт результата в BIZET OS будет подключён через независимый Input Adapter.</p>
     </div>
   </dialog>
 
