@@ -10,47 +10,56 @@ def test_final_start_choice_scrolls_to_confirmation_button():
     assert "scrollIntoView({ behavior: 'smooth', block: 'center'" in js
 
 
-def test_mobile_room_orbit_disables_page_scroll_on_canvas():
+def test_room_geometry_screen_is_kept_simple_and_ceiling_gates_continue():
+    js = (ROOT / 'app/static/room-latest.js').read_text(encoding='utf-8')
     css = (ROOT / 'app/static/room-latest.css').read_text(encoding='utf-8')
-    assert '#roomCanvas' in css
+    assert 'buildCeilingGate' in js
+    assert 'selectedCeiling' in js
+    assert 'Чтобы продолжить, выберите тип потолка.' in js
+    assert "window.location.assign(CONFIG_ROUTE)" in js
+    assert '.quest-summary { display: none !important; }' in css
     assert 'touch-action: none !important' in css
-    assert 'overscroll-behavior: none !important' in css
-    assert '#viewCubeShell { display: none !important; }' in css
 
 
-def test_configuration_quest_uses_3d_room_and_cabinet_blocks_not_flat_lines():
+def test_scan_import_extracts_actual_geometry_preview_and_returns_to_room():
+    js = (ROOT / 'app/static/room-latest.js').read_text(encoding='utf-8')
+    assert 'extractGeometryPreview' in js
+    assert 'readAccessor' in js
+    assert 'geometry_preview' in js
+    assert 'segments_m' in js
+    assert 'scanOverlayCanvas' in js
+    assert "window.location.assign('/room?scan=applied')" in js
+    assert 'multiple hidden' in js
+
+
+def test_configuration_quest_matches_reference_with_large_tactile_cards():
     js = (ROOT / 'app/static/room-elements-latest.js').read_text(encoding='utf-8')
     css = (ROOT / 'app/static/room-elements-latest.css').read_text(encoding='utf-8')
-    assert 'config-3d-stage' in js
-    assert 'cabinet-unit' in js
-    assert 'config-back-wall' in js
-    assert 'config-side-wall' in js
-    assert 'perspective: 520px' in css
-    assert '.configuration-preview-wrap { display: none !important; }' in css
-    assert 'config-line' not in js
-
-
-def test_configuration_visuals_follow_previously_selected_zone():
-    js = (ROOT / 'app/static/room-elements-latest.js').read_text(encoding='utf-8')
-    assert 'context?.zone_type' in js
-    assert 'context?.product_type' in js
-    assert 'zone-kitchen' in (ROOT / 'app/static/room-elements-latest.css').read_text(encoding='utf-8') or 'zoneClass()' in js
-    assert 'zoneLabel()' in js
-
-
-def test_visual_quest_buttons_have_physical_press_feedback():
-    css = (ROOT / 'app/static/room-elements-latest.css').read_text(encoding='utf-8')
+    assert 'config-reference-stage' in js
+    assert 'ref-furniture' in js
+    assert 'configurationContinue' in js
+    assert '#f5c94a' in css
     assert '.visual-config-card:active' in css
-    assert 'translateY(5px) scale(.985)' in css
-    assert 'box-shadow:' in css
-    assert '.elements-experience .primary-button:active' in css
+    assert 'translateY(6px) scale(.985)' in css
+    assert '.configuration-preview-wrap { display:none !important; }' in css
 
 
-def test_wall_service_symbols_include_sewer_water_socket_and_wire_language():
+def test_configuration_and_communications_are_sequential_steps():
     js = (ROOT / 'app/static/room-elements-latest.js').read_text(encoding='utf-8')
-    assert "return'sewer-water'" in js
-    assert "return'socket'" in js
-    assert "return'wire'" in js
-    assert "item.kind==='sewer-water'" in js
-    assert 'bezierCurveTo' in js
-    assert 'roundRect' in js
+    assert 'keepConfigurationOnly' in js
+    assert 'showCommunicationsMode' in js
+    assert "step')==='communications'" in js
+    assert "window.location.assign('/room-elements?step=communications')" in js
+
+
+def test_communications_are_separate_drag_enabled_and_have_defaults():
+    js = (ROOT / 'app/static/room-elements-latest.js').read_text(encoding='utf-8')
+    css = (ROOT / 'app/static/room-elements-latest.css').read_text(encoding='utf-8')
+    assert "return'sewer'" in js
+    assert "return'water'" in js
+    assert 'linkWaterToSewer' in js
+    assert 'seedDefaultCommunications' in js
+    for value in ['600', '1100', '1500', '1800', '700']:
+        assert value in js
+    assert 'pointermove' in js
+    assert 'direct-drag-enabled' in css
