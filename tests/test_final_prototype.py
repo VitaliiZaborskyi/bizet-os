@@ -34,7 +34,7 @@ def test_final_validation_exposes_expected_checks():
     assert 'All pilot-scope selected appliances are represented in layout' in v.checks
 
 def test_result_screen_contains_three_views_and_module_table():
-    html=(ROOT/'app/static/legacy-pilot.html').read_text()
+    html=(ROOT/'app/static/legacy.html').read_text()
     for ident in ['resultPerspective','resultFront','resultPlan','resultModules','resultApplicationNo','resultStatus']:
         assert f'id="{ident}"' in html
     assert 'BIZET' in html
