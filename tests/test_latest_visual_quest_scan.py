@@ -13,7 +13,7 @@ def test_view_cube_is_temporarily_hidden_but_360_orbit_remains():
     html = (ROOT / 'app/static/room.html').read_text(encoding='utf-8')
     css = (ROOT / 'app/static/room-latest.css').read_text(encoding='utf-8')
     js = (ROOT / 'app/static/room-v2.js').read_text(encoding='utf-8')
-    assert 'id="viewCubeShell"' in html  # deferred implementation retained for later QA
+    assert 'id="viewCubeShell"' in html
     assert '#viewCubeShell { display: none !important; }' in css
     assert 'wrapAngle(dragStart.yaw-dx*.005)' in js
     assert 'wrapAngle(dragStart.pitch+dy*.004)' in js
@@ -27,19 +27,22 @@ def test_scan_button_has_two_client_paths_and_gltf_glb_file_picker():
     assert 'Мне нужно отсканировать' in js
     assert 'accept=".gltf,.glb' in js
     assert 'scanFileInput' in js
-    assert 'Загружаем' in js and 'Распознаём' in js and 'Проверяем' in js
+    assert 'Загружаем' in js and 'Распознаём геометрию' in js and 'Накладываем на 3D' in js
 
 
-def test_scan_pilot_reads_gltf_glb_bounds_and_requires_explicit_apply():
+def test_scan_pilot_reads_gltf_glb_geometry_and_requires_explicit_apply():
     js = (ROOT / 'app/static/room-latest.js').read_text(encoding='utf-8')
     assert 'parseGlbJson' in js
     assert 'analyzeGltf' in js
+    assert 'extractGeometryPreview' in js
+    assert 'readAccessor' in js
     assert "ext[0]*1000" in js
     assert "ext[2]*1000" in js
     assert "ext[1]*1000" in js
     assert 'scanApplyDimensions' in js
     assert "source:'IMPORTED'" in js
-    assert "scene.visual_settings.scan_import" in js
+    assert 'scene.visual_settings.scan_import' in js
+    assert 'geometry_preview' in js
 
 
 def test_scan_download_path_keeps_polycam_and_sketchup_provider_options():
