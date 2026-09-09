@@ -1,0 +1,112 @@
+/* QA overlay for 360° room navigation and view cube. */
+.viewport-card { overflow: visible; }
+.view-cube-shell {
+  position: absolute;
+  right: 20px;
+  top: 76px;
+  width: 112px;
+  height: 126px;
+  z-index: 18;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.view-cube-scene {
+  width: 72px;
+  height: 72px;
+  perspective: 420px;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+}
+.view-cube {
+  width: 54px;
+  height: 54px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform .08s linear;
+}
+.cube-face {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+  user-select: none;
+}
+.cube-front { transform: translateZ(27px); }
+.cube-back { transform: rotateY(180deg) translateZ(27px); }
+.cube-left { transform: rotateY(-90deg) translateZ(27px); }
+.cube-right { transform: rotateY(90deg) translateZ(27px); }
+.cube-top { transform: rotateX(90deg) translateZ(27px); }
+.cube-bottom { transform: rotateX(-90deg) translateZ(27px); }
+.cube-face:hover { background: var(--ink); color: var(--bg); }
+.view-cube-readout {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 10px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  white-space: nowrap;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+.cube-corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0;
+  pointer-events: auto;
+}
+.cube-corner::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .65; }
+.cube-corner[data-view-preset="isoNW"] { left: 0; top: 4px; }
+.cube-corner[data-view-preset="isoNE"] { right: 0; top: 4px; }
+.cube-corner[data-view-preset="isoSW"] { left: 0; bottom: 22px; }
+.cube-corner[data-view-preset="isoSE"] { right: 0; bottom: 22px; }
+.cube-corner:hover { background: var(--ink); color: var(--bg); }
+
+@media (max-width: 700px) {
+  .view-cube-shell { right: 10px; top: 66px; transform: scale(.86); transform-origin: top right; }
+}
+.view-axis {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+}
+.view-axis:hover { background: var(--ink); color: var(--bg); }
+.axis-a { left: 44px; top: 0; }
+.axis-d { left: 44px; bottom: 22px; }
+.axis-b { left: 3px; top: 44px; }
+.axis-c { right: 3px; top: 44px; }
+.axis-top { right: 12px; top: 6px; }
+.axis-bottom { right: 12px; bottom: 26px; }
