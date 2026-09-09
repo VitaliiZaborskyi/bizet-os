@@ -70,7 +70,34 @@ def test_revised_client_copy_uses_zones_and_styling_not_product_labels():
     assert "kicker: 'Категория'" not in js
 
 
-def test_settings_menu_exposes_theme_language_and_account_entry_points():
+def test_settings_menu_exposes_theme_language_account_feedback_and_tutorial():
     html = (ROOT / "app/static/index.html").read_text(encoding="utf-8")
-    for ident in ["settingsButton", "themeSelect", "languageSelect", "loginButton", "registerButton"]:
+    for ident in [
+        "settingsButton", "themeSelect", "languageSelect", "loginButton", "registerButton",
+        "feedbackButton", "tutorialButton", "feedbackDialog", "tutorialDialog",
+    ]:
         assert f'id="{ident}"' in html
+
+
+def test_first_question_has_no_visible_back_arrow_and_summary_is_clean():
+    html = (ROOT / "app/static/index.html").read_text(encoding="utf-8")
+    js = (ROOT / "app/static/start.js").read_text(encoding="utf-8")
+    assert 'id="backButton"' in html and "hidden" in html
+    assert "$('backButton').hidden = currentStep === 0" in js
+    assert "Ваш выбор" in html
+    assert "Детали вашего помещения" in html
+    assert "handoffNote" not in html
+    assert "Можно переходить к помещению" not in html
+
+
+def test_summary_choices_are_editable_without_restarting_project():
+    js = (ROOT / "app/static/start.js").read_text(encoding="utf-8")
+    assert "summary-chip" in js
+    assert "editSummaryStep" in js
+    assert "/reopen" in js
+    assert "editingFromSummary" in js
+
+
+def test_old_stock_visual_uses_secular_historic_facade_reference():
+    js = (ROOT / "app/static/start.js").read_text(encoding="utf-8")
+    assert "photo-1778222014071-9234e2a36472" in js
