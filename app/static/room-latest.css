@@ -1,0 +1,34 @@
+/* Latest owner QA refinements: keep 360 orbit, remove the view cube for now, and simplify Scan. */
+#viewCubeShell { display: none !important; }
+
+.scan-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 14px; }
+.scan-path-button {
+  border: 1px solid var(--line); border-radius: 18px; background: var(--bg); color: var(--ink);
+  padding: 16px; text-align: left; cursor: pointer; display: grid; gap: 5px; min-height: 92px;
+}
+.scan-path-button strong { font-size: 15px; }
+.scan-path-button span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.scan-path-button.is-active { border-color: color-mix(in srgb, var(--ink) 52%, var(--line)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent); }
+.scan-path-panel { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 6px; }
+.scan-path-panel[hidden] { display: none; }
+.scan-file-button, .scan-download-button {
+  width: 100%; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); color: var(--ink);
+  padding: 13px 15px; cursor: pointer; text-align: left;
+}
+.scan-file-button strong, .scan-download-button strong { display: block; font-size: 14px; }
+.scan-file-button span, .scan-download-button span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+.scan-download-grid { display: grid; gap: 9px; }
+.scan-progress { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.scan-progress-step { border: 1px solid var(--line); border-radius: 999px; padding: 6px 9px; font-size: 11px; color: var(--muted); }
+.scan-progress-step.is-active { background: var(--ink); color: var(--bg); }
+.scan-progress-step.is-done { opacity: .66; }
+.scan-import-result { margin-top: 14px; padding: 13px 14px; border-radius: 15px; border: 1px solid var(--line); background: var(--bg); }
+.scan-import-result strong { display: block; margin-bottom: 5px; }
+.scan-import-result p { margin: 0; font-size: 12px; }
+.scan-apply-button { margin-top: 11px; width: 100%; justify-content: center; }
+.scan-file-note { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 10px 0 0; }
+
+@media (max-width: 600px) {
+  .scan-paths { grid-template-columns: 1fr; }
+  .viewport-card { min-height: 420px; }
+}
