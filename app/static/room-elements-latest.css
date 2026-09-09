@@ -1,4 +1,5 @@
 .configuration-controls .select-field.is-compatibility-only { display: none !important; }
+.configuration-preview-wrap { display: none !important; }
 .visual-config-quest { display: grid; gap: 14px; }
 .visual-config-intro { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 0; }
 .visual-config-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
