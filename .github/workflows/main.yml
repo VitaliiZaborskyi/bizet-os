@@ -2,7 +2,7 @@ name: BIZET OS Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, build-1.1-d-config-first-pilot-r5]
   pull_request:
     branches: [main]
   workflow_dispatch:
