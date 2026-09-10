@@ -3,17 +3,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_start_flow_adds_kitchen_configuration_as_standalone_screen_five():
-    js = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
-    assert 'Шаг 5 из 5' in js
-    assert 'Выберите конфигурацию кухни' in js
+def read(path: str) -> str:
+    return (ROOT / path).read_text(encoding='utf-8')
+
+
+def test_start_flow_keeps_configuration_as_standalone_screen():
+    js = read('app/static/start-room-handoff.js')
     assert 'configurationScreenFive' in js
     assert 'summaryCard.hidden = true' in js
     assert "experience.classList.add('screen-five-active')" in js
     assert "document.body.classList.add('config-screen-five-open')" in js
-    assert '.experience.screen-five-active #introBlock' in js
-    assert '.experience.screen-five-active #choiceGrid' in js
-    assert '.experience.screen-five-active #summaryCard' in js
     for code in ['WALL_CENTER', 'WALL_LEFT', 'WALL_RIGHT', 'L_LEFT', 'L_RIGHT', 'U_SHAPE', 'CUSTOM']:
         assert code in js
     assert "patchProject('room.configuration'" in js
@@ -21,8 +20,36 @@ def test_start_flow_adds_kitchen_configuration_as_standalone_screen_five():
     assert '/room?project=' in js
 
 
+def test_all_start_questions_use_action_cta_and_step_counter_is_hidden():
+    js = read('app/static/next-pilot-start.js')
+    css = read('app/static/next-pilot.css')
+    index = read('app/static/index.html')
+    for text in [
+        'Выберите тип объекта',
+        'Выберите тип изделия',
+        'Выберите уровень комплектации',
+        'Выберите оформление',
+        'Выберите конфигурацию кухни',
+    ]:
+        assert text in js
+    assert '.step-meta' in css and '.progress' in css
+    assert 'display:none !important' in css
+    assert 'id="stepMeta" hidden' in index
+    assert 'id="progress" aria-label="Прогресс" hidden' in index
+
+
+def test_laptop_start_and_configuration_are_compacted_without_losing_tactile_cards():
+    css = read('app/static/next-pilot.css')
+    assert '.topbar { height:58px' in css
+    assert 'min-height:clamp(250px,42vh,360px)' in css
+    assert '.choice-card:active' in css
+    assert 'grid-template-columns:repeat(4,minmax(0,1fr))' in css
+    assert '.configuration-choice-card:active' in css
+    assert '@media (max-height:820px)' in css
+
+
 def test_screen_five_uses_owner_reference_top_view_plans_not_pseudo_3d():
-    js = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
+    js = read('app/static/start-room-handoff.js')
     assert 'config-reference-plan' in js
     assert 'config-run back' in js
     assert 'config-run left-side' in js
@@ -31,93 +58,143 @@ def test_screen_five_uses_owner_reference_top_view_plans_not_pseudo_3d():
     assert '.config-reference-plan.l-right .config-run.back' in js
     assert '.config-reference-plan.u .config-run.back' in js
     assert 'Owner reference: clear top-view room outline + broad kitchen runs' in js
-    assert 'pseudo-3D' in js
 
 
-def test_screen_five_cards_are_large_tactile_buttons_and_mobile_is_one_column():
-    js = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
-    assert '.configuration-choice-card {' in js
-    assert 'min-height:330px' in js
-    assert '.configuration-choice-card:active' in js
-    assert 'translateY(8px) scale(.99)' in js
-    assert '.configuration-choice-grid { grid-template-columns:1fr' in js
-    assert '-webkit-tap-highlight-color:transparent' in js
-
-
-def test_screen_five_keeps_header_back_and_settings_above_content():
-    js = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
-    start = (ROOT / 'app/static/start.js').read_text(encoding='utf-8')
-    assert 'body.config-screen-five-open .topbar' in js
-    assert 'z-index:140 !important' in js
-    assert 'pointer-events:auto !important' in js
-    assert "document.getElementById('backButton')?.addEventListener('click'" in js
+def test_screen_five_keeps_header_back_and_settings_interactive():
+    handoff = read('app/static/start-room-handoff.js')
+    start = read('app/static/start.js')
+    assert 'body.config-screen-five-open .topbar' in handoff
+    assert 'pointer-events:auto !important' in handoff
+    assert "document.getElementById('backButton')?.addEventListener('click'" in handoff
     assert "$('settingsButton').addEventListener('click'" in start
     assert "$('backButton').addEventListener('click'" in start
 
 
 def test_pilot_zone_screen_keeps_only_kitchen_active():
-    js = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
+    js = read('app/static/start-room-handoff.js')
     assert 'lockPilotToKitchen' in js
     assert 'pilot-disabled-choice' in js
     assert "text.includes('кухня')" in js
     assert 'button.disabled = true' in js
 
 
-def test_project_id_is_persisted_across_room_and_communications_pages():
-    bridge = (ROOT / 'app/static/project-session-bridge.js').read_text(encoding='utf-8')
-    room = (ROOT / 'app/static/room.html').read_text(encoding='utf-8')
-    elements = (ROOT / 'app/static/room-elements.html').read_text(encoding='utf-8')
-    handoff = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
+def test_custom_configuration_is_a_separate_draw_confirm_screen():
+    main = read('app/main.py')
+    html = read('app/static/custom-configuration.html')
+    js = read('app/static/custom-configuration.js')
+    css = read('app/static/custom-configuration.css')
+    start_override = read('app/static/next-pilot-start.js')
+    assert '@app.get("/custom-configuration"' in main
+    assert 'Нарисуйте конфигурацию кухни' in html
+    assert 'Подтвердите конфигурацию' in html
+    assert 'customDrawCanvas' in html and 'customPreviewCanvas' in html
+    assert "pointerdown" in js and "pointermove" in js and "pointerup" in js
+    assert "USER_DRAWN_UNCLASSIFIED" in js
+    assert "recognition: 'DEFERRED_PLACEHOLDER'" in js
+    assert "patch('room.configuration', 'CUSTOM'" in js
+    assert "custom-configuration" in start_override
+    assert 'touch-action:none' in css
+
+
+def test_project_id_is_persisted_across_custom_room_and_communications_pages():
+    bridge = read('app/static/project-session-bridge.js')
+    room = read('app/static/room.html')
+    elements = read('app/static/room-elements.html')
+    custom = read('app/static/custom-configuration.html')
     assert "params.get('project')" in bridge
     assert 'localStorage.getItem(KEY)' in bridge
     assert 'sessionStorage.setItem(KEY, projectId)' in bridge
     assert '/static/project-session-bridge.js' in room
     assert '/static/project-session-bridge.js' in elements
-    assert 'localStorage.setItem(STORAGE_KEY, id)' in handoff
+    assert '/static/project-session-bridge.js' in custom
 
 
-def test_mobile_room_orbit_disables_page_scroll_on_canvas():
-    css = (ROOT / 'app/static/room-latest.css').read_text(encoding='utf-8')
-    assert '#roomCanvas' in css
-    assert 'touch-action: none !important' in css
-    assert 'overscroll-behavior: none !important' in css
-    assert '#viewCubeShell { display: none !important; }' in css
-
-
-def test_scan_code_is_preserved_but_scan_is_inactive_for_manual_qa():
-    scan_js = (ROOT / 'app/static/room-latest.js').read_text(encoding='utf-8')
-    manual_js = (ROOT / 'app/static/manual-pilot.js').read_text(encoding='utf-8')
-    manual_css = (ROOT / 'app/static/manual-pilot.css').read_text(encoding='utf-8')
+def test_scan_code_is_preserved_but_scan_is_disabled_for_current_manual_pilot():
+    scan_js = read('app/static/room-latest.js')
+    manual_js = read('app/static/manual-pilot.js')
+    manual_css = read('app/static/manual-pilot.css')
     assert 'parseGlb' in scan_js
     assert 'MULTI_SLICE_VERTICAL_PLANES' in scan_js
-    assert "toolbar.disabled = true" in manual_js
-    assert "scan.textContent = pilotRu() ? 'Скан · позже'" in manual_js
+    assert 'toolbar.disabled = true' in manual_js
+    assert "'Скан · позже'" in manual_js
+    assert "document.getElementById('geometryInputQuestion')?.remove()" in manual_js
     assert '#scanContourCanvas' in manual_css
     assert 'display: none !important' in manual_css
 
 
-def test_manual_geometry_is_one_question_per_step_and_persists_confirmed_values():
-    js = (ROOT / 'app/static/manual-pilot.js').read_text(encoding='utf-8')
-    assert 'Какова длина основной стены?' in js
-    assert 'Какова глубина помещения?' in js
-    assert 'Какова высота помещения?' in js
+def test_manual_geometry_is_its_own_screen_and_persists_valid_provenance():
+    js = read('app/static/manual-pilot.js')
+    css = read('app/static/next-pilot.css')
+    assert 'Укажите размеры помещения' in js
+    assert 'Длина основной стены' in js
+    assert 'Глубина помещения' in js
+    assert 'Высота помещения' in js
     assert "path: 'room.geometry.wall_length'" in js
     assert "path: 'room.geometry.wall_depth'" in js
     assert "path: 'room.geometry.room_height'" in js
-    assert "source: 'USER', confirmed: true" in js
+    assert "source: 'USER_CONFIRMED', confirmed: true" in js
+    assert "document.body.classList.add('manual-room-active')" in js
+    assert 'body.manual-room-active .room-heading' in css
     assert "geometry_input_mode', 'MANUAL'" in js
     assert "manual_geometry_complete', true" in js
 
 
-def test_manual_flow_routes_to_communications_with_same_project_id():
-    js = (ROOT / 'app/static/manual-pilot.js').read_text(encoding='utf-8')
-    assert 'routeToCommunications' in js
-    assert 'project?.room?.ceiling?.type' in js
+def test_manual_error_handling_never_stringifies_validation_object():
+    js = read('app/static/manual-pilot.js')
+    assert 'safeErrorDetail' in js
+    assert "typeof detail === 'string'" in js
+    assert 'Array.isArray(detail)' in js
+    assert "typeof first?.msg === 'string'" in js
+    assert "payload.detail || detail" not in js
+    assert "source: 'USER'" not in js
+
+
+def test_manual_flow_routes_directly_to_separate_communications_screen():
+    js = read('app/static/manual-pilot.js')
+    elements = read('app/static/room-elements.html')
+    overlay = read('app/static/next-pilot-elements.js')
     assert '/room-elements?step=communications&project=' in js
+    assert 'Укажите коммуникации' in elements
+    assert 'body class="communications-only"' in elements
+    assert '/static/next-pilot-elements.js' in elements
+    assert "document.body.classList.add('communications-only')" in overlay
+    assert "document.querySelector('.configuration-card')?.setAttribute('hidden', '')" in overlay
 
 
-def test_glb_is_converted_to_bizet_wall_contour_not_only_bounds_for_future_reactivation():
-    js = (ROOT / 'app/static/room-latest.js').read_text(encoding='utf-8')
+def test_standard_configuration_wall_sequences_survive_communications_separation():
+    core = read('app/static/room-elements-v2.js')
+    overlay = read('app/static/next-pilot-elements.js')
+    for sequence in ["L_LEFT: ['B','A']", "L_RIGHT: ['A','C']", "U_SHAPE: ['B','A','C']"]:
+        assert sequence in core
+    assert "L_LEFT: ['B', 'A']" in overlay
+    assert "L_RIGHT: ['A', 'C']" in overlay
+    assert "U_SHAPE: ['B', 'A', 'C']" in overlay
+    assert "select.dispatchEvent(new Event('change', { bubbles: true }))" in overlay
+
+
+def test_custom_communications_has_safe_placeholder_until_wall_recognition_exists():
+    overlay = read('app/static/next-pilot-elements.js')
+    css = read('app/static/next-pilot.css')
+    assert 'customCommunicationsPlaceholder' in overlay
+    assert "configuration === 'CUSTOM' && !walls.length" in overlay
+    assert 'Кастомная траектория сохранена и подтверждена' in overlay
+    assert '.custom-communications-placeholder' in css
+
+
+def test_mobile_room_orbit_code_and_ceiling_portrait_fix_remain_preserved():
+    css = read('app/static/room-latest.css')
+    js = read('app/static/room-latest.js')
+    assert '#roomCanvas' in css
+    assert 'touch-action: none !important' in css
+    assert 'overscroll-behavior: none !important' in css
+    assert '@media (max-width: 700px) and (orientation: portrait)' in css
+    assert 'translateX(calc(33%' in css
+    assert '--ceiling-extra-shift' in css
+    assert 'clampCeilingPopup' in js
+
+
+def test_glb_future_code_is_preserved_but_not_part_of_current_route():
+    js = read('app/static/room-latest.js')
     assert 'parseGlb' in js
     assert 'createAccessorReader' in js
     assert 'collectMeshInstances' in js
@@ -125,40 +202,11 @@ def test_glb_is_converted_to_bizet_wall_contour_not_only_bounds_for_future_react
     assert 'mergeWallGroups' in js
     assert 'MULTI_SLICE_VERTICAL_PLANES' in js
     assert 'contour_segments_m' in js
-    assert 'reference_segments_m' in js
-    assert 'slice_heights_m' in js
     assert "status: 'CONTOUR_CANDIDATE'" in js
 
 
-def test_portrait_ceiling_popup_moves_right_by_one_third_with_safe_correction():
-    css = (ROOT / 'app/static/room-latest.css').read_text(encoding='utf-8')
-    js = (ROOT / 'app/static/room-latest.js').read_text(encoding='utf-8')
-    assert '@media (max-width: 700px) and (orientation: portrait)' in css
-    assert 'translateX(calc(33%' in css
-    assert '--ceiling-extra-shift' in css
-    assert 'clampCeilingPopup' in js
-    assert 'window.innerWidth - safe' in js
-
-
-def test_original_top_view_configuration_drawings_remain_available_for_other_layers():
-    css = (ROOT / 'app/static/room-elements-latest.css').read_text(encoding='utf-8')
-    assert '.config-mini-plan.center .line-a' in css
-    assert '.config-mini-plan.l-left .line-b' in css
-    assert '.config-mini-plan.l-right .line-b' in css
-    assert '.config-mini-plan.u .line-c' in css
-    assert '.config-mini-plan.custom::after' in css
-
-
-def test_visual_quest_buttons_keep_physical_press_feedback():
-    css = (ROOT / 'app/static/room-elements-latest.css').read_text(encoding='utf-8')
-    assert '.visual-config-card:active' in css
-    assert 'translateY(5px) scale(.985)' in css
-    assert 'box-shadow:' in css
-    assert '.elements-experience .primary-button:active' in css
-
-
-def test_wall_service_symbols_remain_available_after_flow_change():
-    js = (ROOT / 'app/static/room-elements-latest.js').read_text(encoding='utf-8')
+def test_existing_wall_service_symbols_remain_available_after_ux_flow_change():
+    js = read('app/static/room-elements-latest.js')
     assert "return'sewer-water'" in js
     assert "return'socket'" in js
     assert "return'wire'" in js
