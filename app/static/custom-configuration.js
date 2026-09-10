@@ -158,7 +158,7 @@ confirmButton.addEventListener('click', async () => {
     sessionStorage.setItem(CONFIG_KEY, 'CUSTOM');
     localStorage.setItem(CONFIG_KEY, 'CUSTOM');
     const id = projectId();
-    window.location.assign(`/room?project=${encodeURIComponent(id)}&configuration=custom-confirmed`);
+    window.location.assign(`/dimensions?project=${encodeURIComponent(id)}&configuration=custom-confirmed`);
   } catch (error) {
     errorNode.textContent = error?.message || 'Не удалось сохранить конфигурацию. Повторите попытку.';
     errorNode.hidden = false;
