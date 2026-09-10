@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -11,9 +12,22 @@ BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
 
 app = FastAPI(title="BIZET OS 1.1", version="1.1-D")
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.include_router(router)
 app.include_router(router_v11)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+
+@app.middleware("http")
+async def pilot_cache_headers(request: Request, call_next):
+    """Keep QA HTML fresh while allowing lightweight asset reuse on phone/laptop."""
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=86400"
+    elif path in {"/", "/room", "/room-elements", "/custom-configuration"}:
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 @app.get("/", include_in_schema=False)
