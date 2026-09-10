@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -28,6 +28,12 @@ async def pilot_cache_headers(request: Request, call_next):
     elif path in {"/", "/room", "/room-elements", "/custom-configuration"}:
         response.headers["Cache-Control"] = "no-cache"
     return response
+
+
+@app.head("/", include_in_schema=False)
+def index_head():
+    """Fast wake/health response for Render and browser preflight probes."""
+    return Response(status_code=200)
 
 
 @app.get("/", include_in_schema=False)
