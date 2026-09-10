@@ -37,9 +37,21 @@
 
   document.body.classList.add('fast-first-paint');
 
-  // If the API/bootstrap is merely slow, keep the full first screen visible rather than a loading placeholder.
-  window.addEventListener('bizet-start-ready', () => {
+  const release = () => {
     document.body.classList.remove('fast-first-paint');
     grid.removeAttribute('aria-busy');
-  }, { once: true });
+  };
+
+  const observer = new MutationObserver(() => {
+    if (!grid.querySelector('.fast-paint-card') && grid.querySelector('.choice-card')) {
+      release();
+      observer.disconnect();
+    }
+  });
+  observer.observe(grid, { childList: true, subtree: true });
+
+  // Safety: do not leave a stale busy state behind if another screen replaces the grid.
+  setTimeout(() => {
+    if (!grid.querySelector('.fast-paint-card')) release();
+  }, 4000);
 })();
