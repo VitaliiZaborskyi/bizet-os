@@ -24,6 +24,21 @@ def test_fast_paint_renders_four_local_fallback_cards_without_remote_dependency(
     assert 'MutationObserver' in js
 
 
+def test_start_override_observers_are_bounded_and_cannot_watch_their_own_title_mutations():
+    js = (ROOT / 'app/static/next-pilot-start.js').read_text(encoding='utf-8')
+    assert 'observe(document.documentElement' not in js
+    assert "attributeFilter: ['data-kind']" in js
+    assert 'experienceObserver.observe(experience, { childList: true });' in js
+    assert 'setTextIfChanged' in js
+    assert "attributeFilter: ['data-kind','hidden']" not in js
+
+
+def test_root_head_is_fast_200_for_render_wake_probe():
+    response = client.head('/')
+    assert response.status_code == 200
+    assert response.headers.get('cache-control') == 'no-cache'
+
+
 def test_static_assets_are_reusable_and_html_stays_fresh():
     html = client.get('/')
     asset = client.get('/static/next-pilot.css')
