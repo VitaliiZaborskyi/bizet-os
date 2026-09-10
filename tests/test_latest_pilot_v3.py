@@ -5,18 +5,54 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_start_flow_adds_kitchen_configuration_as_standalone_screen_five():
     js = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
-    css = (ROOT / 'app/static/room-elements-latest.css').read_text(encoding='utf-8')
     assert 'Шаг 5 из 5' in js
     assert 'Выберите конфигурацию кухни' in js
     assert 'configurationScreenFive' in js
     assert 'summaryCard.hidden = true' in js
-    assert 'config-mini-plan' in js
-    assert '.config-mini-plan' in css
+    assert "experience.classList.add('screen-five-active')" in js
+    assert "document.body.classList.add('config-screen-five-open')" in js
+    assert '.experience.screen-five-active #introBlock' in js
+    assert '.experience.screen-five-active #choiceGrid' in js
+    assert '.experience.screen-five-active #summaryCard' in js
     for code in ['WALL_CENTER', 'WALL_LEFT', 'WALL_RIGHT', 'L_LEFT', 'L_RIGHT', 'U_SHAPE', 'CUSTOM']:
         assert code in js
     assert "patchProject('room.configuration'" in js
     assert "patchProject('scene.visual_settings.configuration_walls'" in js
     assert '/room?project=' in js
+
+
+def test_screen_five_uses_owner_reference_top_view_plans_not_pseudo_3d():
+    js = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
+    assert 'config-reference-plan' in js
+    assert 'config-run back' in js
+    assert 'config-run left-side' in js
+    assert 'config-run right-side' in js
+    assert '.config-reference-plan.l-left .config-run.back' in js
+    assert '.config-reference-plan.l-right .config-run.back' in js
+    assert '.config-reference-plan.u .config-run.back' in js
+    assert 'Owner reference: clear top-view room outline + broad kitchen runs' in js
+    assert 'pseudo-3D' in js
+
+
+def test_screen_five_cards_are_large_tactile_buttons_and_mobile_is_one_column():
+    js = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
+    assert '.configuration-choice-card {' in js
+    assert 'min-height:330px' in js
+    assert '.configuration-choice-card:active' in js
+    assert 'translateY(8px) scale(.99)' in js
+    assert '.configuration-choice-grid { grid-template-columns:1fr' in js
+    assert '-webkit-tap-highlight-color:transparent' in js
+
+
+def test_screen_five_keeps_header_back_and_settings_above_content():
+    js = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
+    start = (ROOT / 'app/static/start.js').read_text(encoding='utf-8')
+    assert 'body.config-screen-five-open .topbar' in js
+    assert 'z-index:140 !important' in js
+    assert 'pointer-events:auto !important' in js
+    assert "document.getElementById('backButton')?.addEventListener('click'" in js
+    assert "$('settingsButton').addEventListener('click'" in start
+    assert "$('backButton').addEventListener('click'" in start
 
 
 def test_pilot_zone_screen_keeps_only_kitchen_active():
@@ -104,7 +140,7 @@ def test_portrait_ceiling_popup_moves_right_by_one_third_with_safe_correction():
     assert 'window.innerWidth - safe' in js
 
 
-def test_original_top_view_configuration_drawings_are_available_for_screen_five():
+def test_original_top_view_configuration_drawings_remain_available_for_other_layers():
     css = (ROOT / 'app/static/room-elements-latest.css').read_text(encoding='utf-8')
     assert '.config-mini-plan.center .line-a' in css
     assert '.config-mini-plan.l-left .line-b' in css
