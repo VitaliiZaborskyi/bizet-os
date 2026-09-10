@@ -14,6 +14,7 @@
   let activeSurface = null;
   let dimensionsVisible = true;
   let visual = {};
+  let roomScene = null;
 
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
@@ -49,9 +50,7 @@
     return Number.isFinite(value) && value > 0 ? value : fallback;
   }
 
-  function wallHeights() {
-    return {...(visual.wall_heights || {})};
-  }
+  function wallHeights() { return {...(visual.wall_heights || {})}; }
 
   function values() {
     const baseHeight = measured('room_height',2800);
@@ -68,16 +67,21 @@
   function wallLength(wall,v) { return wall === 'A' ? v.length : v.depth; }
   function wallHeight(wall,v) { return v[`height${wall}`] || measured('room_height',2800); }
 
+  function drawFixed3D() {
+    const canvas = $('roomCanvas');
+    if (!canvas || !window.BizetPilot3D || !project) return;
+    const v = values();
+    const maxHeight = Math.max(v.heightA, v.heightB, v.heightC, 1200);
+    roomScene = window.BizetPilot3D.drawRoomScene(canvas, {
+      configuration,
+      activeWalls,
+      room: { lengthMm:v.length, depthMm:v.depth, heightMm:maxHeight },
+    });
+  }
+
   function render() {
     const v = values();
     $('activeConfigLabel').textContent = CONFIG_LABELS[configuration] || 'Выбранная конфигурация';
-    document.querySelectorAll('[data-surface]').forEach(node => {
-      const id = node.dataset.surface;
-      const active = id === 'FLOOR' || activeWalls.includes(id);
-      node.classList.toggle('is-active',active);
-      node.disabled = !active;
-      node.setAttribute('aria-disabled',String(!active));
-    });
 
     const rows = [
       `<div class="surface-row"><div><strong>Пол</strong><span>${v.length} × ${v.depth} мм</span></div><button type="button" data-edit="FLOOR">Изменить</button></div>`,
@@ -91,6 +95,7 @@
       `<span class="dimension-chip">Пол ${v.length} × ${v.depth} мм</span>`,
       ...activeWalls.map(wall=>`<span class="dimension-chip">${wall}: ${wallLength(wall,v)} × H ${wallHeight(wall,v)} мм</span>`)
     ].join('') : '';
+    drawFixed3D();
   }
 
   function field(label,id,value) {
@@ -153,11 +158,17 @@
     document.addEventListener('click',()=>panel.hidden=true);
   }
 
-  document.querySelectorAll('.surface').forEach(node=>node.addEventListener('click',()=>openEditor(node.dataset.surface)));
+  $('roomCanvas').addEventListener('click', event => {
+    if (!roomScene) return;
+    const rect = $('roomCanvas').getBoundingClientRect();
+    const surface = roomScene.hitTest(event.clientX - rect.left, event.clientY - rect.top);
+    if (surface) openEditor(surface);
+  });
   $('saveDimension').addEventListener('click',saveEditor);
   $('toggleDimensions').addEventListener('click',()=>{dimensionsVisible=!dimensionsVisible;$('toggleDimensions').textContent=`Размеры: ${dimensionsVisible?'видно':'скрыто'}`;$('toggleDimensions').setAttribute('aria-pressed',String(dimensionsVisible));render();});
   $('continueButton').addEventListener('click',()=>location.assign(`/guided?stage=ceiling&project=${encodeURIComponent(projectId)}`));
   $('backButton').addEventListener('click',()=>history.back());
+  window.addEventListener('resize',()=>requestAnimationFrame(drawFixed3D));
   createMenu();
 
   (async()=>{
@@ -165,8 +176,8 @@
     try {
       project = await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`);
       visual = {...(project.scene?.visual_settings || {})};
-      const nextVisual = {...visual, active_configuration_walls:activeWalls, dimension_input_mode:'SURFACE_DIRECT'};
-      await patch('scene.visual_settings',nextVisual,{reason:'Enter configuration-aware dimension pilot'});
+      const nextVisual = {...visual, active_configuration_walls:activeWalls, dimension_input_mode:'SURFACE_DIRECT', dimension_camera_mode:'FIXED_3D'};
+      await patch('scene.visual_settings',nextVisual,{reason:'Enter configuration-aware fixed 3D dimension pilot'});
       render();
     } catch (error) { $('errorNode').textContent=error.message; $('errorNode').hidden=false; }
   })();
