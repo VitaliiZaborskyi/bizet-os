@@ -25,7 +25,7 @@ async def pilot_cache_headers(request: Request, call_next):
     path = request.url.path
     if path.startswith("/static/"):
         response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=86400"
-    elif path in {"/", "/room", "/room-elements", "/custom-configuration", "/dimensions", "/guided", "/model", "/materials"}:
+    elif path in {"/", "/room", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/materials"}:
         response.headers["Cache-Control"] = "no-cache"
     return response
 
@@ -47,9 +47,15 @@ def custom_configuration():
     return FileResponse(STATIC / "custom-configuration.html")
 
 
+@app.get("/linear-span", include_in_schema=False)
+def linear_span_pilot():
+    """Straight-kitchen wall coverage and edge-offset pilot."""
+    return FileResponse(STATIC / "linear-span.html")
+
+
 @app.get("/dimensions", include_in_schema=False)
 def dimensions_pilot():
-    """Configuration-aware 3D room dimension pilot."""
+    """Configuration-aware perspective 3D room dimension pilot."""
     return FileResponse(STATIC / "dimensions.html")
 
 
