@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f4f1" />
+  <title>BIZET OS — Материалы и фурнитура</title>
+  <link rel="stylesheet" href="/static/start.css" />
+  <link rel="stylesheet" href="/static/materials.css" />
+  <link rel="stylesheet" href="/static/pilot-shell.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar compact-topbar"><button class="icon-button" id="backButton" type="button">←</button><a class="brand" href="/">BIZET <span>OS</span></a><button class="icon-button" id="settingsButton" type="button">•••</button></header>
+    <main class="materials-screen">
+      <section class="materials-control">
+        <h1>Подтвердите материалы и фурнитуру</h1>
+        <p>Базовые значения должны подтягиваться из выбранного уровня комплектации. Конкретные каталоги и коммерческие материалы сейчас не выдумываем.</p>
+        <div class="material-grid">
+          <button class="material-card" type="button" disabled><span>Корпус</span><strong>По умолчанию из комплектации</strong><small>Выбор материала · следующий слой</small></button>
+          <button class="material-card" type="button" disabled><span>Фасады</span><strong>По умолчанию из комплектации</strong><small>Цвет / толщина / отделка · следующий слой</small></button>
+          <button class="material-card" type="button" disabled><span>Фурнитура</span><strong>По умолчанию из комплектации</strong><small>Система / серия · следующий слой</small></button>
+        </div>
+        <button class="primary-action" id="confirmMaterials" type="button">Подтвердить текущие значения</button>
+        <p class="status" id="status"></p>
+      </section>
+      <section class="materials-model"><div class="ghost-kitchen"><span></span><span></span><span></span><span></span><span></span></div><p>Модель остаётся видимой как контекст. В следующей ревизии здесь появится прямой выбор элементов мебели.</p></section>
+    </main>
+  </div>
+  <script src="/static/pilot-shell.js"></script>
+  <script src="/static/materials.js"></script>
+</body>
+</html>

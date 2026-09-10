@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f4f1" />
+  <title>BIZET OS — Модель кухни</title>
+  <link rel="stylesheet" href="/static/start.css" />
+  <link rel="stylesheet" href="/static/model.css" />
+  <link rel="stylesheet" href="/static/pilot-shell.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar compact-topbar"><button class="icon-button" id="backButton" type="button">←</button><a class="brand" href="/">BIZET <span>OS</span></a><button class="icon-button" id="settingsButton" type="button">•••</button></header>
+    <main class="model-screen">
+      <section class="model-head"><div><h1>Ваша кухня</h1><p>Теперь 3D можно вращать. На модели остаются только номера; названия и выбор модулей вынесены в нижнюю ленту.</p></div><button class="primary-action" id="materialsButton" type="button">Материалы и фурнитура →</button></section>
+      <section class="model-stage" id="modelStage">
+        <canvas id="modelCanvas" class="model-canvas" aria-label="Интерактивная 3D модель кухни"></canvas>
+        <button class="model-dimension-toggle" id="modelDimensionsToggle" type="button" aria-pressed="true">Размеры · вкл</button>
+      </section>
+      <div class="module-strip" id="moduleStrip" aria-label="Модули кухни"></div>
+      <p class="model-status" id="modelStatus">Формируем 3D-модель…</p>
+    </main>
+  </div>
+  <dialog class="module-dialog" id="moduleDialog"><div class="module-card"><button class="dialog-close" id="moduleClose" type="button">×</button><h2 id="moduleTitle">Модуль</h2><p id="moduleCopy"></p><div class="coordinate-box"><span>Положение относительно базовой точки</span><strong id="moduleOffset">0 мм</strong><div><button data-nudge="-50" type="button">−50</button><button data-nudge="-30" type="button">−30</button><button data-nudge="30" type="button">+30</button><button data-nudge="50" type="button">+50</button></div></div><div class="placeholder-options"><button type="button" disabled>Внутреннее наполнение · позже</button><button type="button" disabled>Фасад / отделка · позже</button><button type="button" disabled>Дополнительные опции · позже</button></div></div></dialog>
+  <script src="/static/pilot-shell.js"></script>
+  <script src="/static/pilot-3d.js"></script>
+  <script src="/static/model.js"></script>
+</body>
+</html>

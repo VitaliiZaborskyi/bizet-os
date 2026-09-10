@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f4f1" />
+  <title>BIZET OS — Положение прямой кухни</title>
+  <link rel="stylesheet" href="/static/start.css" />
+  <link rel="stylesheet" href="/static/guided.css" />
+  <link rel="stylesheet" href="/static/pilot-shell.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar compact-topbar">
+      <button class="icon-button" id="backButton" type="button" aria-label="Назад">←</button>
+      <a class="brand" href="/">BIZET <span>OS</span></a>
+      <button class="icon-button" id="settingsButton" type="button" aria-label="Меню">•••</button>
+    </header>
+    <main class="guided-screen">
+      <section class="guided-head"><h1 id="title">Как кухня занимает стену?</h1><p id="subtitle">Укажите, идёт ли прямая кухня на всю стену или нужны свободные расстояния по краям.</p></section>
+      <section class="guided-cards" id="cards"></section>
+      <section class="guided-input" id="inputStage" hidden></section>
+      <p class="guided-error" id="errorNode" hidden></p>
+    </main>
+  </div>
+  <script src="/static/pilot-shell.js"></script>
+  <script src="/static/linear-span.js"></script>
+</body>
+</html>

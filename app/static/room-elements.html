@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f4f1" />
+  <title>BIZET OS — Коммуникации</title>
+  <link rel="stylesheet" href="/static/room.css" />
+  <link rel="stylesheet" href="/static/room-elements-v2.css" />
+  <link rel="stylesheet" href="/static/room-elements-latest.css" />
+  <link rel="stylesheet" href="/static/next-pilot.css" />
+</head>
+<body class="communications-only">
+  <!-- Legacy QA reference: Коммуникации и конструкционные особенности -->
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="icon-button back-button" href="/room" aria-label="Назад"><span aria-hidden="true">←</span></a>
+      <a class="brand" href="/" aria-label="BIZET OS">BIZET <span>OS</span></a>
+      <div class="settings-wrap">
+        <button class="icon-button menu-button" id="settingsButton" type="button" aria-label="Настройки" aria-expanded="false"><span aria-hidden="true">•••</span></button>
+        <div class="settings-panel" id="settingsPanel" hidden>
+          <div class="settings-title" id="settingsTitle">Настройки</div>
+          <label class="settings-field"><span id="themeLabel">Тема</span><select id="themeSelect"><option value="light">Светлая</option><option value="dark">Тёмная</option></select></label>
+          <label class="settings-field"><span id="languageLabel">Язык</span><select id="languageSelect"><option value="ru">Русский</option><option value="en">English</option></select></label>
+          <button class="menu-row" id="feedbackButton" type="button">Обратная связь</button>
+          <button class="menu-row" id="tutorialButton" type="button">Как пользоваться системой</button>
+          <div class="account-actions"><button class="account-button" id="loginButton" type="button">Войти</button><button class="account-button primary-account" id="registerButton" type="button">Регистрация</button></div>
+          <p class="settings-notice" id="settingsNotice" hidden></p>
+        </div>
+      </div>
+    </header>
+
+    <main class="elements-experience">
+      <section class="elements-heading">
+        <p class="eyebrow" id="elementsEyebrow" hidden>Коммуникации</p>
+        <h1 id="elementsTitle">Укажите коммуникации</h1>
+        <p id="elementsSubtitle">Добавьте коммуникации на задействованные стены.</p>
+      </section>
+
+      <section class="configuration-card" hidden>
+        <div class="configuration-copy">
+          <span class="step-kicker">01</span>
+          <div><h2 id="configurationTitle">Конфигурация мебели</h2><p id="configurationCopy">Конфигурация уже выбрана на предыдущем экране.</p></div>
+        </div>
+        <div class="configuration-controls">
+          <label class="select-field"><span id="configurationLabel">Расположение</span>
+            <select id="configurationSelect">
+              <option value="" selected disabled>Выберите конфигурацию</option>
+              <option value="WALL_CENTER">Вдоль стены по центру</option>
+              <option value="WALL_LEFT">Вдоль стены в левом углу</option>
+              <option value="WALL_RIGHT">Вдоль стены в правом углу</option>
+              <option value="L_LEFT">Буквой «Г» — длинное крыло влево</option>
+              <option value="L_RIGHT">Буквой «Г» — длинное крыло вправо</option>
+              <option value="U_SHAPE">Буквой «П»</option>
+              <option value="CUSTOM">Кастомная конфигурация</option>
+            </select>
+          </label>
+          <div class="configuration-preview-wrap">
+            <canvas id="configurationPreview" width="420" height="180" aria-label="План выбранной конфигурации"></canvas>
+            <div class="recognized-walls" id="configurationWalls">Стены: —</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="wall-workflow" id="wallWorkflow" hidden>
+        <div class="wall-workflow-head">
+          <div>
+            <span class="step-kicker" hidden>02</span>
+            <h2 id="wallWorkflowTitle">Коммуникации по стенам</h2>
+            <p id="wallWorkflowCopy">Каждая задействованная стена показывается отдельно. Добавьте элементы или отметьте стену пустой.</p>
+          </div>
+          <div class="wall-progress" id="wallProgress">Стена A · 1/1</div>
+        </div>
+
+        <div class="wall-layout">
+          <section class="wall-stage-card">
+            <div class="wall-stage-toolbar">
+              <strong id="activeWallTitle">Стена A</strong>
+              <button class="position-toggle is-active" id="positionDimensionsToggle" type="button" aria-pressed="true"><span id="positionDimensionsLabel">Размеры положения</span><small id="positionDimensionsState">Вкл</small></button>
+            </div>
+            <canvas id="communicationCanvas" width="900" height="560" aria-label="Текущая стена и коммуникации"></canvas>
+            <p class="wall-origin-note" id="wallOriginNote">X — от левого края стены, Z — от пола. Значения в мм.</p>
+          </section>
+
+          <aside class="wall-editor-card">
+            <div class="add-element-block">
+              <h3 id="addElementTitle">Добавить на стену</h3>
+              <label class="select-field"><span id="elementTypeLabel">Элемент</span>
+                <select id="elementSelect">
+                  <option value="" selected disabled>Выберите элемент</option>
+                  <optgroup label="Коммуникации" id="communicationsGroup">
+                    <option value="COMM:SEWER">Канализация</option>
+                    <option value="COMM:WATER">Вода</option>
+                    <option value="COMM:COOKTOP_POWER">Питание варочной / духовки</option>
+                    <option value="COMM:HOOD">Вентканал / вытяжка</option>
+                    <option value="COMM:FRIDGE_POWER">Питание холодильника</option>
+                    <option value="COMM:SOCKET">Розетки / выводы</option>
+                  </optgroup>
+                  <optgroup label="Конструкционные особенности" id="featuresGroup">
+                    <option value="FEATURE:WINDOW">Окно</option>
+                    <option value="FEATURE:DOOR">Дверь</option>
+                    <option value="FEATURE:RADIATOR">Радиатор</option>
+                    <option value="FEATURE:CURTAIN_RECESS">Подшторник / карниз</option>
+                    <option value="FEATURE:NICHE">Ниша</option>
+                    <option value="FEATURE:COLUMN">Колонна</option>
+                    <option value="FEATURE:PROJECTION">Выступ</option>
+                    <option value="FEATURE:BEAM">Балка</option>
+                    <option value="FEATURE:OTHER">Другое</option>
+                  </optgroup>
+                </select>
+              </label>
+              <button class="primary-button full-width" id="addElementButton" type="button">Добавить элемент</button>
+            </div>
+
+            <div class="selected-position" id="selectedPosition" hidden>
+              <div class="selected-position-head"><div><span id="selectedElementKind">Коммуникация</span><strong id="selectedElementName">Канализация</strong></div><button class="small-danger" id="deleteElementButton" type="button">Удалить</button></div>
+              <div class="coordinate-grid">
+                <label><span>X</span><div class="coordinate-input"><input id="coordinateX" type="number" min="0" step="10" inputmode="numeric"><span>mm</span></div></label>
+                <label><span>Z</span><div class="coordinate-input"><input id="coordinateZ" type="number" min="0" step="10" inputmode="numeric"><span>mm</span></div></label>
+              </div>
+              <div class="nudge-grid" aria-label="Перемещение элемента">
+                <button type="button" data-nudge-axis="x" data-nudge="-10">X−</button><button type="button" data-nudge-axis="x" data-nudge="10">X+</button>
+                <button type="button" data-nudge-axis="z" data-nudge="-10">Z−</button><button type="button" data-nudge-axis="z" data-nudge="10">Z+</button>
+              </div>
+            </div>
+
+            <div class="wall-items-list" id="wallItemsList"></div>
+            <div class="wall-nav-actions">
+              <button class="secondary-button" id="previousWallButton" type="button">← Предыдущая</button>
+              <button class="secondary-button" id="emptyWallButton" type="button">Пустая стена</button>
+              <button class="primary-button" id="confirmWallButton" type="button">Подтвердить стену →</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="completion-card" id="completionCard" hidden>
+        <span class="step-kicker">✓</span><div><h2 id="completionTitle">Карта стен собрана</h2><p id="completionCopy">Положение элементов сохранено в текущем проекте.</p></div>
+      </section>
+
+      <div class="toast" id="toast" role="status" hidden></div>
+      <div class="error-banner" id="errorBanner" role="alert" hidden></div>
+    </main>
+  </div>
+
+  <dialog class="modal custom-plan-dialog" id="customPlanDialog">
+    <div class="modal-card custom-plan-card">
+      <button class="modal-close" id="customPlanClose" type="button" aria-label="Закрыть">×</button>
+      <p class="modal-eyebrow">BIZET OS</p><h2 id="customPlanTitle">Нарисуйте конфигурацию</h2>
+      <p id="customPlanCopy">Этот прежний редактор сохранён для совместимости, но в текущем пилоте кастомная конфигурация создаётся на отдельной странице.</p>
+      <div class="plan-canvas-wrap"><canvas id="customPlanCanvas" width="860" height="520"></canvas></div>
+      <div class="custom-plan-result"><span id="customDetectedLabel">Распознаны стены:</span><strong id="customDetectedWalls">—</strong></div>
+      <div class="custom-plan-actions"><button class="secondary-button" id="clearCustomPlanButton" type="button">Очистить</button><button class="primary-button" id="acceptCustomPlanButton" type="button" disabled>Использовать конфигурацию</button></div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="feedbackDialog"><div class="modal-card"><button class="modal-close" id="feedbackClose" type="button" aria-label="Закрыть">×</button><h2 id="feedbackTitle">Обратная связь</h2><p>Опишите вопрос, идею или замечание.</p><textarea id="feedbackMessage" rows="5" placeholder="Ваше сообщение"></textarea><button class="primary-button modal-action" id="feedbackSubmit" type="button">Сохранить для пилота</button><p class="modal-status" id="feedbackStatus" hidden></p></div></dialog>
+  <dialog class="modal" id="tutorialDialog"><div class="modal-card"><button class="modal-close" id="tutorialClose" type="button" aria-label="Закрыть">×</button><h2 id="tutorialTitle">Как пользоваться системой</h2><div class="video-placeholder" aria-hidden="true"><span>▶</span></div><p>Видеоинструкция будет подключена после утверждения сценария.</p></div></dialog>
+
+  <script src="/static/project-session-bridge.js"></script>
+  <script type="module" src="/static/room-elements-v2.js"></script>
+  <script type="module" src="/static/room-elements-latest.js"></script>
+  <script type="module" src="/static/next-pilot-elements.js"></script>
+</body>
+</html>

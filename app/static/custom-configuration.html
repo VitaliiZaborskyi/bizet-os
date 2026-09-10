@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f4f1" />
+  <title>BIZET OS — Своя конфигурация</title>
+  <link rel="stylesheet" href="/static/start.css" />
+  <link rel="stylesheet" href="/static/next-pilot.css" />
+  <link rel="stylesheet" href="/static/custom-configuration.css" />
+</head>
+<body>
+  <div class="app-shell custom-config-shell">
+    <header class="topbar">
+      <button class="icon-button back-button" id="customBackButton" type="button" aria-label="Назад"><span aria-hidden="true">←</span></button>
+      <a class="brand" href="/" aria-label="BIZET OS">BIZET <span>OS</span></a>
+      <div class="settings-wrap">
+        <button class="icon-button menu-button" id="settingsButton" type="button" aria-label="Настройки" aria-expanded="false"><span aria-hidden="true">•••</span></button>
+        <div class="settings-panel" id="settingsPanel" hidden>
+          <div class="settings-title">Настройки</div>
+          <p class="custom-placeholder-copy">Дополнительные настройки остаются без изменений в этом UX-пилоте.</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="custom-config-experience">
+      <section class="custom-config-heading">
+        <h1>Нарисуйте конфигурацию кухни</h1>
+        <p>Проведите траекторию там, где должна располагаться кухня.</p>
+      </section>
+
+      <section class="custom-draw-card">
+        <div class="custom-grid-wrap">
+          <canvas id="customDrawCanvas" aria-label="Поле для рисования конфигурации"></canvas>
+        </div>
+        <div class="custom-draw-actions">
+          <button class="secondary-action" id="clearDrawingButton" type="button">Очистить</button>
+          <button class="primary-action" id="preparePreviewButton" type="button" disabled>Показать конфигурацию</button>
+        </div>
+      </section>
+
+      <section class="custom-preview-card" id="customPreviewCard" hidden>
+        <div>
+          <h2>Подтвердите конфигурацию</h2>
+          <p>Система сохранила вашу траекторию как кастомную конфигурацию.</p>
+        </div>
+        <canvas id="customPreviewCanvas" aria-label="Предпросмотр конфигурации"></canvas>
+        <p class="custom-placeholder-note">Автоматическое распознавание типа формы будет подключено отдельным слоем. В этом пилоте сохраняется подтверждённая траектория пользователя.</p>
+        <div class="custom-draw-actions">
+          <button class="secondary-action" id="editDrawingButton" type="button">Изменить</button>
+          <button class="primary-action" id="confirmDrawingButton" type="button">Подтвердить конфигурацию</button>
+        </div>
+        <p class="custom-error" id="customError" hidden></p>
+      </section>
+    </main>
+  </div>
+  <script src="/static/project-session-bridge.js"></script>
+  <script type="module" src="/static/custom-configuration.js"></script>
+</body>
+</html>
