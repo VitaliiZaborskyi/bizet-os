@@ -7,6 +7,8 @@
   if(projectId){sessionStorage.setItem(PROJECT_KEY,projectId);localStorage.setItem(PROJECT_KEY,projectId)}
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null;
 
+  // Existing BIZET pilot construction references used only to make the first 3D slice tangible.
+  // Exact module allocation/positions remain downstream Module Engine work, not a new hard rule here.
   const LOWER_DEPTH=560;
   const PLINTH_H=100;
   const WORKTOP_H=38;
@@ -48,6 +50,7 @@
       }
     }
 
+    // Sink width was not fixed in the owner route yet, so 600 is visual-only and explicitly marked.
     list.push(baseModule('sink','Мойка',600,'SINK',sinkWall(),{widthStatus:'PILOT_VISUAL_PLACEHOLDER'}));
 
     if(inputs.dishwasher_type){
@@ -85,7 +88,7 @@
       ordered=fridge.concat(ordered.filter(m=>m.kind!=='FRIDGE'));
     }
 
-    let used=ordered.reduce((sum,m)=>sum+m.w,0);
+    let used=ordered.reduce((sum,m)=>sum+(m.wall==='A'?m.w:m.w),0);
     if(wall==='A'&&span-used>=CUTLERY_W){
       const cutlery=baseModule('cutlery','Ящики',CUTLERY_W,'DRAWERS','A',{anchor:false,system:true});
       const sinkIndex=ordered.findIndex(m=>m.kind==='SINK');
@@ -97,21 +100,22 @@
 
     let cursor=0;
     return ordered.map(m=>{
+      const originalWidth=m.w;
       const offset=Number((visual.module_offsets_mm||{})[m.id])||0;
-      let placed={...m};
+      let placed={...m,spanW:originalWidth};
       if(wall==='A'){
-        placed.x=Math.max(0,Math.min(room.lengthMm-m.w,cursor+offset));
+        placed.x=Math.max(0,Math.min(room.lengthMm-originalWidth,cursor+offset));
         placed.y=room.depthMm-LOWER_DEPTH;
       }else if(wall==='B'){
         placed.x=0;
-        placed.y=Math.max(0,room.depthMm-cursor-m.w-offset);
-        placed.d=m.w; placed.w=LOWER_DEPTH;
+        placed.y=Math.max(0,room.depthMm-cursor-originalWidth-offset);
+        placed.d=originalWidth; placed.w=LOWER_DEPTH;
       }else{
         placed.x=room.lengthMm-LOWER_DEPTH;
-        placed.y=Math.max(0,room.depthMm-cursor-m.w-offset);
-        placed.d=m.w; placed.w=LOWER_DEPTH;
+        placed.y=Math.max(0,room.depthMm-cursor-originalWidth-offset);
+        placed.d=originalWidth; placed.w=LOWER_DEPTH;
       }
-      cursor+=m.w;
+      cursor+=originalWidth;
       return placed;
     });
   }
