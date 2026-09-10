@@ -12,11 +12,34 @@ const CONFIGS = [
 ];
 
 let screenFiveActive = false;
-let selectedConfiguration = sessionStorage.getItem(CONFIG_SELECTION_KEY) || '';
+let selectedConfiguration = sessionStorage.getItem(CONFIG_SELECTION_KEY) || localStorage.getItem(CONFIG_SELECTION_KEY) || '';
 let savingConfiguration = false;
 
 function isRu() {
   return (document.getElementById('languageSelect')?.value || document.documentElement.lang || 'ru') === 'ru';
+}
+
+function currentProjectId() {
+  const id = sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY);
+  if (id) {
+    sessionStorage.setItem(STORAGE_KEY, id);
+    localStorage.setItem(STORAGE_KEY, id);
+  }
+  return id;
+}
+
+function mirrorProjectId() {
+  let attempts = 0;
+  const timer = window.setInterval(() => {
+    attempts += 1;
+    const id = sessionStorage.getItem(STORAGE_KEY);
+    if (id) {
+      localStorage.setItem(STORAGE_KEY, id);
+      window.clearInterval(timer);
+    } else if (attempts > 50) {
+      window.clearInterval(timer);
+    }
+  }, 100);
 }
 
 function ensureConfigurationStyles() {
@@ -32,20 +55,23 @@ function ensureConfigurationStyles() {
   style.textContent = `
     .pilot-disabled-choice { opacity:.34 !important; filter:grayscale(.45); cursor:not-allowed !important; pointer-events:none !important; }
     .pilot-disabled-choice::after { content:'Позже'; position:absolute; right:12px; top:12px; padding:5px 8px; border-radius:999px; background:rgba(23,23,22,.78); color:#fff; font-size:9px; font-weight:750; letter-spacing:.03em; }
-    .summary-card.config-screen-five { max-width:1180px; width:100%; }
-    .summary-card.config-screen-five #summaryValues { display:block; }
-    .summary-card.config-screen-five .visual-config-quest { margin-top:10px; }
-    .summary-card.config-screen-five .visual-config-grid { margin-top:2px; }
-    .summary-card.config-screen-five #continueButton { margin-top:18px; }
-    .summary-card.config-screen-five #continueButton:disabled { opacity:.34; cursor:not-allowed; transform:none; }
-    .config-screen-kicker { color:var(--muted); text-transform:uppercase; letter-spacing:.13em; font-size:11px; margin:0 0 7px; }
-    .config-screen-help { margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.45; }
+    .configuration-screen-five { width:min(1180px,100%); margin:0 auto; padding:18px 0 42px; }
+    .configuration-screen-five .screen-five-head { margin-bottom:18px; }
+    .configuration-screen-five .config-screen-kicker { color:var(--muted); text-transform:uppercase; letter-spacing:.13em; font-size:11px; margin:0 0 8px; }
+    .configuration-screen-five h1 { margin:0; }
+    .configuration-screen-five .config-screen-help { margin:10px 0 0; max-width:720px; color:var(--muted); font-size:14px; line-height:1.5; }
+    .configuration-screen-five .visual-config-quest { margin-top:18px; }
+    .configuration-screen-five .screen-five-footer { display:flex; justify-content:flex-end; margin-top:22px; }
+    .configuration-screen-five .screen-five-continue { min-width:240px; justify-content:center; }
+    .configuration-screen-five .screen-five-continue:disabled { opacity:.34; cursor:not-allowed; transform:none; }
+    .configuration-screen-five .screen-five-error { margin:14px 0 0; padding:11px 13px; border-radius:14px; background:#fff0ef; color:#8e2922; font-size:13px; }
+    .experience.screen-five-active { min-height:calc(100vh - 150px); display:block; }
+    .experience.screen-five-active #summaryCard { display:none !important; }
     @media (max-width:700px){
-      .summary-card.config-screen-five { padding-left:0; padding-right:0; }
-      .summary-card.config-screen-five > h1,
-      .summary-card.config-screen-five > .config-screen-kicker,
-      .summary-card.config-screen-five > .config-screen-help,
-      .summary-card.config-screen-five > #continueButton { margin-left:4px; margin-right:4px; }
+      .configuration-screen-five { padding:6px 0 30px; }
+      .configuration-screen-five .screen-five-head { padding:0 4px; }
+      .configuration-screen-five .screen-five-footer { padding:0 4px; }
+      .configuration-screen-five .screen-five-continue { width:100%; }
     }
   `;
   document.head.appendChild(style);
@@ -88,7 +114,7 @@ function lockPilotToKitchen() {
 }
 
 async function patchProject(path, value, reason) {
-  const projectId = sessionStorage.getItem(STORAGE_KEY);
+  const projectId = currentProjectId();
   if (!projectId) throw new Error('project_not_found');
   const response = await fetch(`/api/v1.1/projects/${projectId}`, {
     method: 'PATCH',
@@ -104,11 +130,12 @@ async function patchProject(path, value, reason) {
 
 function syncConfigurationSelection() {
   document.querySelectorAll('[data-start-config]').forEach(card => {
-    card.classList.toggle('is-selected', card.dataset.startConfig === selectedConfiguration);
-    card.setAttribute('aria-pressed', String(card.dataset.startConfig === selectedConfiguration));
+    const selected = card.dataset.startConfig === selectedConfiguration;
+    card.classList.toggle('is-selected', selected);
+    card.setAttribute('aria-pressed', String(selected));
   });
-  const continueButton = document.getElementById('continueButton');
-  if (continueButton && screenFiveActive) continueButton.disabled = !selectedConfiguration || savingConfiguration;
+  const button = document.getElementById('configurationContinue5');
+  if (button) button.disabled = !selectedConfiguration || savingConfiguration;
 }
 
 async function saveConfiguration(code) {
@@ -116,17 +143,19 @@ async function saveConfiguration(code) {
   if (!config) return;
   selectedConfiguration = code;
   sessionStorage.setItem(CONFIG_SELECTION_KEY, code);
+  localStorage.setItem(CONFIG_SELECTION_KEY, code);
   savingConfiguration = true;
   syncConfigurationSelection();
+  const error = document.getElementById('configurationScreenFiveError');
+  if (error) error.hidden = true;
   try {
     await patchProject('room.configuration', code, 'Start screen 5 kitchen configuration');
     await patchProject('scene.visual_settings.furniture_configuration', code, 'Start screen 5 kitchen configuration');
     await patchProject('scene.visual_settings.configuration_walls', config.walls, 'Start screen 5 kitchen wall sequence');
-  } catch (error) {
-    const banner = document.getElementById('errorBanner');
-    if (banner) {
-      banner.textContent = isRu() ? 'Не удалось сохранить конфигурацию. Повторите выбор.' : 'Could not save the configuration. Please try again.';
-      banner.hidden = false;
+  } catch (_) {
+    if (error) {
+      error.textContent = isRu() ? 'Не удалось сохранить конфигурацию. Повторите выбор.' : 'Could not save the configuration. Please try again.';
+      error.hidden = false;
     }
   } finally {
     savingConfiguration = false;
@@ -136,32 +165,23 @@ async function saveConfiguration(code) {
 
 function buildScreenFive() {
   const summaryCard = document.getElementById('summaryCard');
-  const summaryTitle = document.getElementById('summaryTitle');
-  const summaryValues = document.getElementById('summaryValues');
-  const continueButton = document.getElementById('continueButton');
-  const continueLabel = document.getElementById('continueLabel');
-  if (!summaryCard || summaryCard.hidden || !summaryValues || !continueButton || screenFiveActive) return;
+  const experience = document.getElementById('experience');
+  if (!summaryCard || summaryCard.hidden || !experience || screenFiveActive) return;
 
   screenFiveActive = true;
-  summaryCard.classList.add('config-screen-five');
-  if (summaryTitle) summaryTitle.textContent = isRu() ? 'Выберите конфигурацию кухни' : 'Choose the kitchen configuration';
+  summaryCard.hidden = true;
+  experience.classList.add('screen-five-active');
+  document.getElementById('backButton').hidden = false;
 
-  const oldKicker = summaryCard.querySelector('.config-screen-kicker');
-  if (!oldKicker) {
-    const kicker = document.createElement('p');
-    kicker.className = 'config-screen-kicker';
-    kicker.textContent = isRu() ? 'Шаг 5 из 5' : 'Step 5 of 5';
-    summaryCard.insertBefore(kicker, summaryTitle || summaryCard.firstChild);
-  }
-
-  const help = document.createElement('p');
-  help.className = 'config-screen-help';
-  help.textContent = isRu()
-    ? 'Вид сверху. Выберите схему, которая ближе всего к расположению вашей кухни.'
-    : 'Top view. Choose the plan closest to your kitchen layout.';
-  summaryTitle?.insertAdjacentElement('afterend', help);
-
-  summaryValues.innerHTML = `
+  const screen = document.createElement('section');
+  screen.id = 'configurationScreenFive';
+  screen.className = 'configuration-screen-five';
+  screen.innerHTML = `
+    <div class="screen-five-head">
+      <p class="config-screen-kicker">${isRu() ? 'Шаг 5 из 5' : 'Step 5 of 5'}</p>
+      <h1>${isRu() ? 'Выберите конфигурацию кухни' : 'Choose the kitchen configuration'}</h1>
+      <p class="config-screen-help">${isRu() ? 'Вид сверху. Выберите схему, которая ближе всего к расположению вашей кухни.' : 'Top view. Choose the plan closest to your kitchen layout.'}</p>
+    </div>
     <div class="visual-config-quest" id="startConfigurationQuest">
       <div class="visual-config-grid">
         ${CONFIGS.map(config => `
@@ -171,57 +191,59 @@ function buildScreenFive() {
             ${config.code === 'CUSTOM' ? `<small>${isRu() ? 'Нестандартная форма' : 'Non-standard layout'}</small>` : ''}
           </button>`).join('')}
       </div>
+    </div>
+    <p class="screen-five-error" id="configurationScreenFiveError" hidden></p>
+    <div class="screen-five-footer">
+      <button class="primary-button screen-five-continue" id="configurationContinue5" type="button" disabled>
+        <span>${isRu() ? 'Перейти в 3D' : 'Open 3D room'}</span><span aria-hidden="true">→</span>
+      </button>
     </div>`;
+  experience.appendChild(screen);
 
-  summaryValues.querySelectorAll('[data-start-config]').forEach(card => {
+  screen.querySelectorAll('[data-start-config]').forEach(card => {
     card.addEventListener('click', () => saveConfiguration(card.dataset.startConfig));
   });
-
-  if (continueLabel) continueLabel.textContent = isRu() ? 'Перейти в 3D' : 'Open 3D room';
+  screen.querySelector('#configurationContinue5').addEventListener('click', () => {
+    if (!selectedConfiguration || savingConfiguration) return;
+    const id = currentProjectId();
+    if (!id) return;
+    window.location.assign(`/room?project=${encodeURIComponent(id)}`);
+  });
   syncConfigurationSelection();
-  window.setTimeout(() => summaryCard.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function destroyScreenFive() {
+  screenFiveActive = false;
+  document.getElementById('configurationScreenFive')?.remove();
+  document.getElementById('experience')?.classList.remove('screen-five-active');
 }
 
 function watchForScreenFive() {
   const summaryCard = document.getElementById('summaryCard');
   if (!summaryCard) return;
   const maybeBuild = () => {
-    if (!summaryCard.hidden) window.setTimeout(buildScreenFive, 40);
+    if (!summaryCard.hidden && !screenFiveActive) buildScreenFive();
   };
   new MutationObserver(maybeBuild).observe(summaryCard, { attributes: true, attributeFilter: ['hidden'] });
   maybeBuild();
 }
 
-function bindContinue() {
-  const continueButton = document.getElementById('continueButton');
-  if (!continueButton) return;
-  continueButton.addEventListener('click', event => {
-    if (!screenFiveActive) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    if (!selectedConfiguration || savingConfiguration) return;
-    window.location.assign('/room');
-  }, true);
-}
+document.getElementById('backButton')?.addEventListener('click', () => {
+  if (screenFiveActive) destroyScreenFive();
+}, true);
 
-function refreshScreenFiveCopy() {
+document.getElementById('languageSelect')?.addEventListener('change', () => {
   if (!screenFiveActive) return;
-  const title = document.getElementById('summaryTitle');
-  const help = document.querySelector('.config-screen-help');
-  const kicker = document.querySelector('.config-screen-kicker');
-  const label = document.getElementById('continueLabel');
-  if (title) title.textContent = isRu() ? 'Выберите конфигурацию кухни' : 'Choose the kitchen configuration';
-  if (help) help.textContent = isRu() ? 'Вид сверху. Выберите схему, которая ближе всего к расположению вашей кухни.' : 'Top view. Choose the plan closest to your kitchen layout.';
-  if (kicker) kicker.textContent = isRu() ? 'Шаг 5 из 5' : 'Step 5 of 5';
-  if (label) label.textContent = isRu() ? 'Перейти в 3D' : 'Open 3D room';
-  CONFIGS.forEach(config => {
-    const card = document.querySelector(`[data-start-config="${config.code}"] strong`);
-    if (card) card.textContent = isRu() ? config.ru : config.en;
-  });
-}
+  destroyScreenFive();
+  const summary = document.getElementById('summaryCard');
+  if (summary) {
+    summary.hidden = false;
+    queueMicrotask(buildScreenFive);
+  }
+});
 
 ensureConfigurationStyles();
+mirrorProjectId();
 lockPilotToKitchen();
 watchForScreenFive();
-bindContinue();
-document.getElementById('languageSelect')?.addEventListener('change', () => setTimeout(refreshScreenFiveCopy, 0));
