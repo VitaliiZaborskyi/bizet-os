@@ -11,7 +11,7 @@ from app.api.routes_v11 import router as router_v11
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
 
-app = FastAPI(title="BIZET OS 1.1", version="1.1-D")
+app = FastAPI(title="BIZET OS 1.1", version="1.1-D-r5")
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.include_router(router)
 app.include_router(router_v11)
@@ -25,7 +25,7 @@ async def pilot_cache_headers(request: Request, call_next):
     path = request.url.path
     if path.startswith("/static/"):
         response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=86400"
-    elif path in {"/", "/room", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/materials"}:
+    elif path in {"/", "/room", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/communications", "/materials"}:
         response.headers["Cache-Control"] = "no-cache"
     return response
 
@@ -69,6 +69,12 @@ def guided_pilot():
 def model_pilot():
     """Generated kitchen model interaction scaffold."""
     return FileResponse(STATIC / "model.html")
+
+
+@app.get("/communications", include_in_schema=False)
+def communications_pilot():
+    """Automatic communication placement, verification and room clarification pilot."""
+    return FileResponse(STATIC / "communications-r5.html")
 
 
 @app.get("/materials", include_in_schema=False)
