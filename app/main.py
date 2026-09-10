@@ -21,6 +21,12 @@ def index():
     return FileResponse(STATIC / "index.html")
 
 
+@app.get("/custom-configuration", include_in_schema=False)
+def custom_configuration():
+    """Standalone user-drawn kitchen configuration UX pilot."""
+    return FileResponse(STATIC / "custom-configuration.html")
+
+
 @app.get("/room", include_in_schema=False)
 def room_viewport():
     """Interactive room / geometry pilot."""
