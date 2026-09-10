@@ -1,3 +1,4 @@
+.configuration-card { display: none !important; }
 .configuration-controls .select-field.is-compatibility-only { display: none !important; }
 .configuration-preview-wrap { display: none !important; }
 .visual-config-quest { display: grid; gap: 14px; }
