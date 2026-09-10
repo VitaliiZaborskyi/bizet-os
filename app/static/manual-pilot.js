@@ -1,8 +1,8 @@
 const PILOT_PROJECT_KEY = 'bizet_os_project_id';
 const MANUAL_STEPS = [
-  { key: 'lengthMm', path: 'room.geometry.wall_length', ru: 'Какова длина основной стены?', en: 'What is the main wall length?', helpRu: 'Введите фактический размер стены A.', helpEn: 'Enter the actual length of wall A.' },
-  { key: 'widthMm', path: 'room.geometry.wall_depth', ru: 'Какова глубина помещения?', en: 'What is the room depth?', helpRu: 'Расстояние от стены A до противоположной стены.', helpEn: 'Distance from wall A to the opposite wall.' },
-  { key: 'heightMm', path: 'room.geometry.room_height', ru: 'Какова высота помещения?', en: 'What is the room height?', helpRu: 'Введите высоту от чистого пола до потолка.', helpEn: 'Enter the height from finished floor to ceiling.' },
+  { key: 'lengthMm', path: 'room.geometry.wall_length', labelRu: 'Длина основной стены', labelEn: 'Main wall length', helpRu: 'Введите фактический размер стены A.', helpEn: 'Enter the actual length of wall A.' },
+  { key: 'widthMm', path: 'room.geometry.wall_depth', labelRu: 'Глубина помещения', labelEn: 'Room depth', helpRu: 'Расстояние от стены A до противоположной стены.', helpEn: 'Distance from wall A to the opposite wall.' },
+  { key: 'heightMm', path: 'room.geometry.room_height', labelRu: 'Высота помещения', labelEn: 'Room height', helpRu: 'Введите высоту от чистого пола до потолка.', helpEn: 'Enter the height from finished floor to ceiling.' },
 ];
 
 let manualProject = null;
@@ -24,23 +24,34 @@ function pilotProjectId() {
   return id;
 }
 
+function safeErrorDetail(payload, fallback) {
+  const detail = payload?.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  if (Array.isArray(detail) && detail.length) {
+    const first = detail[0];
+    if (typeof first?.msg === 'string') return first.msg;
+  }
+  return fallback;
+}
+
 async function pilotRequest(url, options = {}) {
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options,
   });
   if (!response.ok) {
-    let detail = `${response.status} ${response.statusText}`;
-    try { const payload = await response.json(); detail = payload.detail || detail; } catch (_) {}
-    throw new Error(detail);
+    const fallback = pilotRu() ? 'Не удалось сохранить данные. Повторите попытку.' : 'Could not save the data. Please try again.';
+    let message = fallback;
+    try { message = safeErrorDetail(await response.json(), fallback); } catch (_) {}
+    throw new Error(message);
   }
   return response.json();
 }
 
 async function loadPilotProject() {
   const id = pilotProjectId();
-  if (!id) return null;
-  manualProject = await pilotRequest(`/api/v1.1/projects/${id}`);
+  if (!id) throw new Error(pilotRu() ? 'Текущий проект не найден. Вернитесь к выбору конфигурации.' : 'Current project was not found. Return to configuration selection.');
+  manualProject = await pilotRequest(`/api/v1.1/projects/${encodeURIComponent(id)}`);
   const geometry = manualProject?.room?.geometry || {};
   manualValues = {
     lengthMm: geometry.wall_length?.value_mm || 6000,
@@ -52,8 +63,8 @@ async function loadPilotProject() {
 
 async function pilotPatch(path, value, extra = {}) {
   const id = pilotProjectId();
-  if (!id) throw new Error(pilotRu() ? 'Текущий проект не найден.' : 'Current project was not found.');
-  const result = await pilotRequest(`/api/v1.1/projects/${id}`, {
+  if (!id) throw new Error(pilotRu() ? 'Текущий проект не найден. Вернитесь к выбору конфигурации.' : 'Current project was not found. Return to configuration selection.');
+  const result = await pilotRequest(`/api/v1.1/projects/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: JSON.stringify({ path, value, ...extra }),
   });
@@ -66,33 +77,11 @@ function disableScanUi() {
   if (toolbar) {
     toolbar.disabled = true;
     toolbar.setAttribute('aria-disabled', 'true');
-    toolbar.title = pilotRu() ? 'Скан временно отключён в этом пилоте' : 'Scan is temporarily disabled in this pilot';
+    toolbar.title = pilotRu() ? 'Скан будет доступен позже' : 'Scan will be available later';
   }
   const toolbarLabel = document.getElementById('scanButtonLabel');
   if (toolbarLabel) toolbarLabel.textContent = pilotRu() ? 'Скан · позже' : 'Scan · later';
-
-  const layer = document.getElementById('geometryInputQuestion');
-  if (layer) {
-    const scan = layer.querySelector('#initialScanChoose');
-    const manual = layer.querySelector('#manualGeometryPath');
-    const title = layer.querySelector('h2');
-    const copy = layer.querySelector('.scan-question-panel > p:not(.scan-question-kicker):not(.scan-question-status)');
-    if (scan) {
-      scan.disabled = true;
-      scan.textContent = pilotRu() ? 'Скан · позже' : 'Scan · later';
-      scan.classList.remove('scan-question-primary');
-      scan.classList.add('scan-question-secondary');
-    }
-    if (manual) {
-      manual.classList.remove('scan-question-secondary');
-      manual.classList.add('scan-question-primary');
-      manual.textContent = pilotRu() ? 'Ввести размеры вручную' : 'Enter dimensions manually';
-    }
-    if (title) title.textContent = pilotRu() ? 'Как введём геометрию помещения?' : 'How should we enter the room geometry?';
-    if (copy) copy.textContent = pilotRu() ? 'В этом пилоте настраиваем ручной ввод. Скан временно не используется.' : 'This pilot focuses on manual input. Scan is temporarily unavailable.';
-    layer.querySelector('#initialScanFileInput')?.remove();
-    layer.dataset.manualPilotPatched = '1';
-  }
+  document.getElementById('geometryInputQuestion')?.remove();
   document.getElementById('scanContourConfirmation')?.remove();
 }
 
@@ -105,23 +94,34 @@ function renderManualStep() {
   if (!layer) return;
   const step = MANUAL_STEPS[manualIndex];
   const input = layer.querySelector('#manualGeometryValue');
-  layer.querySelector('#manualGeometryKicker').textContent = `${pilotRu() ? 'Ручной ввод' : 'Manual input'} · ${manualIndex + 1}/${MANUAL_STEPS.length}`;
-  layer.querySelector('#manualGeometryTitle').textContent = pilotRu() ? step.ru : step.en;
+  layer.querySelector('#manualGeometryTitle').textContent = pilotRu() ? 'Укажите размеры помещения' : 'Enter the room dimensions';
+  layer.querySelector('#manualGeometryQuestion').textContent = pilotRu() ? step.labelRu : step.labelEn;
   layer.querySelector('#manualGeometryHelp').textContent = pilotRu() ? step.helpRu : step.helpEn;
   input.value = String(manualValues[step.key] || '');
   layer.querySelector('#manualGeometryNext').textContent = manualIndex === MANUAL_STEPS.length - 1
-    ? (pilotRu() ? 'Сохранить геометрию' : 'Save geometry')
+    ? (pilotRu() ? 'Сохранить и продолжить' : 'Save and continue')
     : (pilotRu() ? 'Сохранить и дальше' : 'Save and continue');
-  layer.querySelector('#manualGeometryBack').textContent = manualIndex === 0 ? (pilotRu() ? 'Отмена' : 'Cancel') : (pilotRu() ? 'Назад' : 'Back');
+  layer.querySelector('#manualGeometryBack').textContent = manualIndex === 0 ? (pilotRu() ? 'Назад' : 'Back') : (pilotRu() ? 'Предыдущий размер' : 'Previous dimension');
   layer.querySelector('#manualGeometryError').textContent = '';
   requestAnimationFrame(() => { input.focus(); input.select(); });
 }
 
 async function startManualWizard() {
-  document.getElementById('geometryInputQuestion')?.remove();
-  document.getElementById('scanContourConfirmation')?.remove();
+  disableScanUi();
+  document.body.classList.add('manual-room-active');
   if (manualLayer()) return;
-  try { await loadPilotProject(); } catch (_) {}
+
+  try {
+    await loadPilotProject();
+  } catch (error) {
+    const banner = document.getElementById('errorBanner');
+    if (banner) {
+      banner.textContent = error?.message || (pilotRu() ? 'Не удалось открыть проект.' : 'Could not open the project.');
+      banner.hidden = false;
+    }
+    return;
+  }
+
   manualIndex = 0;
   const viewport = document.querySelector('.viewport-card');
   if (!viewport) return;
@@ -130,8 +130,8 @@ async function startManualWizard() {
   layer.className = 'manual-geometry-layer';
   layer.innerHTML = `
     <div class="manual-geometry-card">
-      <p class="manual-geometry-kicker" id="manualGeometryKicker"></p>
       <h2 id="manualGeometryTitle"></h2>
+      <strong class="manual-geometry-question" id="manualGeometryQuestion"></strong>
       <p class="manual-geometry-help" id="manualGeometryHelp"></p>
       <label class="manual-geometry-input-wrap">
         <input id="manualGeometryValue" type="number" min="100" max="50000" step="1" inputmode="numeric" autocomplete="off" />
@@ -152,7 +152,7 @@ async function startManualWizard() {
       return;
     }
     const id = pilotProjectId();
-    window.location.assign(`/room${id ? `?project=${encodeURIComponent(id)}` : ''}`);
+    window.location.assign(`/${id ? `?project=${encodeURIComponent(id)}` : ''}`);
   });
 
   const saveCurrent = async () => {
@@ -164,12 +164,13 @@ async function startManualWizard() {
       errorNode.textContent = pilotRu() ? 'Введите корректный размер в миллиметрах.' : 'Enter a valid dimension in millimetres.';
       return;
     }
+
     button.disabled = true;
     errorNode.textContent = '';
     const step = MANUAL_STEPS[manualIndex];
     try {
       manualValues[step.key] = value;
-      await pilotPatch(step.path, value, { source: 'USER', confirmed: true, reason: 'Manual geometry pilot' });
+      await pilotPatch(step.path, value, { source: 'USER_CONFIRMED', confirmed: true, reason: 'Manual geometry pilot' });
       if (manualIndex < MANUAL_STEPS.length - 1) {
         manualIndex += 1;
         renderManualStep();
@@ -178,92 +179,37 @@ async function startManualWizard() {
       await pilotPatch('scene.visual_settings.geometry_input_mode', 'MANUAL', { reason: 'Manual room geometry completed' });
       await pilotPatch('scene.visual_settings.manual_geometry_complete', true, { reason: 'Manual room geometry completed' });
       const id = pilotProjectId();
-      window.location.replace(`/room?project=${encodeURIComponent(id)}&manual=done`);
+      window.location.assign(`/room-elements?step=communications&project=${encodeURIComponent(id)}`);
     } catch (error) {
-      errorNode.textContent = error.message || String(error);
+      errorNode.textContent = error?.message || (pilotRu() ? 'Не удалось сохранить размер. Повторите попытку.' : 'Could not save the dimension. Please try again.');
       button.disabled = false;
     }
   };
+
   layer.querySelector('#manualGeometryNext').addEventListener('click', saveCurrent);
   layer.querySelector('#manualGeometryValue').addEventListener('keydown', event => {
-    if (event.key === 'Enter') { event.preventDefault(); saveCurrent(); }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      saveCurrent();
+    }
   });
   renderManualStep();
 }
 
-function showManualReadyNote() {
-  if (document.getElementById('manualReadyNote')) return;
-  const viewport = document.querySelector('.viewport-card');
-  if (!viewport) return;
-  const note = document.createElement('div');
-  note.id = 'manualReadyNote';
-  note.className = 'manual-ready-note';
-  note.textContent = pilotRu() ? 'Размеры помещения введены вручную. Теперь выберите тип потолка.' : 'Room dimensions were entered manually. Now choose the ceiling type.';
-  viewport.appendChild(note);
-}
-
-async function routeToCommunications() {
-  try {
-    const project = await loadPilotProject();
-    if (!project || project?.scene?.visual_settings?.geometry_input_mode !== 'MANUAL') {
-      await startManualWizard();
-      return;
-    }
-    if (!project?.room?.ceiling?.type) {
-      const note = document.getElementById('manualReadyNote');
-      if (note) note.textContent = pilotRu() ? 'Перед продолжением выберите тип потолка.' : 'Choose the ceiling type before continuing.';
-      document.getElementById('ceilingButton')?.click();
-      return;
-    }
-    const id = pilotProjectId();
-    window.location.assign(`/room-elements?step=communications&project=${encodeURIComponent(id)}`);
-  } catch (error) {
-    const banner = document.getElementById('errorBanner');
-    if (banner) {
-      banner.textContent = error.message || String(error);
-      banner.hidden = false;
-    }
-  }
-}
-
 document.addEventListener('click', event => {
-  if (event.target.closest('#initialScanChoose') || event.target.closest('#scanButton')) {
+  if (event.target.closest('#scanButton') || event.target.closest('#initialScanChoose')) {
     event.preventDefault();
     event.stopImmediatePropagation();
     disableScanUi();
-    return;
-  }
-  if (event.target.closest('#manualGeometryPath')) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    startManualWizard();
-    return;
-  }
-  if (event.target.closest('#startMeasurementButton')) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    routeToCommunications();
   }
 }, true);
 
-const observer = new MutationObserver(() => {
-  const layer = document.getElementById('geometryInputQuestion');
-  if (layer && layer.dataset.manualPilotPatched !== '1') disableScanUi();
-});
-observer.observe(document.documentElement, { childList: true, subtree: true });
-
-disableScanUi();
-loadPilotProject().then(project => {
-  if (project?.scene?.visual_settings?.geometry_input_mode === 'MANUAL') showManualReadyNote();
-}).catch(() => {});
-
 document.getElementById('languageSelect')?.addEventListener('change', () => {
   setTimeout(() => {
-    const layer = document.getElementById('geometryInputQuestion');
-    if (layer) layer.dataset.manualPilotPatched = '0';
     disableScanUi();
     if (manualLayer()) renderManualStep();
-    const note = document.getElementById('manualReadyNote');
-    if (note) note.textContent = pilotRu() ? 'Размеры помещения введены вручную. Теперь выберите тип потолка.' : 'Room dimensions were entered manually. Now choose the ceiling type.';
   }, 0);
 });
+
+disableScanUi();
+startManualWizard();
