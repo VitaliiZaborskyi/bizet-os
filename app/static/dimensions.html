@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f4f1" />
+  <title>BIZET OS — Размеры помещения</title>
+  <link rel="stylesheet" href="/static/start.css" />
+  <link rel="stylesheet" href="/static/dimensions.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar compact-topbar">
+      <button class="icon-button" id="backButton" type="button" aria-label="Назад">←</button>
+      <a class="brand" href="/">BIZET <span>OS</span></a>
+      <button class="icon-button" id="settingsButton" type="button" aria-label="Меню">•••</button>
+    </header>
+
+    <main class="dimension-screen">
+      <section class="dimension-head">
+        <h1>Укажите размеры помещения</h1>
+        <p>Активны только стены выбранной конфигурации. Пол и размеры стен связаны между собой.</p>
+      </section>
+
+      <section class="dimension-layout">
+        <div class="room-stage" id="roomStage" aria-label="3D-предпросмотр помещения">
+          <div class="room-3d" id="room3d">
+            <button class="surface floor" data-surface="FLOOR" type="button"><span>Пол</span></button>
+            <button class="surface wall wall-a" data-surface="A" type="button"><span>A</span></button>
+            <button class="surface wall wall-b" data-surface="B" type="button"><span>B</span></button>
+            <button class="surface wall wall-c" data-surface="C" type="button"><span>C</span></button>
+          </div>
+          <div class="dimension-readout" id="dimensionReadout"></div>
+        </div>
+
+        <aside class="dimension-panel">
+          <div class="panel-topline">
+            <strong id="activeConfigLabel">Конфигурация</strong>
+            <button class="ghost-button" id="toggleDimensions" type="button" aria-pressed="true">Размеры: видно</button>
+          </div>
+          <p id="activeHint">Нажмите на подсвеченную стену или пол.</p>
+          <div class="surface-list" id="surfaceList"></div>
+          <button class="primary-action" id="continueButton" type="button">Далее →</button>
+          <p class="inline-error" id="errorNode" hidden></p>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="dimensionDialog" class="dimension-dialog">
+    <form method="dialog" class="dialog-card" id="dimensionForm">
+      <button class="dialog-close" value="cancel" type="submit" aria-label="Закрыть">×</button>
+      <h2 id="dialogTitle">Размер</h2>
+      <p id="dialogHelp"></p>
+      <div id="dialogFields"></div>
+      <button class="primary-action" id="saveDimension" value="default" type="button">Сохранить</button>
+      <p class="inline-error" id="dialogError" hidden></p>
+    </form>
+  </dialog>
+
+  <script src="/static/dimensions.js"></script>
+</body>
+</html>
