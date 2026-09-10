@@ -32,10 +32,22 @@ def test_dimensions_screen_uses_configuration_aware_surfaces():
     assert "L_LEFT:['A','B']" in js
     assert "L_RIGHT:['A','C']" in js
     assert "U_SHAPE:['A','B','C']" in js
-    assert "data-surface=\"FLOOR\"" in html
+    assert 'roomCanvas' in html
     assert 'activeWalls.includes' in js
     assert 'wall_heights' in js
     assert '/guided?stage=ceiling' in js
+
+
+def test_dimensions_are_rendered_in_fixed_non_orbiting_3d():
+    html = read_static('dimensions.html')
+    js = read_static('dimensions.js')
+    renderer = read_static('pilot-3d.js')
+    assert '/static/pilot-3d.js' in html
+    assert 'BizetPilot3D.drawRoomScene' in js
+    assert "dimension_camera_mode:'FIXED_3D'" in js
+    assert 'Фиксированный 3D-ракурс' in renderer
+    assert "addEventListener('pointermove'" not in js
+    assert "addEventListener('wheel'" not in js
 
 
 def test_ceiling_and_appliances_are_separate_one_question_screens():
@@ -76,14 +88,32 @@ def test_guided_route_contains_owner_confirmed_appliance_options():
         assert token in js
 
 
-def test_model_and_materials_are_explicit_scaffolds_not_fake_final_logic():
+def test_model_renders_first_real_3d_module_slice_without_fake_split():
+    html = read_static('model.html')
+    model_js = read_static('model.js')
+    renderer = read_static('pilot-3d.js')
+    assert 'id="modelCanvas"' in html
+    assert '/static/pilot-3d.js' in html
+    assert 'BizetPilot3D.drawKitchenScene' in model_js
+    assert 'LOWER_DEPTH=560' in model_js
+    assert 'LOWER_TOTAL_H=900' in model_js
+    assert 'CUTLERY_W=400' in model_js
+    assert "'SINK'" in model_js
+    assert "'DRAWERS'" in model_js
+    assert "'COOKTOP'" in model_js
+    assert 'Заполнение системой' in model_js
+    assert 'остаточное пространство' in model_js
+    assert 'drawWorktop' in renderer
+    assert 'drawPlinth' in renderer
+
+
+def test_model_and_materials_keep_edit_scaffold_and_deferred_rules_explicit():
     model_js = read_static('model.js')
     materials = read_static('materials.html')
     assert '/recalculate' in model_js
-    assert 'UI-пилот' in model_js
+    assert '3D UX-пилот' in model_js
     assert 'module_offsets_mm' in model_js
-    assert 'Заполнение системой' in model_js
-    assert 'Количество и размеры модулей в placeholder не придумываются.' in model_js
+    assert 'полноценный параметрический пересчёт подключается следующим слоем' in model_js
     assert 'По умолчанию из комплектации' in materials
     assert 'следующий слой' in materials
 
