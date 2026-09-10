@@ -82,6 +82,8 @@ def test_model_and_materials_are_explicit_scaffolds_not_fake_final_logic():
     assert '/recalculate' in model_js
     assert 'UI-пилот' in model_js
     assert 'module_offsets_mm' in model_js
+    assert 'Заполнение системой' in model_js
+    assert 'Количество и размеры модулей в placeholder не придумываются.' in model_js
     assert 'По умолчанию из комплектации' in materials
     assert 'следующий слой' in materials
 
