@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#f5f4f1" />
   <title>BIZET OS — Start Experience</title>
   <link rel="stylesheet" href="/static/start.css" />
+  <link rel="stylesheet" href="/static/next-pilot.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -53,8 +54,8 @@
 
     <main class="experience" id="experience" aria-live="polite">
       <section class="intro" id="introBlock">
-        <div class="step-meta" id="stepMeta">Шаг 1 из 4</div>
-        <div class="progress" id="progress" aria-label="Прогресс"></div>
+        <div class="step-meta" id="stepMeta" hidden>Шаг</div>
+        <div class="progress" id="progress" aria-label="Прогресс" hidden></div>
         <h1 id="stepTitle">Загрузка проекта…</h1>
         <p id="stepSubtitle">BIZET OS подготавливает стартовый маршрут.</p>
       </section>
@@ -107,5 +108,6 @@
 
   <script type="module" src="/static/start.js"></script>
   <script type="module" src="/static/start-room-handoff.js"></script>
+  <script type="module" src="/static/next-pilot-start.js"></script>
 </body>
 </html>
