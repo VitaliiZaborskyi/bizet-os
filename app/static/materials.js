@@ -8,7 +8,6 @@
   async function request(url,options={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});if(!r.ok)throw new Error('Не удалось сохранить подтверждение.');return r.json()}
 
   $('backButton').addEventListener('click',()=>history.back());
-  $('settingsButton').addEventListener('click',()=>alert('BIZET OS · пилот маршрута'));
   $('confirmMaterials').addEventListener('click',async()=>{
     if(!projectId){$('status').textContent='Проект не найден.';return}
     $('confirmMaterials').disabled=true;$('status').textContent='Сохраняем…';
