@@ -13,14 +13,10 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <button class="icon-button back-button" id="backButton" type="button" aria-label="Назад" hidden>
-        <span aria-hidden="true">←</span>
-      </button>
+      <button class="icon-button back-button" id="backButton" type="button" aria-label="Назад" hidden><span aria-hidden="true">←</span></button>
       <a class="brand" href="/" aria-label="BIZET OS">BIZET <span>OS</span></a>
       <div class="settings-wrap">
-        <button class="icon-button menu-button" id="settingsButton" type="button" aria-label="Настройки" aria-expanded="false">
-          <span aria-hidden="true">•••</span>
-        </button>
+        <button class="icon-button menu-button" id="settingsButton" type="button" aria-label="Настройки" aria-expanded="false"><span aria-hidden="true">•••</span></button>
         <div class="settings-panel" id="settingsPanel" hidden>
           <div class="settings-title" id="settingsTitle">Настройки</div>
           <label class="settings-field"><span id="themeLabel">Тема</span><select id="themeSelect"><option value="light">Светлая</option><option value="dark">Тёмная</option></select></label>
@@ -63,6 +59,7 @@
   <script src="/static/start-fast-paint.js"></script>
   <script type="module" src="/static/start.js"></script>
   <script type="module" src="/static/start-room-handoff.js"></script>
+  <script src="/static/guided-route-start.js"></script>
   <script type="module" src="/static/next-pilot-start.js"></script>
 </body>
 </html>
