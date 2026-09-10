@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BIZET OS — Модель кухни</title>
+  <link rel="stylesheet" href="/static/start.css" />
+  <link rel="stylesheet" href="/static/model.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar compact-topbar"><button class="icon-button" id="backButton" type="button">←</button><a class="brand" href="/">BIZET <span>OS</span></a><button class="icon-button" id="settingsButton" type="button">•••</button></header>
+    <main class="model-screen">
+      <section class="model-head"><div><h1>Настройте модель кухни</h1><p>Нажмите на любой доступный модуль. Пилот показывает механику прямого редактирования без выдумывания незакреплённых производственных правил.</p></div><button class="primary-action" id="materialsButton" type="button">Материалы и фурнитура →</button></section>
+      <section class="model-stage" id="modelStage"><div class="model-room"><div class="model-wall"></div><div class="model-floor"></div><div class="modules" id="modules"></div></div><div class="model-status" id="modelStatus">Формируем модель…</div></section>
+    </main>
+  </div>
+  <dialog class="module-dialog" id="moduleDialog"><div class="module-card"><button class="dialog-close" id="moduleClose" type="button">×</button><h2 id="moduleTitle">Модуль</h2><p id="moduleCopy"></p><div class="coordinate-box"><span>Положение относительно базовой точки</span><strong id="moduleOffset">0 мм</strong><div><button data-nudge="-50" type="button">−50</button><button data-nudge="-30" type="button">−30</button><button data-nudge="30" type="button">+30</button><button data-nudge="50" type="button">+50</button></div></div><div class="placeholder-options"><button type="button" disabled>Внутреннее наполнение · позже</button><button type="button" disabled>Фасад / отделка · позже</button><button type="button" disabled>Дополнительные опции · позже</button></div></div></dialog>
+  <script src="/static/model.js"></script>
+</body>
+</html>
