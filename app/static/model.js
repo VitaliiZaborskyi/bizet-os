@@ -14,10 +14,9 @@
     if(inputs.fridge_present==='YES')list.push({id:'fridge',label:'Холодильник',anchor:true});
     list.push({id:'sink',label:'Мойка',anchor:true});
     if(inputs.dishwasher_type)list.push({id:'dishwasher',label:'ПММ',anchor:true});
-    list.push({id:'fill-left',label:'Авто',pending:true});
     list.push({id:'cooktop',label:'Варочная',anchor:true});
-    list.push({id:'fill-right',label:'Авто',pending:true});
     if(inputs.oven_location==='TALL')list.push({id:'oven',label:'Пенал',anchor:true});
+    list.push({id:'system-fill',label:'Заполнение системой',pending:true});
     return list;
   }
 
@@ -30,7 +29,7 @@
   function renderModules(mods,engineOk){
     $('modules').innerHTML=mods.map(m=>`<button class="module-block${m.anchor?' anchor':''}${m.pending?' pending':''}" data-module="${m.id}" type="button"><span>${m.label}</span></button>`).join('');
     $('modules').querySelectorAll('[data-module]').forEach(btn=>btn.addEventListener('click',()=>openModule(btn.dataset.module,mods)));
-    $('modelStatus').textContent=engineOk?'Алгоритм пересчёта вызван · модель доступна для QA':'UI-пилот · места автозаполнения отмечены пунктиром';
+    $('modelStatus').textContent=engineOk?'Алгоритм пересчёта вызван · модель доступна для QA':'UI-пилот · точное заполнение пустот не имитируется';
   }
 
   function offsets(){return {...(visual.module_offsets_mm||{})}}
@@ -38,13 +37,13 @@
     activeModule=mods.find(m=>m.id===id)||{id,label:'Модуль'};
     const value=Number(offsets()[id])||0;
     $('moduleTitle').textContent=activeModule.label;
-    $('moduleCopy').textContent=activeModule.pending?'Этот блок показывает место, которое должен заполнить утверждённый алгоритм модулей. Детали не выдумываем.':'Пилот прямого редактирования модуля. Изменение координаты сохраняется как пользовательское смещение и должно запускать зависимый параметрический пересчёт.';
+    $('moduleCopy').textContent=activeModule.pending?'Это место, где должен отработать утверждённый алгоритм заполнения пустот. Количество и размеры модулей в placeholder не придумываются.':'Пилот прямого редактирования модуля. Изменение координаты сохраняется как пользовательское смещение и должно запускать зависимый параметрический пересчёт.';
     $('moduleOffset').textContent=`${value} мм`;
     $('moduleDialog').showModal?.();
   }
 
   async function nudge(delta){
-    if(!activeModule)return;
+    if(!activeModule||activeModule.pending)return;
     const nextOffsets=offsets();
     nextOffsets[activeModule.id]=(Number(nextOffsets[activeModule.id])||0)+delta;
     await saveVisual({...visual,module_offsets_mm:nextOffsets,module_direct_edit_status:'PILOT_USER_OFFSET'},`Direct module offset ${activeModule.id}`);
