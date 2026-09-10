@@ -7,6 +7,7 @@
   <title>BIZET OS — Размеры помещения</title>
   <link rel="stylesheet" href="/static/start.css" />
   <link rel="stylesheet" href="/static/dimensions.css" />
+  <link rel="stylesheet" href="/static/pilot-shell.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -19,13 +20,12 @@
     <main class="dimension-screen">
       <section class="dimension-head">
         <h1>Укажите размеры помещения</h1>
-        <p>Показываем то же 3D-пространство BIZET, но пока фиксируем камеру. Активны только стены выбранной конфигурации.</p>
+        <p>Работаем в перспективном 3D-пространстве BIZET. Камера пока зафиксирована; вращение станет доступно после ввода техники.</p>
       </section>
 
       <section class="dimension-layout">
-        <div class="room-stage" id="roomStage" aria-label="Фиксированный 3D-вид помещения">
+        <div class="room-stage" id="roomStage" aria-label="Перспективный 3D-вид помещения">
           <canvas id="roomCanvas" class="room-canvas" aria-label="3D помещение"></canvas>
-          <div class="dimension-readout" id="dimensionReadout"></div>
         </div>
 
         <aside class="dimension-panel">
@@ -33,7 +33,7 @@
             <strong id="activeConfigLabel">Конфигурация</strong>
             <button class="ghost-button" id="toggleDimensions" type="button" aria-pressed="true">Размеры: видно</button>
           </div>
-          <p id="activeHint">Нажмите на подсвеченную стену в 3D или выберите её в списке.</p>
+          <p id="activeHint">Нажмите на нужную поверхность в 3D или выберите её в списке.</p>
           <div class="surface-list" id="surfaceList"></div>
           <button class="primary-action" id="continueButton" type="button">Далее →</button>
           <p class="inline-error" id="errorNode" hidden></p>
@@ -53,6 +53,7 @@
     </form>
   </dialog>
 
+  <script src="/static/pilot-shell.js"></script>
   <script src="/static/pilot-3d.js"></script>
   <script src="/static/dimensions.js"></script>
 </body>
