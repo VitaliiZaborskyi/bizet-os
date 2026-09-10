@@ -101,8 +101,10 @@ def test_wall_placements_persist_to_project_state_without_replacing_unmanaged_da
     assert 'retained=' in js
 
 
-def test_room_elements_route_serves_new_runtime():
+def test_room_elements_route_serves_dedicated_communications_runtime():
     response = client.get('/room-elements')
     assert response.status_code == 200
     assert '/static/room-elements-v2.js' in response.text
-    assert 'Конфигурация мебели и коммуникации' in response.text
+    assert '/static/next-pilot-elements.js' in response.text
+    assert 'Укажите коммуникации' in response.text
+    assert 'class="configuration-card" hidden' in response.text
