@@ -91,6 +91,7 @@ function disableScanUi() {
     if (title) title.textContent = pilotRu() ? 'Как введём геометрию помещения?' : 'How should we enter the room geometry?';
     if (copy) copy.textContent = pilotRu() ? 'В этом пилоте настраиваем ручной ввод. Скан временно не используется.' : 'This pilot focuses on manual input. Scan is temporarily unavailable.';
     layer.querySelector('#initialScanFileInput')?.remove();
+    layer.dataset.manualPilotPatched = '1';
   }
   document.getElementById('scanContourConfirmation')?.remove();
 }
@@ -245,7 +246,10 @@ document.addEventListener('click', event => {
   }
 }, true);
 
-const observer = new MutationObserver(() => disableScanUi());
+const observer = new MutationObserver(() => {
+  const layer = document.getElementById('geometryInputQuestion');
+  if (layer && layer.dataset.manualPilotPatched !== '1') disableScanUi();
+});
 observer.observe(document.documentElement, { childList: true, subtree: true });
 
 disableScanUi();
@@ -255,6 +259,8 @@ loadPilotProject().then(project => {
 
 document.getElementById('languageSelect')?.addEventListener('change', () => {
   setTimeout(() => {
+    const layer = document.getElementById('geometryInputQuestion');
+    if (layer) layer.dataset.manualPilotPatched = '0';
     disableScanUi();
     if (manualLayer()) renderManualStep();
     const note = document.getElementById('manualReadyNote');
