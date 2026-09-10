@@ -25,7 +25,7 @@ async def pilot_cache_headers(request: Request, call_next):
     path = request.url.path
     if path.startswith("/static/"):
         response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=86400"
-    elif path in {"/", "/room", "/room-elements", "/custom-configuration"}:
+    elif path in {"/", "/room", "/room-elements", "/custom-configuration", "/dimensions", "/guided", "/model", "/materials"}:
         response.headers["Cache-Control"] = "no-cache"
     return response
 
@@ -47,15 +47,39 @@ def custom_configuration():
     return FileResponse(STATIC / "custom-configuration.html")
 
 
+@app.get("/dimensions", include_in_schema=False)
+def dimensions_pilot():
+    """Configuration-aware 3D room dimension pilot."""
+    return FileResponse(STATIC / "dimensions.html")
+
+
+@app.get("/guided", include_in_schema=False)
+def guided_pilot():
+    """One-screen-one-question appliance and ceiling pilot."""
+    return FileResponse(STATIC / "guided.html")
+
+
+@app.get("/model", include_in_schema=False)
+def model_pilot():
+    """Generated kitchen model interaction scaffold."""
+    return FileResponse(STATIC / "model.html")
+
+
+@app.get("/materials", include_in_schema=False)
+def materials_pilot():
+    """Materials and hardware confirmation scaffold."""
+    return FileResponse(STATIC / "materials.html")
+
+
 @app.get("/room", include_in_schema=False)
 def room_viewport():
-    """Interactive room / geometry pilot."""
+    """Preserved interactive room / geometry pilot."""
     return FileResponse(STATIC / "room.html")
 
 
 @app.get("/room-elements", include_in_schema=False)
 def room_elements():
-    """Next-step shell for communications and structural room features."""
+    """Preserved communications / room-elements pilot."""
     return FileResponse(STATIC / "room-elements.html")
 
 
