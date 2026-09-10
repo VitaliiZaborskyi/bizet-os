@@ -21,7 +21,8 @@ def test_start_summary_handoff_opens_room_route():
     html = (ROOT / 'app/static/index.html').read_text(encoding='utf-8')
     handoff = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
     assert '/static/start-room-handoff.js' in html
-    assert "window.location.assign('/room')" in handoff
+    assert '/room?project=' in handoff
+    assert 'configurationContinue5' in handoff
 
 
 def test_room_camera_is_persisted_in_project_scene():
