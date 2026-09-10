@@ -14,6 +14,7 @@
     if (!id) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    window.location.assign(`/dimensions?project=${encodeURIComponent(id)}`);
+    const target = configuration.startsWith('WALL_') ? '/linear-span' : '/dimensions';
+    window.location.assign(`${target}?project=${encodeURIComponent(id)}`);
   }, true);
 })();
