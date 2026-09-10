@@ -4,12 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#f5f4f1" />
-  <title>BIZET OS — Конфигурация и коммуникации</title>
+  <title>BIZET OS — Коммуникации</title>
   <link rel="stylesheet" href="/static/room.css" />
   <link rel="stylesheet" href="/static/room-elements-v2.css" />
   <link rel="stylesheet" href="/static/room-elements-latest.css" />
+  <link rel="stylesheet" href="/static/next-pilot.css" />
 </head>
-<body>
+<body class="communications-only">
   <!-- Legacy QA reference: Коммуникации и конструкционные особенности -->
   <div class="app-shell">
     <header class="topbar">
@@ -31,15 +32,15 @@
 
     <main class="elements-experience">
       <section class="elements-heading">
-        <p class="eyebrow" id="elementsEyebrow">Следующий шаг</p>
-        <h1 id="elementsTitle">Конфигурация мебели и коммуникации</h1>
-        <p id="elementsSubtitle">Сначала выберите расположение мебели. Затем BIZET OS проведёт вас по задействованным стенам слева направо.</p>
+        <p class="eyebrow" id="elementsEyebrow" hidden>Коммуникации</p>
+        <h1 id="elementsTitle">Укажите коммуникации</h1>
+        <p id="elementsSubtitle">Добавьте коммуникации на задействованные стены.</p>
       </section>
 
-      <section class="configuration-card">
+      <section class="configuration-card" hidden>
         <div class="configuration-copy">
           <span class="step-kicker">01</span>
-          <div><h2 id="configurationTitle">Конфигурация мебели</h2><p id="configurationCopy">Выберите конфигурацию визуально. Кастомную можно нарисовать прямо на плане.</p></div>
+          <div><h2 id="configurationTitle">Конфигурация мебели</h2><p id="configurationCopy">Конфигурация уже выбрана на предыдущем экране.</p></div>
         </div>
         <div class="configuration-controls">
           <label class="select-field"><span id="configurationLabel">Расположение</span>
@@ -64,7 +65,7 @@
       <section class="wall-workflow" id="wallWorkflow" hidden>
         <div class="wall-workflow-head">
           <div>
-            <span class="step-kicker">02</span>
+            <span class="step-kicker" hidden>02</span>
             <h2 id="wallWorkflowTitle">Коммуникации по стенам</h2>
             <p id="wallWorkflowCopy">Каждая задействованная стена показывается отдельно. Добавьте элементы или отметьте стену пустой.</p>
           </div>
@@ -134,7 +135,7 @@
       </section>
 
       <section class="completion-card" id="completionCard" hidden>
-        <span class="step-kicker">✓</span><div><h2 id="completionTitle">Карта стен собрана</h2><p id="completionCopy">Конфигурация и положение элементов сохранены в текущем проекте.</p></div>
+        <span class="step-kicker">✓</span><div><h2 id="completionTitle">Карта стен собрана</h2><p id="completionCopy">Положение элементов сохранено в текущем проекте.</p></div>
       </section>
 
       <div class="toast" id="toast" role="status" hidden></div>
@@ -146,7 +147,7 @@
     <div class="modal-card custom-plan-card">
       <button class="modal-close" id="customPlanClose" type="button" aria-label="Закрыть">×</button>
       <p class="modal-eyebrow">BIZET OS</p><h2 id="customPlanTitle">Нарисуйте конфигурацию</h2>
-      <p id="customPlanCopy">Проведите линию вдоль стен, где должна располагаться мебель. Система распознает стены и подпишет их.</p>
+      <p id="customPlanCopy">Этот прежний редактор сохранён для совместимости, но в текущем пилоте кастомная конфигурация создаётся на отдельной странице.</p>
       <div class="plan-canvas-wrap"><canvas id="customPlanCanvas" width="860" height="520"></canvas></div>
       <div class="custom-plan-result"><span id="customDetectedLabel">Распознаны стены:</span><strong id="customDetectedWalls">—</strong></div>
       <div class="custom-plan-actions"><button class="secondary-button" id="clearCustomPlanButton" type="button">Очистить</button><button class="primary-button" id="acceptCustomPlanButton" type="button" disabled>Использовать конфигурацию</button></div>
@@ -159,5 +160,6 @@
   <script src="/static/project-session-bridge.js"></script>
   <script type="module" src="/static/room-elements-v2.js"></script>
   <script type="module" src="/static/room-elements-latest.js"></script>
+  <script type="module" src="/static/next-pilot-elements.js"></script>
 </body>
 </html>
