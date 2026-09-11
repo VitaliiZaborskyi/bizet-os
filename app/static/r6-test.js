@@ -1,16 +1,17 @@
 (() => {
-  function applyR6Start(){
-    const back=document.getElementById('backButton');
-    const title=(document.getElementById('stepTitle')?.textContent||'').trim();
-    if(back && /тип объекта|property type/i.test(title)) back.hidden=true;
-    const screen=document.getElementById('configurationScreenFive');
-    if(!screen)return;
-    const custom=screen.querySelector('[data-start-config="CUSTOM"]');
-    if(custom){custom.disabled=true;custom.dataset.r6PermanentDisabled='true';}
-    const button=document.getElementById('configurationContinue5');
-    if(button){const label=button.querySelector('span');if(label)label.textContent='Выбрать бытовую технику';}
-  }
-  applyR6Start();
-  new MutationObserver(applyR6Start).observe(document.body,{subtree:true,childList:true});
-  window.addEventListener('pageshow',()=>setTimeout(applyR6Start,10));
+const qs=s=>document.querySelector(s),path=location.pathname,params=new URLSearchParams(location.search),pid=params.get('project')||sessionStorage.getItem('bizet_os_project_id')||localStorage.getItem('bizet_os_project_id')||'';
+const lang=()=>localStorage.getItem('bizet_os_language')||'ru';
+if(path==='/'){
+ const apply=()=>{const b=qs('#backButton'),t=qs('#stepTitle')?.textContent||'';if(b&&/тип объекта|property type/i.test(t))b.hidden=true;const s=qs('#configurationScreenFive');if(!s)return;const c=s.querySelector('[data-start-config="CUSTOM"]');if(c){c.disabled=true;c.classList.add('pilot-disabled-choice');c.dataset.r6PermanentDisabled='true'}const btn=qs('#configurationContinue5');if(btn){const x=btn.querySelector('span');if(x)x.textContent=lang()==='en'?'Choose appliances':'Выбрать бытовую технику';if(!btn.parentElement.querySelector('.r6-next-note')){const n=document.createElement('small');n.className='r6-next-note';n.textContent=lang()==='en'?'Next':'Далее';btn.parentElement.appendChild(n)}}};
+ apply();new MutationObserver(apply).observe(document.body,{childList:true,subtree:true,characterData:true});window.addEventListener('pageshow',()=>setTimeout(apply,20));
+ const st=document.createElement('style');st.textContent='.screen-five-footer{flex-direction:column;align-items:center;gap:7px}.r6-next-note{font-size:11px;color:var(--muted)}';document.head.appendChild(st);
+}
+async function project(){const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(pid)}`);if(!r.ok)throw Error();return r.json()}
+async function save(patch){const p=await project(),v={...(p.scene?.visual_settings||{})};v.guided_inputs={...(v.guided_inputs||{}),...patch};v.guided_route_version='2026-09-11-r6';const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(pid)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'scene.visual_settings',value:v,reason:'Pilot r6 dimensional standards'})});if(!r.ok)throw Error()}
+if(path==='/guided'){
+ const stage=params.get('stage')||'ceiling',custom=['upper-gap','base-depth-r6','inter-gap-r6','upper-height-r6','upper-depth-r6'];
+ const render=async()=>{if(!custom.includes(stage)||!qs('#inputStage'))return;let i={};try{i=(await project()).scene?.visual_settings?.guided_inputs||{}}catch(_){}let title,key,min,max,def,next,note;if(stage==='upper-gap'){title='Габаритная высота нижних модулей';key='base_total_height_mm';min=850;def=+i[key]||900;next='base-depth-r6';note='Размер со столешницей. Минимум 850 мм.'}if(stage==='base-depth-r6'){title='Глубина нижних модулей';key='base_depth_mm';min=580;def=+i[key]||580;next='inter-gap-r6';note='Вместе с фасадом. Минимум 580 мм. При столешнице 600 мм нависание 20 мм.'}if(stage==='inter-gap-r6'){title='Расстояние между нижними и верхними модулями';key='upper_gap_mm';min=550;def=+i[key]||600;next='upper-height-r6';note='От столешницы до низа верхних модулей. Минимум 550 мм.'}if(stage==='upper-height-r6'){title='Габаритная высота верхних модулей';key='upper_total_height_mm';min=550;def=+i[key]||900;next='upper-depth-r6';note='Один цельный модуль максимум 900 мм. Больше — система создаёт антресоль.'}if(stage==='upper-depth-r6'){title='Глубина верхних модулей';key='upper_depth_mm';min=320;max=450;def=+i[key]||320;next='communications';note='Допустимо 320–450 мм. Для специальных размеров — поддержка.'}qs('#title').textContent=title;qs('#subtitle').textContent=note;qs('#cards').hidden=true;qs('#summaryStage').hidden=true;qs('#inputStage').hidden=false;qs('#inputStage').innerHTML=`<label>${title}<div class="input-wrap"><input id="r6Value" type="number" inputmode="numeric" min="${min}" ${max?`max="${max}"`:''} value="${def}"><span>мм</span></div></label><button class="primary-action" id="r6Save">Сохранить и продолжить</button>`;qs('#r6Save').onclick=async()=>{const val=Math.round(+qs('#r6Value').value);if(!Number.isFinite(val)||val<min||(max&&val>max)){qs('#errorNode').textContent=max?`Допустимо ${min}–${max} мм`:`Минимум ${min} мм`;qs('#errorNode').hidden=false;return}const p={[key]:val};if(key==='upper_total_height_mm')p.upper_split_mm=val>900?[900,val-900]:[val];if(key==='base_depth_mm')p.tall_depth_mm=val;await save(p);location.assign(`/guided?stage=${next}&project=${encodeURIComponent(pid)}`)}};
+ setTimeout(render,120);
+ if(stage==='oven-location'){const add=()=>{const box=qs('#cards');if(!box||box.querySelector('[data-r6-other]'))return;const b=document.createElement('button');b.type='button';b.className='guided-card is-placeholder';b.disabled=true;b.dataset.r6Other='1';b.dataset.r6PermanentDisabled='true';b.innerHTML='<strong>Другое</strong><small>Свой вариант размещения · позже</small>';box.appendChild(b)};setTimeout(add,160);new MutationObserver(add).observe(document.body,{childList:true,subtree:true})}
+}
 })();
