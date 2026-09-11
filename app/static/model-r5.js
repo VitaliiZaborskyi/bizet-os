@@ -1,80 +1,9 @@
 (() => {
-  const PROJECT_KEY='bizet_os_project_id';
-  const params=new URLSearchParams(location.search);
-  const projectId=params.get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
-  const canvas=document.getElementById('modelCanvas');
-  const oldNext=document.getElementById('materialsButton');
-
-  if(oldNext){
-    const next=oldNext.cloneNode(true);
-    next.textContent='Проверить коммуникации →';
-    next.setAttribute('aria-label','Проверить автоматически расставленные коммуникации');
-    oldNext.replaceWith(next);
-    next.addEventListener('click',()=>location.assign(`/communications?project=${encodeURIComponent(projectId)}`));
-  }
-
-  const head=document.querySelector('.model-head p');
-  if(head)head.textContent='3D можно вращать одним пальцем и масштабировать щипком. Сцена автоматически вписывается в экран при открытии.';
-
-  if(canvas){
-    const touches=new Map();
-    let lastDistance=0;
-    const distance=()=>{const p=[...touches.values()];return p.length>=2?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0;};
-    document.addEventListener('pointerdown',event=>{
-      if(event.target!==canvas||event.pointerType!=='touch')return;
-      touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-      if(touches.size>=2){lastDistance=distance();event.preventDefault();event.stopPropagation();}
-    },true);
-    document.addEventListener('pointermove',event=>{
-      if(!touches.has(event.pointerId))return;
-      touches.set(event.pointerId,{x:event.clientX,y:event.clientY});
-      if(touches.size<2)return;
-      event.preventDefault();event.stopPropagation();
-      const current=distance();
-      if(lastDistance>0&&current>0){
-        const delta=current-lastDistance;
-        if(Math.abs(delta)>1.4){
-          canvas.dispatchEvent(new WheelEvent('wheel',{deltaY:delta>0?-90:90,bubbles:false,cancelable:true}));
-          lastDistance=current;
-        }
-      }else lastDistance=current;
-    },true);
-    const end=event=>{if(!touches.has(event.pointerId))return;touches.delete(event.pointerId);lastDistance=touches.size>=2?distance():0;};
-    document.addEventListener('pointerup',end,true);document.addEventListener('pointercancel',end,true);
-
-    const hint=document.createElement('div');
-    hint.className='r5-camera-hint';
-    hint.textContent='↻ вращение · ⇆ щипок — масштаб';
-    canvas.parentElement?.appendChild(hint);
-  }
-
-  async function syncRules(){
-    if(!projectId)return;
-    try{
-      const response=await fetch(`/api/v1.1/projects/${encodeURIComponent(projectId)}`);
-      if(!response.ok)return;
-      const project=await response.json();
-      const visual={...(project.scene?.visual_settings||{})};
-      const inputs={...(visual.guided_inputs||{})};
-      if(inputs.ceiling)localStorage.setItem('bizet_r5_ceiling',inputs.ceiling);
-      const nextRules={
-        ...(visual.r5_rules||{}),
-        refrigerator_edge_default:true,
-        fridge_oven_adjacent_same_wall:true,
-        dishwasher_near_sink_priority:true,
-        oven_vertical_mode:inputs.oven_vertical_mode||null,
-        top_filler_min_mm:(inputs.ceiling==='STRETCH_B'||inputs.ceiling==='GYPSUM')?18:null,
-        stretch_profile_filler_height_mm:inputs.ceiling==='STRETCH_A'?120:null,
-        wall_l_filler_required:true,
-        corner_front_l_filler_required:['L_LEFT','L_RIGHT','U_SHAPE'].includes(sessionStorage.getItem('bizet_pilot_configuration')||localStorage.getItem('bizet_pilot_configuration')||'')
-      };
-      const changed=JSON.stringify(nextRules)!==JSON.stringify(visual.r5_rules||{});
-      if(changed){
-        visual.r5_rules=nextRules;
-        await fetch(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'scene.visual_settings',value:visual,reason:'BIZET OS 1.1 r5 placement and filler rules'})});
-      }
-      window.dispatchEvent(new CustomEvent('bizet:themechange',{detail:{theme:document.documentElement.dataset.theme||'light'}}));
-    }catch(_){}
-  }
-  setTimeout(syncRules,120);
+const P='bizet_os_project_id',q=new URLSearchParams(location.search),pid=q.get('project')||sessionStorage.getItem(P)||localStorage.getItem(P)||'',canvas=document.getElementById('modelCanvas');
+const next0=document.getElementById('materialsButton');if(next0){const n=next0.cloneNode(true);n.textContent='Проверить коммуникации →';next0.replaceWith(n);n.onclick=()=>location.assign(`/communications?project=${encodeURIComponent(pid)}`)}
+if(window.BizetPilot3D&&!window.__r6ModelDraw){window.__r6ModelDraw=1;const old=window.BizetPilot3D.drawKitchenScene;window.BizetPilot3D.drawKitchenScene=(c,o={})=>{const a=o.modules||[],s=a.find(m=>m.kind==='SINK');if(s&&+s.sink_bowl_count===2){const extra=900-(s.wall==='A'?s.w:s.d),f=a.find(m=>m.wall===s.wall&&m.pending&&m.level==='lower');if(extra>0&&f){if(f.wall==='A'&&f.w-extra>=300)f.w-=extra;if(f.wall!=='A'&&f.d-extra>=300)f.d-=extra}if(s.wall==='A')s.w=900;else s.d=900;s.label='Мойка · 2 чаши'}const ov=a.find(m=>m.kind==='OVEN'),cp=a.find(m=>m.kind==='COOKTOP');if(ov&&cp&&ov.wall===cp.wall){cp.label='Варочная + духовка';cp.oven_integrated=true;a.splice(a.indexOf(ov),1)}const us=s&&a.find(m=>m.id===`upper-${s.id}`);if(us){us.label='Сушка для посуды';us.kind='DISH_DRYING';if(s.wall==='A')us.w=s.w;else us.d=s.d}a.forEach((m,i)=>m.number=i+1);return old(c,o)}}
+if(canvas){const t=new Map();let last=0,dist=()=>{const p=[...t.values()];return p.length>1?Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y):0};document.addEventListener('pointerdown',e=>{if(e.target!==canvas||e.pointerType!=='touch')return;t.set(e.pointerId,{x:e.clientX,y:e.clientY});if(t.size>1){last=dist();e.preventDefault();e.stopPropagation()}},true);document.addEventListener('pointermove',e=>{if(!t.has(e.pointerId))return;t.set(e.pointerId,{x:e.clientX,y:e.clientY});if(t.size<2)return;e.preventDefault();e.stopPropagation();const d=dist(),x=d-last;if(last&&Math.abs(x)>1.4){canvas.dispatchEvent(new WheelEvent('wheel',{deltaY:x>0?-90:90,bubbles:false,cancelable:true}));last=d}},true);document.addEventListener('pointerup',e=>{t.delete(e.pointerId);last=dist()},true)}
+const strip=document.getElementById('moduleStrip');if(strip){strip.style.overflowX='auto';strip.style.flexWrap='nowrap';strip.style.webkitOverflowScrolling='touch';strip.style.touchAction='pan-x'}
+setTimeout(()=>{const box=document.querySelector('#moduleDialog .coordinate-box');if(!box)return;box.innerHTML='<span>Горизонтальное смещение вдоль ряда</span><div class="input-wrap"><input id="r6Move" type="number" step="10" inputmode="numeric" value="0"><span>мм</span></div><button class="primary-action" id="r6Apply" type="button">Подтвердить и перестроить 3D</button>';document.querySelectorAll('[data-nudge]').forEach(b=>b.remove());document.addEventListener('click',e=>{const b=e.target.closest('[data-module]');if(b)setTimeout(()=>document.getElementById('r6Apply').dataset.module=b.dataset.module,0)});document.getElementById('r6Apply').onclick=()=>{const id=document.getElementById('r6Apply').dataset.module,v=Math.round(+document.getElementById('r6Move').value||0);if(!id)return;if(Math.abs(v)>600){document.getElementById('modelStatus').textContent='Такое смещение требует проверки конструктора.';return}const m=JSON.parse(localStorage.getItem('bizet_r6_module_moves')||'{}');m[id]=v;localStorage.setItem('bizet_r6_module_moves',JSON.stringify(m));document.getElementById('moduleDialog').close?.();location.reload()}},120);
+fetch(`/api/v1.1/projects/${encodeURIComponent(pid)}`).then(r=>r.json()).then(p=>{const v={...(p.scene?.visual_settings||{})},i=v.guided_inputs||{};if(i.ceiling)localStorage.setItem('bizet_r5_ceiling',i.ceiling);if(i.fridge_side)localStorage.setItem('bizet_r6_fridge_side',i.fridge_side);v.r6_rules={outermost_means_end_of_run:true,sink_double_min_mm:900,drying_widths_mm:[500,600,700,800,900],worktop_piece_max_mm:4080,facade_single_max_mm:600,facade_double_min_mm:650};return fetch(`/api/v1.1/projects/${encodeURIComponent(pid)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:'scene.visual_settings',value:v,reason:'r6 rules'})})}).catch(()=>{});
 })();
