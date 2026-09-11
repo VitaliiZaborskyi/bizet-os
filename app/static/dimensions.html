@@ -16,45 +16,15 @@
       <a class="brand" href="/">BIZET <span>OS</span></a>
       <button class="icon-button" id="settingsButton" type="button" aria-label="Меню">•••</button>
     </header>
-
     <main class="dimension-screen">
-      <section class="dimension-head">
-        <h1>Укажите размеры помещения</h1>
-        <p>Работаем в перспективном 3D-пространстве BIZET. Камера пока зафиксирована; вращение станет доступно после ввода техники.</p>
-      </section>
-
-      <section class="dimension-layout">
-        <div class="room-stage" id="roomStage" aria-label="Перспективный 3D-вид помещения">
-          <canvas id="roomCanvas" class="room-canvas" aria-label="3D помещение"></canvas>
-        </div>
-
-        <aside class="dimension-panel">
-          <div class="panel-topline">
-            <strong id="activeConfigLabel">Конфигурация</strong>
-            <button class="ghost-button" id="toggleDimensions" type="button" aria-pressed="true">Размеры: видно</button>
-          </div>
-          <p id="activeHint">Нажмите на нужную поверхность в 3D или выберите её в списке.</p>
-          <div class="surface-list" id="surfaceList"></div>
-          <button class="primary-action" id="continueButton" type="button">Далее →</button>
-          <p class="inline-error" id="errorNode" hidden></p>
-        </aside>
-      </section>
+      <section class="dimension-head"><h1>Укажите размеры помещения</h1><p>Работаем в перспективном 3D-пространстве BIZET. Камера пока зафиксирована; вращение станет доступно после ввода техники.</p></section>
+      <section class="dimension-layout"><div class="room-stage" id="roomStage"><canvas id="roomCanvas" class="room-canvas"></canvas></div><aside class="dimension-panel"><div class="panel-topline"><strong id="activeConfigLabel">Конфигурация</strong><button class="ghost-button" id="toggleDimensions" type="button" aria-pressed="true">Размеры: видно</button></div><p id="activeHint">Нажмите на нужную поверхность в 3D или выберите её в списке.</p><div class="surface-list" id="surfaceList"></div><button class="primary-action" id="continueButton" type="button">Далее →</button><p class="inline-error" id="errorNode" hidden></p></aside></section>
     </main>
   </div>
-
-  <dialog id="dimensionDialog" class="dimension-dialog">
-    <form method="dialog" class="dialog-card" id="dimensionForm">
-      <button class="dialog-close" value="cancel" type="submit" aria-label="Закрыть">×</button>
-      <h2 id="dialogTitle">Размер</h2>
-      <p id="dialogHelp"></p>
-      <div id="dialogFields"></div>
-      <button class="primary-action" id="saveDimension" value="default" type="button">Сохранить</button>
-      <p class="inline-error" id="dialogError" hidden></p>
-    </form>
-  </dialog>
-
+  <dialog id="dimensionDialog" class="dimension-dialog"><form method="dialog" class="dialog-card" id="dimensionForm"><button class="dialog-close" value="cancel" type="submit">×</button><h2 id="dialogTitle">Размер</h2><p id="dialogHelp"></p><div id="dialogFields"></div><button class="primary-action" id="saveDimension" value="default" type="button">Сохранить</button><p class="inline-error" id="dialogError" hidden></p></form></dialog>
   <script src="/static/pilot-shell.js"></script>
   <script src="/static/pilot-3d.js"></script>
   <script src="/static/dimensions.js"></script>
+  <script src="/static/pilot-r6.js"></script>
 </body>
 </html>
