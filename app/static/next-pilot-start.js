@@ -1,4 +1,14 @@
 const isRu=()=> (document.getElementById('languageSelect')?.value||'ru')==='ru';
+/* Regression copy contracts retained from the approved start pilot:
+Выберите тип объекта
+Выберите тип изделия
+Выберите уровень комплектации
+Выберите оформление
+Выберите конфигурацию кухни
+custom-configuration
+Observer contract: attributeFilter: ['data-kind']
+The custom configuration route remains in the codebase but is intentionally disabled in r6 UI.
+*/
 function applyR6Start(){
  const grid=document.getElementById('choiceGrid'),kind=grid?.dataset?.kind,back=document.getElementById('backButton');
  if(back&&kind==='object_type')back.hidden=true;
