@@ -1,94 +1,14 @@
 (() => {
-  const PROJECT_KEY='bizet_os_project_id';
-  const params=new URLSearchParams(location.search);
-  const stage=params.get('stage')||'ceiling';
-  const projectId=params.get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
-  const $=id=>document.getElementById(id);
-  let project=null,visual={},inputs={},busy=false;
-
-  async function request(url,options={}){
-    const response=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});
-    if(!response.ok){let payload={};try{payload=await response.json()}catch(_){};throw new Error(typeof payload.detail==='string'?payload.detail:'Не удалось сохранить выбор.');}
-    return response.json();
-  }
-  async function load(){
-    if(!projectId)return false;
-    project=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`);
-    visual={...(project.scene?.visual_settings||{})};
-    inputs={...(visual.guided_inputs||{})};
-    return true;
-  }
-  async function save(patch,reason='Guided r5'){
-    if(busy)return;busy=true;
-    try{
-      inputs={...inputs,...patch};
-      visual={...visual,guided_inputs:inputs,guided_route_version:'2026-09-10-r5'};
-      const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path:'scene.visual_settings',value:visual,reason})});
-      project=result.project||result;visual={...(project.scene?.visual_settings||visual)};inputs={...(visual.guided_inputs||inputs)};
-    }finally{busy=false;}
-  }
-  function go(next){location.assign(`/guided?stage=${encodeURIComponent(next)}&project=${encodeURIComponent(projectId)}`)}
-  function clearStages(){
-    if($('cards')){$('cards').hidden=false;$('cards').innerHTML='';}
-    if($('inputStage')){$('inputStage').hidden=true;$('inputStage').innerHTML='';}
-    if($('summaryStage')){$('summaryStage').hidden=true;$('summaryStage').innerHTML='';}
-    if($('errorNode'))$('errorNode').hidden=true;
-  }
-  function showError(error){if(!$('errorNode'))return;$('errorNode').textContent=error?.message||String(error);$('errorNode').hidden=false;}
-  function card(value,label,note=''){return `<button class="guided-card" type="button" data-r5-value="${value}"><strong>${label}</strong>${note?`<small>${note}</small>`:''}</button>`}
-  function renderQuestion(title,subtitle,choices,onChoose){
-    clearStages();$('title').textContent=title;$('subtitle').textContent=subtitle;
-    $('cards').innerHTML=choices.map(c=>card(c.value,c.label,c.note||'')).join('');
-    $('cards').querySelectorAll('[data-r5-value]').forEach(button=>button.addEventListener('click',async()=>{
-      if(busy)return;button.disabled=true;try{await onChoose(button.dataset.r5Value);}catch(error){button.disabled=false;showError(error);}
-    }));
-  }
-  function rememberDishwasher(){
-    localStorage.setItem('bizet_r5_dishwasher_present',inputs.dishwasher_present||'');
-    localStorage.setItem('bizet_r5_dishwasher_near_sink',inputs.dishwasher_near_sink||'');
-    localStorage.setItem('bizet_r5_dishwasher_side',inputs.dishwasher_side||'');
-  }
-  async function renderDishwasherPresence(){
-    renderQuestion('Будет ли посудомоечная машина?','Если нет — BIZET OS полностью исключит ПММ из текущей композиции.',[
-      {value:'YES',label:'Да'},{value:'NO',label:'Нет'}
-    ],async value=>{
-      if(value==='YES')await save({dishwasher_present:'YES'},'Dishwasher presence');
-      else await save({dishwasher_present:'NO',dishwasher_type:null,dishwasher_width_mm:null,dishwasher_wall:null,dishwasher_near_sink:null,dishwasher_side:null},'Dishwasher excluded');
-      rememberDishwasher();
-      if(value==='YES')go('dishwasher-type');else go('hood-type');
-    });
-  }
-  async function renderDishwasherProximity(){
-    renderQuestion('Должна ли ПММ стоять рядом с мойкой?','Если выбрать «Нет», система всё равно расположит её максимально близко к мойке — при необходимости через один модуль или на соседней стене.',[
-      {value:'YES',label:'Да · рядом'},{value:'NO',label:'Нет · максимально близко'}
-    ],async value=>{
-      await save({dishwasher_near_sink:value,dishwasher_side:value==='NO'?null:inputs.dishwasher_side||null},'Dishwasher proximity to sink');rememberDishwasher();go('hood-type');
-    });
-  }
-  async function renderDishwasherSide(){
-    renderQuestion('С какой стороны от мойки поставить ПММ?','Сторона задаётся относительно модуля с мойкой.',[
-      {value:'LEFT',label:'Слева'},{value:'RIGHT',label:'Справа'}
-    ],async value=>{await save({dishwasher_side:value},'Dishwasher side relative to sink');rememberDishwasher();go('hood-type');});
-  }
-  async function renderReadyForModel(){
-    clearStages();$('cards').hidden=true;$('summaryStage').hidden=false;
-    $('title').textContent='Исходные точки собраны';
-    $('subtitle').textContent='Сначала BIZET OS построит параметрическую 3D-модель. Коммуникации система расставит автоматически уже по фактическому положению мебели и техники.';
-    const extraTall=inputs.oven_location==='TALL'&&(inputs.microwave_present==='YES'||inputs.coffee_present==='YES');
-    const ovenMode=inputs.oven_location==='TALL'?(extraTall?'LOWERED_HALF_LOWER_FACADE':'RAISED_TO_LOWER_FACADE_TOP'):null;
-    await save({communications_status:'AUTO_AFTER_MODEL',oven_vertical_mode:ovenMode,high_unit_order_rule:'FRIDGE_OUTERMOST_OVEN_ADJACENT_IF_SAME_WALL'},'Prepare model before communication verification');
-    $('summaryStage').innerHTML=`<h2>Можно строить кухню</h2><div class="summary-grid"><div class="summary-row"><span>Следующий шаг</span><strong>3D-модель</strong></div><div class="summary-row"><span>После модели</span><strong>Проверка коммуникаций</strong></div></div><button class="primary-action" id="r5ToModel" type="button">Собрать 3D-модель →</button>`;
-    $('r5ToModel').addEventListener('click',()=>location.assign(`/model?project=${encodeURIComponent(projectId)}`));
-  }
-
-  async function init(){
-    try{if(!await load())return;
-      rememberDishwasher();
-      if(stage==='dishwasher-type'&&!inputs.dishwasher_present){await renderDishwasherPresence();return;}
-      if(stage==='hood-type'&&inputs.dishwasher_present==='YES'&&!inputs.dishwasher_near_sink){await renderDishwasherProximity();return;}
-      if(stage==='hood-type'&&inputs.dishwasher_present==='YES'&&inputs.dishwasher_near_sink==='YES'&&!inputs.dishwasher_side){await renderDishwasherSide();return;}
-      if(stage==='communications'){await renderReadyForModel();return;}
-    }catch(error){showError(error);}
-  }
-  setTimeout(init,40);
+const $=id=>document.getElementById(id),q=new URLSearchParams(location.search),stage=q.get('stage')||'ceiling',pid=q.get('project')||sessionStorage.getItem('bizet_os_project_id')||localStorage.getItem('bizet_os_project_id')||'';let p,v,i,busy=false;const en=()=>localStorage.getItem('bizet_os_language')==='en';
+async function req(url,o={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(o.headers||{})},...o});if(!r.ok)throw Error('save');return r.json()}
+async function load(){p=await req(`/api/v1.1/projects/${encodeURIComponent(pid)}`);v={...(p.scene?.visual_settings||{})};i={...(v.guided_inputs||{})}}
+async function save(x){if(busy)return;busy=true;try{i={...i,...x};v={...v,guided_inputs:i,guided_route_version:'2026-09-11-r6'};p=(await req(`/api/v1.1/projects/${encodeURIComponent(pid)}`,{method:'PATCH',body:JSON.stringify({path:'scene.visual_settings',value:v,reason:'Pilot r6'})})).project||p}finally{busy=false}}
+const go=s=>location.assign(`/guided?stage=${s}&project=${encodeURIComponent(pid)}`),err=t=>{if($('errorNode')){$('errorNode').textContent=t;$('errorNode').hidden=false}};
+function clear(){if($('cards')){$('cards').hidden=true;$('cards').innerHTML=''}if($('summaryStage'))$('summaryStage').hidden=true;if($('inputStage')){$('inputStage').hidden=true;$('inputStage').innerHTML=''}}
+function ask(title,sub,choices,fn){clear();$('cards').hidden=false;$('title').textContent=title;$('subtitle').textContent=sub;$('cards').innerHTML=choices.map(c=>`<button class="guided-card" data-r6="${c[0]}"><strong>${c[1]}</strong></button>`).join('');$('cards').querySelectorAll('[data-r6]').forEach(b=>b.onclick=()=>fn(b.dataset.r6))}
+function dim(title,sub,key,def,min,max,next){clear();$('inputStage').hidden=false;$('title').textContent=title;$('subtitle').textContent=sub;$('inputStage').innerHTML=`<label>${title}<div class="input-wrap"><input id="r6d" type="number" inputmode="numeric" min="${min}" ${max?`max="${max}"`:''} value="${def}"><span>мм</span></div></label><button class="primary-action" id="r6s">${en()?'Save and continue':'Сохранить и продолжить'}</button>`;$('r6s').onclick=async()=>{const n=Math.round(+$('r6d').value);if(!Number.isFinite(n)||n<min||(max&&n>max)){err(max?`${min}–${max} мм`:`${en()?'Minimum':'Минимум'} ${min} мм`);return}const x={[key]:n};if(key==='upper_total_height_mm')x.upper_split_mm=n>900?[900,n-900]:[n];if(key==='base_depth_mm')x.tall_depth_mm=n;await save(x);go(next)}}
+async function dimensions(){if(stage==='upper-gap'){dim(en()?'Base cabinet overall height':'Габаритная высота нижних модулей',en()?'Includes worktop. Minimum 850 mm.':'С учётом столешницы. Минимум 850 мм.','base_total_height_mm',+i.base_total_height_mm||900,850,null,'base-depth-r6');return 1}if(stage==='base-depth-r6'){dim(en()?'Base cabinet depth':'Глубина нижних модулей',en()?'Including facade. Minimum 580 mm.':'Вместе с фасадом. Минимум 580 мм. При столешнице 600 мм нависание 20 мм.','base_depth_mm',+i.base_depth_mm||580,580,null,'inter-gap-r6');return 1}if(stage==='inter-gap-r6'){dim(en()?'Gap to upper cabinets':'Расстояние между нижними и верхними модулями',en()?'Minimum 550 mm.':'От столешницы до низа верхних модулей. Минимум 550 мм.','upper_gap_mm',+i.upper_gap_mm||600,550,null,'upper-height-r6');return 1}if(stage==='upper-height-r6'){dim(en()?'Upper cabinet total height':'Габаритная высота верхних модулей',en()?'One cabinet max 900 mm; larger total creates mezzanine.':'Цельный модуль максимум 900 мм. Большая высота создаёт антресоль.','upper_total_height_mm',+i.upper_total_height_mm||900,550,null,'upper-depth-r6');return 1}if(stage==='upper-depth-r6'){dim(en()?'Upper cabinet depth':'Глубина верхних модулей',en()?'Allowed 320–450 mm.':'Допустимо 320–450 мм. Больше — через поддержку.','upper_depth_mm',+i.upper_depth_mm||320,320,450,'communications');return 1}}
+async function dishwasher(){if(stage==='dishwasher-type'&&!i.dishwasher_present){ask(en()?'Will there be a dishwasher?':'Будет ли посудомоечная машина?','',[["YES",en()?'Yes':'Да'],["NO",en()?'No':'Нет']],async x=>{await save(x==='YES'?{dishwasher_present:'YES'}:{dishwasher_present:'NO',dishwasher_type:null,dishwasher_width_mm:null});localStorage.setItem('bizet_r5_dishwasher_present',x);go(x==='YES'?'dishwasher-type':'hood-type')});return 1}if(stage==='hood-type'&&i.dishwasher_present==='YES'&&!i.dishwasher_near_sink){ask(en()?'Dishwasher next to sink?':'Должна ли ПММ стоять рядом с мойкой?','',[["YES",en()?'Yes':'Да · рядом'],["NO",en()?'No':'Нет · максимально близко']],async x=>{await save({dishwasher_near_sink:x});go('hood-type')});return 1}if(stage==='hood-type'&&i.dishwasher_near_sink==='YES'&&!i.dishwasher_side){ask(en()?'Which side of sink?':'С какой стороны от мойки поставить ПММ?','',[["LEFT",en()?'Left':'Слева'],["RIGHT",en()?'Right':'Справа']],async x=>{await save({dishwasher_side:x});go('hood-type')});return 1}}
+async function ready(){clear();$('summaryStage').hidden=false;$('title').textContent=en()?'Inputs collected':'Исходные точки собраны';await save({communications_status:'AUTO_AFTER_MODEL',outermost_semantics:'END_OF_RUN_NOT_CORNER',worktop_piece_max_mm:4080,sink_double_min_mm:900,drying_standard_widths_mm:[500,600,700,800,900],facade_single_max_mm:600,facade_double_min_mm:650});$('summaryStage').innerHTML=`<h2>${en()?'Ready for 3D':'Можно строить кухню'}</h2><button class="primary-action" id="r6m">${en()?'Build 3D →':'Собрать 3D-модель →'}</button>`;$('r6m').onclick=()=>location.assign(`/model?project=${encodeURIComponent(pid)}`)}
+async function init(){try{await load();if(await dimensions())return;if(await dishwasher())return;if(stage==='oven-location')setTimeout(()=>{const c=$('cards');if(c&&!c.querySelector('[data-other]'))c.insertAdjacentHTML('beforeend',`<button class="guided-card is-placeholder" disabled data-r6-permanent-disabled="true" data-other><strong>${en()?'Other':'Другое'}</strong><small>${en()?'Custom placement · later':'Свой вариант · позже'}</small></button>`)},100);if(stage==='communications')await ready()}catch(e){err(e.message)}}setTimeout(init,50);
 })();
