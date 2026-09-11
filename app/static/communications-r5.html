@@ -1,67 +1,23 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f5f4f1" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="theme-color" content="#f5f4f1" />
   <title>BIZET OS — Проверка коммуникаций</title>
-  <link rel="stylesheet" href="/static/start.css" />
-  <link rel="stylesheet" href="/static/pilot-shell.css" />
-  <link rel="stylesheet" href="/static/communications-r5.css" />
+  <link rel="stylesheet" href="/static/start.css" /><link rel="stylesheet" href="/static/pilot-shell.css" /><link rel="stylesheet" href="/static/communications-r5.css" />
 </head>
-<body>
-  <div class="app-shell">
-    <header class="topbar compact-topbar">
-      <button class="icon-button" id="backButton" type="button" aria-label="Назад">←</button>
-      <a class="brand" href="/">BIZET <span>OS</span></a>
-      <button class="icon-button" id="settingsButton" type="button" aria-label="Меню">•••</button>
-    </header>
-
-    <main class="comm-screen" id="commMain">
-      <section class="comm-head">
-        <div><span class="comm-kicker">BIZET OS · AUTO</span><h1>Проверка коммуникаций</h1><p>BIZET OS уже расставил необходимые точки по фактическому положению мебели и техники. Можно оставить системный вариант или проверить каждую точку.</p></div>
-        <button class="secondary-action print-button" id="printButton" type="button">PDF для строителей</button>
-      </section>
-
-      <section class="comm-status-card"><div><strong id="autoStatus">Формируем карту…</strong><span id="autoStatusCopy">Системные точки будут сохранены как предварительные до подтверждения.</span></div><span class="status-pill" id="pointCount">—</span></section>
-
-      <nav class="wall-tabs" id="wallTabs" aria-label="Стены"></nav>
-      <section class="wall-card">
-        <div class="wall-card-head"><div><span>Текущая стена</span><strong id="activeWallLabel">Стена A</strong></div><small>Точки не перетаскиваются. Нажмите на точку для точной корректировки.</small></div>
-        <canvas id="wallCanvas" width="1100" height="620" aria-label="Схема коммуникаций на стене"></canvas>
-        <div class="point-list" id="pointList"></div>
-      </section>
-
-      <section class="room-clarify">
-        <div class="section-heading"><div><span class="comm-kicker">Уточнение помещения</span><h2>Есть дополнительные элементы?</h2><p>Добавьте только то, что реально влияет на мебель. После подтверждения BIZET OS повторно проанализирует геометрию и адаптирует параметрическую модель.</p></div></div>
-        <div class="feature-grid">
-          <button type="button" data-feature="WINDOW"><strong>Окно</strong><span>+ добавить</span></button>
-          <button type="button" data-feature="PROJECTION"><strong>Выступ</strong><span>+ добавить</span></button>
-          <button type="button" data-feature="COLUMN"><strong>Колонна</strong><span>+ добавить</span></button>
-          <button type="button" data-feature="NICHE"><strong>Ниша</strong><span>+ добавить</span></button>
-        </div>
-        <div class="feature-list" id="featureList"></div>
-      </section>
-
-      <section class="comm-actions">
-        <button class="secondary-action" id="skipReviewButton" type="button">Оставить системные значения</button>
-        <button class="primary-action" id="confirmButton" type="button">Подтвердить и перейти к материалам →</button>
-      </section>
-      <p class="comm-disclaimer">Пилотная автоматическая карта. До профессионального замера системные координаты имеют статус предварительных и должны быть подтверждены для производства/монтажа.</p>
-      <div class="comm-error" id="errorNode" hidden></div>
-    </main>
-
-    <main class="feature-quest" id="featureQuest" hidden>
-      <section class="quest-progress"><span id="questProgress">Шаг 1</span></section>
-      <section class="quest-card"><span class="comm-kicker" id="questKicker">Уточнение помещения</span><h1 id="questTitle">Добавить элемент</h1><p id="questSubtitle"></p><div id="questBody"></div><button class="secondary-action quest-cancel" id="questCancel" type="button">Отмена</button></section>
-    </main>
-
-    <section class="print-report" id="printReport" aria-hidden="true"><h1>BIZET OS · Карта коммуникаций</h1><p id="printMeta"></p><div id="printContent"></div><p class="print-note">Предварительная схема. Координаты требуют подтверждения специалистами до выполнения строительных работ.</p></section>
-  </div>
-
-  <dialog class="point-dialog" id="pointDialog"><div class="point-dialog-card"><button class="dialog-close" id="pointClose" type="button">×</button><span class="comm-kicker">Точная корректировка</span><h2 id="pointTitle">Коммуникация</h2><p id="pointCopy">Измените положение по осям стены.</p><label class="coordinate-field"><span>По стене · X</span><div><input id="pointX" type="number" inputmode="numeric" step="10" min="0"><b>мм</b></div></label><div class="nudge-row"><button data-axis="x" data-delta="-50">−50</button><button data-axis="x" data-delta="-10">−10</button><button data-axis="x" data-delta="10">+10</button><button data-axis="x" data-delta="50">+50</button></div><label class="coordinate-field"><span>От пола · Z</span><div><input id="pointZ" type="number" inputmode="numeric" step="10" min="0"><b>мм</b></div></label><div class="nudge-row"><button data-axis="z" data-delta="-50">−50</button><button data-axis="z" data-delta="-10">−10</button><button data-axis="z" data-delta="10">+10</button><button data-axis="z" data-delta="50">+50</button></div><button class="primary-action full" id="pointSave" type="button">Сохранить положение</button></div></dialog>
-
-  <script src="/static/pilot-shell.js"></script>
-  <script src="/static/communications-r5.js"></script>
-</body>
-</html>
+<body><div class="app-shell">
+<header class="topbar compact-topbar"><button class="icon-button" id="backButton" type="button" aria-label="Назад">←</button><a class="brand" href="/">BIZET <span>OS</span></a><button class="icon-button" id="settingsButton" type="button" aria-label="Меню">•••</button></header>
+<main class="comm-screen" id="commMain">
+<section class="comm-head"><div><span class="comm-kicker">BIZET OS · AUTO</span><h1>Проверка коммуникаций</h1><p>BIZET OS уже расставил необходимые точки по фактическому положению мебели и техники. Можно оставить системный вариант или проверить каждую точку.</p></div><button class="secondary-action print-button" id="printButton" type="button">PDF для строителей</button></section>
+<section class="comm-status-card"><div><strong id="autoStatus">Формируем карту…</strong><span id="autoStatusCopy">Системные точки будут сохранены как предварительные до подтверждения.</span></div><span class="status-pill" id="pointCount">—</span></section>
+<nav class="wall-tabs" id="wallTabs" aria-label="Стены"></nav>
+<section class="wall-card"><div class="wall-card-head"><div><span>Текущая стена</span><strong id="activeWallLabel">Стена A</strong></div><small>Точки не перетаскиваются. Нажмите на точку для точной корректировки.</small></div><canvas id="wallCanvas" width="1100" height="620"></canvas><div class="point-list" id="pointList"></div></section>
+<section class="room-clarify"><div class="section-heading"><div><span class="comm-kicker">Уточнение помещения</span><h2>Есть дополнительные элементы?</h2><p>Добавьте только то, что реально влияет на мебель. После подтверждения BIZET OS повторно проанализирует геометрию и адаптирует параметрическую модель.</p></div></div><div class="feature-grid"><button type="button" data-feature="WINDOW"><strong>Окно</strong><span>+ добавить</span></button><button type="button" data-feature="PROJECTION"><strong>Выступ</strong><span>+ добавить</span></button><button type="button" data-feature="COLUMN"><strong>Колонна</strong><span>+ добавить</span></button><button type="button" data-feature="NICHE"><strong>Ниша</strong><span>+ добавить</span></button></div><div class="feature-list" id="featureList"></div></section>
+<section class="comm-actions"><button class="secondary-action" id="skipReviewButton">Оставить системные значения</button><button class="primary-action" id="confirmButton">Подтвердить и перейти к материалам →</button></section><p class="comm-disclaimer">Пилотная автоматическая карта. До профессионального замера системные координаты имеют статус предварительных и должны быть подтверждены для производства/монтажа.</p><div class="comm-error" id="errorNode" hidden></div>
+</main>
+<main class="feature-quest" id="featureQuest" hidden><section class="quest-progress"><span id="questProgress">Шаг 1</span></section><section class="quest-card"><span class="comm-kicker" id="questKicker">Уточнение помещения</span><h1 id="questTitle">Добавить элемент</h1><p id="questSubtitle"></p><div id="questBody"></div><button class="secondary-action quest-cancel" id="questCancel">Отмена</button></section></main>
+<section class="print-report" id="printReport"><h1>BIZET OS · Карта коммуникаций</h1><p id="printMeta"></p><div id="printContent"></div><p class="print-note">Предварительная схема. Координаты требуют подтверждения специалистами до выполнения строительных работ.</p></section>
+</div>
+<dialog class="point-dialog" id="pointDialog"><div class="point-dialog-card"><button class="dialog-close" id="pointClose">×</button><span class="comm-kicker">Точная корректировка</span><h2 id="pointTitle">Коммуникация</h2><p id="pointCopy">Измените положение по осям стены.</p><label class="coordinate-field"><span>По стене · X</span><div><input id="pointX" type="number" inputmode="numeric" step="10" min="0"><b>мм</b></div></label><div class="nudge-row"><button data-axis="x" data-delta="-50">−50</button><button data-axis="x" data-delta="-10">−10</button><button data-axis="x" data-delta="10">+10</button><button data-axis="x" data-delta="50">+50</button></div><label class="coordinate-field"><span>От пола · Z</span><div><input id="pointZ" type="number" inputmode="numeric" step="10" min="0"><b>мм</b></div></label><div class="nudge-row"><button data-axis="z" data-delta="-50">−50</button><button data-axis="z" data-delta="-10">−10</button><button data-axis="z" data-delta="10">+10</button><button data-axis="z" data-delta="50">+50</button></div><button class="primary-action full" id="pointSave">Сохранить положение</button></div></dialog>
+<script src="/static/pilot-shell.js"></script><script src="/static/communications-r5.js"></script><script src="/static/pilot-r6.js"></script>
+</body></html>
