@@ -10,8 +10,8 @@
  clone.addEventListener('click',e=>{e.preventDefault();window.location.assign('/guided')});
  const wrap=document.createElement('div');wrap.className='r7-room-actions';
  const extra=document.createElement('button');extra.type='button';extra.className='r7-secondary-button';extra.innerHTML='<span>Элементы стен</span><span aria-hidden="true">+</span>';
- extra.title='Окна, выступы, ниши, колонны';
- extra.addEventListener('click',()=>window.location.assign('/room-elements'));
+ extra.title='Окна, двери, радиаторы, выступы, ниши, колонны и другие элементы';
+ extra.addEventListener('click',()=>window.location.assign('/room-elements?mode=architectural'));
  const parent=clone.parentNode;parent.insertBefore(wrap,clone);wrap.appendChild(extra);wrap.appendChild(clone);
  const scopeTitle=document.getElementById('scopeTitle');const scopeCopy=document.getElementById('scopeCopy');
  if(scopeTitle)scopeTitle.textContent='Данные помещения готовы';
