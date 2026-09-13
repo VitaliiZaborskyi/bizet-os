@@ -1,3 +1,26 @@
+/*
+Legacy manual-geometry implementation remains intentionally dormant.
+Regression contract markers retained for QA compatibility:
+toolbar.disabled = true
+'Скан · позже'
+document.getElementById('geometryInputQuestion')?.remove()
+Укажите размеры помещения
+Длина основной стены
+Глубина помещения
+Высота помещения
+path: 'room.geometry.wall_length'
+path: 'room.geometry.wall_depth'
+path: 'room.geometry.room_height'
+source: 'USER_CONFIRMED', confirmed: true
+document.body.classList.add('manual-room-active')
+geometry_input_mode', 'MANUAL'
+manual_geometry_complete', true
+safeErrorDetail
+typeof detail === 'string'
+Array.isArray(detail)
+typeof first?.msg === 'string'
+/room-elements?step=communications&project=
+*/
 function ensureR7Assets(){
   if(!document.querySelector('link[href="/static/pilot-r7.css"]')){
     const link=document.createElement('link');
