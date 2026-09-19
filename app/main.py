@@ -65,6 +65,12 @@ def guided_pilot():
     return FileResponse(STATIC / "guided.html")
 
 
+@app.get("/workspace", include_in_schema=False)
+def workspace_r8():
+    """Model-first BIZET OS r8 workspace."""
+    return FileResponse(STATIC / "workspace-r8.html")
+
+
 @app.get("/model", include_in_schema=False)
 def model_pilot():
     """Generated kitchen model interaction scaffold."""
