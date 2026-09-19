@@ -246,8 +246,11 @@ function renderStep() {
   $('stepSubtitle').textContent = t(step.subtitle);
   renderProgress(currentStep);
 
-  // There is intentionally no back arrow on the very first question.
-  $('backButton').hidden = currentStep === 0;
+  // First screen: no back control exists visually or interactively.
+  const back=$('backButton');
+  const first=currentStep===0;
+  back.hidden=first;
+  if(first)back.style.setProperty('display','none','important');else back.style.removeProperty('display');
 
   const selected = project.context?.[step.field];
   const grid = $('choiceGrid');
@@ -285,6 +288,7 @@ async function choose(value) {
       body: JSON.stringify({ answer: value }),
     });
     project = result.project;
+    if(window.BizetTransition?.play) await window.BizetTransition.play({duration:1200});
 
     if (editingFromSummary) {
       editingFromSummary = false;
@@ -334,6 +338,7 @@ async function renderSummary() {
   $('introBlock').hidden = true;
   $('choiceGrid').hidden = true;
   $('backButton').hidden = false;
+  $('backButton').style.removeProperty('display');
   $('summaryCard').hidden = false;
   $('summaryTitle').textContent = copy('summaryTitle');
   $('continueLabel').textContent = copy('continue');
