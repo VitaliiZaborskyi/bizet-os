@@ -28,10 +28,10 @@ function ensureR7Assets(){
     link.href='/static/pilot-r7.css';
     document.head.appendChild(link);
   }
-  if(!document.getElementById('r7RoomOverlayScript')){
+  if(!document.getElementById('r8RoomOverlayScript')){
     const script=document.createElement('script');
-    script.id='r7RoomOverlayScript';
-    script.src='/static/room-r7.js';
+    script.id='r8RoomOverlayScript';
+    script.src='/static/room-r8.js';
     document.body.appendChild(script);
   }
 }
