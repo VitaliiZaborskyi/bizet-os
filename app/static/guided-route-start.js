@@ -1,4 +1,5 @@
 (() => {
+  if (window.__BIZET_MODEL_FIRST__) return;
   const PROJECT_KEY = 'bizet_os_project_id';
 
   function projectId() {
