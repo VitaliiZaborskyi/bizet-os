@@ -31,7 +31,7 @@ function ensureR7Assets(){
   if(!document.getElementById('r8RoomOverlayScript')){
     const script=document.createElement('script');
     script.id='r8RoomOverlayScript';
-    script.src='/static/room-r8.js';
+    script.src='/static/room-r8.js?v=82';
     document.body.appendChild(script);
   }
 }
