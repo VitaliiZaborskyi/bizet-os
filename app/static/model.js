@@ -16,6 +16,8 @@
   function configuration(){return sessionStorage.getItem(CONFIG_KEY)||localStorage.getItem(CONFIG_KEY)||'WALL_CENTER'}
   function activeWalls(){const map={WALL_CENTER:['A'],WALL_LEFT:['A'],WALL_RIGHT:['A'],L_LEFT:['A','B'],L_RIGHT:['A','C'],U_SHAPE:['A','B','C'],CUSTOM:['A']};return map[configuration()]||['A']}
   function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+  function variantState(){return {...(visual.r8_variant||{})}}
+  function setFurniturePalette(){const d=String(project?.context?.visual_direction||visual.r8_palette||'LIGHT').toLowerCase();document.documentElement.dataset.furniturePalette=d}
 
   let camera={yaw:0,pitch:.33,distanceScale:1};
   function resetCamera(){camera=window.BizetPilot3D?.cameraDefaults?.(configuration())||{yaw:0,pitch:.33,distanceScale:1}}
@@ -49,6 +51,9 @@
     if(wall==='A'&&inputs.fridge_present==='YES'){
       const fridge=ordered.filter(m=>m.kind==='FRIDGE'),other=ordered.filter(m=>m.kind!=='FRIDGE');ordered=inputs.fridge_side==='RIGHT'?other.concat(fridge):fridge.concat(other);
     }
+    const variant=variantState();
+    if(wall==='A'&&variant.reverse_wall_a)ordered=[...ordered].reverse();
+    if(wall==='A'&&Number(variant.module_shift)>0&&ordered.length>2){const n=Number(variant.module_shift)%ordered.length;ordered=ordered.slice(n).concat(ordered.slice(0,n))}
     let used=ordered.reduce((sum,m)=>sum+m.w,0);
     if(wall==='A'&&bounds.span-used>=CUTLERY_W){const cutlery=baseModule('cutlery','Ящики для приборов',CUTLERY_W,'DRAWERS','A',{anchor:false,system:true});const idx=ordered.findIndex(m=>m.kind==='SINK');ordered.splice(idx>=0?idx+1:ordered.length,0,cutlery);used+=CUTLERY_W}
     const remaining=bounds.span-used;if(remaining>=300)ordered.push(baseModule(`system-fill-${wall}`,'Модуль',remaining,'HINGED',wall,{anchor:false,pending:true,system:true}));
@@ -76,6 +81,13 @@
       if(m.wall==='A')result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:'A',x:m.x,y:room.depthMm-UPPER_DEPTH,z:bottom,w:m.w,d:UPPER_DEPTH,h:height,level:'upper',anchor:false,system:true,pending:m.pending});
       else result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:m.wall,x:m.wall==='B'?0:room.lengthMm-UPPER_DEPTH,y:m.y,z:bottom,w:UPPER_DEPTH,d:m.d,h:height,level:'upper',anchor:false,system:true,pending:m.pending});
     });
+    const variant=variantState();
+    result.forEach(m=>{if(m.kind==='UPPER'){m.label=variant.upper_opening==='LIFT'?'Верхний · подъёмный':'Верхний · распашной'}});
+    if(variant.upper_layout==='ANTRESOL'){
+      const top=[];
+      result.filter(m=>m.kind==='UPPER').forEach(m=>{const h=Math.min(300,Math.max(220,m.h*.32));m.h=Math.max(260,m.h-h);top.push({...m,id:'top-'+m.id,label:'Антресоль',kind:'UPPER_TOP',z:m.z+m.h,h,system:true})});
+      result.push(...top);
+    }
     return result;
   }
 
@@ -91,7 +103,7 @@
     $('moduleStrip').innerHTML=modules.map(m=>`<button class="module-strip-button${m.system||m.pending?' is-system':''}" type="button" data-module="${m.id}"><strong>${m.number}</strong><span>${m.label}</span></button>`).join('');
     $('moduleStrip').querySelectorAll('[data-module]').forEach(btn=>btn.addEventListener('click',()=>openModule(btn.dataset.module)));
   }
-  function renderScene(engineOk=false){modules=buildModules();scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible});renderStrip();$('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки; остаточное деление ещё не заморожено.':'3D-пилот · исходные точки собраны, незакреплённое остаточное деление остаётся визуальным слоем.'}
+  function renderScene(engineOk=false){setFurniturePalette();modules=buildModules();scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible,architecturalElements:project?.room?.architectural_elements||[]});renderStrip();$('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки; остаточное деление ещё не заморожено.':'3D-пилот · исходные точки собраны, незакреплённое остаточное деление остаётся визуальным слоем.'}
 
   function offsets(){return{...(visual.module_offsets_mm||{})}}
   function detailText(m){
@@ -103,6 +115,18 @@
   }
   function openModule(id){activeModule=modules.find(m=>m.id===id)||null;if(!activeModule)return;$('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;$('moduleCopy').textContent=detailText(activeModule);$('moduleOffset').textContent=`${Number(offsets()[activeModule.id])||0} мм`;$('moduleDialog').showModal?.()}
   async function nudge(delta){if(!activeModule||activeModule.pending||activeModule.level==='upper')return;const next=offsets();next[activeModule.id]=(Number(next[activeModule.id])||0)+delta;await saveVisual({...visual,module_offsets_mm:next,module_direct_edit_status:'PILOT_USER_OFFSET'},`Direct module offset ${activeModule.id}`);$('moduleOffset').textContent=`${next[activeModule.id]} мм`;renderScene(false);$('modelStatus').textContent='Смещение сохранено и сразу видно в 3D. Полный зависимый пересчёт соседних модулей — следующий слой.'}
+
+  async function patchInputs(patch,reason='R8 workspace'){
+    inputs={...inputs,...patch};await saveVisual({...visual,guided_inputs:inputs,r8_workspace:true},reason);renderScene(false);return snapshot();
+  }
+  async function patchVariant(patch){await saveVisual({...visual,r8_variant:{...(visual.r8_variant||{}),...patch}},'R8 variant');renderScene(false);return snapshot()}
+  async function patchVisual(patch){await saveVisual({...visual,...patch},'R8 visual');renderScene(false);return snapshot()}
+  async function patchElements(elements){const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path:'room.architectural_elements',value:elements,source:'USER_ENTERED',confirmed:true,reason:'R8 wall elements'})});project=result.project||result;renderScene(false);return snapshot()}
+  async function patchRoom(key,value){const path={lengthMm:'room.geometry.wall_length',depthMm:'room.geometry.wall_depth',heightMm:'room.geometry.room_height'}[key];if(!path)return snapshot();const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path,value:Math.round(Number(value)||0),source:'USER_ENTERED',confirmed:false,reason:'R8 room geometry'})});project=result.project||result;renderScene(false);return snapshot()}
+  async function setPalette(value){visual={...visual,r8_palette:value};if(project?.context)project.context.visual_direction=value;await saveVisual(visual,'R8 palette');setFurniturePalette();renderScene(false);return snapshot()}
+  function snapshot(){return{inputs:{...inputs},visual:{...visual},variant:{...(visual.r8_variant||{})},elements:[...(project?.room?.architectural_elements||[])],context:{...(project?.context||{})},room:roomValues(),modules:[...modules]}}
+  async function replaceState(state){if(state.inputs)await patchInputs(state.inputs,'R8 undo inputs');if(state.variant)await patchVariant(state.variant);if(state.elements)await patchElements(state.elements);return snapshot()}
+  window.BizetModelRuntime={ready:false,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,render:()=>renderScene(false)};
 
   const canvas=$('modelCanvas');
   canvas.addEventListener('pointerdown',event=>{drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:camera.yaw,pitch:camera.pitch};dragMoved=false;canvas.setPointerCapture?.(event.pointerId)});
@@ -119,6 +143,6 @@
   (async()=>{
     if(!projectId){$('modelStatus').textContent='Проект не найден';return}let engineOk=false;
     try{const recalc=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}/recalculate`,{method:'POST'});project=recalc.project;engineOk=!!recalc.legacy_engine_candidate_count}catch(_){project=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`)}
-    visual={...(project.scene?.visual_settings||{})};inputs={...(visual.guided_inputs||{})};resetCamera();renderScene(engineOk);
+    visual={...(project.scene?.visual_settings||{})};inputs={...(visual.guided_inputs||{})};setFurniturePalette();resetCamera();renderScene(engineOk);window.BizetModelRuntime.ready=true;window.dispatchEvent(new CustomEvent('bizet:modelready'));
   })().catch(error=>{$('modelStatus').textContent=error.message});
 })();
