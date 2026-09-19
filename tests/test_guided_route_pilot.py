@@ -18,17 +18,16 @@ def test_new_guided_routes_are_served():
         assert response.status_code == 200
 
 
-def test_straight_configuration_asks_wall_span_before_dimensions():
+def test_r8_configuration_goes_to_minimal_room_setup_then_workspace():
     index = read_static('index.html')
-    override = read_static('guided-route-start.js')
-    linear = read_static('linear-span.js')
-    assert '/static/guided-route-start.js' in index
-    assert "configuration.startsWith('WALL_') ? '/linear-span' : '/dimensions'" in override
-    for mode in ['FULL_WALL', 'LEFT_OFFSET', 'RIGHT_OFFSET', 'BOTH_OFFSETS']:
-        assert mode in linear
-    assert 'linear_left_offset_mm' in linear
-    assert 'linear_right_offset_mm' in linear
-    assert '/dimensions?project=' in linear
+    handoff = read_static('start-room-handoff.js')
+    room_setup = read_static('room-setup-r8.js')
+    assert '/static/guided-route-start.js' not in index
+    assert '/room-setup?project=' in handoff
+    assert '/workspace?project=' in room_setup
+    assert '/linear-span' not in handoff
+    assert '/dimensions' not in handoff
+    assert '/guided' not in handoff
 
 
 def test_dimensions_screen_uses_configuration_aware_surfaces():
