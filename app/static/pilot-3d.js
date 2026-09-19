@@ -47,10 +47,15 @@
 
   function colors(){
     const dark=document.documentElement.dataset.theme==='dark';
+    const palette=document.documentElement.dataset.furniturePalette||'light';
+    const lightSet={module:'#d7cfc1',moduleSide:'#c2b9aa',moduleFront:'#f0ece4',moduleTop:'#e8e2d7',system:'#d8d2c7',anchor:'#e7c858'};
+    const darkSet={module:'#383a3d',moduleSide:'#292b2e',moduleFront:'#4a4d52',moduleTop:'#55585e',system:'#34363a',anchor:'#5f6f91'};
+    const otherSet={module:'#b8b19f',moduleSide:'#8d8779',moduleFront:'#d7d0bc',moduleTop:'#cbc3ad',system:'#aaa391',anchor:'#789074'};
+    const furniture=palette==='dark'?darkSet:palette==='other'?otherSet:lightSet;
     return dark?{
-      bg:'#1c1c1a',floor:'#2a2925',wall:'#34322e',wallSoft:'rgba(67,64,58,.32)',wallActive:'rgba(189,157,66,.30)',grid:'rgba(245,240,230,.08)',line:'rgba(245,240,230,.25)',dimension:'rgba(245,240,230,.86)',ink:'#f3f1ec',module:'#4a4740',moduleSide:'#37352f',moduleFront:'#5a564d',moduleTop:'#686359',system:'#45423c',anchor:'#b99a43',worktop:'#111',badgeBg:'#f3f1ec',badgeInk:'#171716'
+      bg:'#1c1c1a',floor:'#2a2925',wall:'#34322e',wallSoft:'rgba(67,64,58,.32)',wallActive:'rgba(189,157,66,.30)',grid:'rgba(245,240,230,.08)',line:'rgba(245,240,230,.25)',dimension:'rgba(245,240,230,.86)',ink:'#f3f1ec',module:furniture.module,moduleSide:furniture.moduleSide,moduleFront:furniture.moduleFront,moduleTop:furniture.moduleTop,system:furniture.system,anchor:furniture.anchor,worktop:'#111',badgeBg:'#f3f1ec',badgeInk:'#171716'
     }:{
-      bg:'#eeebe3',floor:'#ddd7ca',wall:'#e5e0d6',wallSoft:'rgba(208,202,191,.27)',wallActive:'rgba(242,201,76,.25)',grid:'rgba(23,23,22,.065)',line:'rgba(23,23,22,.22)',dimension:'rgba(23,23,22,.78)',ink:'#171716',module:'#d7cfc1',moduleSide:'#c2b9aa',moduleFront:'#f0ece4',moduleTop:'#e8e2d7',system:'#d8d2c7',anchor:'#e7c858',worktop:'#242424',badgeBg:'#171716',badgeInk:'#f5f4f1'
+      bg:'#eeebe3',floor:'#ddd7ca',wall:'#e5e0d6',wallSoft:'rgba(208,202,191,.27)',wallActive:'rgba(242,201,76,.25)',grid:'rgba(23,23,22,.065)',line:'rgba(23,23,22,.22)',dimension:'rgba(23,23,22,.78)',ink:'#171716',module:furniture.module,moduleSide:furniture.moduleSide,moduleFront:furniture.moduleFront,moduleTop:furniture.moduleTop,system:furniture.system,anchor:furniture.anchor,worktop:'#242424',badgeBg:'#171716',badgeInk:'#f5f4f1'
     };
   }
 
@@ -153,10 +158,22 @@
     if(module.kind==='SINK')polygon(ctx,[p([module.x+module.w*.18,module.y+module.d*.22,topZ]),p([module.x+module.w*.82,module.y+module.d*.22,topZ]),p([module.x+module.w*.82,module.y+module.d*.72,topZ]),p([module.x+module.w*.18,module.y+module.d*.72,topZ])],'#aeb3b4','#707577',1.1);
   }
 
+  function drawArchitecturalElements(ctx,projector,elements=[]){
+    const p=projector.point,c=colors();
+    elements.forEach((e,i)=>{
+      const wall=String(e.wall||'A'),w=Math.max(100,Number(e.width_mm)||900),h=Math.max(100,Number(e.height_mm)||1200),x=Math.max(0,Number(e.x_mm)||0),z=Math.max(0,Number(e.z_mm)||0);
+      let pts=null;
+      if(wall==='A')pts=[p([x,projector.D-2,z]),p([Math.min(projector.L,x+w),projector.D-2,z]),p([Math.min(projector.L,x+w),projector.D-2,Math.min(projector.H,z+h)]),p([x,projector.D-2,Math.min(projector.H,z+h)])];
+      if(wall==='B')pts=[p([2,projector.D-x,z]),p([2,Math.max(0,projector.D-x-w),z]),p([2,Math.max(0,projector.D-x-w),Math.min(projector.H,z+h)]),p([2,projector.D-x,Math.min(projector.H,z+h)])];
+      if(wall==='C')pts=[p([projector.L-2,projector.D-x,z]),p([projector.L-2,Math.max(0,projector.D-x-w),z]),p([projector.L-2,Math.max(0,projector.D-x-w),Math.min(projector.H,z+h)]),p([projector.L-2,projector.D-x,Math.min(projector.H,z+h)])];
+      if(!pts)return;polygon(ctx,pts,'rgba(95,111,145,.14)','rgba(70,92,140,.72)',1.5);const m=faceCenter(pts);ctx.save();ctx.fillStyle=c.ink;ctx.font='700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillText(String(e.type||'ELEMENT'),m[0],m[1]);ctx.restore();
+    });
+  }
+
   function drawKitchenScene(canvas,options={}){
     const {ctx,width,height}=setupCanvas(canvas),configuration=options.configuration||'WALL_CENTER',room=options.room||{};
     const projector=createProjector(width,height,room,configuration,options.camera||{}),activeWalls=options.activeWalls||[],c=colors();
-    drawRoomBase(ctx,projector,configuration,activeWalls,options.showDimensions!==false);
+    drawRoomBase(ctx,projector,configuration,activeWalls,options.showDimensions!==false);drawArchitecturalElements(ctx,projector,options.architecturalElements||[]);
     const modules=Array.isArray(options.modules)?options.modules:[],hits=[];
     const lower=modules.filter(m=>m.level!=='upper'),upper=modules.filter(m=>m.level==='upper');
     activeWalls.forEach(wall=>drawPlinth(ctx,projector,lower.filter(m=>m.wall===wall)));
