@@ -247,9 +247,9 @@ function renderStep() {
   renderProgress(currentStep);
 
   // First screen: no back control exists visually or interactively.
+  $('backButton').hidden = currentStep === 0;
   const back=$('backButton');
   const first=currentStep===0;
-  back.hidden=first;
   if(first)back.style.setProperty('display','none','important');else back.style.removeProperty('display');
 
   const selected = project.context?.[step.field];
