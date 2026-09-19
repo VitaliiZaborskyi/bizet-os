@@ -89,7 +89,13 @@ def materials_pilot():
     return FileResponse(STATIC / "materials.html")
 
 
-@app.get("/room-setup", include_in_schema=False)\ndef room_setup_r8():\n    """Minimal room dimensions before the model-first workspace."""\n    return FileResponse(STATIC / "room-setup-r8.html")\n\n\n@app.get("/room", include_in_schema=False)
+@app.get("/room-setup", include_in_schema=False)
+def room_setup_r8():
+    """Minimal room dimensions before the model-first workspace."""
+    return FileResponse(STATIC / "room-setup-r8.html")
+
+
+@app.get("/room", include_in_schema=False)
 def room_viewport():
     """Preserved interactive room / geometry pilot."""
     return FileResponse(STATIC / "room.html")
