@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f5f2">
+  <title>BIZET OS — Габариты помещения</title>
+  <link rel="stylesheet" href="/static/room-setup-r8.css?v=83">
+</head>
+<body>
+  <header class="setup-topbar">
+    <button class="setup-back" id="setupBack" type="button" aria-label="Назад">←</button>
+    <div class="setup-brand"><span>ZABORSKY</span><strong>BIZET <i>OS</i></strong></div>
+    <div class="setup-step">ROOM / 01</div>
+  </header>
+
+  <main class="setup-main">
+    <section class="setup-copy">
+      <p class="setup-kicker">БАЗОВАЯ ГЕОМЕТРИЯ</p>
+      <h1>Три размера —<br>и строим кухню.</h1>
+      <p>Укажите только основные габариты помещения. Остальные параметры вы будете менять уже рядом с готовой моделью.</p>
+    </section>
+
+    <section class="setup-card">
+      <div class="setup-field">
+        <label for="roomLength">Длина основной стены</label>
+        <div class="setup-input"><input id="roomLength" type="number" inputmode="numeric" min="1000" step="1" value="6000"><span>мм</span></div>
+      </div>
+      <div class="setup-field">
+        <label for="roomDepth">Глубина помещения</label>
+        <div class="setup-input"><input id="roomDepth" type="number" inputmode="numeric" min="1000" step="1" value="4200"><span>мм</span></div>
+      </div>
+      <div class="setup-field">
+        <label for="roomHeight">Высота помещения</label>
+        <div class="setup-input"><input id="roomHeight" type="number" inputmode="numeric" min="2000" step="1" value="2800"><span>мм</span></div>
+      </div>
+
+      <div class="setup-config">
+        <span>Конфигурация</span>
+        <strong id="configurationLabel">—</strong>
+      </div>
+
+      <p class="setup-error" id="setupError" hidden></p>
+      <button class="setup-create" id="createBaseModel" type="button">
+        <span>Создать базовый вариант</span><b>→</b>
+      </button>
+    </section>
+  </main>
+
+  <script src="/static/pilot-r8-shell.js?v=83"></script>
+  <script src="/static/room-setup-r8.js?v=83"></script>
+</body>
+</html>
