@@ -7,8 +7,8 @@
  function field(label,key,choices){const current=rt.getInputs()[key];return '<label class="r8-field"><span>'+label+'</span><select data-input="'+key+'">'+choices.map(x=>option(x[0],x[1])).join('')+'</select></label>'}
  function numberField(label,key,def,min){const current=Number(rt.getInputs()[key]??def);return '<label class="r8-field"><span>'+label+'</span><input type="number" min="'+(min||0)+'" step="1" value="'+current+'" data-number="'+key+'"></label>'}
  function bindInputs(){
-   document.querySelectorAll('[data-input]').forEach(el=>{const v=rt.getInputs()[el.dataset.input];if(v!==undefined&&v!==null)el.value=String(v);el.onchange=async()=>{locks.add(el.dataset.input);saveLocks();let value=el.value;if(/^\d+$/.test(value))value=Number(value);await commitInputs({[el.dataset.input]:value},'R8 editor: '+el.dataset.input)}});
-   document.querySelectorAll('[data-number]').forEach(el=>{el.onchange=async()=>{locks.add(el.dataset.number);saveLocks();await commitInputs({[el.dataset.number]:Math.round(Number(el.value)||0)},'R8 numeric: '+el.dataset.number)}});
+   document.querySelectorAll('[data-input]').forEach(el=>{const key=el.dataset.input;if(!key.startsWith('__')){const v=rt.getInputs()[key];if(v!==undefined&&v!==null)el.value=String(v);el.onchange=async()=>{locks.add(key);saveLocks();let value=el.value;if(/^\d+$/.test(value))value=Number(value);await commitInputs({[key]:value},'R8 editor: '+key)}}});
+   document.querySelectorAll('[data-number]').forEach(el=>{const key=el.dataset.number;if(key.startsWith('__room_')){el.onchange=async()=>{const map={__room_length:'lengthMm',__room_depth:'depthMm',__room_height:'heightMm'};pushUndo();await rt.patchRoom(map[key],Math.round(Number(el.value)||0));updateReadiness()}}else if(!key.startsWith('__')){el.onchange=async()=>{locks.add(key);saveLocks();await commitInputs({[key]:Math.round(Number(el.value)||0)},'R8 numeric: '+key)}}});
    document.querySelectorAll('[data-action]').forEach(el=>el.onclick=()=>runAction(el.dataset.action));
  }
  async function commitInputs(patch,reason){pushUndo();await rt.patchInputs(patch,reason);updateReadiness();refreshPanel();}
