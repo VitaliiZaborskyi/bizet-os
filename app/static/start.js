@@ -288,8 +288,6 @@ async function choose(value) {
       body: JSON.stringify({ answer: value }),
     });
     project = result.project;
-    if(window.BizetTransition?.play) await window.BizetTransition.play({duration:1200});
-
     if (editingFromSummary) {
       editingFromSummary = false;
       currentStep = STEPS.length;
