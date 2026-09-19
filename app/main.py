@@ -25,7 +25,7 @@ async def pilot_cache_headers(request: Request, call_next):
     path = request.url.path
     if path.startswith("/static/"):
         response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=86400"
-    elif path in {"/", "/room", "/workspace", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/communications", "/materials"}:
+    elif path in {"/", "/room", "/room-setup", "/workspace", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/communications", "/materials"}:
         response.headers["Cache-Control"] = "no-cache"
     return response
 
@@ -89,7 +89,7 @@ def materials_pilot():
     return FileResponse(STATIC / "materials.html")
 
 
-@app.get("/room", include_in_schema=False)
+@app.get("/room-setup", include_in_schema=False)\ndef room_setup_r8():\n    """Minimal room dimensions before the model-first workspace."""\n    return FileResponse(STATIC / "room-setup-r8.html")\n\n\n@app.get("/room", include_in_schema=False)
 def room_viewport():
     """Preserved interactive room / geometry pilot."""
     return FileResponse(STATIC / "room.html")
