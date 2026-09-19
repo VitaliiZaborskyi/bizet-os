@@ -19,7 +19,7 @@
       .r8-transition.is-leaving{opacity:0;pointer-events:none}
       .r8-transition-stage{position:relative;width:100%;height:100%;display:grid;place-items:center;perspective:1200px}
       .r8-word{
-        position:absolute;white-space:nowrap;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+        position:absolute;left:50%;top:50%;white-space:nowrap;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
         color:transparent;background:
           linear-gradient(110deg,#4b4b4b 0%,#f8f8f8 15%,#777 27%,#fff 42%,#5f5f5f 55%,#e9e9e9 70%,#696969 82%,#f6f6f6 100%);
         background-size:260% 100%;-webkit-background-clip:text;background-clip:text;
