@@ -17,11 +17,11 @@ def test_room_route_serves_interactive_viewport():
     assert 'Коммуникации и особенности помещения' in response.text
 
 
-def test_start_summary_handoff_opens_room_route():
+def test_start_summary_handoff_opens_clean_room_setup_route():
     html = (ROOT / 'app/static/index.html').read_text(encoding='utf-8')
     handoff = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
     assert '/static/start-room-handoff.js' in html
-    assert '/room?project=' in handoff
+    assert '/room-setup?project=' in handoff
     assert 'configurationContinue5' in handoff
 
 
