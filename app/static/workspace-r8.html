@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f5f2">
+  <title>BIZET OS — Рабочая модель</title>
+  <link rel="stylesheet" href="/static/start.css">
+  <link rel="stylesheet" href="/static/model.css">
+  <link rel="stylesheet" href="/static/model-r5.css">
+  <link rel="stylesheet" href="/static/pilot-shell.css">
+  <link rel="stylesheet" href="/static/workspace-r8.css">
+</head>
+<body class="r8-workspace-body">
+  <div class="r8-shell">
+    <header class="r8-topbar">
+      <button class="r8-icon" id="backButton" type="button" aria-label="Назад">←</button>
+      <a class="r8-brand" href="/"><span class="r8-master">ZABORSKY</span><strong>BIZET <i>OS</i></strong></a>
+      <div class="r8-project-state">
+        <span>Базовый вариант</span>
+        <button class="r8-info" id="baseInfoButton" type="button" aria-label="О базовом варианте">i</button>
+      </div>
+      <button class="r8-icon" id="settingsButton" type="button" aria-label="Настройки">•••</button>
+    </header>
+
+    <main class="r8-main">
+      <nav class="r8-tools" id="workspaceTools" aria-label="Настройки проекта">
+        <button class="is-active" data-panel="room" type="button"><span>01</span>Помещение</button>
+        <button data-panel="appliances" type="button"><span>02</span>Техника</button>
+        <button data-panel="upper" type="button"><span>03</span>Верхние модули</button>
+        <button data-panel="communications" type="button"><span>04</span>Коммуникации</button>
+        <button data-panel="elements" type="button"><span>05</span>Элементы стен</button>
+        <button data-panel="materials" type="button"><span>06</span>Материалы</button>
+      </nav>
+
+      <section class="r8-canvas-column">
+        <div class="r8-stage" id="modelStage">
+          <canvas id="modelCanvas" class="model-canvas" aria-label="Интерактивная модель кухни"></canvas>
+          <div class="r8-stage-top">
+            <button class="r8-pill" id="modelDimensionsToggle" type="button" aria-pressed="true">Размеры · вкл</button>
+            <button class="r8-pill r8-undo" id="undoButton" type="button" disabled title="Отменить последнее изменение">↶</button>
+          </div>
+          <div class="r8-variant-controls">
+            <button class="r8-arrow" id="prevVariant" type="button" aria-label="Предыдущий вариант">←</button>
+            <span id="variantCounter">1 / 1</span>
+            <button class="r8-arrow" id="nextVariant" type="button" aria-label="Следующий вариант">→</button>
+            <button class="r8-random" id="randomVariant" type="button">Другой вариант</button>
+          </div>
+        </div>
+
+        <div class="r8-progress-wrap">
+          <div class="r8-progress-copy"><span>Готовность проекта</span><strong id="readinessValue">—</strong></div>
+          <div class="r8-progress"><i id="readinessBar"></i></div>
+        </div>
+
+        <div class="module-strip r8-module-strip" id="moduleStrip" aria-label="Модули кухни"></div>
+        <p class="model-status r8-status" id="modelStatus">Формируем базовый вариант…</p>
+      </section>
+
+      <aside class="r8-panel" id="editorPanel">
+        <div class="r8-panel-head">
+          <div><small id="panelKicker">01 · ПОМЕЩЕНИЕ</small><h2 id="panelTitle">Уточните проект</h2></div>
+          <button class="r8-panel-close" id="panelClose" type="button" aria-label="Свернуть">×</button>
+        </div>
+        <div class="r8-panel-body" id="panelBody"></div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="r8-popover" id="baseInfoPopover" hidden>
+    <button type="button" id="baseInfoClose">×</button>
+    <strong>Базовый вариант</strong>
+    <p>Сформирован автоматически по выбранной конфигурации, размерам помещения и уже известным системе данным. Уточняйте параметры — модель будет перестраиваться.</p>
+  </div>
+
+  <dialog class="module-dialog" id="moduleDialog">
+    <div class="module-card">
+      <button class="dialog-close" id="moduleClose" type="button">×</button>
+      <h2 id="moduleTitle">Модуль</h2><p id="moduleCopy"></p>
+      <div class="coordinate-box"><span>Горизонтальное смещение вдоль ряда</span><strong id="moduleOffset">0 мм</strong><div><button data-nudge="-50" type="button">−50</button><button data-nudge="-30" type="button">−30</button><button data-nudge="30" type="button">+30</button><button data-nudge="50" type="button">+50</button></div></div>
+    </div>
+  </dialog>
+
+  <button id="materialsButton" type="button" hidden>Материалы</button>
+
+  <script src="/static/pilot-r8-shell.js"></script>
+  <script src="/static/pilot-shell.js"></script>
+  <script src="/static/pilot-3d.js"></script>
+  <script src="/static/model-r5-pre.js"></script>
+  <script src="/static/model-r6-dimensions.js"></script>
+  <script src="/static/model.js"></script>
+  <script src="/static/model-r5.js"></script>
+  <script src="/static/pilot-r6.js"></script>
+  <script src="/static/workspace-r8.js"></script>
+</body>
+</html>
