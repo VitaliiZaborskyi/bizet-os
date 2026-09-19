@@ -466,7 +466,7 @@ function buildScreenFive() {
     if (!selectedConfiguration || savingConfiguration) return;
     const id = currentProjectId();
     if (!id) return;
-    window.location.assign(`/room?project=${encodeURIComponent(id)}`);
+    window.location.assign(`/room-setup?project=${encodeURIComponent(id)}`);
   });
   syncConfigurationSelection();
   window.scrollTo({ top: 0, behavior: 'auto' });
