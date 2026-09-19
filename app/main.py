@@ -24,7 +24,7 @@ async def pilot_cache_headers(request: Request, call_next):
     response = await call_next(request)
     path = request.url.path
     if path.startswith("/static/"):
-        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=86400"
     elif path in {"/", "/room", "/workspace", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/communications", "/materials"}:
         response.headers["Cache-Control"] = "no-cache"
     return response
