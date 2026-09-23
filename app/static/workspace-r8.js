@@ -53,7 +53,7 @@
    });
    document.querySelectorAll('[data-action]').forEach(el=>el.onclick=()=>runAction(el.dataset.action));
  }
- async function commitInputs(patch,reason){pushUndo();await rt.patchInputs(patch,reason);updateReadiness();refreshPanel();saveCurrentVariantSlot();}
+ async function commitInputs(patch,reason){const top=$('editorPanel').scrollTop;pushUndo();await rt.patchInputs(patch,reason);updateReadiness();refreshPanel();requestAnimationFrame(()=>{$('editorPanel').scrollTop=top});saveCurrentVariantSlot();}
  async function commitVariant(patch){pushUndo();await rt.patchVariant(patch);updateReadiness();saveCurrentVariantSlot();}
  function pushUndo(){
    if(!rt)return;
@@ -106,6 +106,7 @@
  function selectPanel(panel){
    document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.toggle('is-active',b.dataset.panel===panel));
    renderPanel(panel);
+   $('editorPanel').scrollTop=0;
  }
  function refreshPanel(){renderPanel(activePanel)}
  function renderElements(){const n=$('elementList');if(!n)return;const els=rt.getElements();n.innerHTML=els.length?els.map((e,i)=>'<div class="r8-field"><span>'+(i+1)+'. '+esc(e.type)+' · стена '+esc(e.wall)+'</span><button class="r8-save" data-remove-element="'+i+'">Удалить</button></div>').join(''):'<p>Пока нет дополнительных элементов.</p>';n.querySelectorAll('[data-remove-element]').forEach(b=>b.onclick=async()=>{pushUndo();const a=[...rt.getElements()];a.splice(Number(b.dataset.removeElement),1);await rt.patchElements(a);renderElements();updateReadiness()})}
