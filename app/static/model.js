@@ -51,7 +51,8 @@
     const list=[],walls=activeWalls(),fWall=fridgeWall();
     if(inputs.fridge_present==='YES'){
       const width=Number(inputs.fridge_width_mm)||600,tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
-      const fridgeExtra={tall:true,h:tallHeight,content:inputs.fridge_content||'PENDING',freestanding:inputs.fridge_type==='FREESTANDING',appliance_width_mm:width};
+      const freeFridge=inputs.fridge_type==='FREESTANDING';
+      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:PLINTH_H,content:inputs.fridge_content||'PENDING',freestanding:freeFridge,appliance_width_mm:width};
       if(inputs.fridge_type==='BUILT_IN'&&width===1200){
         list.push(baseModule('fridge-left','Холодильник L',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_left_unit||'PENDING'}));
         list.push(baseModule('fridge-right','Холодильник R',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_right_unit||'PENDING'}));
