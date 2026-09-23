@@ -1,4 +1,39 @@
 (()=> {
+  const THEME_KEY='bizet_os_theme';
+  const initialTheme=localStorage.getItem(THEME_KEY)||'dark';
+  document.documentElement.dataset.theme=initialTheme;
+  if(!localStorage.getItem(THEME_KEY)) localStorage.setItem(THEME_KEY,initialTheme);
+
+  function ensureAppMeta(){
+    if(!document.querySelector('link[rel="manifest"]')){
+      const link=document.createElement('link');link.rel='manifest';link.href='/static/manifest.webmanifest';document.head.appendChild(link);
+    }
+    const metas=[
+      ['mobile-web-app-capable','yes'],
+      ['apple-mobile-web-app-capable','yes'],
+      ['apple-mobile-web-app-status-bar-style','black-translucent'],
+      ['apple-mobile-web-app-title','BIZET OS']
+    ];
+    metas.forEach(([name,content])=>{if(!document.querySelector('meta[name="'+name+'"]')){const m=document.createElement('meta');m.name=name;m.content=content;document.head.appendChild(m)}});
+    if(!document.querySelector('link[rel="apple-touch-icon"]')){const i=document.createElement('link');i.rel='apple-touch-icon';i.href='/static/bizet-app-icon.svg';document.head.appendChild(i)}
+    const standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
+    document.documentElement.classList.toggle('bizet-standalone',!!standalone);
+  }
+  ensureAppMeta();
+
+  let hiddenAt=0,lastResume=0,resumeTimer=0;
+  function signalResume(reason){
+    if(document.visibilityState==='hidden')return;
+    const now=Date.now();
+    if(now-lastResume<700)return;
+    lastResume=now;
+    clearTimeout(resumeTimer);
+    resumeTimer=setTimeout(()=>window.dispatchEvent(new CustomEvent('bizet:resume',{detail:{reason,hidden_ms:hiddenAt?Math.max(0,Date.now()-hiddenAt):0}})),70);
+  }
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')hiddenAt=Date.now();else signalResume('visibility')});
+  window.addEventListener('pageshow',event=>signalResume(event.persisted?'bfcache':'pageshow'));
+  window.addEventListener('focus',()=>{if(hiddenAt&&Date.now()-hiddenAt>1500)signalResume('focus')});
+
   if(window.BizetTransition) return;
   if(!document.getElementById('r8SplashStyle')){
     const s=document.createElement('style');
