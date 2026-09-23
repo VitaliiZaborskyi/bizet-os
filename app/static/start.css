@@ -56,6 +56,7 @@ button { color: inherit; }
   font-weight: 800;
   letter-spacing: .18em;
   font-size: 17px;
+  white-space: nowrap;
 }
 .brand span { font-weight: 450; color: var(--muted); letter-spacing: .08em; }
 .icon-button {
@@ -67,7 +68,7 @@ button { color: inherit; }
 .back-button:hover { transform: translateX(-2px); }
 .menu-button { font-size: 15px; letter-spacing: 2px; font-weight: 800; }
 .menu-button:hover { transform: translateY(-1px); }
-.settings-wrap { justify-self: end; position: relative; }
+.settings-wrap { justify-self: end; position: relative; display:flex; align-items:center; gap:6px; }
 .settings-panel {
   position: absolute;
   right: 0;
