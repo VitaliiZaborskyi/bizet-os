@@ -22,7 +22,8 @@ def test_start_summary_handoff_opens_clean_room_setup_route():
     handoff = (ROOT / 'app/static/start-room-handoff.js').read_text(encoding='utf-8')
     assert '/static/start-room-handoff.js' in html
     assert '/room-setup?project=' in handoff
-    assert 'configurationContinue5' in handoff
+    assert 'configurationContinue5' not in handoff
+    assert "window.location.assign('/room-setup?project='" in handoff
 
 
 def test_room_camera_is_persisted_in_project_scene():
