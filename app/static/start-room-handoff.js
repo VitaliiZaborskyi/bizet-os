@@ -399,8 +399,6 @@ function syncConfigurationSelection() {
     card.classList.toggle('is-selected', selected);
     card.setAttribute('aria-pressed', String(selected));
   });
-  const button = document.getElementById('configurationContinue5');
-  if (button) button.disabled = !selectedConfiguration || savingConfiguration;
 }
 
 async function saveConfiguration(code) {
