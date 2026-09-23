@@ -6,7 +6,7 @@
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false,dimensionsVisible=true;
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
-  const LOWER_DEPTH=560,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
+  const LOWER_DEPTH=510,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
   const UPPER_DEPTH=320,UPPER_HOOD_DEPTH=350,UPPER_MAX_H=1000,CUTLERY_W=400;
 
   async function request(url,options={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});if(!r.ok){let p={};try{p=await r.json()}catch(_){};throw new Error(typeof p.detail==='string'?p.detail:'Не удалось загрузить модель.')}return r.json()}
@@ -87,6 +87,27 @@
     return{start:0,end:full,span:full};
   }
 
+  function splitResidual(total,wall){
+    const min=300,max=900,grid=50;
+    const value=Math.round(Number(total)||0);
+    if(value<min)return[];
+    let count=Math.max(1,Math.ceil(value/max));
+    while(count>1&&value/count<min)count-=1;
+    const raw=value/count;
+    const widths=[],remaining=()=>value-widths.reduce((a,b)=>a+b,0);
+    for(let i=0;i<count;i++){
+      if(i===count-1){widths.push(remaining());break}
+      let w=Math.round(raw/grid)*grid;
+      const slots=count-i-1;
+      w=Math.max(min,Math.min(max,w));
+      if(remaining()-w<slots*min)w=remaining()-slots*min;
+      if(remaining()-w>slots*max)w=remaining()-slots*max;
+      widths.push(Math.round(w));
+    }
+    if(widths.some(w=>w<min||w>max))return[];
+    return widths.map((w,i)=>baseModule(`system-fill-${wall}-${i+1}`,'Модуль',w,'HINGED',wall,{anchor:false,pending:true,system:true}));
+  }
+
   function arrangeWall(wall,list,room){
     const bounds=runBounds(wall,room),variant=variantState(),edge=edgeForWall(wall);
     let regular=list.filter(m=>!m.tall),tall=list.filter(m=>m.tall);
@@ -118,14 +139,14 @@
 
     const remaining=bounds.span-used;
     if(remaining>=300){
-      const fill=baseModule(`system-fill-${wall}`,'Модуль',remaining,'HINGED',wall,{anchor:false,pending:true,system:true});
+      const fills=splitResidual(remaining,wall);
       if(tall.length&&edge==='END'){
         const firstTall=ordered.findIndex(m=>m.tall);
-        ordered.splice(firstTall<0?ordered.length:firstTall,0,fill);
+        ordered.splice(firstTall<0?ordered.length:firstTall,0,...fills);
       }else if(tall.length&&edge==='START'){
         let lastTall=-1;ordered.forEach((m,i)=>{if(m.tall)lastTall=i});
-        ordered.splice(lastTall+1,0,fill);
-      }else ordered.push(fill);
+        ordered.splice(lastTall+1,0,...fills);
+      }else ordered.push(...fills);
     }
 
     let cursor=bounds.start;
@@ -194,7 +215,16 @@
     $('moduleStrip').innerHTML=modules.map(m=>`<button class="module-strip-button${m.system||m.pending?' is-system':''}" type="button" data-module="${m.id}"><strong>${m.number}</strong><span>${m.label}</span></button>`).join('');
     $('moduleStrip').querySelectorAll('[data-module]').forEach(btn=>btn.addEventListener('click',()=>openModule(btn.dataset.module)));
   }
-  function renderScene(engineOk=false){setFurniturePalette();modules=buildModules();scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible,architecturalElements:project?.room?.architectural_elements||[]});renderStrip();$('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки; остаточное деление ещё не заморожено.':'3D-пилот · исходные точки собраны, незакреплённое остаточное деление остаётся визуальным слоем.'}
+  let suppressModuleOpenUntil=0;
+  function renderScene(engineOk=false){
+    setFurniturePalette();
+    modules=buildModules();
+    scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible,architecturalElements:project?.room?.architectural_elements||[]});
+    renderStrip();
+    try{sessionStorage.setItem('bizet_r5_model_snapshot',JSON.stringify({room:roomValues(),activeWalls:activeWalls(),modules:[...modules],configuration:configuration()}))}catch(_){}
+    window.dispatchEvent(new CustomEvent('bizet:modelrendered',{detail:{modules:[...modules]}}));
+    $('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки.':'3D-пилот · конфигурация пересчитана по текущим правилам.';
+  }
 
   function offsets(){return{...(visual.module_offsets_mm||{})}}
   function runDimension(m){return m.wall==='A'?m.w:m.d}
@@ -213,6 +243,7 @@
     const el=$('moduleValidation');if(!el)return;el.textContent=message;el.hidden=!message;
   }
   function openModule(id){
+    if(Date.now()<suppressModuleOpenUntil)return;
     activeModule=modules.find(m=>m.id===id)||null;if(!activeModule)return;
     $('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;
     $('moduleCopy').textContent=detailText(activeModule);
@@ -232,6 +263,7 @@
     const requiredRun=activeModule.kind==='SINK'&&Number(activeModule.sink_bowl_count)===2?900:minRun;
     if(!Number.isFinite(h)||h<100||!Number.isFinite(d)||d<100){setValidation('Высота и глубина должны быть не меньше 100 мм.');return}
     if(!widthLocked(activeModule)&&!activeModule.pending&&(!Number.isFinite(w)||w<requiredRun)){setValidation(`Минимальная допустимая ширина для этого модуля: ${requiredRun} мм.`);return}
+    if(!widthLocked(activeModule)&&w>900){setValidation('Для прямого модуля Категории I максимальная ширина — 900 мм.');return}
     if(Math.abs(off)>600){setValidation('Смещение больше 600 мм требует проверки конструктора.');return}
     const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets();
     const currentRun=Math.round(runDimension(activeModule));
@@ -294,7 +326,7 @@
     }
     resumeFromSleep.busy=false;
   }
-  window.BizetModelRuntime={ready:false,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
+  window.BizetModelRuntime={ready:false,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,suppressModuleOpen:(ms=500)=>{suppressModuleOpenUntil=Date.now()+ms},render:()=>renderScene(false),constants:{LOWER_DEPTH,PLINTH_H,WORKTOP_H,LOWER_TOTAL_H,LOWER_BODY_H,UPPER_DEPTH}};
 
   const canvas=$('modelCanvas');
   canvas.addEventListener('pointerdown',event=>{drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:camera.yaw,pitch:camera.pitch};dragMoved=false;canvas.setPointerCapture?.(event.pointerId)});
