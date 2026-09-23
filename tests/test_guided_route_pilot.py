@@ -187,8 +187,10 @@ def test_model_and_materials_keep_deferred_rules_explicit():
     materials = read_static('materials.html')
     assert '/recalculate' in model_js
     assert 'module_offsets_mm' in model_js
-    assert 'Полный зависимый пересчёт соседних модулей — следующий слой.' in model_js
-    assert 'Финальное количество и ширины модулей должен определить Module Engine' in model_js
+    assert 'module_size_overrides' in model_js
+    assert 'applyModuleCustomization' in model_js
+    assert 'зависимые остаточные модули перестроены' in model_js
+    assert 'Остаточное пространство' in model_js
     assert 'По умолчанию из комплектации' in materials
     assert 'следующий слой' in materials
 
