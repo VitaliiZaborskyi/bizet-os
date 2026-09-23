@@ -158,15 +158,70 @@
     if(module.kind==='SINK')polygon(ctx,[p([module.x+module.w*.18,module.y+module.d*.22,topZ]),p([module.x+module.w*.82,module.y+module.d*.22,topZ]),p([module.x+module.w*.82,module.y+module.d*.72,topZ]),p([module.x+module.w*.18,module.y+module.d*.72,topZ])],'#aeb3b4','#707577',1.1);
   }
 
+  function drawFreestandingDishwasher(ctx,projector,module,c){
+    const panel=Math.max(0,Number(module.side_panel_mm)||18),appliance=Math.max(300,Number(module.appliance_width_mm)||600);
+    let applianceBox=null,leftPanel=null,rightPanel=null;
+    const fullH=module.z+module.h;
+    if(module.wall==='A'){
+      leftPanel={x:module.x,y:module.y,z:0,w:panel,d:module.d,h:fullH};
+      applianceBox={x:module.x+panel,y:module.y+10,z:0,w:appliance,d:Math.max(100,module.d-10),h:fullH};
+      rightPanel={x:module.x+panel+appliance,y:module.y,z:0,w:panel,d:module.d,h:fullH};
+    }else{
+      leftPanel={x:module.x,y:module.y,z:0,w:module.w,d:panel,h:fullH};
+      applianceBox={x:module.x+8,y:module.y+panel,z:0,w:Math.max(100,module.w-8),d:appliance,h:fullH};
+      rightPanel={x:module.x,y:module.y+panel+appliance,z:0,w:module.w,d:panel,h:fullH};
+    }
+    drawBox(ctx,projector,leftPanel,{body:c.module,side:c.moduleSide,front:c.moduleFront,top:c.moduleTop});
+    const applianceFaces=drawBox(ctx,projector,applianceBox,{body:'#60656a',side:'#4b5054',front:'#72777c',top:'#858a8e',stroke:'rgba(0,0,0,.36)'});
+    drawBox(ctx,projector,rightPanel,{body:c.module,side:c.moduleSide,front:c.moduleFront,top:c.moduleTop});
+    const face=moduleFrontFace(applianceFaces,module),p=projector.point;
+    if(module.wall==='A'){
+      const y=applianceBox.y-2,z=fullH*.78;
+      line(ctx,p([applianceBox.x+applianceBox.w*.12,y,z]),p([applianceBox.x+applianceBox.w*.88,y,z]),'rgba(20,20,20,.72)',2);
+    }
+    return face;
+  }
+
+  function drawFreestandingHood(ctx,projector,module,c){
+    const canopyH=Math.min(190,Math.max(120,module.h*.22));
+    const chimneyH=Math.max(160,module.h-canopyH);
+    if(module.wall==='A'){
+      const canopy=drawBox(ctx,projector,{x:module.x,y:module.y,z:module.z,w:module.w,d:module.d,h:canopyH},{body:'#2c2f31',side:'#222527',front:'#383c3f',top:'#464a4d',stroke:'rgba(0,0,0,.4)'});
+      const cw=Math.max(120,module.w*.32),cd=Math.max(90,module.d*.42);
+      drawBox(ctx,projector,{x:module.x+(module.w-cw)/2,y:module.y+(module.d-cd)/2,z:module.z+canopyH,w:cw,d:cd,h:chimneyH},{body:'#33373a',side:'#25292b',front:'#41464a',top:'#50555a',stroke:'rgba(0,0,0,.4)'});
+      return moduleFrontFace(canopy,module);
+    }
+    return moduleFrontFace(drawBox(ctx,projector,module,{body:'#2c2f31',side:'#222527',front:'#383c3f',top:'#464a4d',stroke:'rgba(0,0,0,.4)'}),module);
+  }
+
   function drawArchitecturalElements(ctx,projector,elements=[]){
     const p=projector.point,c=colors();
     elements.forEach((e,i)=>{
-      const wall=String(e.wall||'A'),w=Math.max(100,Number(e.width_mm)||900),h=Math.max(100,Number(e.height_mm)||1200),x=Math.max(0,Number(e.x_mm)||0),z=Math.max(0,Number(e.z_mm)||0);
-      let pts=null;
-      if(wall==='A')pts=[p([x,projector.D-2,z]),p([Math.min(projector.L,x+w),projector.D-2,z]),p([Math.min(projector.L,x+w),projector.D-2,Math.min(projector.H,z+h)]),p([x,projector.D-2,Math.min(projector.H,z+h)])];
-      if(wall==='B')pts=[p([2,projector.D-x,z]),p([2,Math.max(0,projector.D-x-w),z]),p([2,Math.max(0,projector.D-x-w),Math.min(projector.H,z+h)]),p([2,projector.D-x,Math.min(projector.H,z+h)])];
-      if(wall==='C')pts=[p([projector.L-2,projector.D-x,z]),p([projector.L-2,Math.max(0,projector.D-x-w),z]),p([projector.L-2,Math.max(0,projector.D-x-w),Math.min(projector.H,z+h)]),p([projector.L-2,projector.D-x,Math.min(projector.H,z+h)])];
-      if(!pts)return;polygon(ctx,pts,'rgba(95,111,145,.14)','rgba(70,92,140,.72)',1.5);const m=faceCenter(pts);ctx.save();ctx.fillStyle=c.ink;ctx.font='700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillText(String(e.type||'ELEMENT'),m[0],m[1]);ctx.restore();
+      const wall=String(e.wall||'A'),w=Math.max(100,Number(e.width_mm)||900),h=Math.max(100,Number(e.height_mm)||1200),offset=Math.max(0,Number(e.x_mm)||0),z=Math.max(0,Number(e.z_mm)||0),depth=Math.max(0,Number(e.depth_mm)||0);
+      const solid=depth>0&&['RADIATOR','COLUMN','PROJECTION','BEAM','CURTAIN_RECESS','OTHER'].includes(String(e.type||''));
+      let pts=null,box=null;
+      if(wall==='A'){
+        pts=[p([offset,projector.D-2,z]),p([Math.min(projector.L,offset+w),projector.D-2,z]),p([Math.min(projector.L,offset+w),projector.D-2,Math.min(projector.H,z+h)]),p([offset,projector.D-2,Math.min(projector.H,z+h)])];
+        if(solid)box={x:offset,y:Math.max(0,projector.D-depth),z,w:Math.min(w,projector.L-offset),d:depth,h:Math.min(h,projector.H-z)};
+      }
+      if(wall==='D'){
+        pts=[p([offset,2,z]),p([Math.min(projector.L,offset+w),2,z]),p([Math.min(projector.L,offset+w),2,Math.min(projector.H,z+h)]),p([offset,2,Math.min(projector.H,z+h)])];
+        if(solid)box={x:offset,y:0,z,w:Math.min(w,projector.L-offset),d:depth,h:Math.min(h,projector.H-z)};
+      }
+      if(wall==='B'){
+        const y0=Math.max(0,projector.D-offset-w),y1=Math.min(projector.D,projector.D-offset);
+        pts=[p([2,y1,z]),p([2,y0,z]),p([2,y0,Math.min(projector.H,z+h)]),p([2,y1,Math.min(projector.H,z+h)])];
+        if(solid)box={x:0,y:y0,z,w:depth,d:y1-y0,h:Math.min(h,projector.H-z)};
+      }
+      if(wall==='C'){
+        const y0=Math.max(0,projector.D-offset-w),y1=Math.min(projector.D,projector.D-offset);
+        pts=[p([projector.L-2,y1,z]),p([projector.L-2,y0,z]),p([projector.L-2,y0,Math.min(projector.H,z+h)]),p([projector.L-2,y1,Math.min(projector.H,z+h)])];
+        if(solid)box={x:Math.max(0,projector.L-depth),y:y0,z,w:depth,d:y1-y0,h:Math.min(h,projector.H-z)};
+      }
+      if(!pts)return;
+      if(box&&box.w>0&&box.d>0)drawBox(ctx,projector,box,{body:'rgba(95,111,145,.28)',side:'rgba(75,91,125,.32)',front:'rgba(110,126,160,.34)',top:'rgba(130,143,170,.30)',stroke:'rgba(70,92,140,.78)'});
+      else polygon(ctx,pts,'rgba(95,111,145,.14)','rgba(70,92,140,.72)',1.5);
+      const m=faceCenter(pts);ctx.save();ctx.fillStyle=c.ink;ctx.font='700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillText(String(e.type||'ELEMENT'),m[0],m[1]);ctx.restore();
     });
   }
 
@@ -178,9 +233,24 @@
     const lower=modules.filter(m=>m.level!=='upper'),upper=modules.filter(m=>m.level==='upper');
     activeWalls.forEach(wall=>drawPlinth(ctx,projector,lower.filter(m=>m.wall===wall)));
     const drawModule=module=>{
-      const system=module.pending||module.system;const anchor=module.anchor&&!system;
-      const style=module.kind==='UPPER_HOOD'&&module.hood_type==='FREESTANDING'?{body:'#282828',side:'#202020',front:'#252525',top:'#353535'}:system?{body:c.system,side:c.moduleSide,front:c.system,top:c.moduleTop}:anchor?{body:c.module,side:c.moduleSide,front:c.anchor,top:c.moduleTop}:{};
-      const faces=drawBox(ctx,projector,module,style);const front=moduleFrontFace(faces,module);drawModuleDetails(ctx,projector,module,c);drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front});
+      let front=null;
+      if(module.kind==='DISHWASHER'&&module.freestanding){
+        front=drawFreestandingDishwasher(ctx,projector,module,c);
+      }else if(module.kind==='UPPER_HOOD'&&module.hood_type==='FREESTANDING'){
+        front=drawFreestandingHood(ctx,projector,module,c);
+      }else{
+        const system=module.pending||module.system,anchor=module.anchor&&!system;
+        const freeFridge=module.kind==='FRIDGE'&&module.freestanding;
+        const style=freeFridge?{body:'#5b6065',side:'#484d51',front:'#6c7277',top:'#7e8489',stroke:'rgba(0,0,0,.38)'}:system?{body:c.system,side:c.moduleSide,front:c.system,top:c.moduleTop}:anchor?{body:c.module,side:c.moduleSide,front:c.anchor,top:c.moduleTop}:{};
+        const faces=drawBox(ctx,projector,module,style);front=moduleFrontFace(faces,module);
+        drawModuleDetails(ctx,projector,module,c);
+        if(freeFridge&&module.wall==='A'){
+          const p=projector.point,y=module.y-2,mid=module.x+module.w*.5;
+          line(ctx,p([mid,y,module.z+module.h*.06]),p([mid,y,module.z+module.h*.94]),'rgba(20,20,20,.48)',1.1);
+          line(ctx,p([module.x+module.w*.82,y,module.z+module.h*.33]),p([module.x+module.w*.82,y,module.z+module.h*.67]),'rgba(15,15,15,.72)',3);
+        }
+      }
+      drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front});
     };
     lower.forEach(drawModule);activeWalls.forEach(wall=>drawWorktop(ctx,projector,lower.filter(m=>m.wall===wall)));lower.forEach(m=>drawTopAppliance(ctx,projector,m));upper.forEach(drawModule);
     ctx.save();ctx.font='700 11px -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillStyle=c.dimension;ctx.fillText('Проведите пальцем по сцене, чтобы вращать 3D',width/2,height-18);ctx.restore();

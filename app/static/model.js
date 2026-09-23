@@ -17,25 +17,66 @@
   function activeWalls(){const map={WALL_CENTER:['A'],WALL_LEFT:['A'],WALL_RIGHT:['A'],L_LEFT:['A','B'],L_RIGHT:['A','C'],U_SHAPE:['A','B','C'],CUSTOM:['A']};return map[configuration()]||['A']}
   function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
   function variantState(){return {...(visual.r8_variant||{})}}
-  function setFurniturePalette(){const d=String(project?.context?.visual_direction||visual.r8_palette||'LIGHT').toLowerCase();document.documentElement.dataset.furniturePalette=d}
+  function sizeOverrides(){return {...(visual.module_size_overrides||{})}}
+  function openingOverrides(){return {...(visual.module_opening_overrides||{})}}
+  function offsetOverrides(){return {...(visual.module_offsets_mm||{})}}
+  function setFurniturePalette(){const d=String(visual.r8_palette||project?.context?.visual_direction||'LIGHT').toLowerCase();document.documentElement.dataset.furniturePalette=d}
+  function fridgeWall(){
+    const cfg=configuration(),side=inputs.fridge_side||'LEFT';
+    if(cfg==='L_LEFT'&&side==='LEFT')return'B';
+    if(cfg==='L_RIGHT'&&side==='RIGHT')return'C';
+    if(cfg==='U_SHAPE')return side==='LEFT'?'B':'C';
+    return'A';
+  }
+  function edgeForWall(wall){
+    if(wall==='A')return inputs.fridge_side==='RIGHT'?'END':'START';
+    return'END';
+  }
+  function applyBaseOverride(module){
+    const o=sizeOverrides()[module.id]||{};
+    if(Number(o.run_mm)>0)module.w=Math.max(100,Number(o.run_mm));
+    if(Number(o.depth_mm)>0)module.d=Math.max(100,Number(o.depth_mm));
+    if(Number(o.height_mm)>0)module.h=Math.max(100,Number(o.height_mm));
+    module.opening=openingOverrides()[module.id]||module.opening||'AUTO';
+    return module;
+  }
 
   let camera={yaw:0,pitch:.33,distanceScale:1};
   function resetCamera(){camera=window.BizetPilot3D?.cameraDefaults?.(configuration())||{yaw:0,pitch:.33,distanceScale:1}}
 
   function sinkWall(){const config=configuration(),side=inputs.sink_side;if(config==='L_LEFT')return side==='LEFT'?'B':'A';if(config==='L_RIGHT')return side==='RIGHT'?'C':'A';if(config==='U_SHAPE')return side==='LEFT'?'B':'C';return'A'}
-  function baseModule(id,label,width,kind,wall='A',extra={}){return{id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra}}
+  function baseModule(id,label,width,kind,wall='A',extra={}){return applyBaseOverride({id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra})}
 
   function collectedLower(){
-    const list=[],walls=activeWalls();
+    const list=[],walls=activeWalls(),fWall=fridgeWall();
     if(inputs.fridge_present==='YES'){
       const width=Number(inputs.fridge_width_mm)||600,tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
-      if(inputs.fridge_type==='BUILT_IN'&&width===1200){list.push(baseModule('fridge-left','Холодильник L',600,'FRIDGE','A',{tall:true,h:tallHeight,content:inputs.fridge_left_unit||'PENDING'}));list.push(baseModule('fridge-right','Холодильник R',600,'FRIDGE','A',{tall:true,h:tallHeight,content:inputs.fridge_right_unit||'PENDING'}))}
-      else list.push(baseModule('fridge','Холодильник',width,'FRIDGE','A',{tall:true,h:tallHeight,content:inputs.fridge_content||'PENDING'}));
+      const freeFridge=inputs.fridge_type==='FREESTANDING';
+      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:PLINTH_H,content:inputs.fridge_content||'PENDING',freestanding:freeFridge,appliance_width_mm:width};
+      if(inputs.fridge_type==='BUILT_IN'&&width===1200){
+        list.push(baseModule('fridge-left','Холодильник L',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_left_unit||'PENDING'}));
+        list.push(baseModule('fridge-right','Холодильник R',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_right_unit||'PENDING'}));
+      }else{
+        list.push(baseModule('fridge','Холодильник',width,'FRIDGE',fWall,fridgeExtra));
+      }
     }
     list.push(baseModule('sink','Мойка',600,'SINK',sinkWall(),{widthStatus:'PILOT_VISUAL_PLACEHOLDER',sink_mount_type:inputs.sink_mount_type,sink_bowl_count:inputs.sink_bowl_count,sink_disposer:inputs.sink_disposer,sink_filters:inputs.sink_filters}));
-    if(inputs.dishwasher_type){const wall=walls.includes(inputs.dishwasher_wall)?inputs.dishwasher_wall:'A';list.push(baseModule('dishwasher','Посудомоечная машина',Number(inputs.dishwasher_width_mm)||600,'DISHWASHER',wall))}
-    const cooktopWall=walls.includes(inputs.cooktop_wall)?inputs.cooktop_wall:'A';list.push(baseModule('cooktop','Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED'}));
-    if(inputs.oven_location){const wall=walls.includes(inputs.oven_wall)?inputs.oven_wall:'A';if(inputs.oven_location==='TALL'){const tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}))}else list.push(baseModule('oven','Духовой шкаф',600,'OVEN',wall,{widthStatus:'PILOT_VISUAL_PLACEHOLDER'}))}
+    if(inputs.dishwasher_type){
+      const wall=walls.includes(inputs.dishwasher_wall)?inputs.dishwasher_wall:'A';
+      const applianceWidth=Number(inputs.dishwasher_width_mm)||600;
+      const free=inputs.dishwasher_type==='FREESTANDING';
+      const sidePanel=free?18:0;
+      list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2,'DISHWASHER',wall,{freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel}));
+    }
+    const cooktopWall=walls.includes(inputs.cooktop_wall)?inputs.cooktop_wall:'A';
+    list.push(baseModule('cooktop','Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED'}));
+    if(inputs.oven_location){
+      const wall=walls.includes(inputs.oven_wall)?inputs.oven_wall:'A';
+      if(inputs.oven_location==='TALL'){
+        const tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
+        list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
+      }else list.push(baseModule('oven','Духовой шкаф',600,'OVEN',wall,{widthStatus:'PILOT_VISUAL_PLACEHOLDER'}));
+    }
     return list;
   }
 
@@ -47,23 +88,66 @@
   }
 
   function arrangeWall(wall,list,room){
-    const bounds=runBounds(wall,room);let ordered=[...list];
-    if(wall==='A'&&inputs.fridge_present==='YES'){
-      const fridge=ordered.filter(m=>m.kind==='FRIDGE'),other=ordered.filter(m=>m.kind!=='FRIDGE');ordered=inputs.fridge_side==='RIGHT'?other.concat(fridge):fridge.concat(other);
+    const bounds=runBounds(wall,room),variant=variantState(),edge=edgeForWall(wall);
+    let regular=list.filter(m=>!m.tall),tall=list.filter(m=>m.tall);
+    if(wall==='A'&&variant.reverse_wall_a)regular=[...regular].reverse();
+    if(wall==='A'&&Number(variant.module_shift)>0&&regular.length>2){
+      const n=Number(variant.module_shift)%regular.length;
+      regular=regular.slice(n).concat(regular.slice(0,n));
     }
-    const variant=variantState();
-    if(wall==='A'&&variant.reverse_wall_a)ordered=[...ordered].reverse();
-    if(wall==='A'&&Number(variant.module_shift)>0&&ordered.length>2){const n=Number(variant.module_shift)%ordered.length;ordered=ordered.slice(n).concat(ordered.slice(0,n))}
+
+    if(tall.length){
+      const fridge=tall.filter(m=>m.kind==='FRIDGE'),otherTall=tall.filter(m=>m.kind!=='FRIDGE');
+      if(fridge.length&&inputs.fridge_type==='FREESTANDING'){
+        tall=edge==='START'?fridge.concat(otherTall):otherTall.concat(fridge);
+      }else if(variant.tall_group_flip){
+        tall=[...tall].reverse();
+      }
+    }
+
+    let ordered=edge==='START'?tall.concat(regular):regular.concat(tall);
     let used=ordered.reduce((sum,m)=>sum+m.w,0);
-    if(wall==='A'&&bounds.span-used>=CUTLERY_W){const cutlery=baseModule('cutlery','Ящики для приборов',CUTLERY_W,'DRAWERS','A',{anchor:false,system:true});const idx=ordered.findIndex(m=>m.kind==='SINK');ordered.splice(idx>=0?idx+1:ordered.length,0,cutlery);used+=CUTLERY_W}
-    const remaining=bounds.span-used;if(remaining>=300)ordered.push(baseModule(`system-fill-${wall}`,'Модуль',remaining,'HINGED',wall,{anchor:false,pending:true,system:true}));
+
+    if(wall==='A'&&bounds.span-used>=CUTLERY_W){
+      const cutlery=baseModule('cutlery','Ящики для приборов',CUTLERY_W,'DRAWERS','A',{anchor:false,system:true});
+      let idx=ordered.findIndex(m=>m.kind==='SINK');
+      if(idx<0)idx=edge==='END'&&tall.length?ordered.findIndex(m=>m.tall):ordered.length;
+      ordered.splice(idx>=0?idx+1:ordered.length,0,cutlery);
+      used+=CUTLERY_W;
+    }
+
+    const remaining=bounds.span-used;
+    if(remaining>=300){
+      const fill=baseModule(`system-fill-${wall}`,'Модуль',remaining,'HINGED',wall,{anchor:false,pending:true,system:true});
+      if(tall.length&&edge==='END'){
+        const firstTall=ordered.findIndex(m=>m.tall);
+        ordered.splice(firstTall<0?ordered.length:firstTall,0,fill);
+      }else if(tall.length&&edge==='START'){
+        let lastTall=-1;ordered.forEach((m,i)=>{if(m.tall)lastTall=i});
+        ordered.splice(lastTall+1,0,fill);
+      }else ordered.push(fill);
+    }
+
     let cursor=bounds.start;
     return ordered.map(m=>{
-      const runSize=m.w,offset=Number((visual.module_offsets_mm||{})[m.id])||0;let placed={...m,runSize,runPosition:cursor};
-      if(wall==='A'){placed.x=clamp(cursor+offset,bounds.start,Math.max(bounds.start,bounds.end-runSize));placed.y=room.depthMm-LOWER_DEPTH}
-      else if(wall==='B'){placed.x=0;placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);placed.d=runSize;placed.w=LOWER_DEPTH}
-      else{placed.x=room.lengthMm-LOWER_DEPTH;placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);placed.d=runSize;placed.w=LOWER_DEPTH}
-      cursor+=runSize;return placed;
+      const runSize=m.w,offset=Number(offsetOverrides()[m.id])||0;
+      let placed={...m,runSize,runPosition:cursor};
+      if(wall==='A'){
+        placed.x=clamp(cursor+offset,bounds.start,Math.max(bounds.start,bounds.end-runSize));
+        placed.y=room.depthMm-placed.d;
+      }else if(wall==='B'){
+        const depth=placed.d;
+        placed.x=0;
+        placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);
+        placed.d=runSize;placed.w=depth;
+      }else{
+        const depth=placed.d;
+        placed.x=room.lengthMm-depth;
+        placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);
+        placed.d=runSize;placed.w=depth;
+      }
+      cursor+=runSize;
+      return placed;
     });
   }
 
@@ -88,6 +172,13 @@
       result.filter(m=>m.kind==='UPPER').forEach(m=>{const h=Math.min(300,Math.max(220,m.h*.32));m.h=Math.max(260,m.h-h);top.push({...m,id:'top-'+m.id,label:'Антресоль',kind:'UPPER_TOP',z:m.z+m.h,h,system:true})});
       result.push(...top);
     }
+    result.forEach(m=>{
+      const o=sizeOverrides()[m.id]||{};
+      if(Number(o.run_mm)>0){if(m.wall==='A')m.w=Math.max(100,Number(o.run_mm));else m.d=Math.max(100,Number(o.run_mm))}
+      if(Number(o.depth_mm)>0){if(m.wall==='A')m.d=Math.max(100,Number(o.depth_mm));else m.w=Math.max(100,Number(o.depth_mm))}
+      if(Number(o.height_mm)>0)m.h=Math.max(100,Number(o.height_mm));
+      m.opening=openingOverrides()[m.id]||m.opening||'AUTO';
+    });
     return result;
   }
 
@@ -106,15 +197,63 @@
   function renderScene(engineOk=false){setFurniturePalette();modules=buildModules();scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible,architecturalElements:project?.room?.architectural_elements||[]});renderStrip();$('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки; остаточное деление ещё не заморожено.':'3D-пилот · исходные точки собраны, незакреплённое остаточное деление остаётся визуальным слоем.'}
 
   function offsets(){return{...(visual.module_offsets_mm||{})}}
+  function runDimension(m){return m.wall==='A'?m.w:m.d}
+  function depthDimension(m){return m.wall==='A'?m.d:m.w}
+  function widthLocked(m){return['FRIDGE','DISHWASHER','UPPER_HOOD'].includes(m.kind)}
   function detailText(m){
     if(m.kind==='SINK'){const mount={TOP_MOUNT:'накладная',FLUSH:'вровень',UNDERMOUNT:'под столешницей'}[m.sink_mount_type]||'тип монтажа не указан';return `Мойка: ${mount}, чаш: ${m.sink_bowl_count||'—'}, измельчитель: ${m.sink_disposer==='YES'?'да':'нет'}, фильтры: ${m.sink_filters==='YES'?'да':'нет'}.`}
     if(m.kind==='TALL_OVEN'){const parts=['духовка'];if(m.microwave_present==='YES')parts.push(m.microwave_type==='BUILT_IN'?'встраиваемая микроволновка 600×450':'отдельностоящая микроволновка, отделение H350');if(m.coffee_present==='YES')parts.push(m.coffee_type==='BUILT_IN'?'встраиваемая кофемашина 600×450':'отдельностоящая кофемашина');return `Пенал: ${parts.join(' · ')}.`}
     if(m.kind==='UPPER_HOOD')return `Вытяжка ${m.hood_width_mm||'—'} мм · ${m.hood_type==='BUILT_IN'?'встраиваемая':'отдельностоящая'}.`;
-    if(m.pending)return'Остаточное пространство. Финальное количество и ширины модулей должен определить Module Engine, а не интерфейс.';
-    return'Пилот прямого редактирования модуля. Положение сохраняется относительно базовой точки.';
+    if(m.kind==='FRIDGE'&&m.freestanding)return'Отдельностоящий холодильник. В автоконфигураторе он всегда остаётся крайним.';
+    if(m.kind==='DISHWASHER'&&m.freestanding)return'Отдельностоящая ПММ с двумя видимыми боковинами по 18 мм.';
+    if(m.pending)return'Остаточное пространство. Этот модуль пока формируется системным алгоритмом.';
+    return'Локальная настройка модуля. После применения BIZET OS перестраивает зависимую модель.';
   }
-  function openModule(id){activeModule=modules.find(m=>m.id===id)||null;if(!activeModule)return;$('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;$('moduleCopy').textContent=detailText(activeModule);$('moduleOffset').textContent=`${Number(offsets()[activeModule.id])||0} мм`;$('moduleDialog').showModal?.()}
-  async function nudge(delta){if(!activeModule||activeModule.pending||activeModule.level==='upper')return;const next=offsets();next[activeModule.id]=(Number(next[activeModule.id])||0)+delta;await saveVisual({...visual,module_offsets_mm:next,module_direct_edit_status:'PILOT_USER_OFFSET'},`Direct module offset ${activeModule.id}`);$('moduleOffset').textContent=`${next[activeModule.id]} мм`;renderScene(false);$('modelStatus').textContent='Смещение сохранено и сразу видно в 3D. Полный зависимый пересчёт соседних модулей — следующий слой.'}
+  function setValidation(message=''){
+    const el=$('moduleValidation');if(!el)return;el.textContent=message;el.hidden=!message;
+  }
+  function openModule(id){
+    activeModule=modules.find(m=>m.id===id)||null;if(!activeModule)return;
+    $('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;
+    $('moduleCopy').textContent=detailText(activeModule);
+    const w=$('moduleWidth'),h=$('moduleHeight'),d=$('moduleDepth'),o=$('moduleOpening'),pos=$('moduleOffsetInput');
+    w.value=Math.round(runDimension(activeModule));h.value=Math.round(activeModule.h);d.value=Math.round(depthDimension(activeModule));
+    w.disabled=widthLocked(activeModule)||!!activeModule.pending;
+    w.title=w.disabled?'Ширина определяется техникой или системным остатком в текущем пилоте.':'';
+    o.value=openingOverrides()[activeModule.id]||activeModule.opening||'AUTO';
+    pos.value=Number(offsets()[activeModule.id])||0;
+    setValidation('');
+    $('moduleDialog').showModal?.();
+  }
+  async function applyModuleCustomization(){
+    if(!activeModule)return;
+    const w=Math.round(Number($('moduleWidth').value)),h=Math.round(Number($('moduleHeight').value)),d=Math.round(Number($('moduleDepth').value)),off=Math.round(Number($('moduleOffsetInput').value)||0);
+    const minRun=activeModule.level==='upper'?200:300;
+    const requiredRun=activeModule.kind==='SINK'&&Number(activeModule.sink_bowl_count)===2?900:minRun;
+    if(!Number.isFinite(h)||h<100||!Number.isFinite(d)||d<100){setValidation('Высота и глубина должны быть не меньше 100 мм.');return}
+    if(!widthLocked(activeModule)&&!activeModule.pending&&(!Number.isFinite(w)||w<requiredRun)){setValidation(`Минимальная допустимая ширина для этого модуля: ${requiredRun} мм.`);return}
+    if(Math.abs(off)>600){setValidation('Смещение больше 600 мм требует проверки конструктора.');return}
+    const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets();
+    const currentRun=Math.round(runDimension(activeModule));
+    sizes[activeModule.id]={
+      run_mm:(widthLocked(activeModule)||activeModule.pending)?currentRun:w,
+      height_mm:h,
+      depth_mm:d
+    };
+    opens[activeModule.id]=$('moduleOpening').value||'AUTO';
+    offs[activeModule.id]=off;
+    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs,module_direct_edit_status:'PILOT_PARAMETRIC_EDIT'},`Module customization ${activeModule.id}`);
+    renderScene(false);
+    $('modelStatus').textContent='Модуль обновлён. 3D и зависимые остаточные модули перестроены.';
+    $('moduleDialog').close?.();
+  }
+  async function resetModuleCustomization(){
+    if(!activeModule)return;
+    const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets();
+    delete sizes[activeModule.id];delete opens[activeModule.id];delete offs[activeModule.id];
+    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs},`Reset module customization ${activeModule.id}`);
+    renderScene(false);$('moduleDialog').close?.();
+  }
 
   async function patchInputs(patch,reason='R8 workspace'){
     inputs={...inputs,...patch};await saveVisual({...visual,guided_inputs:inputs,r8_workspace:true},reason);renderScene(false);return snapshot();
@@ -124,9 +263,38 @@
   async function patchElements(elements){const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path:'room.architectural_elements',value:elements,source:'USER_ENTERED',confirmed:true,reason:'R8 wall elements'})});project=result.project||result;renderScene(false);return snapshot()}
   async function patchRoom(key,value){const path={lengthMm:'room.geometry.wall_length',depthMm:'room.geometry.wall_depth',heightMm:'room.geometry.room_height'}[key];if(!path)return snapshot();const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path,value:Math.round(Number(value)||0),source:'USER_ENTERED',confirmed:false,reason:'R8 room geometry'})});project=result.project||result;renderScene(false);return snapshot()}
   async function setPalette(value){visual={...visual,r8_palette:value};if(project?.context)project.context.visual_direction=value;await saveVisual(visual,'R8 palette');setFurniturePalette();renderScene(false);return snapshot()}
-  function snapshot(){return{inputs:{...inputs},visual:{...visual},variant:{...(visual.r8_variant||{})},elements:[...(project?.room?.architectural_elements||[])],context:{...(project?.context||{})},room:roomValues(),modules:[...modules]}}
-  async function replaceState(state){if(state.inputs)await patchInputs(state.inputs,'R8 undo inputs');if(state.variant)await patchVariant(state.variant);if(state.elements)await patchElements(state.elements);return snapshot()}
-  window.BizetModelRuntime={ready:false,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,render:()=>renderScene(false)};
+  function captureWorkspaceState(){return{
+    inputs:{...inputs},
+    variant:{...(visual.r8_variant||{})},
+    module_offsets_mm:{...(visual.module_offsets_mm||{})},
+    module_size_overrides:{...(visual.module_size_overrides||{})},
+    module_opening_overrides:{...(visual.module_opening_overrides||{})}
+  }}
+  async function applyWorkspaceState(state,reason='R8 saved variant'){
+    const next={...visual};
+    if(state.inputs)next.guided_inputs={...state.inputs};
+    if(state.variant)next.r8_variant={...state.variant};
+    if(state.module_offsets_mm)next.module_offsets_mm={...state.module_offsets_mm};
+    if(state.module_size_overrides)next.module_size_overrides={...state.module_size_overrides};
+    if(state.module_opening_overrides)next.module_opening_overrides={...state.module_opening_overrides};
+    await saveVisual(next,reason);renderScene(false);return snapshot();
+  }
+  function snapshot(){return{...captureWorkspaceState(),visual:{...visual},elements:[...(project?.room?.architectural_elements||[])],context:{...(project?.context||{})},room:roomValues(),modules:[...modules]}}
+  async function replaceState(state){await applyWorkspaceState(state,'R8 restore state');if(state.elements)await patchElements(state.elements);return snapshot()}
+  async function resumeFromSleep(){
+    if(resumeFromSleep.busy||!projectId)return;resumeFromSleep.busy=true;
+    try{
+      const fresh=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{cache:'no-store'});
+      project=fresh.project||fresh;visual={...(project.scene?.visual_settings||{})};inputs={...(visual.guided_inputs||{})};setFurniturePalette();
+      requestAnimationFrame(()=>{renderScene(false);requestAnimationFrame(()=>renderScene(false))});
+      $('modelStatus').textContent='Проект восстановлен после паузы.';
+    }catch(error){
+      $('modelStatus').textContent='Восстанавливаем соединение…';
+      window.setTimeout(()=>{resumeFromSleep.busy=false;resumeFromSleep()},1200);return;
+    }
+    resumeFromSleep.busy=false;
+  }
+  window.BizetModelRuntime={ready:false,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
 
   const canvas=$('modelCanvas');
   canvas.addEventListener('pointerdown',event=>{drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:camera.yaw,pitch:camera.pitch};dragMoved=false;canvas.setPointerCapture?.(event.pointerId)});
@@ -136,9 +304,11 @@
   canvas.addEventListener('wheel',event=>{event.preventDefault();camera.distanceScale=clamp(camera.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
 
   $('modelDimensionsToggle').addEventListener('click',()=>{dimensionsVisible=!dimensionsVisible;$('modelDimensionsToggle').textContent=`Размеры · ${dimensionsVisible?'вкл':'выкл'}`;$('modelDimensionsToggle').setAttribute('aria-pressed',String(dimensionsVisible));renderScene(false)});
-  $('moduleClose').addEventListener('click',()=>$('moduleDialog').close?.());document.querySelectorAll('[data-nudge]').forEach(btn=>btn.addEventListener('click',()=>nudge(Number(btn.dataset.nudge)).catch(()=>{})));
+  $('moduleClose').addEventListener('click',()=>$('moduleDialog').close?.());
+  $('moduleApply')?.addEventListener('click',()=>applyModuleCustomization().catch(error=>setValidation(error.message)));
+  $('moduleReset')?.addEventListener('click',()=>resetModuleCustomization().catch(error=>setValidation(error.message)));
   $('materialsButton').addEventListener('click',()=>location.assign(`/materials?project=${encodeURIComponent(projectId)}`));$('backButton').addEventListener('click',()=>history.back());
-  window.addEventListener('resize',()=>requestAnimationFrame(()=>renderScene(false)));window.addEventListener('bizet:themechange',()=>requestAnimationFrame(()=>renderScene(false)));
+  window.addEventListener('resize',()=>requestAnimationFrame(()=>renderScene(false)));window.addEventListener('bizet:themechange',()=>requestAnimationFrame(()=>renderScene(false)));window.addEventListener('bizet:resume',()=>resumeFromSleep());
 
   (async()=>{
     if(!projectId){$('modelStatus').textContent='Проект не найден';return}let engineOk=false;

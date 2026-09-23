@@ -303,6 +303,13 @@ function ensureConfigurationStyles() {
       text-align:center;
       font-size:13px;
     }
+    .configuration-screen-five .config-auto-note {
+      margin:22px auto 0;
+      color:var(--muted);
+      text-align:center;
+      font-size:12px;
+      line-height:1.45;
+    }
 
     @media (max-width:1000px) {
       .configuration-choice-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -392,8 +399,6 @@ function syncConfigurationSelection() {
     card.classList.toggle('is-selected', selected);
     card.setAttribute('aria-pressed', String(selected));
   });
-  const button = document.getElementById('configurationContinue5');
-  if (button) button.disabled = !selectedConfiguration || savingConfiguration;
 }
 
 async function saveConfiguration(code) {
@@ -406,10 +411,12 @@ async function saveConfiguration(code) {
   syncConfigurationSelection();
   const error = document.getElementById('configurationScreenFiveError');
   if (error) error.hidden = true;
+  let saved = false;
   try {
     await patchProject('room.configuration', code, 'Start screen 5 kitchen configuration');
     await patchProject('scene.visual_settings.furniture_configuration', code, 'Start screen 5 kitchen configuration');
     await patchProject('scene.visual_settings.configuration_walls', config.walls, 'Start screen 5 kitchen wall sequence');
+    saved = true;
   } catch (_) {
     if (error) {
       error.textContent = isRu() ? 'Не удалось сохранить конфигурацию. Повторите выбор.' : 'Could not save the configuration. Please try again.';
@@ -418,6 +425,13 @@ async function saveConfiguration(code) {
   } finally {
     savingConfiguration = false;
     syncConfigurationSelection();
+  }
+  if (saved) {
+    const id = currentProjectId();
+    if (id) {
+      await new Promise(resolve => window.setTimeout(resolve, 140));
+      window.location.assign('/room-setup?project=' + encodeURIComponent(id));
+    }
   }
 }
 
@@ -452,21 +466,11 @@ function buildScreenFive() {
         </button>`).join('')}
     </div>
     <p class="screen-five-error" id="configurationScreenFiveError" hidden></p>
-    <div class="screen-five-footer">
-      <button class="primary-button screen-five-continue" id="configurationContinue5" type="button" disabled>
-        <span>${isRu() ? 'Перейти в 3D' : 'Open 3D room'}</span><span aria-hidden="true">→</span>
-      </button>
-    </div>`;
+    <p class="config-auto-note">${isRu() ? 'После выбора BIZET OS автоматически перейдёт к размерам помещения.' : 'After selection BIZET OS will automatically continue to the room dimensions.'}</p>`;
   experience.appendChild(screen);
 
   screen.querySelectorAll('[data-start-config]').forEach(card => {
     card.addEventListener('click', () => saveConfiguration(card.dataset.startConfig));
-  });
-  screen.querySelector('#configurationContinue5').addEventListener('click', () => {
-    if (!selectedConfiguration || savingConfiguration) return;
-    const id = currentProjectId();
-    if (!id) return;
-    window.location.assign(`/room-setup?project=${encodeURIComponent(id)}`);
   });
   syncConfigurationSelection();
   window.scrollTo({ top: 0, behavior: 'auto' });

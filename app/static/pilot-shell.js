@@ -4,7 +4,7 @@
   const FEEDBACK_KEY = 'bizet_os_pilot_feedback';
   const button = document.getElementById('settingsButton');
 
-  let theme = localStorage.getItem(THEME_KEY) || 'light';
+  let theme = localStorage.getItem(THEME_KEY) || 'dark';
   let language = localStorage.getItem(LANGUAGE_KEY) || 'ru';
 
   const COPY = {
