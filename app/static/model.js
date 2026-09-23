@@ -17,25 +17,65 @@
   function activeWalls(){const map={WALL_CENTER:['A'],WALL_LEFT:['A'],WALL_RIGHT:['A'],L_LEFT:['A','B'],L_RIGHT:['A','C'],U_SHAPE:['A','B','C'],CUSTOM:['A']};return map[configuration()]||['A']}
   function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
   function variantState(){return {...(visual.r8_variant||{})}}
-  function setFurniturePalette(){const d=String(project?.context?.visual_direction||visual.r8_palette||'LIGHT').toLowerCase();document.documentElement.dataset.furniturePalette=d}
+  function sizeOverrides(){return {...(visual.module_size_overrides||{})}}
+  function openingOverrides(){return {...(visual.module_opening_overrides||{})}}
+  function offsetOverrides(){return {...(visual.module_offsets_mm||{})}}
+  function setFurniturePalette(){const d=String(visual.r8_palette||project?.context?.visual_direction||'LIGHT').toLowerCase();document.documentElement.dataset.furniturePalette=d}
+  function fridgeWall(){
+    const cfg=configuration(),side=inputs.fridge_side||'LEFT';
+    if(cfg==='L_LEFT'&&side==='LEFT')return'B';
+    if(cfg==='L_RIGHT'&&side==='RIGHT')return'C';
+    if(cfg==='U_SHAPE')return side==='LEFT'?'B':'C';
+    return'A';
+  }
+  function edgeForWall(wall){
+    if(wall==='A')return inputs.fridge_side==='RIGHT'?'END':'START';
+    return'END';
+  }
+  function applyBaseOverride(module){
+    const o=sizeOverrides()[module.id]||{};
+    if(Number(o.run_mm)>0)module.w=Math.max(100,Number(o.run_mm));
+    if(Number(o.depth_mm)>0)module.d=Math.max(100,Number(o.depth_mm));
+    if(Number(o.height_mm)>0)module.h=Math.max(100,Number(o.height_mm));
+    module.opening=openingOverrides()[module.id]||module.opening||'AUTO';
+    return module;
+  }
 
   let camera={yaw:0,pitch:.33,distanceScale:1};
   function resetCamera(){camera=window.BizetPilot3D?.cameraDefaults?.(configuration())||{yaw:0,pitch:.33,distanceScale:1}}
 
   function sinkWall(){const config=configuration(),side=inputs.sink_side;if(config==='L_LEFT')return side==='LEFT'?'B':'A';if(config==='L_RIGHT')return side==='RIGHT'?'C':'A';if(config==='U_SHAPE')return side==='LEFT'?'B':'C';return'A'}
-  function baseModule(id,label,width,kind,wall='A',extra={}){return{id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra}}
+  function baseModule(id,label,width,kind,wall='A',extra={}){return applyBaseOverride({id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra})}
 
   function collectedLower(){
-    const list=[],walls=activeWalls();
+    const list=[],walls=activeWalls(),fWall=fridgeWall();
     if(inputs.fridge_present==='YES'){
       const width=Number(inputs.fridge_width_mm)||600,tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
-      if(inputs.fridge_type==='BUILT_IN'&&width===1200){list.push(baseModule('fridge-left','Холодильник L',600,'FRIDGE','A',{tall:true,h:tallHeight,content:inputs.fridge_left_unit||'PENDING'}));list.push(baseModule('fridge-right','Холодильник R',600,'FRIDGE','A',{tall:true,h:tallHeight,content:inputs.fridge_right_unit||'PENDING'}))}
-      else list.push(baseModule('fridge','Холодильник',width,'FRIDGE','A',{tall:true,h:tallHeight,content:inputs.fridge_content||'PENDING'}));
+      const fridgeExtra={tall:true,h:tallHeight,content:inputs.fridge_content||'PENDING',freestanding:inputs.fridge_type==='FREESTANDING',appliance_width_mm:width};
+      if(inputs.fridge_type==='BUILT_IN'&&width===1200){
+        list.push(baseModule('fridge-left','Холодильник L',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_left_unit||'PENDING'}));
+        list.push(baseModule('fridge-right','Холодильник R',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_right_unit||'PENDING'}));
+      }else{
+        list.push(baseModule('fridge','Холодильник',width,'FRIDGE',fWall,fridgeExtra));
+      }
     }
     list.push(baseModule('sink','Мойка',600,'SINK',sinkWall(),{widthStatus:'PILOT_VISUAL_PLACEHOLDER',sink_mount_type:inputs.sink_mount_type,sink_bowl_count:inputs.sink_bowl_count,sink_disposer:inputs.sink_disposer,sink_filters:inputs.sink_filters}));
-    if(inputs.dishwasher_type){const wall=walls.includes(inputs.dishwasher_wall)?inputs.dishwasher_wall:'A';list.push(baseModule('dishwasher','Посудомоечная машина',Number(inputs.dishwasher_width_mm)||600,'DISHWASHER',wall))}
-    const cooktopWall=walls.includes(inputs.cooktop_wall)?inputs.cooktop_wall:'A';list.push(baseModule('cooktop','Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED'}));
-    if(inputs.oven_location){const wall=walls.includes(inputs.oven_wall)?inputs.oven_wall:'A';if(inputs.oven_location==='TALL'){const tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}))}else list.push(baseModule('oven','Духовой шкаф',600,'OVEN',wall,{widthStatus:'PILOT_VISUAL_PLACEHOLDER'}))}
+    if(inputs.dishwasher_type){
+      const wall=walls.includes(inputs.dishwasher_wall)?inputs.dishwasher_wall:'A';
+      const applianceWidth=Number(inputs.dishwasher_width_mm)||600;
+      const free=inputs.dishwasher_type==='FREESTANDING';
+      const sidePanel=free?18:0;
+      list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2,'DISHWASHER',wall,{freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel}));
+    }
+    const cooktopWall=walls.includes(inputs.cooktop_wall)?inputs.cooktop_wall:'A';
+    list.push(baseModule('cooktop','Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED'}));
+    if(inputs.oven_location){
+      const wall=walls.includes(inputs.oven_wall)?inputs.oven_wall:'A';
+      if(inputs.oven_location==='TALL'){
+        const tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
+        list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
+      }else list.push(baseModule('oven','Духовой шкаф',600,'OVEN',wall,{widthStatus:'PILOT_VISUAL_PLACEHOLDER'}));
+    }
     return list;
   }
 
