@@ -174,6 +174,8 @@
  }
  async function applyVariant(index){
    if(!rt||index<0||index>4||index===variantPos)return;
+   rt.suppressModuleOpen?.(900);
+   document.getElementById('moduleDialog')?.close?.();
    saveCurrentVariantSlot();
    variantPos=index;localStorage.setItem(VARIANT_POS_KEY,String(variantPos));renderVariantDots();
    await rt.applyWorkspaceState(clone(variantSlots[variantPos]),'R8 saved variant #'+(variantPos+1));
