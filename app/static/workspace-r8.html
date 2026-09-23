@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/static/model.css">
   <link rel="stylesheet" href="/static/model-r5.css">
   <link rel="stylesheet" href="/static/pilot-shell.css">
-  <link rel="stylesheet" href="/static/workspace-r8.css?v=83">
+  <link rel="stylesheet" href="/static/workspace-r8.css?v=90">
 </head>
 <body class="r8-workspace-body">
   <div class="r8-shell">
@@ -40,10 +40,8 @@
             <button class="r8-pill" id="modelDimensionsToggle" type="button" aria-pressed="true">Размеры · вкл</button>
             <button class="r8-pill r8-undo" id="undoButton" type="button" disabled title="Отменить последнее изменение">↶</button>
           </div>
-          <div class="r8-variant-controls">
-            <button class="r8-arrow" id="prevVariant" type="button" aria-label="Предыдущий вариант">←</button>
-            <span id="variantCounter">1 / 1</span>
-            <button class="r8-arrow" id="nextVariant" type="button" aria-label="Следующий вариант">→</button>
+          <div class="r8-variant-controls" aria-label="Варианты кухни">
+            <div class="r8-variant-dots" id="variantDots" aria-label="Пять сохранённых вариантов"></div>
             <button class="r8-random" id="randomVariant" type="button">Другой вариант</button>
           </div>
         </div>
@@ -74,23 +72,38 @@
   </div>
 
   <dialog class="module-dialog" id="moduleDialog">
-    <div class="module-card">
+    <div class="module-card r8-module-card">
       <button class="dialog-close" id="moduleClose" type="button">×</button>
+      <p class="r8-module-kicker">MODULE CUSTOMIZATION</p>
       <h2 id="moduleTitle">Модуль</h2><p id="moduleCopy"></p>
-      <div class="coordinate-box"><span>Горизонтальное смещение вдоль ряда</span><strong id="moduleOffset">0 мм</strong><div><button data-nudge="-50" type="button">−50</button><button data-nudge="-30" type="button">−30</button><button data-nudge="30" type="button">+30</button><button data-nudge="50" type="button">+50</button></div></div>
+      <div class="r8-module-grid">
+        <label><span>Ширина W, мм</span><input id="moduleWidth" type="number" inputmode="numeric" step="10"></label>
+        <label><span>Высота H, мм</span><input id="moduleHeight" type="number" inputmode="numeric" step="10"></label>
+        <label><span>Глубина D, мм</span><input id="moduleDepth" type="number" inputmode="numeric" step="10"></label>
+        <label><span>Открывание</span><select id="moduleOpening"><option value="AUTO">Авто</option><option value="HINGED_LEFT">Петли слева</option><option value="HINGED_RIGHT">Петли справа</option><option value="LIFT">Подъёмный</option><option value="DRAWERS">Ящики</option></select></label>
+      </div>
+      <div class="coordinate-box">
+        <span>Положение вдоль ряда, мм</span>
+        <input id="moduleOffsetInput" type="number" inputmode="numeric" step="10" value="0">
+      </div>
+      <p class="r8-module-validation" id="moduleValidation" hidden></p>
+      <div class="r8-module-actions">
+        <button class="r8-secondary" id="moduleReset" type="button">Сбросить модуль</button>
+        <button class="r8-save" id="moduleApply" type="button">Применить и перестроить 3D</button>
+      </div>
     </div>
   </dialog>
 
   <button id="materialsButton" type="button" hidden>Материалы</button>
 
-  <script src="/static/pilot-r8-shell.js?v=83"></script>
+  <script src="/static/pilot-r8-shell.js?v=90"></script>
   <script src="/static/pilot-shell.js"></script>
-  <script src="/static/pilot-3d.js?v=83"></script>
+  <script src="/static/pilot-3d.js?v=90"></script>
   <script src="/static/model-r5-pre.js"></script>
   <script src="/static/model-r6-dimensions.js"></script>
-  <script src="/static/model.js?v=83"></script>
+  <script src="/static/model.js?v=90"></script>
   <script src="/static/model-r5.js"></script>
   <script src="/static/pilot-r6.js"></script>
-  <script src="/static/workspace-r8.js?v=83"></script>
+  <script src="/static/workspace-r8.js?v=90"></script>
 </body>
 </html>
