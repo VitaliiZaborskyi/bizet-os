@@ -87,23 +87,66 @@
   }
 
   function arrangeWall(wall,list,room){
-    const bounds=runBounds(wall,room);let ordered=[...list];
-    if(wall==='A'&&inputs.fridge_present==='YES'){
-      const fridge=ordered.filter(m=>m.kind==='FRIDGE'),other=ordered.filter(m=>m.kind!=='FRIDGE');ordered=inputs.fridge_side==='RIGHT'?other.concat(fridge):fridge.concat(other);
+    const bounds=runBounds(wall,room),variant=variantState(),edge=edgeForWall(wall);
+    let regular=list.filter(m=>!m.tall),tall=list.filter(m=>m.tall);
+    if(wall==='A'&&variant.reverse_wall_a)regular=[...regular].reverse();
+    if(wall==='A'&&Number(variant.module_shift)>0&&regular.length>2){
+      const n=Number(variant.module_shift)%regular.length;
+      regular=regular.slice(n).concat(regular.slice(0,n));
     }
-    const variant=variantState();
-    if(wall==='A'&&variant.reverse_wall_a)ordered=[...ordered].reverse();
-    if(wall==='A'&&Number(variant.module_shift)>0&&ordered.length>2){const n=Number(variant.module_shift)%ordered.length;ordered=ordered.slice(n).concat(ordered.slice(0,n))}
+
+    if(tall.length){
+      const fridge=tall.filter(m=>m.kind==='FRIDGE'),otherTall=tall.filter(m=>m.kind!=='FRIDGE');
+      if(fridge.length&&inputs.fridge_type==='FREESTANDING'){
+        tall=edge==='START'?fridge.concat(otherTall):otherTall.concat(fridge);
+      }else if(variant.tall_group_flip){
+        tall=[...tall].reverse();
+      }
+    }
+
+    let ordered=edge==='START'?tall.concat(regular):regular.concat(tall);
     let used=ordered.reduce((sum,m)=>sum+m.w,0);
-    if(wall==='A'&&bounds.span-used>=CUTLERY_W){const cutlery=baseModule('cutlery','Ящики для приборов',CUTLERY_W,'DRAWERS','A',{anchor:false,system:true});const idx=ordered.findIndex(m=>m.kind==='SINK');ordered.splice(idx>=0?idx+1:ordered.length,0,cutlery);used+=CUTLERY_W}
-    const remaining=bounds.span-used;if(remaining>=300)ordered.push(baseModule(`system-fill-${wall}`,'Модуль',remaining,'HINGED',wall,{anchor:false,pending:true,system:true}));
+
+    if(wall==='A'&&bounds.span-used>=CUTLERY_W){
+      const cutlery=baseModule('cutlery','Ящики для приборов',CUTLERY_W,'DRAWERS','A',{anchor:false,system:true});
+      let idx=ordered.findIndex(m=>m.kind==='SINK');
+      if(idx<0)idx=edge==='END'&&tall.length?ordered.findIndex(m=>m.tall):ordered.length;
+      ordered.splice(idx>=0?idx+1:ordered.length,0,cutlery);
+      used+=CUTLERY_W;
+    }
+
+    const remaining=bounds.span-used;
+    if(remaining>=300){
+      const fill=baseModule(`system-fill-${wall}`,'Модуль',remaining,'HINGED',wall,{anchor:false,pending:true,system:true});
+      if(tall.length&&edge==='END'){
+        const firstTall=ordered.findIndex(m=>m.tall);
+        ordered.splice(firstTall<0?ordered.length:firstTall,0,fill);
+      }else if(tall.length&&edge==='START'){
+        let lastTall=-1;ordered.forEach((m,i)=>{if(m.tall)lastTall=i});
+        ordered.splice(lastTall+1,0,fill);
+      }else ordered.push(fill);
+    }
+
     let cursor=bounds.start;
     return ordered.map(m=>{
-      const runSize=m.w,offset=Number((visual.module_offsets_mm||{})[m.id])||0;let placed={...m,runSize,runPosition:cursor};
-      if(wall==='A'){placed.x=clamp(cursor+offset,bounds.start,Math.max(bounds.start,bounds.end-runSize));placed.y=room.depthMm-LOWER_DEPTH}
-      else if(wall==='B'){placed.x=0;placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);placed.d=runSize;placed.w=LOWER_DEPTH}
-      else{placed.x=room.lengthMm-LOWER_DEPTH;placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);placed.d=runSize;placed.w=LOWER_DEPTH}
-      cursor+=runSize;return placed;
+      const runSize=m.w,offset=Number(offsetOverrides()[m.id])||0;
+      let placed={...m,runSize,runPosition:cursor};
+      if(wall==='A'){
+        placed.x=clamp(cursor+offset,bounds.start,Math.max(bounds.start,bounds.end-runSize));
+        placed.y=room.depthMm-placed.d;
+      }else if(wall==='B'){
+        const depth=placed.d;
+        placed.x=0;
+        placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);
+        placed.d=runSize;placed.w=depth;
+      }else{
+        const depth=placed.d;
+        placed.x=room.lengthMm-depth;
+        placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);
+        placed.d=runSize;placed.w=depth;
+      }
+      cursor+=runSize;
+      return placed;
     });
   }
 
@@ -128,6 +171,13 @@
       result.filter(m=>m.kind==='UPPER').forEach(m=>{const h=Math.min(300,Math.max(220,m.h*.32));m.h=Math.max(260,m.h-h);top.push({...m,id:'top-'+m.id,label:'Антресоль',kind:'UPPER_TOP',z:m.z+m.h,h,system:true})});
       result.push(...top);
     }
+    result.forEach(m=>{
+      const o=sizeOverrides()[m.id]||{};
+      if(Number(o.run_mm)>0){if(m.wall==='A')m.w=Math.max(100,Number(o.run_mm));else m.d=Math.max(100,Number(o.run_mm))}
+      if(Number(o.depth_mm)>0){if(m.wall==='A')m.d=Math.max(100,Number(o.depth_mm));else m.w=Math.max(100,Number(o.depth_mm))}
+      if(Number(o.height_mm)>0)m.h=Math.max(100,Number(o.height_mm));
+      m.opening=openingOverrides()[m.id]||m.opening||'AUTO';
+    });
     return result;
   }
 
