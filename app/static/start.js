@@ -162,7 +162,7 @@ let currentStep = 0;
 let busy = false;
 let editingFromSummary = false;
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'ru';
-let currentTheme = localStorage.getItem(THEME_KEY) || 'light';
+let currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
 let toastTimer = null;
 
 function t(value) {
