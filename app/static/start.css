@@ -40,7 +40,7 @@ button { color: inherit; }
 .topbar {
   height: 78px;
   display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  grid-template-columns: 92px 1fr 92px;
   align-items: center;
   padding: 0 28px;
   position: sticky;
@@ -197,7 +197,7 @@ h1 { margin: 0; font-size: clamp(34px, 5vw, 64px); line-height: .98; letter-spac
   .choice-card { min-height: 360px; }
 }
 @media (max-width: 700px) {
-  .topbar { height: 66px; padding: 0 16px; }
+  .topbar { height: 66px; padding: 0 12px; grid-template-columns: 88px 1fr 88px; }
   .experience { width: min(100% - 24px, 620px); padding: 18px 0 36px; }
   .intro { margin-bottom: 23px; }
   .intro p { font-size: 15px; }
