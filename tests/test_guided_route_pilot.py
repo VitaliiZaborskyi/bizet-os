@@ -166,7 +166,7 @@ def test_model_is_rotatable_numbered_perspective_and_uses_only_active_walls():
 def test_model_uses_existing_pilot_module_references_and_upper_gap():
     model_js = read_static('model.js')
     renderer = read_static('pilot-3d.js')
-    assert 'LOWER_DEPTH=560' in model_js
+    assert 'LOWER_DEPTH=510' in model_js
     assert 'LOWER_TOTAL_H=900' in model_js
     assert 'CUTLERY_W=400' in model_js
     assert 'UPPER_DEPTH=320' in model_js
