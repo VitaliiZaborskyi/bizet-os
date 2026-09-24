@@ -38,10 +38,14 @@
     };
   }
   function facadePieces(module,h){
-    const W=runW(module),available=Math.max(100,W-GAP);
+    const W=runW(module),available=Math.max(100,W-GAP),requested=Math.max(1,Math.min(3,Number(module.facade_count)||0));
+    if(requested){
+      const fw=Math.floor((W-GAP*(requested-1))/requested);
+      if(fw<=597)return[{w:fw,h,count:requested}];
+    }
     if(available<=597)return[{w:available,h,count:1}];
-    const fw=Math.floor((W-GAP)/2);
-    return[{w:fw,h,count:2}];
+    const count=Math.min(3,Math.max(2,Math.ceil(available/597))),fw=Math.floor((W-GAP*(count-1))/count);
+    return[{w:fw,h,count}];
   }
   function fastenersPerSide(d){if(d<=550)return 2;if(d<1000)return 3;return 4+Math.floor((d-1000)/400)}
   function shelfCountForUpper(h){if(h<=750)return 1;if(h<=1100)return 2;return Math.max(2,Math.ceil(h/400)-1)}
@@ -53,7 +57,8 @@
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Left',H,D));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Right',H,D));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Bottom',inner,partD));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Shelf',inner,partD,1,EDGE,2,2,'Регулируемая полка; полкодержатели'));
+    const shelfCount=Math.max(1,Math.min(2,Number(module.shelf_count)||1)),shelfType=module.shelf_type==='FIXED'?'Жёсткая полка':'Регулируемая полка; полкодержатели';
+    for(let i=0;i<shelfCount;i++)out.push(detail(module,n++,s++,'ЛДСП 18 Carcas',shelfCount>1?`Shelf ${i+1}`:'Shelf',inner,partD,1,EDGE,2,2,shelfType));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail',inner,100));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail',inner,100));
     out.push(detail(module,n++,s++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз под заднюю стенку','PILOT: размер HDF требует финальной заморозки'));
@@ -129,9 +134,17 @@
     const shelves=fridge?1:oven?Math.min(4,Math.max(3,shelfCountForTall(H))):shelfCountForTall(H);
     for(let i=0;i<shelves;i++)out.push(detail(module,n++,s++,'ЛДСП 18 Carcas',`Shelf ${i+1}`,inner,Math.max(100,D-21),1,EDGE,2,2,oven?'Положение зависит от техники':'Шаг ориентир 350–400 мм'));
     if(!fridge)out.push(detail(module,n++,s++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз 20'));
-    const faceCount=fridge?(module.content==='FRIDGE_FREEZER'?2:1):(oven?2:Math.max(1,Math.ceil(H/900)));
-    const fh=Math.floor((H-GAP*(faceCount-1))/faceCount);
-    for(let i=0;i<faceCount;i++)out.push(detail(module,n++,s++,'ЛДСП 18 Facade',`Facade ${i+1}`,fh,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35'));
+    if(oven){
+      const drawerFacadeH=360;
+      out.push(detail(module,n++,s++,'ЛДСП 18 Facade','Facade Drawer',drawerFacadeH,Math.max(100,W-GAP),1,EDGE,2,2,'Ручка','Нижний выдвижной ящик под духовкой'));
+      const drawer=drawerParts(module,1,drawerFacadeH,n);out.push(...drawer);n+=drawer.length;
+      const upperH=Math.max(300,H-drawerFacadeH-600-GAP*2);
+      out.push(detail(module,n++,s++,'ЛДСП 18 Facade','Facade Upper',upperH,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35','Над зоной духовки'));
+    }else{
+      const faceCount=fridge?(module.content==='FRIDGE_FREEZER'?2:1):Math.max(1,Math.ceil(H/900));
+      const fh=Math.floor((H-GAP*(faceCount-1))/faceCount);
+      for(let i=0;i<faceCount;i++)out.push(detail(module,n++,s++,'ЛДСП 18 Facade',`Facade ${i+1}`,fh,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35'));
+    }
     return out;
   }
   function dishwasher(module,startNo){
@@ -150,7 +163,7 @@
       let rows=[];
       if(m.kind==='DISHWASHER')rows=dishwasher(m,no);
       else if(m.kind==='SINK')rows=sinkBase(m,no);
-      else if(m.kind==='DRAWERS')rows=drawersBase(m,no,2);
+      else if(m.kind==='DRAWERS')rows=drawersBase(m,no,Math.max(2,Math.min(5,Number(m.drawer_count)||2)));
       else if(m.kind==='UPPER_HOOD')rows=upper(m,no,false,true);
       else if(m.kind==='UPPER_DRYER')rows=upper(m,no,true,false);
       else if(m.kind==='UPPER'||m.kind==='UPPER_TOP')rows=upper(m,no,false,false);
@@ -182,8 +195,8 @@
         const grooved=details.filter(d=>d.code.startsWith(m.number+'.')&&/Паз/i.test(d.processing||''));
         H.GROOVE_M+=grooved.reduce((sum,d)=>sum+(d.length*d.qty/1000),0);
       }
-      if(m.kind==='DRAWERS'){
-        const drawers=2;H.DRAWER_SLIDE+=drawers;H.EURO_SCREW+=drawers*6;H.SCREW+=drawers*4;H.HOLE+=drawers*12;
+      if(m.kind==='TALL_OVEN'){H.DRAWER_SLIDE+=1;H.EURO_SCREW+=6;H.SCREW+=4;H.HOLE+=12;H.MINIFIX+=4;H.DOWEL+=8;H.CONFIRMAT+=4;}\n      if(m.kind==='DRAWERS'){
+        const drawers=Math.max(2,Math.min(5,Number(m.drawer_count)||2));H.DRAWER_SLIDE+=drawers;H.EURO_SCREW+=drawers*6;H.SCREW+=drawers*4;H.HOLE+=drawers*12;
         const facadeH=Math.floor((m.h-TOP_GAP-GAP)/2),tallDrawer=facadeH>=150;
         H.MINIFIX+=drawers*(tallDrawer?8:4);H.DOWEL+=drawers*(4+4);H.CONFIRMAT+=drawers*4;
       }
@@ -195,7 +208,8 @@
     });
     const shelves=details.filter(d=>/Shelf/i.test(d.name)&&/регули/i.test((d.processing||'')+(d.note||'')));
     H.SHELF_SUPPORT+=shelves.reduce((s,d)=>s+d.qty*4,0);
-    H.HOLE+=H.HINGE_CUP;
+    H.HOLE+=H.HINGE_CUP+H.HANDLE*2;
+    H.M4_HANDLE=H.HANDLE*2;
     return H;
   }
 
@@ -230,7 +244,7 @@
     add('Фурнитура','Петля BLUM + ответная планка',hw.HINGE,'компл',PRICES.HINGE_BLUM);
     add('Фурнитура','Ножка',hw.LEG,'шт',PRICES.LEG);
     add('Фурнитура','Клипса цоколя',hw.LEG_CLIP,'шт',PRICES.LEG_CLIP);
-    add('Фурнитура','Ручка',hw.HANDLE,'шт',PRICES.HANDLE);
+    add('Фурнитура','Ручка',hw.HANDLE,'шт',PRICES.HANDLE);\n    if(hw.M4_HANDLE)add('Крепёж','Винт ручки M4×25',hw.M4_HANDLE,'шт',0,'OPEN — цена расходника не заморожена; 2 шт на ручку');
     add('Фурнитура','Полкодержатель',hw.SHELF_SUPPORT,'шт',PRICES.SHELF_SUPPORT);
     add('Крепёж','Конфирмат',hw.CONFIRMAT,'шт',PRICES.CONFIRMAT);
     add('Крепёж','Минификс',hw.MINIFIX,'шт',PRICES.MINIFIX);
