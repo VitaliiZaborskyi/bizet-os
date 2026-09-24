@@ -36,7 +36,7 @@
 
       <section class="r8-canvas-column">
         <div class="r8-stage" id="modelStage">
-          <canvas id="modelCanvas" class="model-canvas" aria-label="Интерактивная модель кухни"></canvas>
+          <canvas id="modelCanvas" class="model-canvas" aria-label="Интерактивная модель кухни"></canvas>\n          <canvas id="moduleFocusCanvas" class="model-canvas r9-module-focus-canvas" aria-label="Крупный план выбранного модуля" hidden></canvas>
           <div class="r8-stage-top">
             <button class="r8-pill" id="modelDimensionsToggle" type="button" aria-pressed="true">Размеры · вкл</button>
             <button class="r8-pill r8-undo" id="undoButton" type="button" disabled title="Отменить последнее изменение">↶</button>
@@ -83,10 +83,43 @@
         <label><span>Глубина D, мм</span><input id="moduleDepth" type="number" inputmode="numeric" step="10"></label>
         <label><span>Открывание</span><select id="moduleOpening"><option value="AUTO">Авто</option><option value="HINGED_LEFT">Петли слева</option><option value="HINGED_RIGHT">Петли справа</option><option value="LIFT">Подъёмный</option><option value="DRAWERS">Ящики</option></select></label>
       </div>
+      <div class="r9-width-nudges">
+        <button type="button" id="moduleWidthMinus">−50 мм</button>
+        <button type="button" id="moduleWidthPlus">+50 мм</button>
+      </div>
       <div class="coordinate-box">
         <span>Положение вдоль ряда, мм</span>
         <input id="moduleOffsetInput" type="number" inputmode="numeric" step="10" value="0">
       </div>
+      <section class="r9-module-advanced" id="r9ModuleAdvanced">
+        <div class="r9-custom-grid">
+          <label><span>Цвет фасада</span><select id="moduleFacadeColor"><option value="WHITE">Белый</option><option value="GRAY">Серый</option><option value="BLACK">Чёрный</option><option value="RED">Красный</option><option value="BROWN">Коричневый</option></select></label>
+          <label><span>Цвет корпуса</span><select id="moduleCarcassColor"><option value="WHITE">Белый</option><option value="GRAY">Серый</option><option value="BLACK">Чёрный</option><option value="RED">Красный</option><option value="BROWN">Коричневый</option></select></label>
+        </div>
+        <div id="r9HingedControls">
+          <div class="r9-custom-grid">
+            <label><span>Количество фасадов</span><select id="moduleFacadeCount"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+            <label><span>Полка</span><select id="moduleShelfType"><option value="ADJUSTABLE">Регулируемая</option><option value="FIXED">Жёсткая</option></select></label>
+            <label><span>Количество полок</span><select id="moduleShelfCount"><option value="1">1</option><option value="2">2</option></select></label>
+            <label class="is-disabled"><span>Вырезы задней стенки · следующий слой</span><select id="moduleRearCutout" disabled><option>Нет</option></select></label>
+          </div>
+          <h3>Ручка</h3>
+          <div class="r9-custom-grid">
+            <label><span>Ориентация</span><select id="moduleHandleOrientation"><option value="HORIZONTAL">Горизонтальная</option><option value="VERTICAL">Вертикальная</option></select></label>
+            <label><span>Отступ от края, мм</span><input id="moduleHandleOffset" type="number" min="0" step="1" value="50"></label>
+            <label><span>Положение по фасаду</span><select id="moduleHandleAlign"><option value="CENTER">По центру</option><option value="START">Левее / выше</option><option value="END">Правее / ниже</option></select></label>
+          </div>
+        </div>
+        <div id="r9DrawerControls" hidden>
+          <div class="r9-custom-grid">
+            <label><span>Количество ящиков</span><select id="moduleDrawerCount"><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label><span>Разделение по высоте</span><select id="moduleDrawerLayout"></select></label>
+            <label><span>Тип ручки</span><select id="moduleDrawerHandleType"><option value="STANDARD">Стандартная</option><option value="LINE">Линейная</option><option value="MINIMAL">Минимал</option></select></label>
+            <label><span>Положение ручек по высоте, мм</span><input id="moduleDrawerHandleOffset" type="number" min="10" step="1" value="50"></label>
+          </div>
+          <p class="r9-hint">Ручки ящиков всегда горизонтальные и центрируются по ширине. Настройка применяется ко всем ящикам модуля.</p>
+        </div>
+      </section>
       <p class="r8-module-validation" id="moduleValidation" hidden></p>
       <div class="r8-module-actions">
         <button class="r8-secondary" id="moduleReset" type="button">Сбросить модуль</button>
