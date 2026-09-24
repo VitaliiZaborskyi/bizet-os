@@ -195,7 +195,8 @@
         const grooved=details.filter(d=>d.code.startsWith(m.number+'.')&&/Паз/i.test(d.processing||''));
         H.GROOVE_M+=grooved.reduce((sum,d)=>sum+(d.length*d.qty/1000),0);
       }
-      if(m.kind==='TALL_OVEN'){H.DRAWER_SLIDE+=1;H.EURO_SCREW+=6;H.SCREW+=4;H.HOLE+=12;H.MINIFIX+=4;H.DOWEL+=8;H.CONFIRMAT+=4;}\n      if(m.kind==='DRAWERS'){
+      if(m.kind==='TALL_OVEN'){H.DRAWER_SLIDE+=1;H.EURO_SCREW+=6;H.SCREW+=4;H.HOLE+=12;H.MINIFIX+=4;H.DOWEL+=8;H.CONFIRMAT+=4;}
+      if(m.kind==='DRAWERS'){
         const drawers=Math.max(2,Math.min(5,Number(m.drawer_count)||2));H.DRAWER_SLIDE+=drawers;H.EURO_SCREW+=drawers*6;H.SCREW+=drawers*4;H.HOLE+=drawers*12;
         const facadeH=Math.floor((m.h-TOP_GAP-GAP)/2),tallDrawer=facadeH>=150;
         H.MINIFIX+=drawers*(tallDrawer?8:4);H.DOWEL+=drawers*(4+4);H.CONFIRMAT+=drawers*4;
@@ -244,7 +245,8 @@
     add('Фурнитура','Петля BLUM + ответная планка',hw.HINGE,'компл',PRICES.HINGE_BLUM);
     add('Фурнитура','Ножка',hw.LEG,'шт',PRICES.LEG);
     add('Фурнитура','Клипса цоколя',hw.LEG_CLIP,'шт',PRICES.LEG_CLIP);
-    add('Фурнитура','Ручка',hw.HANDLE,'шт',PRICES.HANDLE);\n    if(hw.M4_HANDLE)add('Крепёж','Винт ручки M4×25',hw.M4_HANDLE,'шт',0,'OPEN — цена расходника не заморожена; 2 шт на ручку');
+    add('Фурнитура','Ручка',hw.HANDLE,'шт',PRICES.HANDLE);
+    if(hw.M4_HANDLE)add('Крепёж','Винт ручки M4×25',hw.M4_HANDLE,'шт',0,'OPEN — цена расходника не заморожена; 2 шт на ручку');
     add('Фурнитура','Полкодержатель',hw.SHELF_SUPPORT,'шт',PRICES.SHELF_SUPPORT);
     add('Крепёж','Конфирмат',hw.CONFIRMAT,'шт',PRICES.CONFIRMAT);
     add('Крепёж','Минификс',hw.MINIFIX,'шт',PRICES.MINIFIX);
