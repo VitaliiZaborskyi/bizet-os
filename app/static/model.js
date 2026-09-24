@@ -20,6 +20,7 @@
   function sizeOverrides(){return {...(visual.module_size_overrides||{})}}
   function openingOverrides(){return {...(visual.module_opening_overrides||{})}}
   function offsetOverrides(){return {...(visual.module_offsets_mm||{})}}
+  function customSettings(){return {...(visual.module_custom_settings||{})}}
   function setFurniturePalette(){const d=String(visual.r8_palette||project?.context?.visual_direction||'LIGHT').toLowerCase();document.documentElement.dataset.furniturePalette=d}
   function fridgeWall(){
     const cfg=configuration(),side=inputs.fridge_side||'LEFT';
@@ -38,6 +39,7 @@
     if(Number(o.depth_mm)>0)module.d=Math.max(100,Number(o.depth_mm));
     if(Number(o.height_mm)>0)module.h=Math.max(100,Number(o.height_mm));
     module.opening=openingOverrides()[module.id]||module.opening||'AUTO';
+    Object.assign(module,customSettings()[module.id]||{});
     return module;
   }
 
@@ -188,6 +190,7 @@
       if(Number(o.depth_mm)>0){if(m.wall==='A')m.d=Math.max(100,Number(o.depth_mm));else m.w=Math.max(100,Number(o.depth_mm))}
       if(Number(o.height_mm)>0)m.h=Math.max(100,Number(o.height_mm));
       m.opening=openingOverrides()[m.id]||m.opening||'AUTO';
+      Object.assign(m,customSettings()[m.id]||{});
     });
     return result;
   }
@@ -204,7 +207,17 @@
     $('moduleStrip').innerHTML=modules.map(m=>`<button class="module-strip-button${m.system||m.pending?' is-system':''}" type="button" data-module="${m.id}"><strong>${m.number}</strong><span>${m.label}</span></button>`).join('');
     $('moduleStrip').querySelectorAll('[data-module]').forEach(btn=>btn.addEventListener('click',()=>openModule(btn.dataset.module)));
   }
-  function renderScene(engineOk=false){setFurniturePalette();modules=buildModules();scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible,architecturalElements:project?.room?.architectural_elements||[]});renderStrip();$('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки; остаточное деление ещё не заморожено.':'3D-пилот · исходные точки собраны, незакреплённое остаточное деление остаётся визуальным слоем.'}
+  function renderFocus(){
+    const canvas=$('moduleFocusCanvas');if(!canvas)return;
+    if(!activeModule){canvas.hidden=true;document.body.classList.remove('r9-module-focus');return}
+    const current=modules.find(m=>m.id===activeModule.id)||activeModule;activeModule=current;
+    const run=Math.max(300,runDimension(current)),dep=Math.max(280,depthDimension(current)),height=Math.max(900,current.z+current.h+250);
+    const room={lengthMm:run+1000,depthMm:dep+1000,heightMm:height};
+    const clone={...current,wall:'A',x:500,y:room.depthMm-dep-350,w:run,d:dep,number:current.number};
+    canvas.hidden=false;document.body.classList.add('r9-module-focus');
+    window.BizetPilot3D.drawKitchenScene(canvas,{room,configuration:'WALL_CENTER',activeWalls:['A'],modules:[clone],camera:{yaw:0,pitch:.26,distanceScale:.64},showDimensions:false,architecturalElements:[]});
+  }
+  function renderScene(engineOk=false){setFurniturePalette();modules=buildModules();scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible,architecturalElements:project?.room?.architectural_elements||[]});renderStrip();if(activeModule)renderFocus();$('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки; остаточное деление ещё не заморожено.':'3D-пилот · исходные точки собраны, незакреплённое остаточное деление остаётся визуальным слоем.'}
 
   function offsets(){return{...(visual.module_offsets_mm||{})}}
   function runDimension(m){return m.wall==='A'?m.w:m.d}
@@ -222,17 +235,47 @@
   function setValidation(message=''){
     const el=$('moduleValidation');if(!el)return;el.textContent=message;el.hidden=!message;
   }
+  function drawerLayoutOptions(count){
+    if(count===2)return[['EQUAL','2 равных']];
+    if(count===3)return[['SMALL_TOP','Узкий сверху + 2 больших'],['TWO_SMALL_TOP','2 малых сверху + 1 большой снизу']];
+    if(count===4)return[['EQUAL','4 равных'],['LARGE_BOTTOM','3 меньше + увеличенный нижний']];
+    return[['EQUAL','5 равных']];
+  }
+  function syncDrawerLayout(){
+    const count=Number($('moduleDrawerCount')?.value)||2,select=$('moduleDrawerLayout');if(!select)return;
+    const current=select.value;select.innerHTML=drawerLayoutOptions(count).map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+    if([...select.options].some(x=>x.value===current))select.value=current;select.disabled=count===5;
+  }
+  function syncFacadeOpening(){
+    const count=Number($('moduleFacadeCount')?.value)||1,o=$('moduleOpening');if(!o)return;
+    o.disabled=count===2;o.title=count===2?'Для двух распашных фасадов направление определяется парой фасадов.':'';
+  }
   function openModule(id){
     activeModule=modules.find(m=>m.id===id)||null;if(!activeModule)return;
     $('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;
     $('moduleCopy').textContent=detailText(activeModule);
-    const w=$('moduleWidth'),h=$('moduleHeight'),d=$('moduleDepth'),o=$('moduleOpening'),pos=$('moduleOffsetInput');
-    w.value=Math.round(runDimension(activeModule));h.value=Math.round(activeModule.h);d.value=Math.round(depthDimension(activeModule));
+    const w=$('moduleWidth'),h=$('moduleHeight'),d=$('moduleDepth'),o=$('moduleOpening'),pos=$('moduleOffsetInput'),cs=customSettings()[activeModule.id]||{};
+    w.value=Math.round(runDimension(activeModule));w.step=50;h.value=Math.round(activeModule.h);d.value=Math.round(depthDimension(activeModule));
+    h.disabled=true;h.title='Высота задаётся общим параметром кухни.';
     w.disabled=widthLocked(activeModule)||!!activeModule.pending;
     w.title=w.disabled?'Ширина определяется техникой или системным остатком в текущем пилоте.':'';
     o.value=openingOverrides()[activeModule.id]||activeModule.opening||'AUTO';
     pos.value=Number(offsets()[activeModule.id])||0;
-    setValidation('');
+    if($('moduleFacadeColor'))$('moduleFacadeColor').value=cs.facade_color||'WHITE';
+    if($('moduleCarcassColor'))$('moduleCarcassColor').value=cs.carcass_color||'WHITE';
+    const isDrawers=activeModule.kind==='DRAWERS';
+    $('r9DrawerControls').hidden=!isDrawers;$('r9HingedControls').hidden=isDrawers;
+    if(isDrawers){
+      $('moduleDrawerCount').value=String(cs.drawer_count||2);syncDrawerLayout();$('moduleDrawerLayout').value=cs.drawer_layout||'EQUAL';
+      $('moduleDrawerHandleType').value=cs.handle_type||'STANDARD';$('moduleDrawerHandleOffset').value=Number(cs.handle_offset_mm)||50;
+      o.value='DRAWERS';o.disabled=true;
+    }else{
+      const defaultFacades=runDimension(activeModule)<=597?1:2;
+      $('moduleFacadeCount').value=String(cs.facade_count||defaultFacades);$('moduleShelfType').value=cs.shelf_type||'ADJUSTABLE';$('moduleShelfCount').value=String(cs.shelf_count||1);
+      $('moduleHandleOrientation').value=cs.handle_orientation||'HORIZONTAL';$('moduleHandleOffset').value=Number(cs.handle_offset_mm)||50;$('moduleHandleAlign').value=cs.handle_align||'CENTER';
+      syncFacadeOpening();
+    }
+    setValidation('');renderFocus();window.dispatchEvent(new CustomEvent('bizet:moduleopen',{detail:{id:activeModule.id,module:{...activeModule}}}));
     $('moduleDialog').showModal?.();
   }
   async function applyModuleCustomization(){
@@ -244,8 +287,29 @@
     if(!widthLocked(activeModule)&&!activeModule.pending&&(!Number.isFinite(w)||w<requiredRun)){setValidation(`Минимальная допустимая ширина для этого модуля: ${requiredRun} мм.`);return}
     if(!widthLocked(activeModule)&&!activeModule.tall&&w>MAX_STRAIGHT_MODULE_W){setValidation('Прямой модуль не может быть шире 900 мм. Разбейте участок на несколько модулей.');return}
     if(Math.abs(off)>600){setValidation('Смещение больше 600 мм требует проверки конструктора.');return}
-    const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets();
+    const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets(),custom=customSettings();
     const currentRun=Math.round(runDimension(activeModule));
+    const isDrawers=activeModule.kind==='DRAWERS';
+    custom[activeModule.id]={
+      ...(custom[activeModule.id]||{}),
+      facade_color:$('moduleFacadeColor')?.value||'WHITE',
+      carcass_color:$('moduleCarcassColor')?.value||'WHITE',
+      ...(isDrawers?{
+        drawer_count:Number($('moduleDrawerCount')?.value)||2,
+        drawer_layout:$('moduleDrawerLayout')?.value||'EQUAL',
+        handle_orientation:'HORIZONTAL',
+        handle_type:$('moduleDrawerHandleType')?.value||'STANDARD',
+        handle_offset_mm:Math.max(10,Number($('moduleDrawerHandleOffset')?.value)||50)
+      }:{
+        facade_count:Number($('moduleFacadeCount')?.value)||(currentRun<=597?1:2),
+        shelf_type:$('moduleShelfType')?.value||'ADJUSTABLE',
+        shelf_count:Number($('moduleShelfCount')?.value)||1,
+        handle_orientation:$('moduleHandleOrientation')?.value||'HORIZONTAL',
+        handle_offset_mm:Math.max(0,Number($('moduleHandleOffset')?.value)||50),
+        handle_align:$('moduleHandleAlign')?.value||'CENTER',
+        rear_cutout:'NONE'
+      })
+    };
     sizes[activeModule.id]={
       run_mm:(widthLocked(activeModule)||activeModule.pending)?currentRun:w,
       height_mm:h,
@@ -253,16 +317,16 @@
     };
     opens[activeModule.id]=$('moduleOpening').value||'AUTO';
     offs[activeModule.id]=off;
-    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs,module_direct_edit_status:'PILOT_PARAMETRIC_EDIT'},`Module customization ${activeModule.id}`);
+    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs,module_custom_settings:custom,module_direct_edit_status:'PILOT_PARAMETRIC_EDIT'},`Module customization ${activeModule.id}`);
     renderScene(false);
     $('modelStatus').textContent='Модуль обновлён. 3D и зависимые остаточные модули перестроены.';
     $('moduleDialog').close?.();
   }
   async function resetModuleCustomization(){
     if(!activeModule)return;
-    const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets();
-    delete sizes[activeModule.id];delete opens[activeModule.id];delete offs[activeModule.id];
-    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs},`Reset module customization ${activeModule.id}`);
+    const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets(),custom=customSettings();
+    delete sizes[activeModule.id];delete opens[activeModule.id];delete offs[activeModule.id];delete custom[activeModule.id];
+    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs,module_custom_settings:custom},`Reset module customization ${activeModule.id}`);
     renderScene(false);$('moduleDialog').close?.();
   }
 
@@ -305,7 +369,7 @@
     }
     resumeFromSleep.busy=false;
   }
-  window.BizetModelRuntime={ready:false,pointBVersion:'2026-09-24',maxStraightModuleWidth:MAX_STRAIGHT_MODULE_W,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
+  window.BizetModelRuntime={ready:false,pointBVersion:'2026-09-24',maxStraightModuleWidth:MAX_STRAIGHT_MODULE_W,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getActiveModule:()=>activeModule?{...activeModule}:null,getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
 
   const canvas=$('modelCanvas');
   canvas.addEventListener('pointerdown',event=>{drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:camera.yaw,pitch:camera.pitch};dragMoved=false;canvas.setPointerCapture?.(event.pointerId)});
@@ -315,7 +379,13 @@
   canvas.addEventListener('wheel',event=>{event.preventDefault();camera.distanceScale=clamp(camera.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
 
   $('modelDimensionsToggle').addEventListener('click',()=>{dimensionsVisible=!dimensionsVisible;$('modelDimensionsToggle').textContent=`Размеры · ${dimensionsVisible?'вкл':'выкл'}`;$('modelDimensionsToggle').setAttribute('aria-pressed',String(dimensionsVisible));renderScene(false)});
-  $('moduleClose').addEventListener('click',()=>$('moduleDialog').close?.());
+  function closeModuleFocus(){activeModule=null;$('moduleFocusCanvas')?.setAttribute('hidden','');document.body.classList.remove('r9-module-focus');window.dispatchEvent(new CustomEvent('bizet:moduleclose'))}
+  $('moduleClose').addEventListener('click',()=>{$('moduleDialog').close?.();closeModuleFocus()});
+  $('moduleDialog').addEventListener('close',closeModuleFocus);
+  $('moduleWidthMinus')?.addEventListener('click',()=>{if(!$('moduleWidth').disabled)$('moduleWidth').value=Math.max(300,Number($('moduleWidth').value||0)-50)});
+  $('moduleWidthPlus')?.addEventListener('click',()=>{if(!$('moduleWidth').disabled)$('moduleWidth').value=Math.min(MAX_STRAIGHT_MODULE_W,Number($('moduleWidth').value||0)+50)});
+  $('moduleDrawerCount')?.addEventListener('change',syncDrawerLayout);
+  $('moduleFacadeCount')?.addEventListener('change',syncFacadeOpening);
   $('moduleApply')?.addEventListener('click',()=>applyModuleCustomization().catch(error=>setValidation(error.message)));
   $('moduleReset')?.addEventListener('click',()=>resetModuleCustomization().catch(error=>setValidation(error.message)));
   $('materialsButton').addEventListener('click',()=>location.assign(`/materials?project=${encodeURIComponent(projectId)}`));$('backButton').addEventListener('click',()=>history.back());
