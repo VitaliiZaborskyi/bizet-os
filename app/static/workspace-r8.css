@@ -46,3 +46,24 @@ html[data-theme="dark"] .r8-pill,html[data-theme="dark"] .r8-arrow{background:#2
 .r8-topbar .settings-wrap{position:absolute;right:18px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;margin:0}
 html,body,button,a,input,select,textarea,label{font-family:"Century Gothic",CenturyGothic,AppleGothic,Arial,sans-serif}
 @media(max-width:820px){.r8-brand{left:62px}.r8-topbar .settings-wrap{right:10px}.r8-project-state{right:118px}}
+
+/* R9 focused module editor */
+.r9-module-focus-canvas{position:absolute;inset:0;width:100%!important;height:100%!important;z-index:2;background:var(--r8-bg)}
+.r8-stage-top,.r8-variant-controls{z-index:3}
+.module-dialog{width:min(430px,calc(100vw - 28px));max-height:calc(100vh - 100px);margin:84px 22px auto auto;border:0;background:transparent;padding:0;overflow:visible}
+.module-dialog::backdrop{background:rgba(0,0,0,.12);backdrop-filter:blur(1px)}
+.module-dialog .module-card{max-height:calc(100vh - 108px);overflow:auto;border:1px solid var(--r8-line);box-shadow:0 30px 90px rgba(0,0,0,.28)}
+.r9-width-nudges{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px}
+.r9-width-nudges button{border:1px solid var(--r8-line);border-radius:12px;background:transparent;color:inherit;padding:10px;font:inherit;cursor:pointer}
+.r9-module-advanced{margin-top:16px;padding-top:16px;border-top:1px solid var(--r8-line)}
+.r9-custom-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r9-custom-grid label{display:block}.r9-custom-grid label>span{display:block;margin:0 0 6px;color:var(--r8-muted);font-size:11px}
+.r9-custom-grid input,.r9-custom-grid select{width:100%;border:1px solid var(--r8-line);background:#fff;color:#171717;border-radius:12px;padding:11px 12px;font:inherit}
+html[data-theme="dark"] .r9-custom-grid input,html[data-theme="dark"] .r9-custom-grid select{background:#282825;color:#f4f2ed}
+.r9-custom-grid .is-disabled{opacity:.48}.r9-module-advanced h3{font-size:12px;margin:16px 0 8px}.r9-hint{font-size:10px;line-height:1.5;color:var(--r8-muted)}
+body.r9-module-focus .r8-variant-controls{opacity:.25;pointer-events:none}
+@media(max-width:820px){
+ .module-dialog{width:calc(100vw - 16px);max-height:55vh;margin:auto 8px 76px;align-self:end}
+ .module-dialog .module-card{max-height:55vh}
+ .r9-custom-grid{grid-template-columns:1fr}
+}
