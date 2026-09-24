@@ -282,6 +282,10 @@ async function choose(value) {
   busy = true;
   showError('');
   const step = STEPS[currentStep];
+  if (!step?.actionId) {
+    busy = false;
+    return;
+  }
   try {
     const result = await request(`/api/v1.1/projects/${project.identity.internal_id}/quest/actions/${step.actionId}/answer`, {
       method: 'POST',
