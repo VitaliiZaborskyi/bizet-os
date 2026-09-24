@@ -57,12 +57,10 @@
       .r8-transition.is-leaving{opacity:0;pointer-events:none}
       .r8-transition-stage{position:relative;width:100%;height:100%;display:grid;place-items:center;perspective:1200px}
       .r8-word{
-        position:absolute;left:50%;top:50%;white-space:nowrap;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
-        color:transparent;background:
-          linear-gradient(110deg,#4b4b4b 0%,#f8f8f8 15%,#777 27%,#fff 42%,#5f5f5f 55%,#e9e9e9 70%,#696969 82%,#f6f6f6 100%);
-        background-size:260% 100%;-webkit-background-clip:text;background-clip:text;
-        text-shadow:0 10px 36px rgba(255,255,255,.08),0 18px 70px rgba(0,0,0,.7);
-        filter:drop-shadow(0 1px 0 rgba(255,255,255,.34));
+        position:absolute;left:50%;top:50%;white-space:nowrap;
+        font-family:"Century Gothic",CenturyGothic,AppleGothic,Arial,sans-serif;
+        color:#f5f7fb;
+        text-shadow:0 8px 30px rgba(54,114,196,.10),0 18px 70px rgba(0,0,0,.72);
       }
       .r8-word-z{
         font-size:clamp(22px,2.3vw,34px);font-weight:650;letter-spacing:.38em;
@@ -73,7 +71,9 @@
         animation:r8FlyB var(--r8-duration) cubic-bezier(.16,.82,.18,1) both;
       }
       .r8-word-os{
-        font-size:clamp(58px,8vw,102px);font-weight:610;letter-spacing:-.06em;
+        font-size:clamp(58px,8vw,102px);font-weight:700;letter-spacing:-.06em;
+        color:#2f7cff;
+        text-shadow:0 0 30px rgba(47,124,255,.20),0 18px 70px rgba(0,0,0,.72);
         animation:r8FlyOS var(--r8-duration) cubic-bezier(.16,.82,.18,1) both;
       }
       .r8-flash{
