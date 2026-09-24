@@ -19,20 +19,24 @@ def test_r9_direct_configuration_to_workspace_and_splash():
     assert "color:#2f7cff" in splash
     assert "data:audio/mpeg;base64," in splash
 
-def test_r9_century_gothic_and_header_positions():
-    for name in ["start.css","room-setup-r8.css","workspace-r8.css","point-b.css"]:
-        assert "Century Gothic" in read(name)
-    setup = read("room-setup-r8.css")
+def test_r9_r8_ui_typography_with_document_century_gothic():
+    for name in ["start.css","room-setup-r8.css","workspace-r8.css"]:
+        assert "Century Gothic" not in read(name)
+        assert "SF Pro Display" in read(name)
+    assert "Century Gothic" in read("point-b.css")
     workspace = read("workspace-r8.css")
-    assert ".setup-step{position:absolute;right:132px" in setup
-    assert ".setup-topbar .settings-wrap{position:absolute;right:18px" in setup
     assert ".r8-project-state{position:absolute;right:132px" in workspace
     assert ".r8-topbar .settings-wrap{position:absolute;right:18px" in workspace
 
-def test_r9_light_action_button_has_dark_text_in_all_themes():
-    css = read("room-setup-r8.css")
-    assert "background:#f3f1ec;color:#171716" in css
-    assert ".setup-create,.setup-create:disabled" in css
+def test_r9_start_visual_is_r8_except_brand_and_splash():
+    css = read("start.css")
+    html = read("index.html")
+    shell = read("pilot-r8-shell.js")
+    assert ".choice-card" in css
+    assert "font-family: Inter" in css
+    assert 'class="brand-master">ZABORSKY' in html
+    assert 'class="brand-main">BIZET <i>OS</i>' in html
+    assert "color:#2f7cff" in shell
 
 def test_r9_role_aware_producer_hub_has_four_demo_profiles():
     js = read("owner-qa-business.js")
