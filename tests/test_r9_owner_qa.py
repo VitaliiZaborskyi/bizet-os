@@ -86,3 +86,11 @@ def test_r9_point_b_uses_open_service_tariffs_and_live_drawer_count():
     assert "2 шт на ручку" in js
     assert "Facade Drawer" in js
     assert "Нижний выдвижной ящик под духовкой" in js
+
+
+def test_r9_handoff_scripts_do_not_contain_accidental_literal_newline_escapes():
+    handoff = read("start-room-handoff.js")
+    point_b = read("point-b.js")
+    assert ");\\n      window.location.assign" not in handoff
+    assert "}\\n      if(m.kind==='DRAWERS')" not in point_b
+    assert ");\\n    if(hw.M4_HANDLE)" not in point_b
