@@ -33,3 +33,6 @@ html[data-theme="dark"] .r8-module-grid input,html[data-theme="dark"] .r8-module
   .r8-module-grid{grid-template-columns:1fr}
   .r8-module-actions{grid-template-columns:1fr}
 }
+
+html[data-theme="dark"] .r8-icon,html[data-theme="dark"] .r8-pill,html[data-theme="dark"] .r8-arrow,html[data-theme="dark"] .r8-secondary,html[data-theme="dark"] .r8-panel-close{color:var(--r8-ink)}
+html[data-theme="dark"] .r8-pill,html[data-theme="dark"] .r8-arrow{background:#282825;border-color:var(--r8-line)}
