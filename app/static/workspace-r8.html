@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="/static/model-r5.css">
   <link rel="stylesheet" href="/static/pilot-shell.css">
   <link rel="stylesheet" href="/static/workspace-r8.css?v=100">
-  <link rel="stylesheet" href="/static/point-b.css?v=99">\n  <link rel="stylesheet" href="/static/owner-qa-business.css?v=99">
+  <link rel="stylesheet" href="/static/point-b.css?v=99">
+  <link rel="stylesheet" href="/static/owner-qa-business.css?v=99">
 </head>
 <body class="r8-workspace-body">
   <div class="r8-shell">
@@ -26,7 +27,7 @@
 
     <main class="r8-main">
       <nav class="r8-tools" id="workspaceTools" aria-label="Настройки проекта">
-        <button class="is-active" data-panel="room" type="button"><span>01</span>Помещение</button>
+        <button data-panel="room" type="button"><span>01</span>Помещение</button>
         <button data-panel="appliances" type="button"><span>02</span>Техника</button>
         <button data-panel="upper" type="button"><span>03</span>Верхние модули</button>
         <button data-panel="communications" type="button"><span>04</span>Коммуникации</button>
@@ -36,7 +37,8 @@
 
       <section class="r8-canvas-column">
         <div class="r8-stage" id="modelStage">
-          <canvas id="modelCanvas" class="model-canvas" aria-label="Интерактивная модель кухни"></canvas>\n          <canvas id="moduleFocusCanvas" class="model-canvas r9-module-focus-canvas" aria-label="Крупный план выбранного модуля" hidden></canvas>
+          <canvas id="modelCanvas" class="model-canvas" aria-label="Интерактивная модель кухни"></canvas>
+          <canvas id="moduleFocusCanvas" class="model-canvas r9-module-focus-canvas" aria-label="Крупный план выбранного модуля" hidden></canvas>
           <div class="r8-stage-top">
             <button class="r8-pill" id="modelDimensionsToggle" type="button" aria-pressed="true">Размеры · вкл</button>
             <button class="r8-pill r8-undo" id="undoButton" type="button" disabled title="Отменить последнее изменение">↶</button>
@@ -56,7 +58,7 @@
         <p class="model-status r8-status" id="modelStatus">Формируем базовый вариант…</p>
       </section>
 
-      <aside class="r8-panel" id="editorPanel">
+      <aside class="r8-panel" id="editorPanel" hidden>
         <div class="r8-panel-head">
           <div><small id="panelKicker">01 · ПОМЕЩЕНИЕ</small><h2 id="panelTitle">Уточните проект</h2></div>
           <button class="r8-panel-close" id="panelClose" type="button" aria-label="Свернуть">×</button>
@@ -139,6 +141,7 @@
   <script src="/static/model-r5.js"></script>
   <script src="/static/pilot-r6.js"></script>
   <script src="/static/workspace-r8.js?v=99"></script>
-  <script src="/static/point-b.js?v=101"></script>\n  <script src="/static/owner-qa-business.js?v=99"></script>
+  <script src="/static/point-b.js?v=101"></script>
+  <script src="/static/owner-qa-business.js?v=99"></script>
 </body>
 </html>
