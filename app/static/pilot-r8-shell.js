@@ -40,6 +40,9 @@
     s.id='r8SplashStyle';
     s.textContent=`
       #backButton[hidden]{display:none!important}
+      html,body,button,a,input,select,textarea,label{font-family:"Century Gothic",CenturyGothic,AppleGothic,Arial,sans-serif!important}
+      .topbar .settings-wrap,.setup-topbar .settings-wrap,.r8-topbar .settings-wrap{right:18px!important}
+      @media(max-width:820px){.topbar .settings-wrap,.setup-topbar .settings-wrap,.r8-topbar .settings-wrap{right:10px!important}}
       .settings-panel{
         background:#fff!important;background-color:#fff!important;opacity:1!important;
         backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
@@ -48,7 +51,7 @@
       .r8-transition{
         position:fixed;inset:0;z-index:99999;background:
           radial-gradient(circle at 50% 46%,rgba(255,255,255,.045),transparent 28%),
-          linear-gradient(180deg,#090909,#111);
+          radial-gradient(circle at 50% 48%,#132746 0%,#091423 34%,#030912 72%,#02060c 100%);
         overflow:hidden;display:grid;place-items:center;opacity:1;transition:opacity .34s ease;
       }
       .r8-transition.is-leaving{opacity:0;pointer-events:none}
@@ -80,22 +83,22 @@
         animation:r8Flash var(--r8-duration) ease-out both;pointer-events:none;
       }
       @keyframes r8FlyZ{
-        0%{transform:translate(-150vw,-42vh) rotate(-8deg) scale(.82);opacity:0;background-position:220% 0;filter:blur(15px)}
-        24%{opacity:1}
-        50%,76%{transform:translate(-50%,-112px) rotate(0) scale(1);opacity:1;background-position:-35% 0;filter:blur(0)}
-        100%{transform:translate(-50%,-112px) scale(1.02);opacity:0;background-position:-120% 0}
+        0%{transform:translate(-50%,-72vh) scale(.94);opacity:0;filter:blur(10px)}
+        26%{opacity:1}
+        50%,78%{transform:translate(-50%,-112px) scale(1);opacity:1;filter:blur(0)}
+        100%{transform:translate(-50%,-112px) scale(1.01);opacity:0}
       }
       @keyframes r8FlyB{
-        0%{transform:translate(145vw,-50%) rotateY(-18deg) scale(.82);opacity:0;background-position:240% 0;filter:blur(18px)}
-        25%{opacity:1}
-        50%,76%{transform:translate(-64%,-42%) rotateY(0) scale(1);opacity:1;background-position:-20% 0;filter:blur(0)}
-        100%{transform:translate(-64%,-42%) scale(1.02);opacity:0;background-position:-125% 0}
+        0%{transform:translate(-145vw,-42%) scale(.92);opacity:0;filter:blur(14px)}
+        24%{opacity:1}
+        50%,78%{transform:translate(-64%,-42%) scale(1);opacity:1;filter:blur(0)}
+        100%{transform:translate(-64%,-42%) scale(1.01);opacity:0}
       }
       @keyframes r8FlyOS{
-        0%{transform:translate(-50%,145vh) rotateX(16deg) scale(.72);opacity:0;background-position:220% 0;filter:blur(16px)}
-        26%{opacity:1}
-        50%,76%{transform:translate(155px,-42%) rotateX(0) scale(1);opacity:1;background-position:-10% 0;filter:blur(0)}
-        100%{transform:translate(155px,-42%) scale(1.02);opacity:0;background-position:-130% 0}
+        0%{transform:translate(145vw,-42%) scale(.92);opacity:0;filter:blur(14px)}
+        24%{opacity:1}
+        50%,78%{transform:translate(155px,-42%) scale(1);opacity:1;filter:blur(0)}
+        100%{transform:translate(155px,-42%) scale(1.01);opacity:0}
       }
       @keyframes r8Flash{
         0%,61%{opacity:0;transform:translate(-50%,-50%) scale(.1)}
@@ -108,22 +111,22 @@
         .r8-word-b{font-size:78px}
         .r8-word-os{font-size:48px}
         @keyframes r8FlyZ{
-          0%{transform:translate(-145vw,-38vh) rotate(-7deg) scale(.8);opacity:0;background-position:220% 0;filter:blur(14px)}
+          0%{transform:translate(-50%,-70vh) scale(.92);opacity:0;filter:blur(10px)}
           24%{opacity:1}
-          50%,76%{transform:translate(-50%,-82px);opacity:1;background-position:-35% 0;filter:blur(0)}
-          100%{transform:translate(-50%,-82px);opacity:0;background-position:-120% 0}
+          50%,78%{transform:translate(-50%,-82px);opacity:1;filter:blur(0)}
+          100%{transform:translate(-50%,-82px);opacity:0}
         }
         @keyframes r8FlyB{
-          0%{transform:translate(140vw,-50%) scale(.8);opacity:0;background-position:240% 0;filter:blur(16px)}
-          25%{opacity:1}
-          50%,76%{transform:translate(-63%,-42%);opacity:1;background-position:-20% 0;filter:blur(0)}
-          100%{transform:translate(-63%,-42%);opacity:0;background-position:-125% 0}
+          0%{transform:translate(-145vw,-42%) scale(.9);opacity:0;filter:blur(12px)}
+          24%{opacity:1}
+          50%,78%{transform:translate(-63%,-42%);opacity:1;filter:blur(0)}
+          100%{transform:translate(-63%,-42%);opacity:0}
         }
         @keyframes r8FlyOS{
-          0%{transform:translate(-50%,140vh) scale(.7);opacity:0;background-position:220% 0;filter:blur(16px)}
-          26%{opacity:1}
-          50%,76%{transform:translate(102px,-42%);opacity:1;background-position:-10% 0;filter:blur(0)}
-          100%{transform:translate(102px,-42%);opacity:0;background-position:-130% 0}
+          0%{transform:translate(145vw,-42%) scale(.9);opacity:0;filter:blur(12px)}
+          24%{opacity:1}
+          50%,78%{transform:translate(102px,-42%);opacity:1;filter:blur(0)}
+          100%{transform:translate(102px,-42%);opacity:0}
         }
       }
       @media(prefers-reduced-motion:reduce){
