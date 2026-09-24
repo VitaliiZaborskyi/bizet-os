@@ -94,3 +94,70 @@ def test_r9_handoff_scripts_do_not_contain_accidental_literal_newline_escapes():
     assert ");\\n      window.location.assign" not in handoff
     assert "}\\n      if(m.kind==='DRAWERS')" not in point_b
     assert ");\\n    if(hw.M4_HANDLE)" not in point_b
+
+
+def test_r91_splash_uses_approved_masks_and_full_audio_duration():
+    shell = read("pilot-r8-shell.js")
+    for asset in ["zaborsky_clean_mask.png", "bizet_clean_mask.png", "os_clean_mask.png"]:
+        assert (STATIC / "brand" / asset).exists()
+        assert f"/static/brand/{asset}" in shell
+    assert "MIN_SPLASH_MS=5600" in shell
+    assert "audio.addEventListener('ended'" in shell
+    assert "needs-gesture" in shell
+    assert "r8-sound-prompt" in shell
+
+
+def test_r91_top_right_controls_are_fixed_and_russian_palette_is_localized():
+    shell = read("pilot-r8-shell.js")
+    start = read("start.js")
+    assert "position:absolute!important;right:18px!important;top:50%!important" in shell
+    assert "ru: 'Светлое'" in start
+    assert "ru: 'Тёмное'" in start
+
+
+def test_r91_workspace_opens_on_3d_without_automatic_room_editor():
+    html = read("workspace-r8.html")
+    js = read("workspace-r8.js")
+    css = read("workspace-r8.css")
+    assert 'id="editorPanel" hidden' in html
+    assert '<button data-panel="room"' in html
+    assert "let activePanel=null" in js
+    assert "selectPanel('room')" not in js[js.index("async function ready"):js.index("ready();")]
+    assert "requestAnimationFrame(()=>{rt.render();requestAnimationFrame(()=>rt.render())})" in js
+    assert "#modelCanvas{position:absolute" in css
+
+
+def test_r91_module_focus_is_rotatable_and_technical():
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    assert "focusCamera" in model
+    assert "focusCanvas?.addEventListener('pointermove'" in model
+    assert "focusMode:true" in model
+    assert ".show==='function'" in model
+    assert "function drawFocusInternals" in renderer
+    for token in ["18 mm carcass panels", "Drawer boxes / trays", "Schematic adjustable legs", "Hinges", "Fasteners"]:
+        assert token in renderer
+    assert "drawModuleRunDimensions" in renderer
+
+
+def test_r91_light_controls_use_dark_text_in_both_themes():
+    css = read("workspace-r8.css")
+    setup = read("room-setup-r8.css")
+    assert "background:#f3f1ec!important;color:#171716!important" in css
+    assert 'html[data-theme="dark"] .r8-pill' in css
+    assert "background:#f3f1ec!important;color:#171716!important" in setup
+
+
+def test_r91_commercial_proposal_is_one_kitchen_summary_not_module_rows():
+    js = read("owner-qa-business.js")
+    proposal = js[js.index("function printProposal"):js.index("function refresh")]
+    assert "proposalSnapshot" in js
+    assert "modelCanvas" in js and "toDataURL('image/png')" in js
+    assert "configurationLabel" in js
+    assert "runSummary" in js
+    assert "Список услуг по изделиям" in proposal
+    assert "Изображение / схема" in proposal
+    assert "Комплектация" in proposal
+    assert "Детальная разбивка по модулям" in proposal
+    assert "moduleSpec(d.modules).map" not in proposal
+    assert "DEFERRED: one-sheet comparison" in js
