@@ -4,6 +4,7 @@
   const projectId=params.get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
   if(projectId){sessionStorage.setItem(PROJECT_KEY,projectId);localStorage.setItem(PROJECT_KEY,projectId)}
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false,dimensionsVisible=true;
+  let focusCamera={yaw:-.38,pitch:.34,distanceScale:.74},focusDrag=null,focusDragMoved=false,lastFocusModuleId='';
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
   const LOWER_DEPTH=510,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
@@ -211,11 +212,12 @@
     const canvas=$('moduleFocusCanvas');if(!canvas)return;
     if(!activeModule){canvas.hidden=true;document.body.classList.remove('r9-module-focus');return}
     const current=modules.find(m=>m.id===activeModule.id)||activeModule;activeModule=current;
-    const run=Math.max(300,runDimension(current)),dep=Math.max(280,depthDimension(current)),height=Math.max(900,current.z+current.h+250);
+    if(lastFocusModuleId!==current.id){focusCamera={yaw:-.38,pitch:.34,distanceScale:.74};lastFocusModuleId=current.id}
+    const run=Math.max(300,runDimension(current)),dep=Math.max(280,depthDimension(current)),height=Math.max(900,current.h+520);
     const room={lengthMm:run+1000,depthMm:dep+1000,heightMm:height};
-    const clone={...current,wall:'A',x:500,y:room.depthMm-dep-350,w:run,d:dep,number:current.number};
+    const clone={...current,wall:'A',x:500,y:room.depthMm-dep-350,z:Math.max(120,current.level==='upper'?180:120),w:run,d:dep,number:current.number,focus_transparent:true};
     canvas.hidden=false;document.body.classList.add('r9-module-focus');
-    window.BizetPilot3D.drawKitchenScene(canvas,{room,configuration:'WALL_CENTER',activeWalls:['A'],modules:[clone],camera:{yaw:0,pitch:.26,distanceScale:.64},showDimensions:false,architecturalElements:[]});
+    window.BizetPilot3D.drawKitchenScene(canvas,{room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],camera:focusCamera,showDimensions:false,architecturalElements:[],focusMode:true});
   }
   function renderScene(engineOk=false){setFurniturePalette();modules=buildModules();scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible,architecturalElements:project?.room?.architectural_elements||[]});renderStrip();if(activeModule)renderFocus();$('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки; остаточное деление ещё не заморожено.':'3D-пилот · исходные точки собраны, незакреплённое остаточное деление остаётся визуальным слоем.'}
 
@@ -252,6 +254,7 @@
   }
   function openModule(id){
     activeModule=modules.find(m=>m.id===id)||null;if(!activeModule)return;
+    if(lastFocusModuleId!==activeModule.id){focusCamera={yaw:-.38,pitch:.34,distanceScale:.74};lastFocusModuleId=activeModule.id}
     $('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;
     $('moduleCopy').textContent=detailText(activeModule);
     const w=$('moduleWidth'),h=$('moduleHeight'),d=$('moduleDepth'),o=$('moduleOpening'),pos=$('moduleOffsetInput'),cs=customSettings()[activeModule.id]||{};
@@ -276,7 +279,7 @@
       syncFacadeOpening();
     }
     setValidation('');renderFocus();window.dispatchEvent(new CustomEvent('bizet:moduleopen',{detail:{id:activeModule.id,module:{...activeModule}}}));
-    $('moduleDialog').showModal?.();
+    if(typeof $('moduleDialog').show==='function')$('moduleDialog').show();else $('moduleDialog').showModal?.();
   }
   async function applyModuleCustomization(){
     if(!activeModule)return;
@@ -393,8 +396,35 @@
   canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',()=>{drag=null});
   canvas.addEventListener('wheel',event=>{event.preventDefault();camera.distanceScale=clamp(camera.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
 
+  const focusCanvas=$('moduleFocusCanvas');
+  focusCanvas?.addEventListener('pointerdown',event=>{
+    if(!activeModule)return;
+    focusDrag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:focusCamera.yaw,pitch:focusCamera.pitch};
+    focusDragMoved=false;focusCanvas.setPointerCapture?.(event.pointerId);event.preventDefault();
+  });
+  focusCanvas?.addEventListener('pointermove',event=>{
+    if(!focusDrag||focusDrag.id!==event.pointerId)return;
+    const dx=event.clientX-focusDrag.x,dy=event.clientY-focusDrag.y;
+    if(Math.hypot(dx,dy)>3)focusDragMoved=true;
+    if(!focusDragMoved)return;
+    focusCamera.yaw=focusDrag.yaw-dx*.009;
+    focusCamera.pitch=clamp(focusDrag.pitch+dy*.007,.07,.95);
+    renderFocus();event.preventDefault();
+  });
+  const endFocusPointer=event=>{
+    if(!focusDrag||focusDrag.id!==event.pointerId)return;
+    focusDrag=null;focusCanvas?.releasePointerCapture?.(event.pointerId);event.preventDefault();
+  };
+  focusCanvas?.addEventListener('pointerup',endFocusPointer);
+  focusCanvas?.addEventListener('pointercancel',()=>{focusDrag=null});
+  focusCanvas?.addEventListener('wheel',event=>{
+    if(!activeModule)return;event.preventDefault();
+    focusCamera.distanceScale=clamp(focusCamera.distanceScale+(event.deltaY>0?.08:-.08),.58,1.5);
+    renderFocus();
+  },{passive:false});
+
   $('modelDimensionsToggle').addEventListener('click',()=>{dimensionsVisible=!dimensionsVisible;$('modelDimensionsToggle').textContent=`Размеры · ${dimensionsVisible?'вкл':'выкл'}`;$('modelDimensionsToggle').setAttribute('aria-pressed',String(dimensionsVisible));renderScene(false)});
-  function closeModuleFocus(){activeModule=null;$('moduleFocusCanvas')?.setAttribute('hidden','');document.body.classList.remove('r9-module-focus');window.dispatchEvent(new CustomEvent('bizet:moduleclose'))}
+  function closeModuleFocus(){activeModule=null;focusDrag=null;lastFocusModuleId='';$('moduleFocusCanvas')?.setAttribute('hidden','');document.body.classList.remove('r9-module-focus');window.dispatchEvent(new CustomEvent('bizet:moduleclose'))}
   $('moduleClose').addEventListener('click',()=>{$('moduleDialog').close?.();closeModuleFocus()});
   $('moduleDialog').addEventListener('close',closeModuleFocus);
   $('moduleWidthMinus')?.addEventListener('click',()=>{if(!$('moduleWidth').disabled)$('moduleWidth').value=Math.max(300,Number($('moduleWidth').value||0)-50)});
