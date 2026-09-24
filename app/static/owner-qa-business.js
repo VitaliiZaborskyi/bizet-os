@@ -67,12 +67,94 @@
     $('pointBReport').innerHTML=`<p class="r8-pointb-kicker">BIZET OS · ADMIN</p><h2>Cost / Pricing</h2><div class="r8-price-grid"><div><span>COST</span><strong>${money(d.bom.cost)}</strong></div><div><span>${esc(d.p.name)} · ×${d.p.multiplier.toFixed(1)}</span><strong>${money(d.clientPrice)}</strong></div></div><div class="r8-table-wrap"><table><thead><tr><th>Group</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     $('pointBDialog').showModal();
   }
+  function configurationLabel(code){
+    const labels={
+      WALL_CENTER:[ 'Прямая · по центру','Linear · centered' ],
+      WALL_LEFT:[ 'Прямая · от левого края','Linear · from left' ],
+      WALL_RIGHT:[ 'Прямая · от правого края','Linear · from right' ],
+      L_LEFT:[ 'Г-образная · крыло слева','L-shaped · left return' ],
+      L_RIGHT:[ 'Г-образная · крыло справа','L-shaped · right return' ],
+      U_SHAPE:[ 'П-образная','U-shaped' ],
+      CUSTOM:[ 'Индивидуальная конфигурация','Custom configuration' ]
+    };
+    const pair=labels[code]||[code||'—',code||'—'];return lang()==='en'?pair[1]:pair[0];
+  }
+  function runSummary(d){
+    const walls={};
+    d.modules.filter(m=>m.level!=='upper').forEach(m=>{
+      const wall=m.wall||'A',start=wall==='A'?Number(m.x)||0:Number(m.y)||0,size=wall==='A'?Number(m.w)||0:Number(m.d)||0;
+      if(!walls[wall])walls[wall]={min:start,max:start+size};else{walls[wall].min=Math.min(walls[wall].min,start);walls[wall].max=Math.max(walls[wall].max,start+size)}
+    });
+    const cfg=d.rt.getConfiguration(),order=cfg==='L_LEFT'?['A','B']:cfg==='L_RIGHT'?['A','C']:cfg==='U_SHAPE'?['A','B','C']:['A'];
+    return order.filter(w=>walls[w]).map(w=>`${t('Стена','Wall')} ${w}: ${Math.round(walls[w].max-walls[w].min)} mm`).join(' · ');
+  }
+  function proposalFeatures(d){
+    const drawers=d.modules.some(m=>m.kind==='DRAWERS'),uppers=d.modules.some(m=>m.level==='upper'),handles=d.bom.rows.some(r=>/ручк|handle/i.test(String(r.item||'')));
+    const lines=[
+      t('Корпус — ЛДСП 18 мм','Carcass — 18 mm laminated board'),
+      t('Фасады — по текущей комплектации Category I','Fronts — current Category I specification'),
+      t('Столешница — 38 мм','Worktop — 38 mm'),
+      drawers?t('Выдвижные ящики — по текущей конфигурации','Drawers — according to current configuration'):null,
+      uppers?t('Верхние модули — по текущей 3D-компоновке','Upper cabinets — according to current 3D layout'):null,
+      handles?t('Ручки и крепёж — согласно спецификации','Handles and fasteners — according to specification'):null
+    ].filter(Boolean);
+    return lines;
+  }
+  function proposalSnapshot(){
+    try{return document.getElementById('modelCanvas')?.toDataURL('image/png')||''}catch(_){return''}
+  }
+  // DEFERRED: one-sheet comparison across multiple manufacturers and/or alternative kitchen configurations.
   function printProposal(){
     const d=data();if(!d)return;
-    const spec=moduleSpec(d.modules);
-    const rows=spec.map(m=>`<tr><td>${m.no}</td><td>${esc(m.name)}</td><td>${m.w} × ${m.h} × ${m.d}</td><td>1</td></tr>`).join('');
     const today=new Intl.DateTimeFormat(lang()==='en'?'en-GB':'ru-RU').format(new Date());
-    const html=`<!doctype html><html><head><meta charset="utf-8"><title>BIZET Commercial Proposal</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:"Century Gothic",CenturyGothic,Arial,sans-serif;color:#171717;margin:0}header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #171717;padding-bottom:12px;margin-bottom:24px}.logo small{display:block;letter-spacing:.28em;font-size:8px}.logo strong{font-size:28px}.logo i{font-style:normal;color:#2f68ff}h1{font-size:23px;margin:0 0 8px}p{font-size:11px;line-height:1.5}.price{font-size:25px;font-weight:700;margin:16px 0}table{width:100%;border-collapse:collapse;margin:18px 0}th,td{border:1px solid #cfcfcf;padding:8px;font-size:10px;text-align:left}th{background:#f1f1ef}.footer{margin-top:28px;border-top:1px solid #ccc;padding-top:12px;color:#666}.badge{font-size:9px;letter-spacing:.1em;color:#666}</style></head><body><header><div class="logo"><small>ZABORSKY</small><strong>BIZET <i>OS</i></strong></div><div class="badge">${today}</div></header><h1>${t('Коммерческое предложение','Commercial Proposal')}</h1><p>${t('Проект подготовлен системой BIZET OS. Производитель:','Project prepared by BIZET OS. Manufacturer:')} <strong>${esc(d.p.name)}</strong></p><div class="price">${money(d.clientPrice)}</div><table><thead><tr><th>№</th><th>${t('Изделие / модуль','Item / module')}</th><th>W × H × D, mm</th><th>Qty</th></tr></thead><tbody>${rows}</tbody></table><p>${t('Предложение является предварительным до окончательной инженерной и производственной проверки.','Proposal is preliminary until final engineering and manufacturing validation.')}</p><div class="footer"><strong>BIZET OS</strong><br>${t('Контактные данные BIZET подставляются из профиля компании.','BIZET contact details are supplied from the company profile.')}</div><script>window.onload=()=>setTimeout(()=>window.print(),150)</script></body></html>`;
+    const cfg=configurationLabel(d.rt.getConfiguration()),runs=runSummary(d),features=proposalFeatures(d),snapshot=proposalSnapshot();
+    const featureHtml=features.map(x=>`<div class="feature">- ${esc(x)}</div>`).join('');
+    const imageHtml=snapshot?`<img class="kitchen-shot" src="${snapshot}" alt="3D kitchen">`:`<div class="image-placeholder">${t('3D модель кухни','Kitchen 3D model')}</div>`;
+    const unit=t('компл.','set'),price=money(d.clientPrice);
+    const html=`<!doctype html><html><head><meta charset="utf-8"><title>BIZET Commercial Proposal</title><style>
+      @page{size:A4;margin:8mm}
+      *{box-sizing:border-box}html,body{margin:0;padding:0;color:#171717;background:#fff}
+      body{font-family:"Century Gothic",CenturyGothic,Arial,sans-serif;font-size:9.5px}
+      .page{width:100%;min-height:270mm;display:flex;flex-direction:column}
+      header{display:flex;justify-content:space-between;align-items:flex-end;padding:0 2mm 4mm;border-bottom:1.4px solid #4b4b4b}
+      .logo small{display:block;font-size:7px;letter-spacing:.32em;margin-bottom:2px}.logo strong{font-size:23px;letter-spacing:-.04em}.logo i{font-style:normal;color:#2f7cff}
+      .meta{text-align:right;font-size:8px;line-height:1.5;color:#5a5a5a}.meta strong{color:#171717;font-size:10px}
+      h1{font-size:15px;text-align:center;margin:4mm 0 2.5mm;letter-spacing:.02em}
+      table{width:100%;border-collapse:collapse;table-layout:fixed}
+      th,td{border:1px solid #555;padding:2.2mm 1.6mm;vertical-align:middle}
+      th{background:#5c5c5c;color:#fff;font-size:8px;font-weight:700;text-align:center}
+      td{text-align:center}.item{text-align:left}.features{text-align:left;line-height:1.5}.feature{margin:0 0 1.2mm}.feature:last-child{margin-bottom:0}
+      .kitchen-shot{display:block;width:100%;height:40mm;object-fit:contain;background:#f0efeb}.image-placeholder{height:40mm;display:grid;place-items:center;background:#f0efeb;color:#777}
+      .item strong{display:block;font-size:12px;margin-bottom:2mm}.item .sub{font-size:8.5px;line-height:1.5;color:#555}
+      .num{font-size:11px}.price{font-weight:700;font-size:10px;white-space:nowrap}
+      .total-row td{border-top:1.8px solid #333;font-size:10px}.total-label{text-align:right;font-weight:700}.total{font-size:12px;font-weight:800}
+      .notes{margin-top:5mm;padding-top:3mm;border-top:1px solid #aaa;font-size:8px;line-height:1.55;color:#4d4d4d}
+      .notes p{margin:0 0 1.5mm}.notes strong{color:#171717}
+      .footer{margin-top:auto;padding-top:4mm;border-top:1px solid #aaa;display:flex;justify-content:space-between;gap:8mm;font-size:7.5px;color:#666}
+      @media print{.page{min-height:auto}}
+    </style></head><body><div class="page">
+      <header><div class="logo"><small>ZABORSKY</small><strong>BIZET <i>OS</i></strong></div><div class="meta"><strong>${t('Коммерческое предложение','Commercial Proposal')}</strong><br>${today}<br>${t('Производитель','Manufacturer')}: ${esc(d.p.name)}</div></header>
+      <h1>${t('Список услуг по изделиям','Furniture proposal')}</h1>
+      <table>
+        <colgroup><col style="width:4%"><col style="width:13%"><col style="width:21%"><col style="width:34%"><col style="width:7%"><col style="width:5%"><col style="width:8%"><col style="width:8%"></colgroup>
+        <thead><tr><th>№</th><th>${t('Изделие','Item')}</th><th>${t('Изображение / схема','Image / scheme')}</th><th>${t('Комплектация','Specification')}</th><th>${t('Ед.изм.','Unit')}</th><th>${t('Кол-во','Qty')}</th><th>${t('Цена','Price')}</th><th>${t('Сумма','Amount')}</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="num">1</td>
+            <td class="item"><strong>${t('Кухня','Kitchen')}</strong><div class="sub">${esc(cfg)}<br>${esc(runs)}</div></td>
+            <td>${imageHtml}</td>
+            <td class="features">${featureHtml}</td>
+            <td>${unit}</td><td>1</td><td class="price">${price}</td><td class="price">${price}</td>
+          </tr>
+          <tr class="total-row"><td colspan="7" class="total-label">${t('Всего','Total')}</td><td class="total">${price}</td></tr>
+        </tbody>
+      </table>
+      <div class="notes">
+        <p><strong>${t('Примечание:','Note:')}</strong> ${t('предложение сформировано по текущей конфигурации BIZET OS и является предварительным до окончательной инженерной и производственной проверки.','this proposal is generated from the current BIZET OS configuration and remains preliminary until final engineering and manufacturing validation.')}</p>
+        <p>${t('Детальная разбивка по модулям, деталям, фурнитуре и крепежу вынесена в отдельную спецификацию.','The module, part, hardware and fastener breakdown is provided in a separate specification.')}</p>
+      </div>
+      <div class="footer"><span>BIZET OS · ${t('проектирование и комплектация мебели','furniture design and specification')}</span><span>${esc(d.p.name)}</span></div>
+    </div><script>window.onload=()=>setTimeout(()=>window.print(),180)</script></body></html>`;
     const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
   }
   function refresh(){
