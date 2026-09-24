@@ -40,7 +40,7 @@ button { color: inherit; }
 .topbar {
   height: 78px;
   display: grid;
-  grid-template-columns: 92px 1fr 92px;
+  grid-template-columns: 128px 1fr 128px;
   align-items: center;
   padding: 0 28px;
   position: sticky;
@@ -197,7 +197,7 @@ h1 { margin: 0; font-size: clamp(34px, 5vw, 64px); line-height: .98; letter-spac
   .choice-card { min-height: 360px; }
 }
 @media (max-width: 700px) {
-  .topbar { height: 66px; padding: 0 12px; grid-template-columns: 88px 1fr 88px; }
+  .topbar { height: 66px; padding: 0 12px; grid-template-columns: 108px 1fr 108px; }
   .experience { width: min(100% - 24px, 620px); padding: 18px 0 36px; }
   .intro { margin-bottom: 23px; }
   .intro p { font-size: 15px; }
@@ -217,3 +217,5 @@ h1 { margin: 0; font-size: clamp(34px, 5vw, 64px); line-height: .98; letter-spac
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
 }
+
+html[data-theme="dark"] .icon-button,html[data-theme="dark"] .settings-link,html[data-theme="dark"] .account-button:not(.primary-account),html[data-theme="dark"] .summary-chip,html[data-theme="dark"] .dialog-close{color:var(--ink)}
