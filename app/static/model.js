@@ -310,6 +310,8 @@
         rear_cutout:'NONE'
       })
     };
+    const selectedFacadeCount=!isDrawers?Number($('moduleFacadeCount')?.value)||1:0;
+    if(!isDrawers&&selectedFacadeCount===1&&w>597){setValidation('Цельный распашной фасад не может быть шире 597 мм. Выберите 2 или 3 фасада.');return}
     sizes[activeModule.id]={
       run_mm:(widthLocked(activeModule)||activeModule.pending)?currentRun:w,
       height_mm:h,
@@ -317,9 +319,20 @@
     };
     opens[activeModule.id]=$('moduleOpening').value||'AUTO';
     offs[activeModule.id]=off;
-    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs,module_custom_settings:custom,module_direct_edit_status:'PILOT_PARAMETRIC_EDIT'},`Module customization ${activeModule.id}`);
+
+    let consistencyNote='';
+    const edited=custom[activeModule.id],handleKeys=['handle_orientation','handle_type','handle_offset_mm','handle_align'];
+    const peers=modules.filter(m=>m.id!==activeModule.id&&['HINGED','SINK','DRAWERS'].includes(m.kind));
+    const differs=peers.some(m=>handleKeys.some(k=>(custom[m.id]?.[k]??null)!==(edited[k]??null)));
+    if(differs){
+      const applyAll=window.confirm('Положение/тип ручки отличается от других модулей. Применить настройку ко всем совместимым модулям?\nOK — применить ко всем · Отмена — оставить только здесь.');
+      if(applyAll){
+        peers.forEach(m=>{custom[m.id]={...(custom[m.id]||{}),handle_orientation:m.kind==='DRAWERS'?'HORIZONTAL':edited.handle_orientation,handle_type:edited.handle_type,handle_offset_mm:edited.handle_offset_mm,handle_align:edited.handle_align}});
+      }else consistencyNote='Есть локальные отличия ручек. Проверьте их перед финальным подтверждением.';
+    }
+    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs,module_custom_settings:custom,module_consistency_note:consistencyNote,module_direct_edit_status:'PILOT_PARAMETRIC_EDIT'},`Module customization ${activeModule.id}`);
     renderScene(false);
-    $('modelStatus').textContent='Модуль обновлён. 3D и зависимые остаточные модули перестроены.';
+    $('modelStatus').textContent=visual.module_consistency_note||'Модуль обновлён. 3D и зависимые остаточные модули перестроены.';
     $('moduleDialog').close?.();
   }
   async function resetModuleCustomization(){
@@ -343,7 +356,8 @@
     variant:{...(visual.r8_variant||{})},
     module_offsets_mm:{...(visual.module_offsets_mm||{})},
     module_size_overrides:{...(visual.module_size_overrides||{})},
-    module_opening_overrides:{...(visual.module_opening_overrides||{})}
+    module_opening_overrides:{...(visual.module_opening_overrides||{})},
+    module_custom_settings:{...(visual.module_custom_settings||{})}
   }}
   async function applyWorkspaceState(state,reason='R8 saved variant'){
     const next={...visual};
@@ -352,6 +366,7 @@
     if(state.module_offsets_mm)next.module_offsets_mm={...state.module_offsets_mm};
     if(state.module_size_overrides)next.module_size_overrides={...state.module_size_overrides};
     if(state.module_opening_overrides)next.module_opening_overrides={...state.module_opening_overrides};
+    if(state.module_custom_settings)next.module_custom_settings={...state.module_custom_settings};
     await saveVisual(next,reason);renderScene(false);return snapshot();
   }
   function snapshot(){return{...captureWorkspaceState(),visual:{...visual},elements:[...(project?.room?.architectural_elements||[])],context:{...(project?.context||{})},room:roomValues(),modules:[...modules]}}
