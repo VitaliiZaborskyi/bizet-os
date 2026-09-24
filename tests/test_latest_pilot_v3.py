@@ -17,7 +17,8 @@ def test_start_flow_keeps_configuration_as_standalone_screen():
         assert code in js
     assert "patchProject('room.configuration'" in js
     assert "patchProject('scene.visual_settings.configuration_walls'" in js
-    assert '/room-setup?project=' in js
+    assert "window.location.assign('/workspace?project='" in js
+    assert '/room-setup?project=' not in js
 
 
 def test_all_start_questions_use_action_cta_and_step_counter_is_hidden():
