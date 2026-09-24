@@ -430,7 +430,7 @@ async function saveConfiguration(code) {
     const id = currentProjectId();
     if (id) {
       await new Promise(resolve => window.setTimeout(resolve, 140));
-      window.location.assign('/room-setup?project=' + encodeURIComponent(id));
+      await window.BizetTransition?.play({duration:2500});\n      window.location.assign('/workspace?project=' + encodeURIComponent(id));
     }
   }
 }
@@ -466,7 +466,7 @@ function buildScreenFive() {
         </button>`).join('')}
     </div>
     <p class="screen-five-error" id="configurationScreenFiveError" hidden></p>
-    <p class="config-auto-note">${isRu() ? 'После выбора BIZET OS автоматически перейдёт к размерам помещения.' : 'After selection BIZET OS will automatically continue to the room dimensions.'}</p>`;
+    <p class="config-auto-note">${isRu() ? 'После выбора BIZET OS автоматически перейдёт к рабочей 3D-модели.' : 'After selection BIZET OS will automatically continue to the 3D workspace.'}</p>`;
   experience.appendChild(screen);
 
   screen.querySelectorAll('[data-start-config]').forEach(card => {
