@@ -97,14 +97,18 @@ def test_owner_qa_visual_contracts_are_present():
     workspace_css = read("workspace-r8.css")
     shell = read("pilot-r8-shell.js")
     index = read("index.html")
-    assert '"Century Gothic"' in start_css
-    assert '"Century Gothic"' in setup_css
-    assert '"Century Gothic"' in workspace_css
-    assert 'background:#f3f1ec;color:#171716' in setup_css
+    start_js = read("start.js")
+    # R8 visual/typography restored; only approved brand + splash remain from R9.
+    assert '"Century Gothic"' not in start_css
+    assert '"Century Gothic"' not in setup_css
+    assert '"Century Gothic"' not in workspace_css
+    assert '"SF Pro Display"' in start_css
+    assert '"SF Pro Display"' in setup_css
+    assert '"SF Pro Display"' in workspace_css
     assert 'class="brand-master">ZABORSKY' in index
     assert 'class="brand-main">BIZET <i>OS</i>' in index
-    assert '.setup-step{position:absolute;right:132px' in setup_css
-    assert '.setup-topbar .settings-wrap{position:absolute;right:18px' in setup_css
+    assert '.brand .brand-master' in start_css
+    assert '.brand .brand-main i' in start_css
     assert '.r8-project-state{position:absolute;right:132px' in workspace_css
     assert '.r8-topbar .settings-wrap{position:absolute;right:18px' in workspace_css
     assert '@keyframes r8FlyZ' in shell
@@ -112,3 +116,4 @@ def test_owner_qa_visual_contracts_are_present():
     assert '@keyframes r8FlyOS' in shell
     assert 'color:#2f7cff' in shell
     assert 'data:audio/mpeg;base64,' in shell
+    assert 'if (!step?.actionId)' in start_js
