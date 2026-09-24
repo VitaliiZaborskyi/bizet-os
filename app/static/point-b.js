@@ -169,10 +169,12 @@
     modules.filter(m=>m.wall==='A').forEach(m=>{
       const D=depth(m),perSide=fastenersPerSide(D);
       if(m.level!=='upper'&&!m.tall&&!['DISHWASHER','FRIDGE'].includes(m.kind)){
-        if(m.kind==='SINK'){H.CONFIRMAT+=2*perSide+6}
-        else if(m.kind==='DRAWERS'){H.CONFIRMAT+=2*perSide+4}
-        else H.CONFIRMAT+=4*perSide+4;
-        H.HOLE+=H.CONFIRMAT;
+        let addedConfirmats=0;
+        if(m.kind==='SINK')addedConfirmats=2*perSide+6;
+        else if(m.kind==='DRAWERS')addedConfirmats=2*perSide+4;
+        else addedConfirmats=4*perSide+4;
+        H.CONFIRMAT+=addedConfirmats;
+        H.HOLE+=addedConfirmats;
         const legs=runW(m)>700?6:4;H.LEG+=legs;H.LEG_CLIP+=Math.ceil(legs/2);H.SCREW+=legs*4+Math.ceil(legs/2)*2;
       }
       if(m.level==='upper'){
