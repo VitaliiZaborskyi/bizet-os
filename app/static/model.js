@@ -6,8 +6,8 @@
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false,dimensionsVisible=true;
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
-  const LOWER_DEPTH=560,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
-  const UPPER_DEPTH=320,UPPER_HOOD_DEPTH=350,UPPER_MAX_H=1000,CUTLERY_W=400;
+  const LOWER_DEPTH=510,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
+  const UPPER_DEPTH=320,UPPER_HOOD_DEPTH=350,UPPER_DEFAULT_H=750,UPPER_MAX_H=1100,CUTLERY_W=400,MAX_STRAIGHT_MODULE_W=900;
 
   async function request(url,options={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});if(!r.ok){let p={};try{p=await r.json()}catch(_){};throw new Error(typeof p.detail==='string'?p.detail:'Не удалось загрузить модель.')}return r.json()}
   async function saveVisual(next,reason){visual=next;const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path:'scene.visual_settings',value:visual,reason})});project=result.project||result;visual={...(project.scene?.visual_settings||visual)};inputs={...(visual.guided_inputs||inputs)}}
@@ -118,14 +118,22 @@
 
     const remaining=bounds.span-used;
     if(remaining>=300){
-      const fill=baseModule(`system-fill-${wall}`,'Модуль',remaining,'HINGED',wall,{anchor:false,pending:true,system:true});
+      const count=Math.max(1,Math.ceil(remaining/MAX_STRAIGHT_MODULE_W));
+      const base=Math.floor(remaining/count/10)*10;
+      const fills=[];
+      let allocated=0;
+      for(let i=0;i<count;i++){
+        const width=i===count-1?remaining-allocated:base;
+        allocated+=width;
+        fills.push(baseModule(`system-fill-${wall}-${i+1}`,'Модуль',Math.min(MAX_STRAIGHT_MODULE_W,width),'HINGED',wall,{anchor:false,pending:false,system:true,auto_generated:true}));
+      }
       if(tall.length&&edge==='END'){
         const firstTall=ordered.findIndex(m=>m.tall);
-        ordered.splice(firstTall<0?ordered.length:firstTall,0,fill);
+        ordered.splice(firstTall<0?ordered.length:firstTall,0,...fills);
       }else if(tall.length&&edge==='START'){
         let lastTall=-1;ordered.forEach((m,i)=>{if(m.tall)lastTall=i});
-        ordered.splice(lastTall+1,0,fill);
-      }else ordered.push(fill);
+        ordered.splice(lastTall+1,0,...fills);
+      }else ordered.push(...fills);
     }
 
     let cursor=bounds.start;
@@ -154,7 +162,7 @@
   function buildLower(){const room=roomValues(),raw=collectedLower(),walls=activeWalls(),grouped={A:[],B:[],C:[]};raw.forEach(m=>(grouped[m.wall]||grouped.A).push(m));return walls.flatMap(w=>arrangeWall(w,grouped[w],room))}
 
   function upperFromLower(lower){
-    const room=roomValues(),gap=Math.max(550,Number(inputs.upper_gap_mm)||600),bottom=LOWER_TOTAL_H+gap,height=Math.min(UPPER_MAX_H,room.heightMm-bottom-50);if(height<220)return[];
+    const room=roomValues(),gap=Math.max(550,Number(inputs.upper_gap_mm)||600),bottom=LOWER_TOTAL_H+gap,requested=Math.max(300,Number(inputs.upper_height_mm)||UPPER_DEFAULT_H),height=Math.min(UPPER_MAX_H,requested,room.heightMm-bottom-50);if(height<220)return[];
     const result=[],hoodWidth=Number(inputs.hood_width_mm)||600,hoodDepth=inputs.hood_type==='BUILT_IN'?UPPER_HOOD_DEPTH:UPPER_DEPTH;
     lower.filter(m=>!m.tall&&m.level==='lower').forEach(m=>{
       if(m.kind==='COOKTOP'){
@@ -232,6 +240,7 @@
     const requiredRun=activeModule.kind==='SINK'&&Number(activeModule.sink_bowl_count)===2?900:minRun;
     if(!Number.isFinite(h)||h<100||!Number.isFinite(d)||d<100){setValidation('Высота и глубина должны быть не меньше 100 мм.');return}
     if(!widthLocked(activeModule)&&!activeModule.pending&&(!Number.isFinite(w)||w<requiredRun)){setValidation(`Минимальная допустимая ширина для этого модуля: ${requiredRun} мм.`);return}
+    if(!widthLocked(activeModule)&&!activeModule.tall&&w>MAX_STRAIGHT_MODULE_W){setValidation('Прямой модуль не может быть шире 900 мм. Разбейте участок на несколько модулей.');return}
     if(Math.abs(off)>600){setValidation('Смещение больше 600 мм требует проверки конструктора.');return}
     const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets();
     const currentRun=Math.round(runDimension(activeModule));
@@ -294,7 +303,7 @@
     }
     resumeFromSleep.busy=false;
   }
-  window.BizetModelRuntime={ready:false,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
+  window.BizetModelRuntime={ready:false,pointBVersion:'2026-09-24',maxStraightModuleWidth:MAX_STRAIGHT_MODULE_W,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
 
   const canvas=$('modelCanvas');
   canvas.addEventListener('pointerdown',event=>{drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:camera.yaw,pitch:camera.pitch};dragMoved=false;canvas.setPointerCapture?.(event.pointerId)});
