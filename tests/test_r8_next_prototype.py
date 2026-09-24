@@ -12,7 +12,9 @@ def read(name: str) -> str:
 def test_r8_configuration_auto_advances_without_continue_button():
     js = read("start-room-handoff.js")
     assert "configurationContinue5" not in js
-    assert "window.location.assign('/room-setup?project='" in js
+    assert "window.location.assign('/workspace?project='" in js
+    assert '/room-setup?project=' not in js
+    assert 'BizetTransition?.play' in js
     assert "config-auto-note" in js
 
 
@@ -87,3 +89,26 @@ def test_r8_web_app_and_resume_recovery_are_present():
 def test_r8_dark_is_first_launch_default():
     assert "localStorage.getItem(THEME_KEY) || 'dark'" in read("start.js")
     assert "localStorage.getItem(THEME_KEY) || 'dark'" in read("pilot-shell.js")
+
+
+def test_owner_qa_visual_contracts_are_present():
+    start_css = read("start.css")
+    setup_css = read("room-setup-r8.css")
+    workspace_css = read("workspace-r8.css")
+    shell = read("pilot-r8-shell.js")
+    index = read("index.html")
+    assert '"Century Gothic"' in start_css
+    assert '"Century Gothic"' in setup_css
+    assert '"Century Gothic"' in workspace_css
+    assert 'background:#f3f1ec;color:#171716' in setup_css
+    assert 'class="brand-master">ZABORSKY' in index
+    assert 'class="brand-main">BIZET <i>OS</i>' in index
+    assert '.setup-step{position:absolute;right:132px' in setup_css
+    assert '.setup-topbar .settings-wrap{position:absolute;right:18px' in setup_css
+    assert '.r8-project-state{position:absolute;right:132px' in workspace_css
+    assert '.r8-topbar .settings-wrap{position:absolute;right:18px' in workspace_css
+    assert '@keyframes r8FlyZ' in shell
+    assert '@keyframes r8FlyB' in shell
+    assert '@keyframes r8FlyOS' in shell
+    assert 'color:#2f7cff' in shell
+    assert 'data:audio/mpeg;base64,' in shell
