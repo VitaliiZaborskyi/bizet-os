@@ -67,3 +67,28 @@ body.r9-module-focus .r8-variant-controls{opacity:.25;pointer-events:none}
  .module-dialog .module-card{max-height:55vh}
  .r9-custom-grid{grid-template-columns:1fr}
 }
+
+
+/* R9.1 owner corrections: unobstructed 3D + readable light controls */
+#modelStage{position:relative}
+#modelCanvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important;z-index:1;touch-action:none}
+.r9-module-focus-canvas{z-index:2;touch-action:none}
+.r8-stage-top,.r8-variant-controls{z-index:4}
+.r8-pill,.r8-arrow,.r8-info,.r8-secondary,.r9-width-nudges button,.r8-doc-actions button,.r8-choice-row button{
+  background:#f3f1ec!important;color:#171716!important;border-color:rgba(23,23,22,.12)!important
+}
+html[data-theme="dark"] .r8-pill,
+html[data-theme="dark"] .r8-arrow,
+html[data-theme="dark"] .r8-info,
+html[data-theme="dark"] .r8-secondary,
+html[data-theme="dark"] .r9-width-nudges button,
+html[data-theme="dark"] .r8-doc-actions button,
+html[data-theme="dark"] .r8-choice-row button{
+  background:#f3f1ec!important;color:#171716!important;border-color:rgba(23,23,22,.12)!important
+}
+.r8-random,.r8-save,.r8-choice-row button.is-selected{
+  color:#fff!important
+}
+.r8-choice-row button.is-selected{background:var(--r8-ink)!important;border-color:var(--r8-ink)!important}
+.r8-random{background:var(--r8-ink)!important;border-color:var(--r8-ink)!important}
+.r8-save{background:var(--r8-blue)!important}
