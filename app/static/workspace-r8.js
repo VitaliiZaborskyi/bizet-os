@@ -174,11 +174,14 @@
  }
  async function applyVariant(index){
    if(!rt||index<0||index>4||index===variantPos)return;
+   document.getElementById('moduleDialog')?.close?.();
    saveCurrentVariantSlot();
    variantPos=index;localStorage.setItem(VARIANT_POS_KEY,String(variantPos));renderVariantDots();
    await rt.applyWorkspaceState(clone(variantSlots[variantPos]),'R8 saved variant #'+(variantPos+1));
    updateReadiness();refreshPanel();renderVariantDots();
  }
+ const variantControls=document.querySelector('.r8-variant-controls');
+ if(variantControls){['pointerdown','pointerup','click'].forEach(type=>variantControls.addEventListener(type,e=>e.stopPropagation()));}
  $('randomVariant').onclick=()=>applyVariant((variantPos+1)%5);
  $('undoButton').onclick=undo;
  $('baseInfoButton').onclick=()=>{$('baseInfoPopover').hidden=false};$('baseInfoClose').onclick=()=>{$('baseInfoPopover').hidden=true};
