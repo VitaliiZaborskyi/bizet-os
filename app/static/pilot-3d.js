@@ -177,6 +177,101 @@
     }
   }
 
+
+  function drawFocusDot(ctx,projector,world,fill='#45484a',r=2.6){
+    const p=projector.point(world);ctx.save();ctx.beginPath();ctx.arc(p[0],p[1],r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.restore();
+  }
+
+  function drawFocusInternals(ctx,projector,module,c){
+    const t=18,x=module.x,y=module.y,z=module.z,w=Math.max(120,module.w),d=Math.max(120,module.d),h=Math.max(160,module.h);
+    const edge='rgba(45,48,50,.72)',panel='rgba(207,211,211,.24)',panelSide='rgba(160,166,168,.28)',panelTop='rgba(229,231,228,.20)';
+    const box=(b,front=panel)=>drawBox(ctx,projector,b,{body:panel,side:panelSide,front,top:panelTop,stroke:edge});
+
+    // 18 mm carcass panels: real thickness is visible in the technical focus mode.
+    box({x,y,z,w:t,d,h});
+    box({x:x+w-t,y,z,w:t,d,h});
+    box({x:x+t,y,z,w:Math.max(20,w-2*t),d,h:t});
+    box({x:x+t,y,z:z+h-t,w:Math.max(20,w-2*t),d,h:t});
+    box({x:x+t,y:y+d-t,z:z+t,w:Math.max(20,w-2*t),d:t,h:Math.max(20,h-2*t)},'rgba(165,171,173,.18)');
+
+    // Front is intentionally ghosted: the user sees the construction behind it.
+    const frontFaces=drawBox(ctx,projector,{x:x+3,y:y-10,z:z+3,w:w-6,d:8,h:h-6},{
+      body:'rgba(245,245,242,.07)',side:'rgba(245,245,242,.08)',front:'rgba(245,245,242,.09)',top:'rgba(245,245,242,.07)',stroke:'rgba(55,58,60,.38)'
+    });
+    const front=moduleFrontFace(frontFaces,module);
+
+    // Rails/ribs.
+    const railH=Math.min(80,Math.max(45,h*.08));
+    box({x:x+t,y:y+d-70,z:z+h-railH-t,w:Math.max(20,w-2*t),d:45,h:railH},'rgba(175,180,180,.24)');
+    if(module.kind==='SINK')box({x:x+t,y:y+26,z:z+h-railH-t,w:Math.max(20,w-2*t),d:45,h:railH},'rgba(175,180,180,.24)');
+
+    // Shelves for hinged/upper/sink modules.
+    if(!['DRAWERS','DISHWASHER','OVEN','TALL_OVEN','FRIDGE'].includes(module.kind)){
+      const count=Math.max(1,Math.min(2,Number(module.shelf_count)||1));
+      for(let i=1;i<=count;i++){
+        const sz=z+h*i/(count+1);
+        box({x:x+t,y:y+22,z:sz-t/2,w:Math.max(20,w-2*t),d:Math.max(30,d-44),h:t},'rgba(205,208,205,.24)');
+      }
+    }
+
+    // Drawer boxes / trays.
+    if(module.kind==='DRAWERS'){
+      const count=Math.max(2,Math.min(5,Number(module.drawer_count)||2)),inside=Math.max(100,h-40),each=inside/count;
+      for(let i=0;i<count;i++){
+        const dz=z+20+i*each,dh=Math.max(70,each-18),sideH=Math.min(115,dh*.48);
+        box({x:x+34,y:y+42,z:dz,w:Math.max(40,w-68),d:Math.max(60,d-82),h:t},'rgba(122,132,136,.28)');
+        box({x:x+34,y:y+42,z:dz+t,w:t,d:Math.max(60,d-82),h:sideH},'rgba(122,132,136,.26)');
+        box({x:x+w-52,y:y+42,z:dz+t,w:t,d:Math.max(60,d-82),h:sideH},'rgba(122,132,136,.26)');
+        // schematic slide hardware
+        box({x:x+20,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
+        box({x:x+w-30,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
+      }
+    }
+
+    // Schematic adjustable legs for base modules.
+    if(module.level!=='upper'&&!module.tall){
+      const legZ=Math.max(0,z-95),legH=Math.max(35,z-legZ),ix=Math.min(70,w*.14),iy=Math.min(70,d*.16);
+      [[x+ix,y+iy],[x+w-ix-28,y+iy],[x+ix,y+d-iy-28],[x+w-ix-28,y+d-iy-28]].forEach(([lx,ly])=>{
+        box({x:lx,y:ly,z:legZ,w:28,d:28,h:legH},'rgba(55,59,62,.72)');
+      });
+    }
+
+    // Hinges: small but visible technical placeholders.
+    if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER'].includes(module.kind)){
+      const fc=Math.max(1,Math.min(3,Number(module.facade_count)||(w<=597?1:2)));
+      for(let fi=0;fi<fc;fi++){
+        const fw=w/fc,left=x+fi*fw,right=left+fw;
+        const hingeX=(module.opening||'').includes('RIGHT')?right-24:left+18;
+        const levels=h>1000?[.18,.5,.82]:[.24,.76];
+        levels.forEach(ratio=>{
+          box({x:hingeX,y:y-20,z:z+h*ratio-12,w:18,d:20,h:24},'rgba(60,64,66,.68)');
+        });
+      }
+    }
+
+    // Fasteners as schematic points on side panels.
+    [z+h*.22,z+h*.5,z+h*.78].forEach(fz=>{
+      drawFocusDot(ctx,projector,[x+t*.55,y+35,fz],'rgba(45,48,50,.86)',2.4);
+      drawFocusDot(ctx,projector,[x+w-t*.55,y+35,fz],'rgba(45,48,50,.86)',2.4);
+    });
+    return front;
+  }
+
+  function drawModuleRunDimensions(ctx,projector,modules,c){
+    const p=projector.point;
+    modules.filter(m=>m.level!=='upper').forEach(m=>{
+      const size=m.wall==='A'?m.w:m.d;
+      if(!Number.isFinite(size)||size<80)return;
+      if(m.wall==='A'){
+        const y=m.y-30,z=Math.max(0,m.z-20);
+        dimensionLine(ctx,p([m.x,y,z]),p([m.x+m.w,y,z]),`${Math.round(size)} мм`,[0,11],c);
+      }else{
+        const x=m.wall==='B'?m.x-28:m.x+m.w+28,z=Math.max(0,m.z-20);
+        dimensionLine(ctx,p([x,m.y,z]),p([x,m.y+m.d,z]),`${Math.round(size)} мм`,[m.wall==='B'?-6:6,4],c);
+      }
+    });
+  }
+
   function drawWorktop(ctx,projector,group){
     const base=group.filter(m=>m.level!=='upper'&&!m.tall);if(!base.length)return;const c=colors();
     if(base[0].wall==='A'){const minX=Math.min(...base.map(m=>m.x)),maxX=Math.max(...base.map(m=>m.x+m.w)),minY=Math.min(...base.map(m=>m.y)),depth=Math.max(...base.map(m=>m.d));const z=Math.max(...base.map(m=>m.z+m.h));drawBox(ctx,projector,{x:minX,y:minY-18,z,w:maxX-minX,d:depth+36,h:26},{body:c.worktop,side:c.worktop,front:c.worktop,top:'#373737',stroke:'rgba(0,0,0,.25)'})}
@@ -269,9 +364,23 @@
   function drawKitchenScene(canvas,options={}){
     const {ctx,width,height}=setupCanvas(canvas),configuration=options.configuration||'WALL_CENTER',room=options.room||{};
     const projector=createProjector(width,height,room,configuration,options.camera||{}),activeWalls=options.activeWalls||[],c=colors();
-    drawRoomBase(ctx,projector,configuration,activeWalls,options.showDimensions!==false);drawArchitecturalElements(ctx,projector,options.architecturalElements||[]);
     const modules=Array.isArray(options.modules)?options.modules:[],hits=[];
     const lower=modules.filter(m=>m.level!=='upper'),upper=modules.filter(m=>m.level==='upper');
+
+    if(options.focusMode){
+      ctx.fillStyle=c.bg;ctx.fillRect(0,0,width,height);
+      modules.forEach(module=>{
+        const front=drawFocusInternals(ctx,projector,module,c);
+        drawModuleDetails(ctx,projector,module,c);
+        drawNumber(ctx,front,module.number,c);
+        hits.push({id:module.id,points:front});
+      });
+      ctx.save();ctx.font='700 11px -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillStyle=c.dimension;
+      ctx.fillText('Проведите пальцем по модулю, чтобы вращать его',width/2,height-18);ctx.restore();
+      return{camera:{yaw:projector.yaw,pitch:projector.pitch,distanceScale:projector.distanceScale},hitAreas:hits,hitTest(x,y){for(let i=hits.length-1;i>=0;i--)if(pointInPolygon(x,y,hits[i].points))return hits[i].id;return null}};
+    }
+
+    drawRoomBase(ctx,projector,configuration,activeWalls,options.showDimensions!==false);drawArchitecturalElements(ctx,projector,options.architecturalElements||[]);
     activeWalls.forEach(wall=>drawPlinth(ctx,projector,lower.filter(m=>m.wall===wall)));
     const drawModule=module=>{
       let front=null;
@@ -294,7 +403,7 @@
       }
       drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front});
     };
-    lower.forEach(drawModule);activeWalls.forEach(wall=>drawWorktop(ctx,projector,lower.filter(m=>m.wall===wall)));lower.forEach(m=>drawTopAppliance(ctx,projector,m));upper.forEach(drawModule);
+    lower.forEach(drawModule);activeWalls.forEach(wall=>drawWorktop(ctx,projector,lower.filter(m=>m.wall===wall)));lower.forEach(m=>drawTopAppliance(ctx,projector,m));upper.forEach(drawModule);if(options.showDimensions!==false)drawModuleRunDimensions(ctx,projector,lower,c);
     ctx.save();ctx.font='700 11px -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillStyle=c.dimension;ctx.fillText('Проведите пальцем по сцене, чтобы вращать 3D',width/2,height-18);ctx.restore();
     return{camera:{yaw:projector.yaw,pitch:projector.pitch,distanceScale:projector.distanceScale},hitAreas:hits,hitTest(x,y){for(let i=hits.length-1;i>=0;i--)if(pointInPolygon(x,y,hits[i].points))return hits[i].id;return null}};
   }
