@@ -430,7 +430,8 @@ async function saveConfiguration(code) {
     const id = currentProjectId();
     if (id) {
       await new Promise(resolve => window.setTimeout(resolve, 140));
-      await window.BizetTransition?.play({duration:2500});\n      window.location.assign('/workspace?project=' + encodeURIComponent(id));
+      await window.BizetTransition?.play({duration:2500});
+      window.location.assign('/workspace?project=' + encodeURIComponent(id));
     }
   }
 }
