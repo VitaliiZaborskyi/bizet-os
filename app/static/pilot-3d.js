@@ -59,6 +59,8 @@
     };
   }
 
+  const R9_COLORS={WHITE:'#f2f0ea',GRAY:'#9b9b98',BLACK:'#242424',RED:'#8f3032',BROWN:'#765642'};
+  function customColor(token,fallback){return R9_COLORS[String(token||'').toUpperCase()]||fallback}
   function validPoints(points){return points.filter(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1]))}
   function polygon(ctx,points,fill,stroke,lineWidth=1.1){const pts=validPoints(points);if(pts.length<3)return;ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);pts.slice(1).forEach(p=>ctx.lineTo(p[0],p[1]));ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lineWidth;ctx.stroke()}}
   function line(ctx,a,b,stroke,width=1,dash=[]){if(!a||!b)return;ctx.save();ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();ctx.restore()}
@@ -129,14 +131,47 @@
   function drawNumber(ctx,face,number,c){if(!number)return;const m=faceCenter(face),size=24;ctx.save();ctx.beginPath();if(ctx.roundRect)ctx.roundRect(m[0]-size/2,m[1]-size/2,size,size,7);else ctx.rect(m[0]-size/2,m[1]-size/2,size,size);ctx.fillStyle=c.badgeBg;ctx.fill();ctx.font='800 12px "Century Gothic",CenturyGothic,AppleGothic,Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=c.badgeInk;ctx.fillText(String(number),m[0],m[1]+.5);ctx.restore()}
 
   function drawModuleDetails(ctx,projector,module,c){
-    if(module.wall!=='A')return;const p=projector.point;
-    const vline=ratio=>line(ctx,p([module.x+module.w*ratio,module.y-1,module.z+8]),p([module.x+module.w*ratio,module.y-1,module.z+module.h-8]),c.line,1);
-    const hline=ratio=>line(ctx,p([module.x+8,module.y-1,module.z+module.h*ratio]),p([module.x+module.w-8,module.y-1,module.z+module.h*ratio]),c.line,1);
-    if(module.kind==='DRAWERS'){hline(.34);hline(.67)}else if(['HINGED','SINK','DISHWASHER','OVEN'].includes(module.kind)){vline(.5)}
-    if(module.kind==='FRIDGE'&&module.content&&!['FRIDGE_ONLY','FREEZER_ONLY'].includes(module.content))hline(.48);
+    if(module.wall!=='A')return;const p=projector.point,y=module.y-2;
+    const vline=ratio=>line(ctx,p([module.x+module.w*ratio,y,module.z+8]),p([module.x+module.w*ratio,y,module.z+module.h-8]),c.line,1);
+    const hline=ratio=>line(ctx,p([module.x+8,y,module.z+module.h*ratio]),p([module.x+module.w-8,y,module.z+module.h*ratio]),c.line,1);
+    const handle=(x,z,orientation='HORIZONTAL',length=110)=>{
+      if(orientation==='VERTICAL')line(ctx,p([x,y-1,z-length/2]),p([x,y-1,z+length/2]),'rgba(25,25,25,.78)',3);
+      else line(ctx,p([x-length/2,y-1,z]),p([x+length/2,y-1,z]),'rgba(25,25,25,.78)',3);
+    };
+    if(module.kind==='DRAWERS'){
+      const count=Math.max(2,Math.min(5,Number(module.drawer_count)||2)),layout=module.drawer_layout||'EQUAL';
+      let weights=Array(count).fill(1/count);
+      if(count===3&&layout==='SMALL_TOP')weights=[.4,.4,.2];
+      else if(count===3&&layout==='TWO_SMALL_TOP')weights=[.5,.25,.25];
+      else if(count===4&&layout==='LARGE_BOTTOM')weights=[.4,.2,.2,.2];
+      let acc=0;
+      for(let i=0;i<count-1;i++){acc+=weights[i];hline(acc)}
+      const offset=Math.max(20,Number(module.handle_offset_mm)||50);
+      acc=0;for(let i=0;i<count;i++){const bottom=acc,top=acc+weights[i];const z=module.z+module.h*top-Math.min(offset,module.h*weights[i]*.38);handle(module.x+module.w*.5,z,'HORIZONTAL',Math.min(150,module.w*.36));acc=top}
+    }else if(['HINGED','SINK'].includes(module.kind)){
+      const count=Math.max(1,Math.min(3,Number(module.facade_count)||(module.w<=597?1:2)));
+      for(let i=1;i<count;i++)vline(i/count);
+      const orient=module.handle_orientation||'HORIZONTAL',offset=Math.max(18,Number(module.handle_offset_mm)||50);
+      for(let i=0;i<count;i++){
+        const left=module.x+module.w*i/count,right=module.x+module.w*(i+1)/count,cx=(left+right)/2;
+        if(orient==='VERTICAL'){
+          const onRight=(module.opening||'').includes('LEFT');const x=onRight?right-offset:left+offset;
+          handle(x,module.z+module.h*.72,'VERTICAL',Math.min(150,module.h*.22));
+        }else handle(cx,module.z+module.h-offset,'HORIZONTAL',Math.min(150,(right-left)*.48));
+      }
+    }else if(module.kind==='DISHWASHER'){vline(.5)}
+    if(module.kind==='OVEN'){
+      const z0=module.z+module.h*.10,z1=module.z+module.h*.90;
+      polygon(ctx,[p([module.x+module.w*.08,y,z0]),p([module.x+module.w*.92,y,z0]),p([module.x+module.w*.92,y,z1]),p([module.x+module.w*.08,y,z1])],'#242628','rgba(0,0,0,.58)',1.2);
+      line(ctx,p([module.x+module.w*.2,y-1,z1-module.h*.09]),p([module.x+module.w*.8,y-1,z1-module.h*.09]),'#0d0d0d',3);
+    }
+    if(module.kind==='FRIDGE'&&!module.freestanding&&module.content&&!['FRIDGE_ONLY','FREEZER_ONLY'].includes(module.content))hline(.48);
     if(module.kind==='TALL_OVEN'){
-      const rect=(z0,z1,fill)=>polygon(ctx,[p([module.x+module.w*.12,module.y-2,z0]),p([module.x+module.w*.88,module.y-2,z0]),p([module.x+module.w*.88,module.y-2,z1]),p([module.x+module.w*.12,module.y-2,z1])],fill,'rgba(0,0,0,.48)',1);
-      let cursor=module.z+module.h*.34;rect(cursor,cursor+module.h*.20,'#252525');cursor+=module.h*.23;
+      const rect=(z0,z1,fill)=>polygon(ctx,[p([module.x+module.w*.12,y,z0]),p([module.x+module.w*.88,y,z0]),p([module.x+module.w*.88,y,z1]),p([module.x+module.w*.12,y,z1])],fill,'rgba(0,0,0,.48)',1);
+      hline(.16);
+      let cursor=module.z+module.h*.34,ovenTop=cursor+module.h*.20;rect(cursor,ovenTop,'#242628');
+      line(ctx,p([module.x+module.w*.22,y-1,ovenTop-module.h*.025]),p([module.x+module.w*.78,y-1,ovenTop-module.h*.025]),'#0c0c0c',3);
+      cursor+=module.h*.23;
       if(module.microwave_present==='YES'){rect(cursor,cursor+module.h*.14,module.microwave_type==='BUILT_IN'?'#303030':'#555');cursor+=module.h*.17}
       if(module.coffee_present==='YES')rect(cursor,cursor+module.h*.14,module.coffee_type==='BUILT_IN'?'#292929':'#595959');
     }
@@ -155,7 +190,13 @@
   function drawTopAppliance(ctx,projector,module){
     if(module.wall!=='A'||module.level==='upper')return;const p=projector.point,topZ=module.z+module.h+30;
     if(module.kind==='COOKTOP')polygon(ctx,[p([module.x+module.w*.12,module.y+module.d*.18,topZ]),p([module.x+module.w*.88,module.y+module.d*.18,topZ]),p([module.x+module.w*.88,module.y+module.d*.78,topZ]),p([module.x+module.w*.12,module.y+module.d*.78,topZ])],'#161616','#050505',1.1);
-    if(module.kind==='SINK')polygon(ctx,[p([module.x+module.w*.18,module.y+module.d*.22,topZ]),p([module.x+module.w*.82,module.y+module.d*.22,topZ]),p([module.x+module.w*.82,module.y+module.d*.72,topZ]),p([module.x+module.w*.18,module.y+module.d*.72,topZ])],'#aeb3b4','#707577',1.1);
+    if(module.kind==='SINK'){
+      polygon(ctx,[p([module.x+module.w*.18,module.y+module.d*.22,topZ]),p([module.x+module.w*.82,module.y+module.d*.22,topZ]),p([module.x+module.w*.82,module.y+module.d*.72,topZ]),p([module.x+module.w*.18,module.y+module.d*.72,topZ])],'#aeb3b4','#707577',1.1);
+      const fx=module.x+module.w*.5,fy=module.y+module.d*.78,stem=topZ+150;
+      line(ctx,p([fx,fy,topZ+4]),p([fx,fy,stem]),'#7f8588',4);
+      line(ctx,p([fx,fy,stem]),p([fx+module.w*.13,fy,stem-25]),'#7f8588',4);
+      line(ctx,p([fx+module.w*.13,fy,stem-25]),p([fx+module.w*.13,fy,stem-70]),'#7f8588',4);
+    }
   }
 
   function drawFreestandingDishwasher(ctx,projector,module,c){
@@ -241,13 +282,14 @@
       }else{
         const system=module.pending||module.system,anchor=module.anchor&&!system;
         const freeFridge=module.kind==='FRIDGE'&&module.freestanding;
-        const style=freeFridge?{body:'#5b6065',side:'#484d51',front:'#6c7277',top:'#7e8489',stroke:'rgba(0,0,0,.38)'}:system?{body:c.system,side:c.moduleSide,front:c.system,top:c.moduleTop}:anchor?{body:c.module,side:c.moduleSide,front:c.anchor,top:c.moduleTop}:{};
+        const carcass=customColor(module.carcass_color,c.module),facade=customColor(module.facade_color,anchor?c.anchor:(system?c.system:c.moduleFront));
+        const style=freeFridge?{body:'#5b6065',side:'#484d51',front:'#6c7277',top:'#7e8489',stroke:'rgba(0,0,0,.38)'}:{body:carcass,side:customColor(module.carcass_color,c.moduleSide),front:facade,top:customColor(module.carcass_color,c.moduleTop),stroke:c.line};
         const faces=drawBox(ctx,projector,module,style);front=moduleFrontFace(faces,module);
         drawModuleDetails(ctx,projector,module,c);
         if(freeFridge&&module.wall==='A'){
-          const p=projector.point,y=module.y-2,mid=module.x+module.w*.5;
-          line(ctx,p([mid,y,module.z+module.h*.06]),p([mid,y,module.z+module.h*.94]),'rgba(20,20,20,.48)',1.1);
-          line(ctx,p([module.x+module.w*.82,y,module.z+module.h*.33]),p([module.x+module.w*.82,y,module.z+module.h*.67]),'rgba(15,15,15,.72)',3);
+          const p=projector.point,y=module.y-2,width=Number(module.appliance_width_mm)||module.w;
+          if(width>600){const mid=module.x+module.w*.5;line(ctx,p([mid,y,module.z+module.h*.06]),p([mid,y,module.z+module.h*.94]),'rgba(20,20,20,.48)',1.1)}
+          line(ctx,p([module.x+module.w*.86,y,module.z+module.h*.33]),p([module.x+module.w*.86,y,module.z+module.h*.67]),'rgba(15,15,15,.72)',3);
         }
       }
       drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front});
