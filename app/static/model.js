@@ -209,15 +209,10 @@
     $('moduleStrip').querySelectorAll('[data-module]').forEach(btn=>btn.addEventListener('click',()=>openModule(btn.dataset.module)));
   }
   function renderFocus(){
-    const canvas=$('moduleFocusCanvas');if(!canvas)return;
-    if(!activeModule){canvas.hidden=true;document.body.classList.remove('r9-module-focus');return}
-    const current=modules.find(m=>m.id===activeModule.id)||activeModule;activeModule=current;
-    if(lastFocusModuleId!==current.id){focusCamera={yaw:-.38,pitch:.34,distanceScale:.74};lastFocusModuleId=current.id}
-    const run=Math.max(300,runDimension(current)),dep=Math.max(280,depthDimension(current)),height=Math.max(900,current.h+520);
-    const room={lengthMm:run+1000,depthMm:dep+1000,heightMm:height};
-    const clone={...current,wall:'A',x:500,y:room.depthMm-dep-350,z:Math.max(120,current.level==='upper'?180:120),w:run,d:dep,number:current.number,focus_transparent:true};
-    canvas.hidden=false;document.body.classList.add('r9-module-focus');
-    window.BizetPilot3D.drawKitchenScene(canvas,{room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],camera:focusCamera,showDimensions:false,architecturalElements:[],focusMode:true});
+    // DIAGNOSTIC BUILD: isolation canvas deliberately disabled.
+    const canvas=$('moduleFocusCanvas');
+    if(canvas)canvas.hidden=true;
+    document.body.classList.remove('r9-module-focus');
   }
   function renderScene(engineOk=false){setFurniturePalette();modules=buildModules();scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible,architecturalElements:project?.room?.architectural_elements||[]});renderStrip();if(activeModule)renderFocus();$('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки; остаточное деление ещё не заморожено.':'3D-пилот · исходные точки собраны, незакреплённое остаточное деление остаётся визуальным слоем.'}
 
