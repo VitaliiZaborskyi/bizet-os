@@ -9,7 +9,7 @@ const STEPS = [
   {
     field: 'object_type',
     actionId: 'SELECT_OBJECT_TYPE',
-    title: { ru: 'Где находится ваш будущий интерьер?', en: 'Where is your future interior located?' },
+    title: { ru: 'Тип дома', en: 'Home type' },
     subtitle: { ru: 'Выберите тип объекта. Это поможет BIZET OS правильно выстроить дальнейший маршрут.', en: 'Choose the property type so BIZET OS can build the right route.' },
     options: [
       {
