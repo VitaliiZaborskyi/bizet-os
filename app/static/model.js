@@ -122,8 +122,13 @@
 
   function wallSpan(wall,room){return wall==='A'?room.lengthMm:room.depthMm}
   function runBounds(wall,room){
-    const full=wallSpan(wall,room);
-    if(wall==='A'&&configuration().startsWith('WALL_')){const left=Math.max(0,Number(inputs.linear_left_offset_mm)||0),right=Math.max(0,Number(inputs.linear_right_offset_mm)||0);return{start:left,end:Math.max(left+300,full-right),span:Math.max(300,full-left-right)}}
+    const full=Math.max(0,wallSpan(wall,room));
+    if(wall==='A'&&configuration().startsWith('WALL_')){
+      const left=clamp(Math.max(0,Number(inputs.linear_left_offset_mm)||0),0,full);
+      const right=clamp(Math.max(0,Number(inputs.linear_right_offset_mm)||0),0,Math.max(0,full-left));
+      const end=clamp(full-right,left,full);
+      return{start:left,end,span:Math.max(0,end-left)};
+    }
     return{start:0,end:full,span:full};
   }
 
@@ -163,7 +168,7 @@
     }
 
     let ordered=edge==='START'?tall.concat(regular):regular.concat(tall);
-    let used=ordered.reduce((sum,m)=>sum+m.w,0);
+    let used=ordered.reduce((sum,m)=>sum+Math.min(m.w,maxRunFor(m)),0);
 
     if(wall==='A'&&bounds.span-used>=CUTLERY_W){
       const cutlery=baseModule('cutlery','Ящики для приборов',CUTLERY_W,'DRAWERS','A',{anchor:false,system:true});
