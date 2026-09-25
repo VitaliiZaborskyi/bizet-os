@@ -95,8 +95,8 @@ const STEPS = [
     title: { ru: 'Какое оформление вам ближе?', en: 'Which styling feels closer to you?' },
     subtitle: { ru: 'Это не выбор конкретного цвета — только общее оформление проекта.', en: 'This is not a specific color choice, only the overall styling of the project.' },
     options: [
-      { value: 'LIGHT', title: { ru: 'Light', en: 'Light' }, image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=82', fallback: 'linear-gradient(145deg,#f0ece4,#c9c0b4)' },
-      { value: 'DARK', title: { ru: 'Dark', en: 'Dark' }, image: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=82', fallback: 'linear-gradient(145deg,#65615e,#242322)' },
+      { value: 'LIGHT', title: { ru: 'Светлое', en: 'Light' }, image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=82', fallback: 'linear-gradient(145deg,#f0ece4,#c9c0b4)' },
+      { value: 'DARK', title: { ru: 'Тёмное', en: 'Dark' }, image: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=82', fallback: 'linear-gradient(145deg,#65615e,#242322)' },
       { value: 'OTHER', title: { ru: 'Другое', en: 'Other' }, image: 'https://images.unsplash.com/photo-1600585152915-d208bec867a1?auto=format&fit=crop&w=1400&q=82', fallback: 'linear-gradient(145deg,#c7c4bd,#74716b)' },
     ],
   },
@@ -154,7 +154,7 @@ const LABELS = {
     LIVING_ROOM: { ru: 'Гостиная', en: 'Living room' }, OTHER: { ru: 'Другое', en: 'Other' }
   },
   complexity_category: { I: { ru: 'Категория I', en: 'Category I' }, II: { ru: 'Категория II', en: 'Category II' }, III: { ru: 'Категория III', en: 'Category III' }, IV: { ru: 'Категория IV', en: 'Category IV' }, V: { ru: 'Категория V', en: 'Category V' } },
-  visual_direction: { LIGHT: { ru: 'Light', en: 'Light' }, DARK: { ru: 'Dark', en: 'Dark' }, OTHER: { ru: 'Другое', en: 'Other' } },
+  visual_direction: { LIGHT: { ru: 'Светлое', en: 'Light' }, DARK: { ru: 'Тёмное', en: 'Dark' }, OTHER: { ru: 'Другое', en: 'Other' } },
 };
 
 let project = null;
