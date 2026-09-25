@@ -4,8 +4,10 @@
   const projectId=params.get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
   if(projectId){sessionStorage.setItem(PROJECT_KEY,projectId);localStorage.setItem(PROJECT_KEY,projectId)}
   const VIEW_NORMAL='NORMAL_KITCHEN_VIEW',VIEW_FOCUS='MODULE_FOCUS_MODE';
-  let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false,dimensionsVisible=true;
-  let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72};
+  let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false;
+  let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72},focusDimensionsVisible=true;
+  let layoutWarnings=[];
+  const LIMITS=window.BizetR10Rules?.moduleLimitsMm||{STRAIGHT_MAX:900,CORNER_MAX:1250,PREFERRED_FILL:600,HINGED_FACADE_MAX:597,MIN_STANDARD_MODULE:300};
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
   const LOWER_DEPTH=560,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
@@ -18,6 +20,25 @@
   function configuration(){return sessionStorage.getItem(CONFIG_KEY)||localStorage.getItem(CONFIG_KEY)||'WALL_CENTER'}
   function activeWalls(){const map={WALL_CENTER:['A'],WALL_LEFT:['A'],WALL_RIGHT:['A'],L_LEFT:['A','B'],L_RIGHT:['A','C'],U_SHAPE:['A','B','C'],CUSTOM:['A']};return map[configuration()]||['A']}
   function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+  function isCornerModule(m){return !!m&&(m.kind==='CORNER'||m.corner===true)}
+  function runWidth(m){return m?.wall==='A'?Number(m.w)||0:Number(m.d||m.w)||0}
+  function maxRunFor(m){return isCornerModule(m)?LIMITS.CORNER_MAX:LIMITS.STRAIGHT_MAX}
+  function hingedFacadeCountFor(m){
+    const run=Math.max(100,runWidth(m)||Number(m?.w)||600),available=Math.max(100,run-3);
+    return Math.max(1,Math.ceil(available/LIMITS.HINGED_FACADE_MAX));
+  }
+  function pushWarning(code,text){if(!layoutWarnings.some(w=>w.code===code&&w.text===text))layoutWarnings.push({code,text})}
+  function syncConstraintBanner(){
+    const el=$('constraintBanner');if(!el)return;
+    if(!layoutWarnings.length){el.hidden=true;el.innerHTML='';return}
+    el.hidden=false;el.innerHTML='<strong>НЕСТАНДАРТНАЯ КОНФИГУРАЦИЯ</strong>'+layoutWarnings.map(w=>w.text).join(' ');
+  }
+  function syncFocusControls(){
+    const inFocus=viewMode===VIEW_FOCUS;
+    const back=$('focusBackButton'),dims=$('modelDimensionsToggle');
+    if(back)back.hidden=!inFocus;
+    if(dims){dims.hidden=!inFocus;dims.textContent=`Размеры модуля · ${focusDimensionsVisible?'вкл':'выкл'}`;dims.setAttribute('aria-pressed',String(focusDimensionsVisible))}
+  }
   function variantState(){return {...(visual.r8_variant||{})}}
   function sizeOverrides(){return {...(visual.module_size_overrides||{})}}
   function openingOverrides(){return {...(visual.module_opening_overrides||{})}}
@@ -59,6 +80,9 @@
   function baseModule(id,label,width,kind,wall='A',extra={}){
     const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra};
     if(kind==='DRAWERS')module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
+    module.module_run_limit_mm=maxRunFor(module);
+    module.facade_width_limit_mm=LIMITS.HINGED_FACADE_MAX;
+    if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER','TALL_OVEN'].includes(kind))module.facade_count=hingedFacadeCountFor(module);
     return applyBaseOverride(module);
   }
 
@@ -84,13 +108,11 @@
       list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2,'DISHWASHER',wall,{freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel}));
     }
     const cooktopWall=walls.includes(inputs.cooktop_wall)?inputs.cooktop_wall:'A';
-    list.push(baseModule('cooktop','Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED'}));
-    if(inputs.oven_location){
+    list.push(baseModule('cooktop',inputs.oven_location==='LOWER'?'Варочная + духовка':'Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED',oven_appliance_present:inputs.oven_location==='LOWER'}));
+    if(inputs.oven_location==='TALL'){
       const wall=walls.includes(inputs.oven_wall)?inputs.oven_wall:'A';
-      if(inputs.oven_location==='TALL'){
-        const tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
-        list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',oven_appliance_present:true,mandatory_lower_drawer:true,lower_drawer_count:1,lower_drawer_structure:{components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true},microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
-      }else list.push(baseModule('oven','Духовой шкаф',600,'OVEN',wall,{widthStatus:'PILOT_VISUAL_PLACEHOLDER'}));
+      const tallHeight=Math.max(900,Math.min(roomValues().heightMm-140,2100));
+      list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',oven_appliance_present:true,mandatory_lower_drawer:true,lower_drawer_count:1,lower_drawer_structure:{components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true},microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
     }
     return list;
   }
@@ -100,6 +122,23 @@
     const full=wallSpan(wall,room);
     if(wall==='A'&&configuration().startsWith('WALL_')){const left=Math.max(0,Number(inputs.linear_left_offset_mm)||0),right=Math.max(0,Number(inputs.linear_right_offset_mm)||0);return{start:left,end:Math.max(left+300,full-right),span:Math.max(300,full-left-right)}}
     return{start:0,end:full,span:full};
+  }
+
+  function systemFillModules(wall,remaining){
+    const out=[];let rest=Math.max(0,Math.round(remaining)),i=1;
+    while(rest>LIMITS.STRAIGHT_MAX){
+      const width=Math.min(LIMITS.PREFERRED_FILL,rest);
+      out.push(baseModule(`system-fill-${wall}-${i++}`,'Модуль',width,'HINGED',wall,{anchor:false,pending:true,system:true}));
+      rest-=width;
+    }
+    if(rest>=LIMITS.MIN_STANDARD_MODULE){
+      out.push(baseModule(`system-fill-${wall}-${i++}`,'Модуль',rest,'HINGED',wall,{anchor:false,pending:true,system:true}));
+      rest=0;
+    }
+    if(rest>0){
+      out.push(baseModule(`system-filler-${wall}`,'Филлер',rest,'FILLER',wall,{anchor:false,pending:true,system:true,filler:true}));
+    }
+    return out;
   }
 
   function arrangeWall(wall,list,room){
@@ -132,21 +171,28 @@
     }
 
     const remaining=bounds.span-used;
-    if(remaining>=300){
-      const fill=baseModule(`system-fill-${wall}`,'Модуль',remaining,'HINGED',wall,{anchor:false,pending:true,system:true});
+    if(remaining>0){
+      const fills=systemFillModules(wall,remaining);
       if(tall.length&&edge==='END'){
         const firstTall=ordered.findIndex(m=>m.tall);
-        ordered.splice(firstTall<0?ordered.length:firstTall,0,fill);
+        ordered.splice(firstTall<0?ordered.length:firstTall,0,...fills);
       }else if(tall.length&&edge==='START'){
         let lastTall=-1;ordered.forEach((m,i)=>{if(m.tall)lastTall=i});
-        ordered.splice(lastTall+1,0,fill);
-      }else ordered.push(fill);
+        ordered.splice(lastTall+1,0,...fills);
+      }else ordered.push(...fills);
+      used+=remaining;
+    }else if(remaining<0){
+      pushWarning(`RUN_OVERFLOW_${wall}`,`По стене ${wall} выбранный обязательный набор длиннее доступного участка на ${Math.round(-remaining)} мм. Модули, которые физически не помещаются, не выводятся за границы комнаты — требуется изменить состав или конфигурацию.`);
     }
 
     let cursor=bounds.start;
     return ordered.map(m=>{
-      const runSize=m.w,offset=Number(offsetOverrides()[m.id])||0;
-      let placed={...m,runSize,runPosition:cursor};
+      const runSize=Math.min(m.w,maxRunFor(m)),offset=Number(offsetOverrides()[m.id])||0;
+      if(cursor+runSize>bounds.end+0.5){
+        pushWarning(`OMITTED_${m.id}`,`${m.label} не помещается в доступный участок стены ${wall} и временно исключён из 3D до изменения конфигурации.`);
+        return null;
+      }
+      let placed={...m,w:runSize,runSize,runPosition:cursor,module_run_limit_mm:maxRunFor(m)};
       if(wall==='A'){
         placed.x=clamp(cursor+offset,bounds.start,Math.max(bounds.start,bounds.end-runSize));
         placed.y=room.depthMm-placed.d;
@@ -162,8 +208,9 @@
         placed.d=runSize;placed.w=depth;
       }
       cursor+=runSize;
+      if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER','TALL_OVEN'].includes(placed.kind))placed.facade_count=hingedFacadeCountFor(placed);
       return placed;
-    });
+    }).filter(Boolean);
   }
 
   function buildLower(){const room=roomValues(),raw=collectedLower(),walls=activeWalls(),grouped={A:[],B:[],C:[]};raw.forEach(m=>(grouped[m.wall]||grouped.A).push(m));return walls.flatMap(w=>arrangeWall(w,grouped[w],room))}
@@ -171,7 +218,7 @@
   function upperFromLower(lower){
     const room=roomValues(),gap=Math.max(550,Number(inputs.upper_gap_mm)||600),bottom=LOWER_TOTAL_H+gap,height=Math.min(UPPER_MAX_H,room.heightMm-bottom-50);if(height<220)return[];
     const result=[],hoodWidth=Number(inputs.hood_width_mm)||600,hoodDepth=inputs.hood_type==='BUILT_IN'?UPPER_HOOD_DEPTH:UPPER_DEPTH;
-    lower.filter(m=>!m.tall&&m.level==='lower').forEach(m=>{
+    lower.filter(m=>!m.tall&&m.level==='lower'&&m.kind!=='FILLER').forEach(m=>{
       if(m.kind==='COOKTOP'){
         if(m.wall==='A'){const center=m.x+m.w/2,x=clamp(center-hoodWidth/2,0,room.lengthMm-hoodWidth);result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y:room.depthMm-hoodDepth,z:bottom,w:hoodWidth,d:hoodDepth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth})}
         else{const center=m.y+m.d/2,y=clamp(center-hoodWidth/2,0,room.depthMm-hoodWidth),x=m.wall==='B'?0:room.lengthMm-hoodDepth;result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y,z:bottom,w:hoodDepth,d:hoodWidth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth})}
@@ -193,6 +240,7 @@
       if(Number(o.depth_mm)>0){if(m.wall==='A')m.d=Math.max(100,Number(o.depth_mm));else m.w=Math.max(100,Number(o.depth_mm))}
       if(Number(o.height_mm)>0)m.h=Math.max(100,Number(o.height_mm));
       m.opening=openingOverrides()[m.id]||m.opening||'AUTO';
+      if(['UPPER','UPPER_TOP','UPPER_DRYER'].includes(m.kind))m.facade_count=hingedFacadeCountFor(m);
     });
     return result;
   }
@@ -203,7 +251,20 @@
     sorted.forEach((m,i)=>m.number=i+1);return sorted;
   }
 
-  function buildModules(){const lower=buildLower(),upper=upperFromLower(lower);return numbered(lower.concat(upper))}
+  function buildModules(){
+    layoutWarnings=[];
+    const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(lower.concat(upper));
+    const standardPackageH=LOWER_TOTAL_H+Math.max(550,Number(inputs.upper_gap_mm)||600)+750;
+    if(room.heightMm<standardPackageH&&upper.length){
+      pushWarning('ROOM_HEIGHT_ADAPTED',`Высота помещения ${Math.round(room.heightMm)} мм ниже стандартной схемы. Верхние/высокие модули адаптированы по высоте; производителю нужна проверка, возможна корректировка стоимости.`);
+    }
+    all.forEach(m=>{
+      if(m.x<-.5||m.y<-.5||m.z<-.5||m.x+m.w>room.lengthMm+.5||m.y+m.d>room.depthMm+.5||m.z+m.h>room.heightMm+.5){
+        pushWarning(`BOUNDS_${m.id}`,`${m.label}: геометрия адаптируется к границам помещения; требуется проверка нестандартного размера.`);
+      }
+    });
+    return all;
+  }
 
   function renderStrip(){
     $('moduleStrip').innerHTML=modules.map(m=>`<button class="module-strip-button${m.system||m.pending?' is-system':''}" type="button" data-module="${m.id}"><strong>${m.number}</strong><span>${m.label}</span></button>`).join('');
@@ -213,9 +274,10 @@
     viewMode=VIEW_NORMAL;
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),
-      modules,camera,showDimensions:dimensionsVisible,
+      modules,camera,showDimensions:true,showModuleDimensions:false,
       architecturalElements:project?.room?.architectural_elements||[]
     });
+    syncFocusControls();syncConstraintBanner();
     $('modelStatus').textContent=engineOk?'Module Engine доступен · полная кухня активна.':'3D-пилот · полная кухня активна.';
   }
   function renderModuleFocus(){
@@ -228,9 +290,10 @@
     const clone={...current,wall:'A',x:500,y:room.depthMm-dep-320,z:120,w:run,d:dep,number:current.number};
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
-      camera:focusCamera,showDimensions:false,architecturalElements:[],focusMode:true
+      camera:focusCamera,showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,architecturalElements:[],focusMode:true
     });
-    $('modelStatus').textContent='Режим модуля · закройте редактор, чтобы вернуться к полной кухне.';
+    syncFocusControls();syncConstraintBanner();
+    $('modelStatus').textContent='Режим модуля · «Вся кухня» вернёт общий вид.';
   }
   function renderScene(engineOk=false){
     setFurniturePalette();
@@ -279,6 +342,7 @@
     const requiredRun=activeModule.kind==='SINK'&&Number(activeModule.sink_bowl_count)===2?900:minRun;
     if(!Number.isFinite(h)||h<100||!Number.isFinite(d)||d<100){setValidation('Высота и глубина должны быть не меньше 100 мм.');return}
     if(!widthLocked(activeModule)&&!activeModule.pending&&(!Number.isFinite(w)||w<requiredRun)){setValidation(`Минимальная допустимая ширина для этого модуля: ${requiredRun} мм.`);return}
+    const maxRun=maxRunFor(activeModule);if(!widthLocked(activeModule)&&!activeModule.pending&&w>maxRun){setValidation(`Максимальная ширина ${isCornerModule(activeModule)?'углового':'прямого'} модуля: ${maxRun} мм.`);return}
     if(Math.abs(off)>600){setValidation('Смещение больше 600 мм требует проверки конструктора.');return}
     const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets();
     const currentRun=Math.round(runDimension(activeModule));
@@ -355,9 +419,10 @@
   canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',()=>{drag=null});
   canvas.addEventListener('wheel',event=>{event.preventDefault();const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
 
-  $('modelDimensionsToggle').addEventListener('click',()=>{dimensionsVisible=!dimensionsVisible;$('modelDimensionsToggle').textContent=`Размеры · ${dimensionsVisible?'вкл':'выкл'}`;$('modelDimensionsToggle').setAttribute('aria-pressed',String(dimensionsVisible));renderScene(false)});
+  $('modelDimensionsToggle').addEventListener('click',()=>{if(viewMode!==VIEW_FOCUS)return;focusDimensionsVisible=!focusDimensionsVisible;syncFocusControls();renderScene(false)});
+  $('focusBackButton')?.addEventListener('click',()=>{$('moduleDialog')?.close?.();exitModuleFocus()});
   function exitModuleFocus(){
-    enterNormalKitchenView();
+    enterNormalKitchenView();syncFocusControls();
     renderScene(false);
   }
   $('moduleClose').addEventListener('click',()=>{$('moduleDialog').close?.();exitModuleFocus()});
