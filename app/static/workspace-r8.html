@@ -39,9 +39,11 @@
         <div class="r8-stage" id="modelStage">
           <canvas id="modelCanvas" class="model-canvas" aria-label="Интерактивная модель кухни"></canvas>
           <div class="r8-stage-top">
-            <button class="r8-pill" id="modelDimensionsToggle" type="button" aria-pressed="true">Размеры · вкл</button>
+            <button class="r8-pill r10-focus-back" id="focusBackButton" type="button" hidden>← Вся кухня</button>
+            <button class="r8-pill" id="modelDimensionsToggle" type="button" aria-pressed="true" hidden>Размеры модуля · вкл</button>
             <button class="r8-pill r8-undo" id="undoButton" type="button" disabled title="Отменить последнее изменение">↶</button>
           </div>
+          <div class="r10-constraint-banner" id="constraintBanner" hidden></div>
           <div class="r8-variant-controls" aria-label="Варианты кухни">
             <div class="r8-variant-dots" id="variantDots" aria-label="Пять сохранённых вариантов"></div>
             <button class="r8-random" id="randomVariant" type="button">Другой вариант</button>
