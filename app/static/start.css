@@ -218,20 +218,37 @@ h1 { margin: 0; font-size: clamp(34px, 5vw, 64px); line-height: .98; letter-spac
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
 }
 
-/* R10.3 — iPhone selection screens: all choices visible without vertical scrolling */
+/* R10.3.1 — only approved one-screen steps lock the iPhone viewport. */
 @media (max-width:700px) and (max-height:950px){
-  .app-shell{min-height:100dvh;height:100dvh;overflow:hidden}
-  .topbar{height:58px;min-height:58px}
-  .experience{width:min(100% - 20px,620px);height:calc(100dvh - 58px);padding:8px 0 10px;margin:0 auto;overflow:hidden;display:flex;flex-direction:column}
-  .intro{margin:0 auto 10px;flex:0 0 auto}
-  .step-meta,.progress{display:none!important}
-  h1{font-size:clamp(28px,8.2vw,38px);line-height:.96}
-  .intro p{font-size:13px;line-height:1.28;margin:8px auto 0;max-width:340px}
-  .choice-grid{flex:1 1 auto;min-height:0;align-content:stretch}
-  .choice-grid[data-count="4"]{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px}
-  .choice-grid[data-count="3"]{grid-template-columns:1fr;grid-template-rows:repeat(3,minmax(0,1fr));gap:8px;max-width:none;width:100%}
-  .choice-grid[data-count="4"] .choice-card,.choice-grid[data-count="3"] .choice-card{min-height:0;height:100%;border-radius:18px}
-  .choice-grid[data-count="4"] .card-content,.choice-grid[data-count="3"] .card-content{padding:12px 14px}
-  .choice-grid[data-count="4"] .card-title,.choice-grid[data-count="3"] .card-title{font-size:20px}
-  .footer{display:none!important}
+  body[data-start-kind="object_type"],
+  body[data-start-kind="visual_direction"]{height:100dvh;overflow:hidden}
+  body[data-start-kind="object_type"] .app-shell,
+  body[data-start-kind="visual_direction"] .app-shell{min-height:100dvh;height:100dvh;overflow:hidden}
+  body[data-start-kind="object_type"] .topbar,
+  body[data-start-kind="visual_direction"] .topbar{height:58px;min-height:58px}
+  body[data-start-kind="object_type"] .experience,
+  body[data-start-kind="visual_direction"] .experience{
+    width:min(100% - 20px,620px);height:calc(100dvh - 58px);padding:8px 0 10px;margin:0 auto;overflow:hidden;display:flex;flex-direction:column
+  }
+  body[data-start-kind="object_type"] .intro,
+  body[data-start-kind="visual_direction"] .intro{margin:0 auto 9px;flex:0 0 auto}
+  body[data-start-kind="object_type"] .step-meta,
+  body[data-start-kind="object_type"] .progress,
+  body[data-start-kind="visual_direction"] .step-meta,
+  body[data-start-kind="visual_direction"] .progress{display:none!important}
+  body[data-start-kind="object_type"] h1,
+  body[data-start-kind="visual_direction"] h1{font-size:clamp(27px,7.8vw,36px);line-height:.96}
+  body[data-start-kind="object_type"] .intro p,
+  body[data-start-kind="visual_direction"] .intro p{font-size:12.5px;line-height:1.22;margin:7px auto 0;max-width:350px}
+  body[data-start-kind="object_type"] .choice-grid,
+  body[data-start-kind="visual_direction"] .choice-grid{flex:1 1 auto;min-height:0;align-content:stretch}
+  body[data-start-kind="object_type"] .choice-grid[data-count="4"]{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px}
+  body[data-start-kind="object_type"] .choice-grid[data-count="4"] .choice-card{min-height:0;height:100%;border-radius:18px}
+  body[data-start-kind="visual_direction"] .choice-grid[data-count="3"]{grid-template-columns:1fr;grid-template-rows:repeat(3,minmax(0,1fr));gap:7px;max-width:none;width:100%}
+  body[data-start-kind="visual_direction"] .choice-grid[data-count="3"] .choice-card{min-height:0;height:100%;border-radius:16px}
+  body[data-start-kind="visual_direction"] .choice-grid[data-count="3"] .card-content{padding:9px 13px}
+  body[data-start-kind="visual_direction"] .choice-grid[data-count="3"] .card-title{font-size:18px;text-shadow:0 1px 8px rgba(0,0,0,.45)}
+  body[data-start-kind="object_type"] .footer,
+  body[data-start-kind="visual_direction"] .footer{display:none!important}
 }
+.brand span{color:#2f7cff!important}
