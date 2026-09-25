@@ -37,7 +37,7 @@ def test_r10_phase2_full_kitchen_camera_keeps_pointer_and_touch_controls():
     assert "canvas.addEventListener('pointermove'" in model
     assert "canvas.addEventListener('pointerup'" in model
     assert "canvas.addEventListener('wheel'" in model
-    assert "camera.yaw=" in model and "camera.pitch=" in model
+    assert "cam.yaw=" in model and "cam.pitch=" in model
     assert "#modelCanvas{touch-action:none}" in css
 
 
