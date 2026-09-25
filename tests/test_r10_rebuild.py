@@ -172,7 +172,7 @@ def test_r10_phase10_proposal_is_one_a4_kitchen_summary():
     assert "proposalSnapshot" in js
     assert "configurationLabel" in js
     assert "runSummary" in js
-    assert "Список услуг по изделиям" in proposal
+    assert "Список изделий" in proposal
     assert "Изображение / схема" in proposal
     assert "Комплектация" in proposal
     assert "moduleSpec(d.modules).map" not in proposal
@@ -301,3 +301,92 @@ def test_r101_filler_is_not_costed_as_full_cabinet():
     assert "'Filler Panel'" in pointb
     assert "m.kind==='FILLER'" in pointb
     assert "['DISHWASHER','FRIDGE','FILLER']" in pointb
+
+
+def test_r102_ergonomic_rules_are_explicit_and_separate_hard_from_preferred():
+    rules = read("r10-domain-rules.js")
+    assert "SINK_COOKTOP_HARD_MIN:500" in rules
+    assert "SINK_COOKTOP_PREFERRED:900" in rules
+    assert "SINK_OVEN_SAME_WALL_MIN:1000" in rules
+    assert "TRIANGLE_LEG_MIN:1200" in rules
+    assert "TRIANGLE_LEG_MAX:2700" in rules
+    assert "TRIANGLE_SUM_MAX:7900" in rules
+
+def test_r102_default_multiwall_placement_separates_sink_from_cooktop_and_oven():
+    model = read("model.js")
+    assert "function resolvedCooktopWall()" in model
+    assert "return autoWall(requested,sink,'A')" in model
+    assert "function resolvedOvenWall()" in model
+    assert "return autoWall(requested,sink,cook)" in model
+    workspace = read("workspace-r8.js")
+    assert "cooktop_wall:'AUTO'" in workspace
+    assert "oven_wall:'AUTO'" in workspace
+
+def test_r102_oven_is_never_allowed_to_occupy_corner_slot():
+    model = read("model.js")
+    assert "function keepOvenOutOfCorner" in model
+    assert "function isOvenModule" in model
+    assert "corner_forbidden:true" in model
+    assert "OVEN_CORNER_START_" in model
+    assert "OVEN_CORNER_END_" in model
+
+def test_r102_sink_cooktop_spacing_is_injected_before_residual_fill():
+    model = read("model.js")
+    arrange = model[model.index("function arrangeWall"):model.index("function buildLower")]
+    assert "ensurePairSpacing(ordered,wall,bounds,'SINK','COOKTOP'" in arrange
+    assert "ERGO.SINK_COOKTOP_HARD_MIN" in arrange
+    assert "ERGO.SINK_COOKTOP_PREFERRED" in arrange
+    assert "Рабочая зона" in arrange
+
+def test_r102_one_of_each_three_identical_system_hinged_modules_becomes_two_drawers():
+    model = read("model.js")
+    block = model[model.index("function promoteDrawerCadence"):model.index("function keepOvenOutOfCorner")]
+    assert "start+2<j" in block
+    assert "kind:'DRAWERS'" in block
+    assert "drawer_count:2" in block
+    assert "drawer_layout:'EQUAL'" in block
+    assert "auto_drawer_cadence:true" in block
+
+def test_r102_normal_3d_restores_visible_handles():
+    renderer = read("pilot-3d.js")
+    details = renderer[renderer.index("function drawModuleDetails"):renderer.index("function drawFocusDot")]
+    assert "const handle=" in details
+    assert "module.kind==='DRAWERS'" in details
+    assert "['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER']" in details
+    assert "'HORIZONTAL'" in details
+    assert "module.handle_offset_mm" in details
+
+def test_r102_point_b_identity_and_order_status_are_visible_and_immutable():
+    business = read("owner-qa-business.js")
+    assert "ensureOrderIdentity" in business
+    assert "/activate-order" in business
+    assert "/order-stage" in business
+    assert "identity.order_no||identity.session_id" in business
+    assert "order_stage||'A'" in business
+    html = read("workspace-r8.html")
+    assert 'id="orderIdentityBadge"' in html
+
+def test_r102_commercial_proposal_uses_owner_vector_logo_and_requested_table_language():
+    business = read("owner-qa-business.js")
+    proposal = business[business.index("async function printProposal"):business.index("function refresh")]
+    assert "/static/bizet-os-zaborsky-document-logo.svg" in proposal
+    assert "Список изделий" in proposal
+    assert ".num{font-size:11px;background:#5c5c5c;color:#fff" in proposal
+    assert '"Century Gothic",CenturyGothic,"Avenir Next"' in proposal
+    assert "orderRef" in proposal
+
+def test_r102_vector_document_logo_asset_exists():
+    logo = read("bizet-os-zaborsky-document-logo.svg")
+    assert 'viewBox="420 330 830 190"' in logo
+    assert "#f9fbff" in logo
+    assert "linear-pattern-0" in logo
+
+def test_r102_production_drawing_engine_pilot_matches_reference_grammar():
+    pointb = read("point-b.js")
+    assert "function productionModuleSheet" in pointb
+    for token in ["Assembly position", "Pos.", "Qnt. 1", "Code ASS", "Name ", "Length ", "Height "]:
+        assert token in pointb
+    assert "class=\"dim\"" in pointb
+    assert "class=\"leader\"" in pointb
+    assert "Production Drawing Engine · пилотный лист модуля" in pointb
+    assert "BIZET_Production_Module_Pilot.svg" in pointb
