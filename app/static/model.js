@@ -56,7 +56,11 @@
   }
 
   function sinkWall(){const config=configuration(),side=inputs.sink_side;if(config==='L_LEFT')return side==='LEFT'?'B':'A';if(config==='L_RIGHT')return side==='RIGHT'?'C':'A';if(config==='U_SHAPE')return side==='LEFT'?'B':'C';return'A'}
-  function baseModule(id,label,width,kind,wall='A',extra={}){return applyBaseOverride({id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra})}
+  function baseModule(id,label,width,kind,wall='A',extra={}){
+    const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra};
+    if(kind==='DRAWERS')module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
+    return applyBaseOverride(module);
+  }
 
   function collectedLower(){
     const list=[],walls=activeWalls(),fWall=fridgeWall();
@@ -85,7 +89,7 @@
       const wall=walls.includes(inputs.oven_wall)?inputs.oven_wall:'A';
       if(inputs.oven_location==='TALL'){
         const tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
-        list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',oven_appliance_present:true,mandatory_lower_drawer:true,lower_drawer_count:1,microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
+        list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',oven_appliance_present:true,mandatory_lower_drawer:true,lower_drawer_count:1,lower_drawer_structure:{components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true},microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
       }else list.push(baseModule('oven','Духовой шкаф',600,'OVEN',wall,{widthStatus:'PILOT_VISUAL_PLACEHOLDER'}));
     }
     return list;
