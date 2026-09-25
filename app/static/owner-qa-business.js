@@ -6,6 +6,8 @@
     {id:'NORDLINE_INTERIORS',name:'Nordline Interiors',multiplier:2.6,rating:'4.6',aboutRu:'Демонстрационный профиль интерьерного производства.',aboutEn:'Demo interior manufacturer profile.'}
   ];
   const ROLE_KEY='bizet_os_demo_role',PRODUCER_KEY='bizet_os_producer',LANG_KEY='bizet_os_language';
+  const PROJECT_KEY='bizet_os_project_id',COUNTRY_KEY='bizet_order_country_code',CITY_KEY='bizet_order_city_code';
+  let identityCache=null;
   const $=id=>document.getElementById(id);
   const lang=()=>String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ru').toLowerCase().startsWith('en')?'en':'ru';
   const role=()=>localStorage.getItem(ROLE_KEY)||'CUSTOMER';
@@ -13,6 +15,12 @@
   const money=n=>new Intl.NumberFormat(lang()==='en'?'en-US':'ru-RU',{maximumFractionDigits:0}).format(Math.round(Number(n)||0))+' грн';
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const t=(ru,en)=>lang()==='en'?en:ru;
+  const projectId=()=>new URLSearchParams(location.search).get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
+  const identityRef=(identity=identityCache)=>{if(!identity)return'';return `${identity.order_no||identity.session_id||''} /${identity.order_stage||'A'}`};
+  function updateIdentityBadge(identity=identityCache){const el=$('orderIdentityBadge');if(!el||!identity)return;el.textContent=identityRef(identity);el.hidden=false}
+  async function loadIdentity(){const id=projectId();if(!id)return null;try{const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}`,{cache:'no-store'});if(!r.ok)return null;const p=await r.json();identityCache=p.identity||null;updateIdentityBadge();return identityCache}catch(_){return null}}
+  async function ensureOrderIdentity(){const id=projectId();if(!id)return null;if(identityCache?.order_no){updateIdentityBadge();return identityCache}const country=(localStorage.getItem(COUNTRY_KEY)||'UA').toUpperCase(),city=(localStorage.getItem(CITY_KEY)||'ODS').toUpperCase();const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}/activate-order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({country_code:country,city_code:city})});if(!r.ok)throw new Error(t('Не удалось присвоить номер заказа','Could not assign order number'));const p=await r.json();identityCache=p.identity||null;updateIdentityBadge();return identityCache}
+  async function confirmStageC(){const id=projectId();if(!id)return;await ensureOrderIdentity();const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}/order-stage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({stage:'C'})});if(!r.ok)throw new Error(t('Не удалось подтвердить заказ','Could not confirm order'));const p=await r.json();identityCache=p.identity||identityCache;updateIdentityBadge();refresh()}
 
   function data(){
     const rt=window.BizetModelRuntime,pb=window.BizetPointB;if(!rt?.ready||!pb)return null;
