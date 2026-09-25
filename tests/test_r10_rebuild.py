@@ -183,3 +183,15 @@ def test_r10_workspace_wires_business_layer_after_model_runtime():
 def test_r10_light_pill_controls_use_dark_text():
     css = read("workspace-r8.css")
     assert ".r8-pill,.r8-arrow{color:#171716}" in css
+
+
+def test_r10_normal_view_is_forced_after_variant_resume_resize_and_panel_open():
+    model = read("model.js")
+    workspace = read("workspace-r8.js")
+    apply_block = model[model.index("async function applyWorkspaceState"):model.index("function snapshot")]
+    resume_block = model[model.index("async function resumeFromSleep"):model.index("window.BizetModelRuntime")]
+    assert "enterNormalKitchenView()" in apply_block
+    assert "enterNormalKitchenView()" in resume_block
+    assert "window.addEventListener('resize'" in model
+    assert "enterNormalKitchenView()" in model[model.index("window.addEventListener('resize'"):]
+    assert "rt?.exitFocus?.()" in workspace
