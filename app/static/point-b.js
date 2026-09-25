@@ -360,7 +360,7 @@
   function ensureUI(){
     if($('pointBFinalActions'))return;
     const host=document.createElement('div');host.id='pointBFinalActions';host.className='r8-final-actions';
-    host.innerHTML='<div class="r8-final-price"><span>Предварительная цена BIZET Furniture</span><strong id="pointBPrice">—</strong></div><button id="pointBPriceButton" type="button">Итоговая стоимость</button><button id="pointBDocsButton" type="button">Комплект документов</button>';
+    host.innerHTML='<div class="r8-final-price"><span>Итоговая стоимость</span><strong id="pointBPrice">—</strong></div><button id="pointBPriceButton" type="button">Подумаю</button><button id="pointBDocsButton" type="button">Купить</button>';
     $('modelStatus').insertAdjacentElement('afterend',host);
     const dialog=document.createElement('dialog');dialog.id='pointBDialog';dialog.className='r8-pointb-dialog';
     dialog.innerHTML='<div class="r8-pointb-card"><button id="pointBClose" class="r8-pointb-close" type="button">×</button><div id="pointBReport"></div></div>';
