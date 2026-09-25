@@ -1,0 +1,12 @@
+
+.r9-role-tag{border:1px solid var(--r8-line);background:transparent;color:var(--r8-muted);border-radius:999px;padding:8px 12px;font-size:10px;letter-spacing:.08em}
+.r9-business-dialog{border:0;padding:0;background:transparent;color:inherit;width:min(760px,calc(100vw - 30px))}
+.r9-business-dialog::backdrop{background:rgba(0,0,0,.46);backdrop-filter:blur(5px)}
+.r9-business-card{position:relative;background:var(--r8-panel);color:var(--r8-ink);border:1px solid var(--r8-line);border-radius:24px;padding:24px;box-shadow:0 30px 90px rgba(0,0,0,.28);font-family:inherit}
+.r9-business-close{position:absolute;right:16px;top:14px;border:0;background:transparent;color:inherit;font-size:26px}
+.r9-kicker{font-size:9px;letter-spacing:.16em;color:var(--r8-muted);margin:0 0 8px}.r9-muted{color:var(--r8-muted);font-size:11px;line-height:1.55}
+.r9-producer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.r9-producer-card{text-align:left;border:1px solid var(--r8-line);background:transparent;color:inherit;border-radius:16px;padding:14px;display:grid;gap:6px}.r9-producer-card.is-active{outline:2px solid var(--r8-blue)}.r9-producer-card strong{font-size:15px}.r9-producer-card small{color:var(--r8-muted);line-height:1.4}.r9-demo{font-size:8px;letter-spacing:.14em;color:var(--r8-blue)}
+.r9-role-demo{display:grid;gap:6px;font-size:11px}.r9-role-demo select{padding:10px 12px;border-radius:12px;border:1px solid var(--r8-line);background:var(--r8-panel);color:inherit}
+.r9-customer-price{display:flex;justify-content:space-between;gap:14px;align-items:end;border:1px solid var(--r8-line);border-radius:16px;padding:16px;margin:14px 0}.r9-customer-price span{font-size:12px;color:var(--r8-muted)}.r9-customer-price strong{font-size:26px}
+.r9-client-table table{width:100%;border-collapse:collapse}.r9-client-table th,.r9-client-table td{padding:9px;border-bottom:1px solid var(--r8-line);font-size:11px;text-align:left}
+@media(max-width:650px){.r9-producer-grid{grid-template-columns:1fr}.r9-customer-price{align-items:flex-start;flex-direction:column}}
