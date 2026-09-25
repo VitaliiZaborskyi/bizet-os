@@ -432,6 +432,10 @@
     const dialog=$('moduleDialog');
     if(dialog?.open)dialog.close();else exitModuleFocus();
   });
+  $('focusBackInline')?.addEventListener('click',()=>{
+    const dialog=$('moduleDialog');
+    if(dialog?.open)dialog.close();else exitModuleFocus();
+  });
   function exitModuleFocus(){
     enterNormalKitchenView();syncFocusControls();
     renderScene(false);
