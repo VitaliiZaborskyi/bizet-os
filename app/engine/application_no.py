@@ -3,7 +3,8 @@ from threading import Lock
 import re
 
 _lock = Lock()
-_counters: dict[str, int] = {}
+_legacy_counters: dict[str, int] = {}
+_order_counters: dict[str, int] = {}
 
 
 def _clean_code(value: str, min_len: int, max_len: int, fallback: str) -> str:
@@ -18,8 +19,8 @@ def next_application_no(now: datetime | None = None) -> str:
     now = now or datetime.now()
     key = now.strftime("%Y-%m")
     with _lock:
-        _counters[key] = _counters.get(key, 0) + 1
-        seq = _counters[key]
+        _legacy_counters[key] = _legacy_counters.get(key, 0) + 1
+        seq = _legacy_counters[key]
     return f"{seq}.{now:%m.%y}"
 
 
@@ -38,6 +39,6 @@ def next_order_no(
     city = _clean_code(city_code, 2, 3, "XXX")
     key = now.strftime("%Y-%m")
     with _lock:
-        _counters[key] = _counters.get(key, 0) + 1
-        seq = _counters[key]
+        _order_counters[key] = _order_counters.get(key, 0) + 1
+        seq = _order_counters[key]
     return f"{country}-{city}-{now:%y.%m}.{seq:03d}"
