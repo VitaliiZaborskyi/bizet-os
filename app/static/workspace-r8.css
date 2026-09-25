@@ -87,7 +87,7 @@ html[data-theme="dark"] .r10-room-source button{background:#f3f1ec!important;col
 .r8-random{color:#171716!important}
 @media(max-width:820px){
   .r8-tools{overflow:visible!important}
-  .r8-tools-label{position:absolute;left:10px;top:-22px;padding:0;font-size:9px;color:#5f605c;white-space:nowrap}
+  .r8-tools-label{position:fixed;left:20px;bottom:70px;z-index:91;padding:0;font-size:9px;color:#5f605c;white-space:nowrap}
   .r8-tools>button{flex:0 0 auto}
   .r8-tools{overflow-x:auto!important}
   .r8-module-strip-label{margin-top:14px}
