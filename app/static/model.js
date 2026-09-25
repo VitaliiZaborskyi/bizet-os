@@ -294,7 +294,7 @@
     enterNormalKitchenView();
     $('moduleDialog').close?.();
     renderScene(false);
-    $('modelStatus').textContent='Модуль обновлён. Полная кухня восстановлена.';
+    $('modelStatus').textContent='Модуль обновлён. Полная кухня восстановлена; зависимые остаточные модули перестроены.';
   }
   async function resetModuleCustomization(){
     if(!activeModule)return;
