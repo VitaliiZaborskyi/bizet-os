@@ -72,3 +72,9 @@ html.r10-route-loading .r8-shell{visibility:hidden}
   .r8-tools button.is-active{background:#fff!important;color:#171716!important}
   .r10-constraint-banner{left:10px;right:10px;top:58px;max-width:none}
 }
+
+/* R10.3 room acquisition */
+.r10-room-source button{background:#fff!important;color:#171716!important;border-color:rgba(23,23,22,.12)!important}
+.r10-room-import-status{font-size:11px;line-height:1.45;color:var(--r8-muted);margin:10px 0 0}
+.r10-file-calibration[hidden]{display:none!important}
+html[data-theme="dark"] .r10-room-source button{background:#f3f1ec!important;color:#171716!important}
