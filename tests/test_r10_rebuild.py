@@ -79,7 +79,7 @@ def test_r10_phase4_focus_is_technical_transparent_and_rotatable():
     renderer = read("pilot-3d.js")
     assert "focusMode:true" in model
     assert "function drawTechnicalFocus" in renderer
-    for token in ["Technical carcass: explicit 18 mm panels", "Ghosted facade", "Structural rail / rib", "Shelves"]:
+    for token in ["Technical carcass: explicit 18 mm panels", "Ghosted facade", "Structural rails/ribs", "Shelves"]:
         assert token in renderer
     assert "viewMode===VIEW_FOCUS?focusCamera:camera" in model
 
@@ -271,14 +271,17 @@ def test_r101_sink_has_faucet_and_cooktop_has_burner_markers():
     assert "if(module.kind==='COOKTOP')" in top
     assert "[[.32,.36],[.68,.36],[.32,.63],[.68,.63]]" in top
 
-def test_r101_hardware_renderer_uses_scilm_and_blum_specific_proxies():
+def test_r103_focus_hardware_is_simplified_to_round_legs_and_35mm_cups():
     renderer = read("pilot-3d.js")
     assert "function drawScilmLegProxy" in renderer
     assert "function drawBlumHingeProxy" in renderer
     assert "drawScilmLegProxy" in renderer[renderer.index("function drawTechnicalFocus"):]
     assert "drawBlumHingeProxy" in renderer[renderer.index("function drawTechnicalFocus"):]
-    assert "35 mm cup" in renderer
-    assert "straight plate" in renderer
+    hinge = renderer[renderer.index("function drawBlumHingeProxy"):renderer.index("function drawFocusedModuleDimensions")]
+    assert "Ø35 concealed-hinge cup" in hinge
+    assert "plateA" not in hinge and "plateB" not in hinge
+    leg = renderer[renderer.index("function drawScilmLegProxy"):renderer.index("function drawBlumHingeProxy")]
+    assert "ctx.arc" in leg and "ctx.lineCap='round'" in leg
 
 def test_r101_dishwasher_is_optional_by_default():
     workspace = read("workspace-r8.js")
@@ -287,11 +290,17 @@ def test_r101_dishwasher_is_optional_by_default():
     assert "dishwasher_type:'NO'" in workspace
     assert "inputs.dishwasher_type!=='NO'" in model
 
-def test_r101_constraint_warning_is_visible_for_nonstandard_adaptation():
+def test_r103_constraint_warning_is_compact_button_not_permanent_banner():
     html = read("workspace-r8.html")
     model = read("model.js")
+    css = read("workspace-r8.css")
     assert 'id="constraintBanner"' in html
-    assert "НЕСТАНДАРТНАЯ КОНФИГУРАЦИЯ" in model
+    assert 'id="constraintButton"' in html
+    assert "ПРОВЕРЬТЕ КОНФИГУРАЦИЮ" in model
+    assert "btn.hidden=false" in model
+    assert "el.hidden=true" in model
+    assert ".r10-warning-button.is-warning" in css
+    assert "background:#d92d20" in css
     assert "ROOM_HEIGHT_ADAPTED" in model
     assert "RUN_OVERFLOW_" in model
 
@@ -322,13 +331,16 @@ def test_r102_default_multiwall_placement_separates_sink_from_cooktop_and_oven()
     assert "cooktop_wall:'AUTO'" in workspace
     assert "oven_wall:'AUTO'" in workspace
 
-def test_r102_oven_is_never_allowed_to_occupy_corner_slot():
+def test_r103_corner_zone_allows_only_sink_or_corner_module():
     model = read("model.js")
-    assert "function keepOvenOutOfCorner" in model
-    assert "function isOvenModule" in model
-    assert "corner_forbidden:true" in model
-    assert "OVEN_CORNER_START_" in model
-    assert "OVEN_CORNER_END_" in model
+    rules = read("r10-domain-rules.js")
+    assert "function ensureCornerZones" in model
+    assert "ALLOWED_KINDS:Object.freeze(['SINK','CORNER'])" in rules
+    assert "FORBIDDEN_APPLIANCES" in rules
+    for token in ["COOKTOP","DISHWASHER","FRIDGE","TALL_OVEN","MICROWAVE"]:
+        assert token in rules
+    assert "makeCornerModule" in model
+    assert "sinkCornerEdgeForWall" in model
 
 def test_r102_sink_cooktop_spacing_is_injected_before_residual_fill():
     model = read("model.js")
@@ -340,7 +352,7 @@ def test_r102_sink_cooktop_spacing_is_injected_before_residual_fill():
 
 def test_r102_one_of_each_three_identical_system_hinged_modules_becomes_two_drawers():
     model = read("model.js")
-    block = model[model.index("function promoteDrawerCadence"):model.index("function keepOvenOutOfCorner")]
+    block = model[model.index("function promoteDrawerCadence"):model.index("function sinkCornerEdgeForWall")]
     assert "start+2<j" in block
     assert "kind:'DRAWERS'" in block
     assert "drawer_count:2" in block
@@ -392,3 +404,110 @@ def test_r102_production_drawing_engine_pilot_matches_reference_grammar():
     assert "class=\"leader\"" in pointb
     assert "Production Drawing Engine · пилотный лист модуля" in pointb
     assert "BIZET_Production_Module_Pilot.svg" in pointb
+
+
+def test_r103_first_and_visual_direction_screens_fit_single_iphone_viewport():
+    start = read("start.js")
+    css = read("start.css")
+    assert "ru: 'Тип дома'" in start
+    assert "en: 'Home type'" in start
+    assert '@media (max-width:700px) and (max-height:950px)' in css
+    assert '.app-shell{min-height:100dvh;height:100dvh;overflow:hidden}' in css
+    assert '.choice-grid[data-count="4"]' in css
+    assert 'grid-template-columns:repeat(2,minmax(0,1fr))' in css
+    assert '.choice-grid[data-count="3"]' in css
+    assert 'grid-template-rows:repeat(3,minmax(0,1fr))' in css
+
+def test_r103_configuration_to_workspace_route_stays_under_splash():
+    handoff = read("start-room-handoff.js")
+    shell = read("pilot-r8-shell.js")
+    workspace = read("workspace-r8.html")
+    css = read("workspace-r8.css")
+    assert "bizet_route_splash" in handoff
+    assert "window.BizetTransition.play({duration:3000})" in handoff
+    assert "bizet_route_splash" in shell
+    assert "r10-route-loading" in workspace
+    assert "html.r10-route-loading .r8-shell{visibility:hidden}" in css
+
+def test_r103_composition_layer_centers_primary_appliance_inside_valid_run():
+    model = read("model.js")
+    rules = read("r10-domain-rules.js")
+    assert "centerPrimaryApplianceOnLongRun:true" in rules
+    assert "function centerCompositionAnchor" in model
+    assert "composition_target='RUN_CENTER'" in model
+    assert "ERGO.SINK_COOKTOP_HARD_MIN" in model
+    assert "ERGO.SINK_OVEN_SAME_WALL_MIN" in model
+    arrange = model[model.index("function arrangeWall"):model.index("function buildLower")]
+    assert "ordered=ensureCornerZones(ordered,wall)" in arrange
+    assert "ordered=centerCompositionAnchor(ordered,wall,bounds)" in arrange
+
+def test_r103_focus_hides_module_navigation_number():
+    renderer = read("pilot-3d.js")
+    focus = renderer[renderer.index("if(options.focusMode"):renderer.index("return {hitTest", renderer.index("if(options.focusMode"))]
+    assert "No navigation number in MODULE_FOCUS_MODE" in focus
+    assert "drawNumber(ctx,front,module.number,c)" not in focus
+
+def test_r103_focus_uses_18mm_rib_and_oven_shelf_below_appliance():
+    renderer = read("pilot-3d.js")
+    focus = renderer[renderer.index("function drawTechnicalFocus"):renderer.index("function drawModuleRunDimensions")]
+    assert "const railT=t" in focus
+    assert "h:railT" in focus
+    assert "z:oz-t" in focus
+    assert "oven_support_shelf_position='BELOW_OVEN'" in focus
+    assert "oven_nominal_zone_mm=600" in focus
+
+def test_r103_room_acquisition_has_manual_scan_file_and_single_dimension_calibration():
+    workspace = read("workspace-r8.js")
+    for token in ["Ручной ввод","Скан","Загрузить файл","r10RoomFileInput","classifyRoomFile","ROOM_MODEL","calibrate-import","Известная длина стены A"]:
+        assert token in workspace
+    assert ".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg" in workspace
+    assert "known_dimension_mm" in workspace
+    assert "CALIBRATED_WALL_A" in workspace
+
+def test_r103_mobile_light_step_bar_always_uses_dark_text():
+    css = read("workspace-r8.css")
+    assert ".r8-tools button,.r8-tools button span{color:#171716!important}" in css
+    assert ".r8-tools button.is-active{background:#fff!important;color:#171716!important}" in css
+
+def test_r103_customer_main_actions_are_only_think_and_buy():
+    pointb = read("point-b.js")
+    business = read("owner-qa-business.js")
+    assert ">Подумаю<" in pointb
+    assert ">Купить<" in pointb
+    refresh = business[business.index("function refresh"):business.index("function boot")]
+    assert "Подумаю" in refresh and "Купить" in refresh
+    assert "r9ProducerButton" not in refresh
+    assert "r9RoleButton" not in refresh
+    assert "showThinkFlow" in refresh and "showBuyFlow" in refresh
+
+def test_r103_buy_flow_selects_manufacturer_then_opens_payment_through_transition():
+    business = read("owner-qa-business.js")
+    buy = business[business.index("async function showBuyFlow"):business.index("function showPaymentFlow")]
+    assert "transitionThen" in buy
+    assert "Выберите производителя" in buy
+    assert "data-producer" in business
+    assert "commerce.selected_manufacturer" in buy
+    assert "showPaymentFlow" in buy
+    payment = business[business.index("function showPaymentFlow"):business.index("function showCustomer")]
+    assert "commerce.payment_status" in payment
+    assert "PAYMENT_PROVIDER_REQUIRED" in payment
+    assert "Продолжить к оплате" in payment
+
+def test_r103_think_flow_assigns_point_b_and_collects_contact_without_download_button():
+    business = read("owner-qa-business.js")
+    think = business[business.index("async function showThinkFlow"):business.index("async function showBuyFlow")]
+    assert "ensureOrderIdentity" in think
+    assert "commerce.proposal_status" in think
+    assert "commerce.contact" in think
+    assert "E-mail или телефон" in think
+    assert "Отправить КП" in think
+    assert "download" not in think.lower()
+    assert "window.open" not in think
+
+def test_r103_commerce_state_is_domain_data_not_visual_only():
+    models = (ROOT / "app" / "project" / "models.py").read_text(encoding="utf-8")
+    assert "class CommerceState" in models
+    assert "proposal_status" in models
+    assert "selected_manufacturer" in models
+    assert "payment_status" in models
+    assert "commerce: CommerceState" in models
