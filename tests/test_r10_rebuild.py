@@ -224,7 +224,7 @@ def test_r101_freestanding_appliance_is_not_clamped_by_900_cabinet_rule():
     model = read("model.js")
     max_block = model[model.index("function maxRunFor"):model.index("function hingedFacadeCountFor")]
     assert "m?.freestanding===true" in max_block
-    assert "Math.max(LIMITS.STRAIGHT_MAX,runWidth(m)" in max_block
+    assert "Math.max(LIMITS.STRAIGHT_MAX,Number(m?.runSize)||Number(m?.w)||runWidth(m)" in max_block
 
 def test_r101_room_run_never_expands_beyond_measured_wall():
     model = read("model.js")
@@ -242,17 +242,19 @@ def test_r101_room_height_wrapper_adapts_and_never_mutates_focus_geometry():
     assert "if(options.focusMode)return original(canvas,options)" in dims
     assert "module.room_height_adapted=adapted" in dims
 
-def test_r101_module_dimensions_exist_only_in_focus_and_can_be_toggled():
+def test_r1031_dimensions_button_works_in_normal_and_focus_views():
     html = read("workspace-r8.html")
     model = read("model.js")
     renderer = read("pilot-3d.js")
     assert 'id="modelDimensionsToggle"' in html
-    assert 'Размеры модуля · вкл' in html
+    assert '📏' in html
     normal = model[model.index("function renderNormalKitchen"):model.index("function renderModuleFocus")]
     focus = model[model.index("function renderModuleFocus"):model.index("function renderScene")]
+    assert "showDimensions:normalDimensionsVisible" in normal
     assert "showModuleDimensions:false" in normal
     assert "showModuleDimensions:focusDimensionsVisible" in focus
     assert "focusDimensionsVisible=!focusDimensionsVisible" in model
+    assert "normalDimensionsVisible=!normalDimensionsVisible" in model
     assert "function drawFocusedModuleDimensions" in renderer
     assert "if(options.showModuleDimensions)drawFocusedModuleDimensions" in renderer
 
@@ -564,7 +566,8 @@ def test_r1031_vertical_swipe_scrolls_page_horizontal_swipe_rotates_model():
     model = read("model.js")
     css = read("workspace-r8.css")
     assert "#modelCanvas{touch-action:pan-y pinch-zoom}" in css
-    gesture = model[model.index("const canvas=$('modelCanvas')"):model.index("$('modelDimensionsToggle')")]
+    start = model.rindex("const canvas=$('modelCanvas')")
+    gesture = model[start:model.index("$('constraintButton')", start)]
     assert "Math.abs(dy)>Math.abs(dx)*1.12" in gesture
     assert "drag.mode='SCROLL'" in gesture
     assert "drag.mode='ROTATE'" in gesture
