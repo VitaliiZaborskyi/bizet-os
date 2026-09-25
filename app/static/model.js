@@ -47,7 +47,7 @@
   function isCornerModule(m){return !!m&&(m.kind==='CORNER'||m.corner===true)}
   function runWidth(m){return m?.wall==='A'?Number(m.w)||0:Number(m.d||m.w)||0}
   function maxRunFor(m){
-    if(m?.freestanding===true)return Math.max(LIMITS.STRAIGHT_MAX,runWidth(m)||LIMITS.STRAIGHT_MAX);
+    if(m?.freestanding===true)return Math.max(LIMITS.STRAIGHT_MAX,Number(m?.runSize)||Number(m?.w)||runWidth(m)||LIMITS.STRAIGHT_MAX);
     return isCornerModule(m)?LIMITS.CORNER_MAX:LIMITS.STRAIGHT_MAX;
   }
   function hingedFacadeCountFor(m){
