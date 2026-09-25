@@ -270,7 +270,7 @@
     return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
   }
 
-  function moduleDrawing(modules,room){
+  function moduleDrawing(modules,room,orderRef=''){
     const list=modules.filter(m=>m.wall==='A').sort((a,b)=>a.x-b.x);
     const W=1000,H=430,pad=60,scale=(W-pad*2)/Math.max(room.lengthMm,1),baseY=350;
     const rects=list.map(m=>{
@@ -278,9 +278,9 @@
       return `<g><rect x="${x}" y="${baseY-h}" width="${w}" height="${h}" fill="none" stroke="currentColor" stroke-width="2"/><text x="${x+w/2}" y="${baseY-h/2}" text-anchor="middle" font-size="15">M${m.number}</text><line x1="${x}" y1="${baseY+16}" x2="${x+w}" y2="${baseY+16}" stroke="currentColor"/><text x="${x+w/2}" y="${baseY+36}" text-anchor="middle" font-size="12">${round(runW(m))}</text></g>`;
     }).join('');
     const maxH=Math.max(0,...list.map(m=>m.z+m.h));
-    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><style>text{font-family:'Century Gothic',CenturyGothic,Arial,sans-serif;fill:currentColor}</style><text x="60" y="34" font-size="18" font-weight="700">BIZET OS · WALL A · KITCHEN ASSEMBLY SCHEME</text><text x="60" y="56" font-size="12">Pilot ${VERSION} · module numbers are generated automatically</text><line x1="${pad}" y1="${baseY}" x2="${W-pad}" y2="${baseY}" stroke="currentColor" stroke-width="2"/>${rects}<line x1="35" y1="${baseY}" x2="35" y2="${baseY-maxH*.11}" stroke="currentColor"/><text x="15" y="${baseY-maxH*.055}" font-size="12" transform="rotate(-90 15 ${baseY-maxH*.055})">H ${round(maxH)} mm</text><text x="${W/2}" y="415" text-anchor="middle" font-size="12">WALL A = ${round(room.lengthMm)} mm</text></svg>`;
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><style>text{font-family:'Century Gothic',CenturyGothic,Arial,sans-serif;fill:currentColor}</style><text x="60" y="34" font-size="18" font-weight="700">BIZET OS · WALL A · KITCHEN ASSEMBLY SCHEME</text><text x="60" y="56" font-size="12">Pilot ${VERSION}${orderRef?' · '+esc(orderRef):''} · module numbers are generated automatically</text><line x1="${pad}" y1="${baseY}" x2="${W-pad}" y2="${baseY}" stroke="currentColor" stroke-width="2"/>${rects}<line x1="35" y1="${baseY}" x2="35" y2="${baseY-maxH*.11}" stroke="currentColor"/><text x="15" y="${baseY-maxH*.055}" font-size="12" transform="rotate(-90 15 ${baseY-maxH*.055})">H ${round(maxH)} mm</text><text x="${W/2}" y="415" text-anchor="middle" font-size="12">WALL A = ${round(room.lengthMm)} mm</text></svg>`;
   }
-  function communicationsDrawing(modules,room){
+  function communicationsDrawing(modules,room,orderRef=''){
     const W=1000,H=430,pad=60,scale=(W-pad*2)/Math.max(room.lengthMm,1),baseY=350;
     const points=[];
     const add=(kind,label,m)=>{if(!m)return;const cx=m.x+runW(m)/2;points.push({kind,label,x:cx})};
@@ -292,7 +292,7 @@
     add('FRIDGE','Холодильник',list.find(m=>m.kind==='FRIDGE'));
     add('OVEN','Духовка',list.find(m=>m.kind==='OVEN'||m.kind==='TALL_OVEN'));
     const lines=points.map((p,i)=>{const x=pad+p.x*scale,y=95+(i%3)*65;return `<g><line x1="${x}" y1="${baseY}" x2="${x}" y2="${y+10}" stroke="currentColor" stroke-dasharray="6 5"/><circle cx="${x}" cy="${y}" r="8" fill="none" stroke="currentColor" stroke-width="2"/><text x="${x+12}" y="${y+4}" font-size="12">${esc(p.label)} · X ${round(p.x)} mm</text></g>`}).join('');
-    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><style>text{font-family:'Century Gothic',CenturyGothic,Arial,sans-serif;fill:currentColor}</style><text x="60" y="34" font-size="18" font-weight="700">BIZET OS · WALL A · COMMUNICATIONS SCHEME</text><text x="60" y="56" font-size="12">X is calculated from generated modules. Z/elevation remains USER CONFIRMATION REQUIRED in this pilot.</text><line x1="${pad}" y1="${baseY}" x2="${W-pad}" y2="${baseY}" stroke="currentColor" stroke-width="2"/>${lines}<text x="${W/2}" y="410" text-anchor="middle" font-size="12">WALL A = ${round(room.lengthMm)} mm</text></svg>`;
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><style>text{font-family:'Century Gothic',CenturyGothic,Arial,sans-serif;fill:currentColor}</style><text x="60" y="34" font-size="18" font-weight="700">BIZET OS · WALL A · COMMUNICATIONS SCHEME</text><text x="60" y="56" font-size="12">${orderRef?esc(orderRef)+' · ':''}X is calculated from generated modules. Z/elevation remains USER CONFIRMATION REQUIRED in this pilot.</text><line x1="${pad}" y1="${baseY}" x2="${W-pad}" y2="${baseY}" stroke="currentColor" stroke-width="2"/>${lines}<text x="${W/2}" y="410" text-anchor="middle" font-size="12">WALL A = ${round(room.lengthMm)} mm</text></svg>`;
   }
 
   function productionModuleSheet(modules,room,selectedId='',orderRef=''){
@@ -373,7 +373,7 @@
     const rt=window.BizetModelRuntime;if(!rt?.ready)return null;
     const modules=rt.getModules(),room=rt.getRoom(),details=detailsFor(modules),bom=buildBOM(modules,details);
     const selectedId=rt.getActiveModule?.()?.id||'',orderRef=window.BizetOwnerBusiness?.identityRef?.()||'';
-    return{rt,modules,room,details,bom,kitchenSvg:moduleDrawing(modules,room),commSvg:communicationsDrawing(modules,room),productionSvg:productionModuleSheet(modules,room,selectedId,orderRef)};
+    return{rt,modules,room,details,bom,orderRef,kitchenSvg:moduleDrawing(modules,room,orderRef),commSvg:communicationsDrawing(modules,room,orderRef),productionSvg:productionModuleSheet(modules,room,selectedId,orderRef)};
   }
   function detailTable(details){
     return '<div class="r8-table-wrap"><table><thead><tr><th>№</th><th>Материал</th><th>Код</th><th>Наименование</th><th>Длина</th><th>Ширина</th><th>Кол.</th><th>Ед.</th><th>Кромка</th><th>Длин.</th><th>Корот.</th><th>Доп. обработки</th><th>Примечание</th></tr></thead><tbody>'+details.map(d=>`<tr><td>${d.no}</td><td>${esc(d.material)}</td><td><b>${esc(d.code)}</b></td><td>${esc(d.name)}</td><td>${d.length}</td><td>${d.width}</td><td>${d.qty}</td><td>${d.unit}</td><td>${esc(d.edge)}</td><td>${d.edge_long}</td><td>${d.edge_short}</td><td>${esc(d.processing)}</td><td>${esc(d.note)}</td></tr>`).join('')+'</tbody></table></div>';
@@ -383,9 +383,9 @@
   }
   function showReport(mode){
     const data=current();if(!data)return;
-    const {bom,details,kitchenSvg,commSvg,productionSvg}=data;
+    const {bom,details,kitchenSvg,commSvg,productionSvg,orderRef}=data;
     const warning=bom.unpriced.length?'<p class="r8-pointb-warning">Предварительная цена: '+bom.unpriced.length+' позиции учтены по количеству, но ещё без тарифа.</p>':'';
-    let html=`<p class="r8-pointb-kicker">BIZET OS · ${VERSION}</p><h2>${mode==='price'?'Итоговая стоимость':'Комплект документов'}</h2><div class="r8-price-grid"><div><span>Себестоимость</span><strong>${money(bom.cost)}</strong></div><div><span>BIZET Furniture · COST × 2</span><strong>${money(bom.client)}</strong></div></div>${warning}`;
+    let html=`<p class="r8-pointb-kicker">BIZET OS · ${VERSION}${orderRef?' · '+esc(orderRef):''}</p><h2>${mode==='price'?'Итоговая стоимость':'Комплект документов'}</h2><div class="r8-price-grid"><div><span>Себестоимость</span><strong>${money(bom.cost)}</strong></div><div><span>BIZET Furniture · COST × 2</span><strong>${money(bom.client)}</strong></div></div>${warning}`;
     if(mode==='price')html+=bomTable(bom);
     else html+=`<div class="r8-doc-actions"><button id="dlProduction">Производственный лист SVG</button><button id="dlDetail">Деталировка CSV</button><button id="dlBom">BOM CSV</button><button id="dlKitchen">Схема кухни SVG</button><button id="dlComm">Коммуникации SVG</button><button id="printPointB">Печать / PDF</button></div><h3>1. Production Drawing Engine · пилотный лист модуля</h3><div class="r8-drawing">${productionSvg}</div><h3>2. Схема кухни · стена A</h3><div class="r8-drawing">${kitchenSvg}</div><h3>3. Коммуникации · стена A</h3><div class="r8-drawing">${commSvg}</div><h3>4. Деталировка · 13 столбцов</h3>${detailTable(details)}<h3>5. BOM</h3>${bomTable(bom)}`;
     $('pointBReport').innerHTML=html;
