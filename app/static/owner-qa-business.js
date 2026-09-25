@@ -115,6 +115,9 @@
   // DEFERRED: one-sheet comparison across multiple manufacturers and/or alternative kitchen configurations.
   async function printProposal(){
     const d=data();if(!d)return;
+    const w=window.open('','_blank');
+    if(!w)throw new Error(t('Браузер заблокировал окно коммерческого предложения','Browser blocked the commercial proposal window'));
+    w.document.write('<!doctype html><title>BIZET OS</title><body style="font-family:Arial,sans-serif;padding:24px">BIZET OS · preparing document…</body>');
     const identity=await ensureOrderIdentity();
     const today=new Intl.DateTimeFormat(lang()==='en'?'en-GB':'ru-RU').format(new Date());
     const cfg=configurationLabel(d.rt.getConfiguration()),runs=runSummary(d),features=proposalFeatures(d),snapshot=proposalSnapshot(),orderRef=identityRef(identity);
@@ -165,7 +168,7 @@
       </div>
       <div class="footer"><span>BIZET OS · ${t('проектирование и комплектация мебели','furniture design and specification')}</span><span>${esc(d.p.name)}</span></div>
     </div><script>window.onload=()=>setTimeout(()=>window.print(),260)</script></body></html>`;
-    const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
+    w.document.open();w.document.write(html);w.document.close();
   }
   function refresh(){
     ensureUI();loadIdentity();const d=data();if(!d)return;
