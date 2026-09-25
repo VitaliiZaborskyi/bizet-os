@@ -386,7 +386,7 @@ def test_r102_production_drawing_engine_pilot_matches_reference_grammar():
     assert "function productionModuleSheet" in pointb
     for token in ["Assembly position", "Pos.", "Qnt. 1", "Name ", "Length ", "Height "]:
         assert token in pointb
-    assert "code=\`ASS\${module.number}.00.000\`" in pointb
+    assert 'code=`ASS${module.number}.00.000`' in pointb
     assert "Code ${code}" in pointb
     assert "class=\"dim\"" in pointb
     assert "class=\"leader\"" in pointb
