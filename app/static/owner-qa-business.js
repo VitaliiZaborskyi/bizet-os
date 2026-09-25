@@ -37,24 +37,74 @@
     const rows=moduleSpec(modules).map(m=>`<tr><td>${m.no}</td><td>${esc(m.name)}</td><td>${m.w} × ${m.h} × ${m.d}</td></tr>`).join('');
     return `<div class="r9-client-table"><table><thead><tr><th>№</th><th>${t('Модуль','Module')}</th><th>W × H × D, mm</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
-  function producerCards(){
+  function producerCards(baseCost=null){
     const active=producer().id;
-    return PRODUCERS.map(p=>`<button class="r9-producer-card ${p.id===active?'is-active':''}" data-producer="${p.id}" type="button"><span class="r9-demo">DEMO PROFILE</span><strong>${esc(p.name)}</strong><span>★ ${p.rating}</span><small>${esc(lang()==='en'?p.aboutEn:p.aboutRu)}</small></button>`).join('');
+    return PRODUCERS.map(p=>`<button class="r9-producer-card ${p.id===active?'is-active':''}" data-producer="${p.id}" type="button"><span class="r9-demo">DEMO PROFILE</span><strong>${esc(p.name)}</strong><span>★ ${p.rating}${baseCost!==null?' · '+money(baseCost*p.multiplier):''}</span><small>${esc(lang()==='en'?p.aboutEn:p.aboutRu)}</small></button>`).join('');
+  }
+  async function patchProject(path,value,reason){
+    const id=projectId();if(!id)return null;
+    const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({path,value,reason})});
+    if(!r.ok)throw new Error(t('Не удалось сохранить данные проекта','Could not save project data'));
+    return r.json();
+  }
+  function commerceDialog(){
+    let dialog=$('r10CommerceDialog');
+    if(dialog)return dialog;
+    dialog=document.createElement('dialog');dialog.id='r10CommerceDialog';dialog.className='r10-commerce-dialog';
+    dialog.innerHTML='<div class="r10-commerce-card"><button class="r10-commerce-close" type="button" aria-label="Закрыть">×</button><div id="r10CommerceBody"></div></div>';
+    document.body.appendChild(dialog);
+    dialog.querySelector('.r10-commerce-close').onclick=()=>dialog.close();
+    return dialog;
   }
   function ensureUI(){
-    if($('r9ProducerButton'))return;
-    const host=$('pointBFinalActions'); if(!host)return;
-    const producerBtn=document.createElement('button');producerBtn.id='r9ProducerButton';producerBtn.type='button';producerBtn.textContent=t('Производитель','Manufacturer');
-    host.appendChild(producerBtn);
-    const roleTag=document.createElement('button');roleTag.id='r9RoleButton';roleTag.className='r9-role-tag';roleTag.type='button';host.appendChild(roleTag);
-    const dialog=document.createElement('dialog');dialog.id='r9ProducerDialog';dialog.className='r9-business-dialog';
-    dialog.innerHTML=`<div class="r9-business-card"><button class="r9-business-close" type="button">×</button><p class="r9-kicker">BIZET OS · MANUFACTURER HUB</p><h2>${t('Выберите производителя','Choose manufacturer')}</h2><p class="r9-muted">${t('В пилоте профили демонстрационные. Цена пересчитывается по настройкам выбранной компании.','Profiles are demo-only in this pilot. Price recalculates using the selected company profile.')}</p><div class="r9-producer-grid">${producerCards()}</div><hr><label class="r9-role-demo"><span>${t('Демо-режим доступа','Demo access role')}</span><select id="r9RoleSelect"><option value="CUSTOMER">${t('Покупатель','Customer')}</option><option value="MANUFACTURER">${t('Производитель','Manufacturer')}</option><option value="ADMIN">Admin</option></select></label></div>`;
-    document.body.appendChild(dialog);
-    dialog.querySelector('.r9-business-close').onclick=()=>dialog.close();
-    dialog.querySelectorAll('[data-producer]').forEach(b=>b.onclick=()=>{localStorage.setItem(PRODUCER_KEY,b.dataset.producer);dialog.close();refresh()});
-    $('r9RoleSelect').value=role();$('r9RoleSelect').onchange=e=>{localStorage.setItem(ROLE_KEY,e.target.value);dialog.close();refresh()};
-    producerBtn.onclick=()=>{dialog.querySelectorAll('[data-producer]').forEach(b=>b.classList.toggle('is-active',b.dataset.producer===producer().id));$('r9RoleSelect').value=role();dialog.showModal()};
+    commerceDialog();
+    const oldProducer=$('r9ProducerButton'),oldRole=$('r9RoleButton');oldProducer?.remove();oldRole?.remove();
   }
+  async function transitionThen(fn){
+    const dialog=commerceDialog();if(dialog.open)dialog.close();
+    if(window.BizetTransition?.play)await window.BizetTransition.play({duration:1450});
+    fn();
+  }
+  function openCommerce(html){
+    const dialog=commerceDialog();$('r10CommerceBody').innerHTML=html;if(!dialog.open)dialog.showModal();
+  }
+  async function showThinkFlow(){
+    const d=data();if(!d)return;
+    const identity=await ensureOrderIdentity();
+    await patchProject('commerce.proposal_status','DRAFT_READY','R10.3: customer chose Think / proposal requested');
+    openCommerce(`<p class="r9-kicker">BIZET OS · ${esc(identityRef(identity))}</p><h2>${t('Коммерческое предложение готово','Commercial proposal is ready')}</h2><p class="r9-muted">${t('Введите e-mail или телефон. Локальная кнопка скачивания в клиентском сценарии не показывается.','Enter an e-mail or phone number. No local download button is shown in the customer flow.')}</p><label class="r10-commerce-field"><span>${t('E-mail или телефон','E-mail or phone')}</span><input id="r10ProposalContact" inputmode="email" autocomplete="email" placeholder="name@example.com / +380…"></label><button class="r10-commerce-primary" id="r10ProposalSend" type="button">${t('Отправить КП','Send proposal')}</button><p class="r10-commerce-status" id="r10ProposalStatus" hidden></p>`);
+    $('r10ProposalSend').onclick=async()=>{
+      const contact=String($('r10ProposalContact').value||'').trim(),status=$('r10ProposalStatus');
+      const validMail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact),digits=contact.replace(/\D/g,'');
+      if(!validMail&&digits.length<8){status.hidden=false;status.textContent=t('Введите корректный e-mail или телефон.','Enter a valid e-mail or phone number.');return}
+      await patchProject('commerce.contact',contact,'R10.3 proposal contact');
+      await patchProject('commerce.proposal_status','CONTACT_CAPTURED','R10.3 proposal contact captured');
+      status.hidden=false;status.textContent=t('КП подготовлено и контакт сохранён. Канал фактической e-mail/SMS отправки подключается отдельным провайдером.','Proposal prepared and contact saved. The actual e-mail/SMS delivery channel requires a separate provider.');
+    };
+  }
+  async function showBuyFlow(){
+    const d=data();if(!d)return;
+    await ensureOrderIdentity();
+    await transitionThen(()=>{
+      openCommerce(`<p class="r9-kicker">BIZET OS · BUY</p><h2>${t('Выберите производителя','Choose manufacturer')}</h2><p class="r9-muted">${t('DEMO PROFILE — цена пересчитывается сразу после выбора.','DEMO PROFILE — price recalculates immediately after selection.')}</p><div class="r9-producer-grid">${producerCards(d.bom.cost)}</div>`);
+      $('r10CommerceBody').querySelectorAll('[data-producer]').forEach(btn=>btn.onclick=async()=>{
+        localStorage.setItem(PRODUCER_KEY,btn.dataset.producer);
+        await patchProject('commerce.selected_manufacturer',btn.dataset.producer,'R10.3 manufacturer selected after Buy');
+        refresh();
+        await transitionThen(showPaymentFlow);
+      });
+    });
+  }
+  function showPaymentFlow(){
+    const d=data();if(!d)return;
+    patchProject('commerce.payment_status','FORM_OPEN','R10.3 payment form opened').catch(()=>{});
+    openCommerce(`<p class="r9-kicker">BIZET OS · PAYMENT</p><h2>${t('Оплата','Payment')}</h2><div class="r10-payment-summary"><span>${esc(d.p.name)}</span><strong>${money(d.clientPrice)}</strong></div><p class="r9-muted">${t('Производитель выбран. Платёжный провайдер для реальной транзакции пока не подключён к пилоту.','Manufacturer selected. A payment provider for a real transaction is not connected to this pilot yet.')}</p><label class="r10-commerce-field"><span>${t('E-mail','E-mail')}</span><input id="r10PaymentEmail" type="email" autocomplete="email"></label><label class="r10-commerce-field"><span>${t('Телефон','Phone')}</span><input id="r10PaymentPhone" type="tel" autocomplete="tel"></label><button class="r10-commerce-primary" id="r10PaymentContinue" type="button">${t('Продолжить к оплате','Continue to payment')}</button><p class="r10-commerce-status" id="r10PaymentStatus" hidden></p>`);
+    $('r10PaymentContinue').onclick=async()=>{
+      await patchProject('commerce.payment_status','PAYMENT_PROVIDER_REQUIRED','R10.3 payment provider gate');
+      const status=$('r10PaymentStatus');status.hidden=false;status.textContent=t('PAYMENT_PROVIDER_REQUIRED — форма и маршрут готовы, реальная транзакция не выполняется.','PAYMENT_PROVIDER_REQUIRED — the form and route are ready; no real transaction is executed.');
+    };
+  }
+
   function showCustomer(){
     const d=data();if(!d)return;
     const warning=d.bom.unpriced?.length? `<p class="r8-pointb-warning">${t('Часть сервисных тарифов ещё не включена и требует подтверждения.','Some service tariffs are not included yet and require confirmation.')}</p>`:'';
@@ -172,14 +222,12 @@
   }
   function refresh(){
     ensureUI();loadIdentity();const d=data();if(!d)return;
-    const r=role(),p=d.p;
     $('pointBPrice').textContent=money(d.clientPrice);
-    const label=$('pointBFinalActions')?.querySelector('.r8-final-price span');if(label)label.textContent=t('Предварительная цена ','Estimated price ')+p.name;
-    $('r9RoleButton').textContent=r==='ADMIN'?'ADMIN':r==='MANUFACTURER'?t('Производитель','Manufacturer'):t('Покупатель','Customer');
-    $('pointBPriceButton').textContent=t('Итоговая стоимость','Final price');
-    $('pointBDocsButton').textContent=r==='CUSTOMER'?t('Коммерческое предложение','Commercial proposal'):t('Комплект документов','Document package');
-    $('pointBPriceButton').onclick=()=>r==='ADMIN'?showAdmin():r==='MANUFACTURER'?showManufacturer():showCustomer();
-    $('pointBDocsButton').onclick=()=>r==='ADMIN'?showAdmin():r==='MANUFACTURER'?showManufacturer():showCustomer();
+    const label=$('pointBFinalActions')?.querySelector('.r8-final-price span');if(label)label.textContent=t('Итоговая стоимость','Final price');
+    $('pointBPriceButton').textContent=t('Подумаю','Think');
+    $('pointBDocsButton').textContent=t('Купить','Buy');
+    $('pointBPriceButton').onclick=()=>showThinkFlow().catch(error=>alert(error.message));
+    $('pointBDocsButton').onclick=()=>showBuyFlow().catch(error=>alert(error.message));
   }
   function boot(){
     let tries=0,timer=setInterval(()=>{tries++;if(window.BizetPointB&&window.BizetModelRuntime?.ready){clearInterval(timer);refresh()}else if(tries>160)clearInterval(timer)},100);
@@ -187,6 +235,6 @@
     window.addEventListener('bizet:resume',()=>setTimeout(refresh,300));
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,400)},true);
   }
-  window.BizetOwnerBusiness={refresh,producers:PRODUCERS,role,producer,loadIdentity,ensureOrderIdentity,identityRef:()=>identityRef(),getIdentity:()=>identityCache};
+  window.BizetOwnerBusiness={refresh,producers:PRODUCERS,role,producer,loadIdentity,ensureOrderIdentity,identityRef:()=>identityRef(),getIdentity:()=>identityCache,showBuyFlow,showThinkFlow,showPaymentFlow};
   boot();
 })();
