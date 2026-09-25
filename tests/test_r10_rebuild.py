@@ -122,3 +122,64 @@ def test_r10_phase8_drawer_box_semantics_are_complete_and_facade_separate():
         assert token in model
     assert "facade_separate:true" in model
     assert "complete box + slides" in renderer
+
+
+def test_r10_splash_is_silent_noninteractive_and_failsafe():
+    shell = read("pilot-r8-shell.js")
+    assert "new Audio(" not in shell
+    assert "Нажмите для запуска" not in shell
+    assert "needs-gesture" not in shell
+    assert "SPLASH_FAILSAFE_MS" in shell
+    assert "#132746" in shell
+    assert "color:#2f7cff" in shell
+
+def test_r10_top_right_controls_use_fixed_shared_position():
+    shell = read("pilot-r8-shell.js")
+    assert ".topbar .settings-wrap,.setup-topbar .settings-wrap,.r8-topbar .settings-wrap" in shell
+    assert "right:18px!important" in shell
+    assert "top:50%!important" in shell
+
+def test_r10_localization_uses_russian_visual_direction_labels():
+    start = read("start.js")
+    assert "ru: 'Светлое'" in start
+    assert "ru: 'Тёмное'" in start
+    assert "en: 'Light'" in start
+    assert "en: 'Dark'" in start
+
+def test_r10_phase9_manufacturer_marketplace_and_roles_are_present():
+    js = read("owner-qa-business.js")
+    for token in ["BIZET Furniture","Zaborsky Kitchens","BIZET Sofa","Nordline Interiors"]:
+        assert token in js
+    for token in ["multiplier:2.0","multiplier:2.3","multiplier:1.8","multiplier:2.6"]:
+        assert token in js
+    for token in ["CUSTOMER","MANUFACTURER","ADMIN","DEMO PROFILE"]:
+        assert token in js
+
+def test_r10_customer_view_hides_internal_cost_and_markup():
+    js = read("owner-qa-business.js")
+    customer = js[js.index("function showCustomer"):js.index("function showManufacturer")]
+    assert "bom.cost" not in customer
+    assert "COST ×" not in customer
+    assert "Себестоимость" in customer
+
+def test_r10_phase10_proposal_is_one_a4_kitchen_summary():
+    js = read("owner-qa-business.js")
+    proposal = js[js.index("function printProposal"):js.index("function refresh")]
+    assert "@page{size:A4" in proposal
+    assert "proposalSnapshot" in js
+    assert "configurationLabel" in js
+    assert "runSummary" in js
+    assert "Список услуг по изделиям" in proposal
+    assert "Изображение / схема" in proposal
+    assert "Комплектация" in proposal
+    assert "moduleSpec(d.modules).map" not in proposal
+    assert 'font-family:"Century Gothic"' in proposal
+
+def test_r10_workspace_wires_business_layer_after_model_runtime():
+    html = read("workspace-r8.html")
+    assert html.index("/static/model.js") < html.index("/static/point-b.js")
+    assert html.index("/static/point-b.js") < html.index("/static/owner-qa-business.js")
+
+def test_r10_light_pill_controls_use_dark_text():
+    css = read("workspace-r8.css")
+    assert ".r8-pill,.r8-arrow{color:#171716}" in css
