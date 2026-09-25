@@ -18,12 +18,12 @@ def test_new_guided_routes_are_served():
         assert response.status_code == 200
 
 
-def test_r8_configuration_goes_to_minimal_room_setup_then_workspace():
+def test_r10_configuration_goes_directly_to_workspace():
     index = read_static('index.html')
     handoff = read_static('start-room-handoff.js')
     room_setup = read_static('room-setup-r8.js')
     assert '/static/guided-route-start.js' not in index
-    assert '/room-setup?project=' in handoff
+    assert '/workspace?project=' in handoff
     assert '/workspace?project=' in room_setup
     assert '/linear-span' not in handoff
     assert '/dimensions' not in handoff
