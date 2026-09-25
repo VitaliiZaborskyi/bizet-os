@@ -160,7 +160,7 @@
   try{
     if(sessionStorage.getItem('bizet_route_splash')==='1'){
       sessionStorage.removeItem('bizet_route_splash');
-      requestAnimationFrame(()=>play({duration:2600}).finally(()=>document.documentElement.classList.remove('r10-route-loading')));
+      requestAnimationFrame(()=>play({duration:3400}).finally(()=>document.documentElement.classList.remove('r10-route-loading')));
       setTimeout(()=>document.documentElement.classList.remove('r10-route-loading'),SPLASH_FAILSAFE_MS+500);
     }
   }catch(_){document.documentElement.classList.remove('r10-route-loading')}
