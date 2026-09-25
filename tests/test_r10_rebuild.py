@@ -384,8 +384,10 @@ def test_r102_vector_document_logo_asset_exists():
 def test_r102_production_drawing_engine_pilot_matches_reference_grammar():
     pointb = read("point-b.js")
     assert "function productionModuleSheet" in pointb
-    for token in ["Assembly position", "Pos.", "Qnt. 1", "Code ASS", "Name ", "Length ", "Height "]:
+    for token in ["Assembly position", "Pos.", "Qnt. 1", "Name ", "Length ", "Height "]:
         assert token in pointb
+    assert "code=\`ASS\${module.number}.00.000\`" in pointb
+    assert "Code ${code}" in pointb
     assert "class=\"dim\"" in pointb
     assert "class=\"leader\"" in pointb
     assert "Production Drawing Engine · пилотный лист модуля" in pointb
