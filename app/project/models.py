@@ -147,6 +147,13 @@ class PricingState(BaseModel):
     calculation_trace: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class CommerceState(BaseModel):
+    contact: str | None = None
+    proposal_status: Literal["NOT_REQUESTED", "DRAFT_READY", "CONTACT_CAPTURED", "QUEUED"] = "NOT_REQUESTED"
+    selected_manufacturer: str | None = None
+    payment_status: Literal["NOT_STARTED", "FORM_OPEN", "PAYMENT_PROVIDER_REQUIRED", "PAID"] = "NOT_STARTED"
+
+
 class SceneState(BaseModel):
     camera: dict[str, Any] = Field(default_factory=dict)
     visual_settings: dict[str, Any] = Field(default_factory=dict)
@@ -219,6 +226,7 @@ class ProjectState(BaseModel):
     materials: MaterialsState = Field(default_factory=MaterialsState)
     preferences: PreferencesState = Field(default_factory=PreferencesState)
     pricing: PricingState = Field(default_factory=PricingState)
+    commerce: CommerceState = Field(default_factory=CommerceState)
     scene: SceneState = Field(default_factory=SceneState)
     quest: QuestState = Field(default_factory=QuestState)
     validation: ValidationState = Field(default_factory=ValidationState)
