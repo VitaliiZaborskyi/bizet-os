@@ -129,13 +129,34 @@
   function drawNumber(ctx,face,number,c){if(!number)return;const m=faceCenter(face),size=24;ctx.save();ctx.beginPath();if(ctx.roundRect)ctx.roundRect(m[0]-size/2,m[1]-size/2,size,size,7);else ctx.rect(m[0]-size/2,m[1]-size/2,size,size);ctx.fillStyle=c.badgeBg;ctx.fill();ctx.font='800 12px -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=c.badgeInk;ctx.fillText(String(number),m[0],m[1]+.5);ctx.restore()}
 
   function drawModuleDetails(ctx,projector,module,c){
-    if(module.wall!=='A')return;const p=projector.point;
-    const vline=ratio=>line(ctx,p([module.x+module.w*ratio,module.y-1,module.z+8]),p([module.x+module.w*ratio,module.y-1,module.z+module.h-8]),c.line,1);
-    const hline=ratio=>line(ctx,p([module.x+8,module.y-1,module.z+module.h*ratio]),p([module.x+module.w-8,module.y-1,module.z+module.h*ratio]),c.line,1);
-    if(module.kind==='DRAWERS'){hline(.34);hline(.67)}
+    if(module.wall!=='A')return;const p=projector.point,y=module.y-2;
+    const vline=ratio=>line(ctx,p([module.x+module.w*ratio,y,module.z+8]),p([module.x+module.w*ratio,y,module.z+module.h-8]),c.line,1);
+    const hline=ratio=>line(ctx,p([module.x+8,y,module.z+module.h*ratio]),p([module.x+module.w-8,y,module.z+module.h*ratio]),c.line,1);
+    const handle=(x,z,orientation='HORIZONTAL',length=110)=>{
+      if(orientation==='VERTICAL')line(ctx,p([x,y-2,z-length/2]),p([x,y-2,z+length/2]),'rgba(24,24,24,.82)',3);
+      else line(ctx,p([x-length/2,y-2,z]),p([x+length/2,y-2,z]),'rgba(24,24,24,.82)',3);
+    };
+    if(module.kind==='DRAWERS'){
+      const count=Math.max(2,Math.min(5,Number(module.drawer_count)||2)),layout=module.drawer_layout||'EQUAL';
+      let weights=Array(count).fill(1/count);
+      if(count===3&&layout==='SMALL_TOP')weights=[.2,.4,.4];
+      else if(count===3&&layout==='TWO_SMALL_TOP')weights=[.25,.25,.5];
+      else if(count===4&&layout==='LARGE_BOTTOM')weights=[.2,.2,.2,.4];
+      let acc=0;for(let i=0;i<count-1;i++){acc+=weights[i];hline(acc)}
+      const offset=Math.max(20,Number(module.handle_offset_mm)||50);
+      acc=0;for(let i=0;i<count;i++){const bottom=acc,top=acc+weights[i];const hz=module.z+module.h*top-Math.min(offset,module.h*weights[i]*.38);handle(module.x+module.w*.5,hz,'HORIZONTAL',Math.min(150,module.w*.36));acc=top}
+    }
     else if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER'].includes(module.kind)){
       const count=Math.max(1,Number(module.facade_count)||1);
       for(let i=1;i<count;i++)vline(i/count);
+      const orient=module.handle_orientation||'HORIZONTAL',offset=Math.max(18,Number(module.handle_offset_mm)||50);
+      for(let i=0;i<count;i++){
+        const left=module.x+module.w*i/count,right=module.x+module.w*(i+1)/count,cx=(left+right)/2;
+        if(orient==='VERTICAL'){
+          const onRight=(module.opening||'').includes('LEFT'),x=onRight?right-offset:left+offset;
+          handle(x,module.z+module.h*.72,'VERTICAL',Math.min(150,module.h*.22));
+        }else handle(cx,module.z+module.h-offset,'HORIZONTAL',Math.min(150,(right-left)*.48));
+      }
     }
     if(module.kind==='FRIDGE'&&module.content&&!['FRIDGE_ONLY','FREEZER_ONLY'].includes(module.content))hline(.48);
     const ovenFace=(z0,z1)=>{
@@ -146,9 +167,11 @@
     if(module.kind==='COOKTOP'&&module.oven_appliance_present)ovenFace(module.z+module.h*.12,module.z+module.h*.76);
     if(module.kind==='TALL_OVEN'){
       hline(.16);
+      handle(module.x+module.w*.5,module.z+module.h*.16-42,'HORIZONTAL',Math.min(150,module.w*.36));
       let cursor=module.z+module.h*.34;ovenFace(cursor,cursor+module.h*.20);cursor+=module.h*.23;
       if(module.microwave_present==='YES'){ovenFace(cursor,cursor+module.h*.14);cursor+=module.h*.17}
       if(module.coffee_present==='YES')ovenFace(cursor,cursor+module.h*.14);
+      handle(module.x+module.w*.5,module.z+module.h-55,'HORIZONTAL',Math.min(150,module.w*.36));
     }
   }
 
