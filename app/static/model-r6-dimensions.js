@@ -9,34 +9,36 @@
   const upperDepth=()=>Math.max(320,Math.min(450,num('upper_depth_mm',320)));
 
   function fittedHeights(room){
-    const roomH=Math.max(1200,Number(room.heightMm)||2800),requestedBase=baseTotal(),requestedGap=gap(),requestedUpper=upperTotal();
-    const bt=Math.min(requestedBase,Math.max(700,roomH-520));
+    const roomH=Math.max(300,Number(room.heightMm)||2800),requestedBase=baseTotal(),requestedGap=gap(),requestedUpper=upperTotal();
+    const bt=Math.min(requestedBase,Math.max(250,roomH-30));
     const availableAfterBase=Math.max(0,roomH-bt-30);
     const g=Math.min(requestedGap,Math.max(300,availableAfterBase-220));
     const ut=Math.max(0,Math.min(requestedUpper,roomH-bt-g-30));
     return{bt,g,ut,roomH,adapted:bt<requestedBase||g<requestedGap||ut<requestedUpper};
   }
   function resize(module,room){
-    const {bt,g,ut,roomH,adapted}=fittedHeights(room),bd=baseDepth(),ud=upperDepth();
+    const {bt,g,ut,roomH,adapted}=fittedHeights(room);
+    const roomL=Math.max(100,Number(room.lengthMm)||6000),roomD=Math.max(100,Number(room.depthMm)||4200);
+    const bd=Math.min(baseDepth(),module.wall==='A'?roomD:roomL),ud=Math.min(upperDepth(),module.wall==='A'?roomD:roomL);
     if(module.level==='lower'&&!module.tall){
-      module.z=100;
-      module.h=Math.max(300,bt-100-38);
-      if(module.wall==='A'){module.d=bd;module.y=(room.depthMm||4200)-bd;}
-      else{module.w=bd;module.x=module.wall==='B'?0:(room.lengthMm||6000)-bd;}
+      module.z=Math.min(100,Math.max(0,roomH-100));
+      module.h=Math.max(1,Math.min(roomH-module.z,Math.max(100,bt-100-38)));
+      if(module.wall==='A'){module.d=bd;module.y=roomD-bd;}
+      else{module.w=bd;module.x=module.wall==='B'?0:roomL-bd;}
     }
     if(module.level==='upper'){
       module.z=bt+g;
       module.h=Math.max(0,Math.min(900,ut));
       module.room_height_adapted=adapted;
-      if(module.wall==='A'){module.d=ud;module.y=(room.depthMm||4200)-ud;}
-      else{module.w=ud;module.x=module.wall==='B'?0:(room.lengthMm||6000)-ud;}
+      if(module.wall==='A'){module.d=ud;module.y=roomD-ud;}
+      else{module.w=ud;module.x=module.wall==='B'?0:roomL-ud;}
     }
     if(module.tall&&module.level!=='upper'){
-      module.z=100;
-      module.h=Math.max(500,Math.min(roomH-100,bt+g+ut-100));
+      module.z=Math.min(100,Math.max(0,roomH-100));
+      module.h=Math.max(1,Math.min(roomH-module.z,bt+g+ut-module.z));
       module.room_height_adapted=adapted;
-      if(module.wall==='A'){module.d=bd;module.y=(room.depthMm||4200)-bd;}
-      else{module.w=bd;module.x=module.wall==='B'?0:(room.lengthMm||6000)-bd;}
+      if(module.wall==='A'){module.d=bd;module.y=roomD-bd;}
+      else{module.w=bd;module.x=module.wall==='B'?0:roomL-bd;}
     }
   }
   function mezzanines(modules,room){
