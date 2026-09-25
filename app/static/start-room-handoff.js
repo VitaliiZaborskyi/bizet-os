@@ -429,8 +429,9 @@ async function saveConfiguration(code) {
   if (saved) {
     const id = currentProjectId();
     if (id) {
-      await new Promise(resolve => window.setTimeout(resolve, 140));
-      if (window.BizetTransition?.play) await window.BizetTransition.play({duration:2500});
+      sessionStorage.setItem('bizet_route_splash','1');
+      if (window.BizetTransition?.play) window.BizetTransition.play({duration:3000});
+      await new Promise(resolve => window.setTimeout(resolve, 80));
       window.location.assign('/workspace?project=' + encodeURIComponent(id));
     }
   }
