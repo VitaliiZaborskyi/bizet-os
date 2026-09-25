@@ -224,7 +224,7 @@
     const clone={...current,wall:'A',x:500,y:room.depthMm-dep-320,z:120,w:run,d:dep,number:current.number};
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
-      camera:focusCamera,showDimensions:false,architecturalElements:[]
+      camera:focusCamera,showDimensions:false,architecturalElements:[],focusMode:true
     });
     $('modelStatus').textContent='Режим модуля · закройте редактор, чтобы вернуться к полной кухне.';
   }
