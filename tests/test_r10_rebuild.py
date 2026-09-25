@@ -28,3 +28,14 @@ def test_r10_phase1_full_kitchen_renderer_still_receives_all_modules():
     assert "drawKitchenScene($('modelCanvas')" in model
     assert "modules,camera" in model
     assert "renderStrip()" in model
+
+
+def test_r10_phase2_full_kitchen_camera_keeps_pointer_and_touch_controls():
+    model = read("model.js")
+    css = read("workspace-r8.css")
+    assert "canvas.addEventListener('pointerdown'" in model
+    assert "canvas.addEventListener('pointermove'" in model
+    assert "canvas.addEventListener('pointerup'" in model
+    assert "canvas.addEventListener('wheel'" in model
+    assert "camera.yaw=" in model and "camera.pitch=" in model
+    assert "#modelCanvas{touch-action:none}" in css
