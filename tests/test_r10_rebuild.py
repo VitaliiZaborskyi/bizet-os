@@ -10,7 +10,8 @@ def test_r10_phase1_configuration_routes_to_workspace_not_room_setup():
     handoff = read("start-room-handoff.js")
     assert "window.location.assign('/workspace?project='" in handoff
     assert "window.location.assign('/room-setup?project='" not in handoff
-    assert "BizetTransition.play" in handoff
+    assert "bizet_route_splash" in handoff
+    assert "BizetTransition.play" not in handoff
 
 def test_r10_phase1_workspace_starts_with_room_panel_closed():
     html = read("workspace-r8.html")
@@ -38,7 +39,7 @@ def test_r10_phase2_full_kitchen_camera_keeps_pointer_and_touch_controls():
     assert "canvas.addEventListener('pointerup'" in model
     assert "canvas.addEventListener('wheel'" in model
     assert "cam.yaw=" in model and "cam.pitch=" in model
-    assert "#modelCanvas{touch-action:none}" in css
+    assert "#modelCanvas{touch-action:pan-y pinch-zoom}" in css
 
 
 def test_r10_phase3_explicit_normal_and_focus_state_machine_contract():
@@ -406,26 +407,30 @@ def test_r102_production_drawing_engine_pilot_matches_reference_grammar():
     assert "BIZET_Production_Module_Pilot.svg" in pointb
 
 
-def test_r103_first_and_visual_direction_screens_fit_single_iphone_viewport():
+def test_r1031_only_approved_mobile_steps_lock_viewport_and_other_steps_scroll():
     start = read("start.js")
     css = read("start.css")
+    assert "document.body.dataset.startKind=step.field" in start
     assert "ru: 'Тип дома'" in start
     assert "en: 'Home type'" in start
-    assert '@media (max-width:700px) and (max-height:950px)' in css
-    assert '.app-shell{min-height:100dvh;height:100dvh;overflow:hidden}' in css
+    assert 'body[data-start-kind="object_type"]' in css
+    assert 'body[data-start-kind="visual_direction"]' in css
     assert '.choice-grid[data-count="4"]' in css
     assert 'grid-template-columns:repeat(2,minmax(0,1fr))' in css
     assert '.choice-grid[data-count="3"]' in css
     assert 'grid-template-rows:repeat(3,minmax(0,1fr))' in css
+    assert 'body[data-start-kind="zone_type"]' not in css
+    assert 'body[data-start-kind="complexity_category"]' not in css
 
-def test_r103_configuration_to_workspace_route_stays_under_splash():
+def test_r1031_configuration_to_workspace_uses_one_slow_routed_splash():
     handoff = read("start-room-handoff.js")
     shell = read("pilot-r8-shell.js")
     workspace = read("workspace-r8.html")
     css = read("workspace-r8.css")
     assert "bizet_route_splash" in handoff
-    assert "window.BizetTransition.play({duration:3000})" in handoff
+    assert "BizetTransition.play" not in handoff
     assert "bizet_route_splash" in shell
+    assert "play({duration:3400})" in shell
     assert "r10-route-loading" in workspace
     assert "html.r10-route-loading .r8-shell{visibility:hidden}" in css
 
@@ -512,3 +517,110 @@ def test_r103_commerce_state_is_domain_data_not_visual_only():
     assert "selected_manufacturer" in models
     assert "payment_status" in models
     assert "commerce: CommerceState" in models
+
+
+def test_r1031_freestanding_fridge_is_top_fridge_bottom_freezer_with_clearance():
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    assert "function freestandingGap(width)" in model
+    assert "if(w<=600)return 15" in model
+    assert "if(w<=900)return 30" in model
+    assert "return 50" in model
+    assert "content:freeFridge?'FRIDGE_FREEZER'" in model
+    assert "appliance_clearance_mm:clearance" in model
+    assert "freezer_bottom:true" in model
+    assert "function drawFreestandingFridge" in renderer
+    fridge = renderer[renderer.index("function drawFreestandingFridge"):renderer.index("function drawFreestandingDishwasher")]
+    assert "splitZ=fullH*.34" in fridge
+    assert "module.x+gap" in fridge or "module.y+gap" in fridge
+
+def test_r1031_freestanding_dishwasher_includes_clearance_inside_side_panels():
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    assert "applianceWidth+sidePanel*2+clearance*2" in model
+    dish = renderer[renderer.index("function drawFreestandingDishwasher"):renderer.index("function drawFreestandingHood")]
+    assert "panel+gap" in dish
+    assert "gap+appliance+gap" in dish
+
+def test_r1031_normal_view_has_tape_dimensions_toggle():
+    html = read("workspace-r8.html")
+    model = read("model.js")
+    assert 'id="modelDimensionsToggle"' in html
+    assert "📏" in html
+    assert "normalDimensionsVisible=true" in model
+    assert "showDimensions:normalDimensionsVisible" in model
+    assert "else normalDimensionsVisible=!normalDimensionsVisible" in model
+    sync = model[model.index("function syncFocusControls"):model.index("function variantState")]
+    assert "dims.hidden=false" in sync
+    assert "dims.textContent='📏'" in sync
+
+def test_r1031_functional_triangle_warning_is_completely_suppressed():
+    model = read("model.js")
+    assert "WORK_TRIANGLE_PILOT" not in model
+    assert "Эргономический контур холодильник–мойка–варочная" not in model
+    assert "SINK_COOKTOP_HARD" in model
+
+def test_r1031_vertical_swipe_scrolls_page_horizontal_swipe_rotates_model():
+    model = read("model.js")
+    css = read("workspace-r8.css")
+    assert "#modelCanvas{touch-action:pan-y pinch-zoom}" in css
+    gesture = model[model.index("const canvas=$('modelCanvas')"):model.index("$('modelDimensionsToggle')")]
+    assert "Math.abs(dy)>Math.abs(dx)*1.12" in gesture
+    assert "drag.mode='SCROLL'" in gesture
+    assert "drag.mode='ROTATE'" in gesture
+    assert "canvas.setPointerCapture" in gesture
+    assert "pointerdown" in gesture and "pointermove" in gesture
+
+def test_r1031_workspace_labels_progress_and_randomizer_contract():
+    html = read("workspace-r8.html")
+    css = read("workspace-r8.css")
+    assert "Настройки проекта" in html
+    assert "Список модулей" in html
+    assert ".r8-progress{height:9px" in css
+    assert ".r8-progress,.r8-progress i{border-radius:999px}" in css
+    assert ".r8-random{background:#f3f1ec;color:#171716" in css
+
+def test_r1031_upper_handles_move_to_bottom_edge_and_focus_has_hangers_no_rail():
+    renderer = read("pilot-3d.js")
+    details = renderer[renderer.index("function drawModuleDetails"):renderer.index("function drawFocusDot")]
+    assert "module.level==='upper'?module.z+offset" in details
+    focus = renderer[renderer.index("function drawTechnicalFocus"):renderer.index("function drawModuleRunDimensions")]
+    assert "if(module.level!=='upper')" in focus
+    assert "if(module.level==='upper')" in focus
+    assert "upper_hanger_visual='LEFT_RIGHT_REAR_TOP'" in focus
+    assert "drawFocusDot(ctx" not in focus
+
+def test_r1031_worktop_is_split_at_4100_and_bom_counts_per_run():
+    renderer = read("pilot-3d.js")
+    pointb = read("point-b.js")
+    wt = renderer[renderer.index("function drawWorktop"):renderer.index("function drawPlinth")]
+    assert "const MAX=4100" in wt
+    assert "off<span;off+=MAX" in wt
+    assert "if(off>0)" in wt
+    assert "worktopGroups" in pointb
+    assert "worktopJoints" in pointb
+    assert "Максимум 4100 мм без стыка" in pointb
+
+def test_r1031_rotation_instruction_text_is_removed():
+    renderer = read("pilot-3d.js")
+    assert "Проведите пальцем по сцене" not in renderer
+    assert "Проведите пальцем по модулю" not in renderer
+
+def test_r1031_os_blue_is_exact_splash_blue_everywhere_in_ui():
+    start_css = read("start.css")
+    workspace_css = read("workspace-r8.css")
+    shell = read("pilot-r8-shell.js")
+    assert ".brand span{color:#2f7cff!important}" in start_css
+    assert "--r8-blue:#2f7cff" in workspace_css
+    assert ".r8-splash-logo span{color:#2f7cff" in workspace_css
+    assert "color:#2f7cff" in shell
+
+def test_r1031_configuration_screen_scrolls_and_file_import_accepts_pdf_and_photo():
+    handoff = read("start-room-handoff.js")
+    css = read("next-pilot.css")
+    for token in ["Загрузить файл","startRoomFileInput","roomImportKind","application/pdf","image/","startRoomFilePreview","startRoomKnownDimension","Применить масштаб","CALIBRATED_ONE_DIMENSION","ROOM_MODEL"]:
+        assert token in handoff
+    assert 'body.config-screen-five-open{height:auto!important;overflow-y:auto!important' in css
+    assert "configuration-choice-grid{grid-template-columns:1fr!important" in css
+    assert "URL.createObjectURL(file)" in handoff
+    assert "scene.visual_settings.room_import" in handoff
