@@ -46,6 +46,15 @@
   let camera={yaw:0,pitch:.33,distanceScale:1};
   function resetCamera(){camera=window.BizetPilot3D?.cameraDefaults?.(configuration())||{yaw:0,pitch:.33,distanceScale:1}}
 
+  function enterNormalKitchenView(){
+    viewMode=VIEW_NORMAL;activeModule=null;drag=null;
+  }
+  function enterModuleFocus(module){
+    if(!module)return false;
+    activeModule=module;viewMode=VIEW_FOCUS;focusCamera={yaw:-.36,pitch:.34,distanceScale:.72};
+    return true;
+  }
+
   function sinkWall(){const config=configuration(),side=inputs.sink_side;if(config==='L_LEFT')return side==='LEFT'?'B':'A';if(config==='L_RIGHT')return side==='RIGHT'?'C':'A';if(config==='U_SHAPE')return side==='LEFT'?'B':'C';return'A'}
   function baseModule(id,label,width,kind,wall='A',extra={}){return applyBaseOverride({id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra})}
 
@@ -244,8 +253,7 @@
     const el=$('moduleValidation');if(!el)return;el.textContent=message;el.hidden=!message;
   }
   function openModule(id){
-    activeModule=modules.find(m=>m.id===id)||null;if(!activeModule)return;
-    viewMode=VIEW_FOCUS;focusCamera={yaw:-.36,pitch:.34,distanceScale:.72};
+    const selected=modules.find(m=>m.id===id)||null;if(!enterModuleFocus(selected))return;
     $('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;
     $('moduleCopy').textContent=detailText(activeModule);
     const w=$('moduleWidth'),h=$('moduleHeight'),d=$('moduleDepth'),o=$('moduleOpening'),pos=$('moduleOffsetInput');
@@ -279,7 +287,7 @@
     offs[activeModule.id]=off;
     const editedId=activeModule.id;
     await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs,module_direct_edit_status:'PILOT_PARAMETRIC_EDIT'},`Module customization ${editedId}`);
-    viewMode=VIEW_NORMAL;activeModule=null;
+    enterNormalKitchenView();
     $('moduleDialog').close?.();
     renderScene(false);
     $('modelStatus').textContent='Модуль обновлён. Полная кухня восстановлена.';
@@ -290,7 +298,7 @@
     delete sizes[activeModule.id];delete opens[activeModule.id];delete offs[activeModule.id];
     const resetId=activeModule.id;
     await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs},`Reset module customization ${resetId}`);
-    viewMode=VIEW_NORMAL;activeModule=null;$('moduleDialog').close?.();renderScene(false);
+    enterNormalKitchenView();$('moduleDialog').close?.();renderScene(false);
   }
 
   async function patchInputs(patch,reason='R8 workspace'){
@@ -343,7 +351,7 @@
 
   $('modelDimensionsToggle').addEventListener('click',()=>{dimensionsVisible=!dimensionsVisible;$('modelDimensionsToggle').textContent=`Размеры · ${dimensionsVisible?'вкл':'выкл'}`;$('modelDimensionsToggle').setAttribute('aria-pressed',String(dimensionsVisible));renderScene(false)});
   function exitModuleFocus(){
-    viewMode=VIEW_NORMAL;activeModule=null;drag=null;
+    enterNormalKitchenView();
     renderScene(false);
   }
   $('moduleClose').addEventListener('click',()=>{$('moduleDialog').close?.();exitModuleFocus()});
