@@ -72,3 +72,53 @@ def test_r10_phase3_repeated_focus_cycle_has_explicit_idempotent_exit_path():
     for _ in range(10):
         assert "enterModuleFocus(selected)" in model
         assert "enterNormalKitchenView()" in model
+
+
+def test_r10_phase4_focus_is_technical_transparent_and_rotatable():
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    assert "focusMode:true" in model
+    assert "function drawTechnicalFocus" in renderer
+    for token in ["Technical carcass: explicit 18 mm panels", "Ghosted facade", "Structural rail / rib", "Shelves"]:
+        assert token in renderer
+    assert "viewMode===VIEW_FOCUS?focusCamera:camera" in model
+
+def test_r10_phases5_6_hardware_registry_records_verified_identity_and_asset_blockers():
+    assets = read("r10-hardware-assets.js")
+    rules = read("r10-domain-rules.js")
+    assert "SCILM_ADJUSTABLE_LEG" in assets
+    assert "250 PR50" in assets
+    assert "geometry_status:'ASSET_REQUIRED'" in assets
+    assert "BLUM_HINGE_STRAIGHT_PLATE" in assets
+    assert "70T3550.TL" in assets
+    assert "175H3100" in assets
+    assert "Horizontal cam mounting plate 20/32" in assets
+    assert "STANDARD:Object.freeze({top:100,bottom:100" in rules
+    assert "SINK_BASE:Object.freeze({top:150,bottom:100" in rules
+
+def test_r10_phase6_renderer_consumes_hinge_rules_not_ratio_guessing():
+    renderer = read("pilot-3d.js")
+    assert "BizetR10Rules?.hingeVerticalMm" in renderer
+    assert "rules.SINK_BASE" in renderer
+    assert "rules.STANDARD" in renderer
+    assert "module.hinge_vertical_rule" in renderer
+
+def test_r10_phase7_tall_oven_has_one_appliance_and_mandatory_lower_drawer():
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    assert "oven_appliance_present:true" in model
+    assert "mandatory_lower_drawer:true" in model
+    assert "lower_drawer_count:1" in model
+    assert "if(inputs.oven_location==='TALL')" in model
+    assert "else list.push(baseModule('oven','Духовой шкаф'" in model
+    assert "module.kind==='TALL_OVEN'" in renderer
+    assert "hline(.16)" in renderer
+    assert "module.mandatory_lower_drawer" in renderer
+
+def test_r10_phase8_drawer_box_semantics_are_complete_and_facade_separate():
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    for token in ["'bottom'","'left_side'","'right_side'","'box_front'","'box_rear'","'slides'"]:
+        assert token in model
+    assert "facade_separate:true" in model
+    assert "complete box + slides" in renderer
