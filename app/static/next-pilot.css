@@ -152,3 +152,14 @@ body.communications-only .wall-workflow { margin-top:0 !important; }
   .configuration-choice-card .config-card-title { font-size:15px !important; }
   .configuration-screen-five .screen-five-footer { margin-top:10px !important; }
 }
+
+/* R10.3.1 — configuration screen is intentionally scrollable on phones. */
+@media (max-width:700px){
+  body.config-screen-five-open{height:auto!important;overflow-y:auto!important;overflow-x:hidden!important}
+  body.config-screen-five-open .app-shell{height:auto!important;min-height:100dvh!important;overflow:visible!important}
+  .experience.screen-five-active{height:auto!important;min-height:calc(100dvh - 58px)!important;overflow:visible!important;padding-bottom:34px!important}
+  .configuration-screen-five{overflow:visible!important}
+  .configuration-choice-grid{grid-template-columns:1fr!important;gap:12px!important}
+  .configuration-choice-card{min-height:238px!important}
+  .config-reference-plan{height:156px!important}
+}
