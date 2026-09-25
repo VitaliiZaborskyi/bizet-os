@@ -58,22 +58,23 @@
   function showCustomer(){
     const d=data();if(!d)return;
     const warning=d.bom.unpriced?.length? `<p class="r8-pointb-warning">${t('Часть сервисных тарифов ещё не включена и требует подтверждения.','Some service tariffs are not included yet and require confirmation.')}</p>`:'';
-    $('pointBReport').innerHTML=`<p class="r8-pointb-kicker">ZABORSKY · BIZET OS</p><h2>${t('Ваш проект кухни','Your kitchen project')}</h2><div class="r9-customer-price"><span>${esc(d.p.name)}</span><strong>${money(d.clientPrice)}</strong></div>${warning}<h3>${t('Спецификация кухни','Kitchen specification')}</h3>${specTable(d.modules)}<div class="r8-doc-actions"><button id="r9ProposalPrint">${t('Коммерческое предложение / PDF','Commercial proposal / PDF')}</button></div><p class="r9-muted">${t('Себестоимость, внутренние коэффициенты, крепёж и технологические операции доступны только производителю/администратору.','Internal cost, coefficients, fasteners and manufacturing operations are restricted to manufacturer/admin access.')}</p>`;
+    $('pointBReport').innerHTML=`<p class="r8-pointb-kicker">ZABORSKY · BIZET OS${identityCache?' · '+esc(identityRef()):''}</p><h2>${t('Ваш проект кухни','Your kitchen project')}</h2><div class="r9-customer-price"><span>${esc(d.p.name)}</span><strong>${money(d.clientPrice)}</strong></div>${warning}<h3>${t('Спецификация кухни','Kitchen specification')}</h3>${specTable(d.modules)}<div class="r8-doc-actions"><button id="r9ProposalPrint">${t('Коммерческое предложение / PDF','Commercial proposal / PDF')}</button></div><p class="r9-muted">${t('Себестоимость, внутренние коэффициенты, крепёж и технологические операции доступны только производителю/администратору.','Internal cost, coefficients, fasteners and manufacturing operations are restricted to manufacturer/admin access.')}</p>`;
     $('pointBDialog').showModal();
     $('r9ProposalPrint').onclick=printProposal;
   }
   function showManufacturer(){
     const d=data();if(!d)return;
     const rows=d.details.map(x=>`<tr><td>${x.code}</td><td>${esc(x.name)}</td><td>${x.length} × ${x.width}</td><td>${x.qty}</td><td>${esc(x.material)}</td></tr>`).join('');
-    $('pointBReport').innerHTML=`<p class="r8-pointb-kicker">BIZET OS · MANUFACTURER</p><h2>${t('Производственная спецификация','Manufacturing specification')}</h2><p><strong>${esc(d.p.name)}</strong> · ${t('клиентская цена','client price')}: ${money(d.clientPrice)}</p><div class="r8-table-wrap"><table><thead><tr><th>Code</th><th>${t('Деталь','Part')}</th><th>mm</th><th>Qty</th><th>${t('Материал','Material')}</th></tr></thead><tbody>${rows}</tbody></table></div><div class="r8-doc-actions"><button id="r9FullDocs">${t('Полный производственный комплект','Full production package')}</button></div>`;
+    $('pointBReport').innerHTML=`<p class="r8-pointb-kicker">BIZET OS · MANUFACTURER${identityCache?' · '+esc(identityRef()):''}</p><h2>${t('Производственная спецификация','Manufacturing specification')}</h2><p><strong>${esc(d.p.name)}</strong> · ${t('клиентская цена','client price')}: ${money(d.clientPrice)}</p><div class="r8-table-wrap"><table><thead><tr><th>Code</th><th>${t('Деталь','Part')}</th><th>mm</th><th>Qty</th><th>${t('Материал','Material')}</th></tr></thead><tbody>${rows}</tbody></table></div><div class="r8-doc-actions"><button id="r9FullDocs">${t('Полный производственный комплект','Full production package')}</button></div>`;
     $('pointBDialog').showModal();
     $('r9FullDocs').onclick=()=>window.BizetPointBOriginalDocs?.();
   }
   function showAdmin(){
     const d=data();if(!d)return;
     const rows=d.bom.rows.map(r=>`<tr><td>${esc(r.group)}</td><td>${esc(r.item)}</td><td>${Number(r.qty).toFixed(2)}</td><td>${money(r.rate)}</td><td>${money(r.total)}</td><td>${esc(r.note||'')}</td></tr>`).join('');
-    $('pointBReport').innerHTML=`<p class="r8-pointb-kicker">BIZET OS · ADMIN</p><h2>Cost / Pricing</h2><div class="r8-price-grid"><div><span>COST</span><strong>${money(d.bom.cost)}</strong></div><div><span>${esc(d.p.name)} · ×${d.p.multiplier.toFixed(1)}</span><strong>${money(d.clientPrice)}</strong></div></div><div class="r8-table-wrap"><table><thead><tr><th>Group</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    $('pointBReport').innerHTML=`<p class="r8-pointb-kicker">BIZET OS · ADMIN${identityCache?' · '+esc(identityRef()):''}</p><h2>Cost / Pricing</h2><div class="r8-price-grid"><div><span>COST</span><strong>${money(d.bom.cost)}</strong></div><div><span>${esc(d.p.name)} · ×${d.p.multiplier.toFixed(1)}</span><strong>${money(d.clientPrice)}</strong></div></div><div class="r8-table-wrap"><table><thead><tr><th>Group</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table></div><div class="r8-doc-actions"><button id="r10ConfirmSale" type="button">${t('Подтвердить заказ · C','Confirm sale · C')}</button></div>`;
     $('pointBDialog').showModal();
+    $('r10ConfirmSale').onclick=()=>confirmStageC().catch(error=>alert(error.message));
   }
   function configurationLabel(code){
     const labels={
