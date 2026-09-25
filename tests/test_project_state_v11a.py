@@ -206,10 +206,39 @@ def test_v11_api_create_read_patch_state():
     assert state.json()["room"]["geometry"]["wall_length"]["value_mm"] == 3200
 
 
-def test_v11_api_create_generates_order_no_when_missing():
+def test_r102_api_create_starts_as_session_a_without_order_no():
     create = client.post("/api/v1.1/projects", json={})
     assert create.status_code == 200
-    assert create.json()["identity"]["order_no"]
+    identity = create.json()["identity"]
+    assert identity["order_no"] is None
+    assert identity["order_stage"] == "A"
+    assert identity["session_id"].startswith("SID-")
+
+
+def test_r102_api_assigns_order_at_point_b_and_keeps_id_for_stage_c():
+    create = client.post("/api/v1.1/projects", json={})
+    pid = create.json()["identity"]["internal_id"]
+    activate = client.post(
+        f"/api/v1.1/projects/{pid}/activate-order",
+        json={"country_code": "UA", "city_code": "ODS"},
+    )
+    assert activate.status_code == 200, activate.text
+    identity = activate.json()["identity"]
+    assert identity["order_stage"] == "B"
+    assert identity["order_no"].startswith("UA-ODS-")
+    order_no = identity["order_no"]
+
+    activate_again = client.post(
+        f"/api/v1.1/projects/{pid}/activate-order",
+        json={"country_code": "US", "city_code": "NYC"},
+    )
+    assert activate_again.status_code == 200
+    assert activate_again.json()["identity"]["order_no"] == order_no
+
+    sold = client.post(f"/api/v1.1/projects/{pid}/order-stage", json={"stage": "C"})
+    assert sold.status_code == 200
+    assert sold.json()["identity"]["order_stage"] == "C"
+    assert sold.json()["identity"]["order_no"] == order_no
 
 
 def test_v11_recalculate_uses_legacy_engine_when_minimum_state_available():
