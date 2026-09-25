@@ -217,3 +217,21 @@ h1 { margin: 0; font-size: clamp(34px, 5vw, 64px); line-height: .98; letter-spac
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* R10.3 — iPhone selection screens: all choices visible without vertical scrolling */
+@media (max-width:700px) and (max-height:950px){
+  .app-shell{min-height:100dvh;height:100dvh;overflow:hidden}
+  .topbar{height:58px;min-height:58px}
+  .experience{width:min(100% - 20px,620px);height:calc(100dvh - 58px);padding:8px 0 10px;margin:0 auto;overflow:hidden;display:flex;flex-direction:column}
+  .intro{margin:0 auto 10px;flex:0 0 auto}
+  .step-meta,.progress{display:none!important}
+  h1{font-size:clamp(28px,8.2vw,38px);line-height:.96}
+  .intro p{font-size:13px;line-height:1.28;margin:8px auto 0;max-width:340px}
+  .choice-grid{flex:1 1 auto;min-height:0;align-content:stretch}
+  .choice-grid[data-count="4"]{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px}
+  .choice-grid[data-count="3"]{grid-template-columns:1fr;grid-template-rows:repeat(3,minmax(0,1fr));gap:8px;max-width:none;width:100%}
+  .choice-grid[data-count="4"] .choice-card,.choice-grid[data-count="3"] .choice-card{min-height:0;height:100%;border-radius:18px}
+  .choice-grid[data-count="4"] .card-content,.choice-grid[data-count="3"] .card-content{padding:12px 14px}
+  .choice-grid[data-count="4"] .card-title,.choice-grid[data-count="3"] .card-title{font-size:20px}
+  .footer{display:none!important}
+}
