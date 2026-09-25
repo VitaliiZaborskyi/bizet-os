@@ -177,6 +177,86 @@
     return out;
   }
 
+  function totalRun(list){return list.reduce((sum,m)=>sum+Math.min(Number(m.w)||0,maxRunFor(m)),0)}
+  function ergonomicRegularOrder(list,edge){
+    const rankStart={SINK:10,DISHWASHER:20,DRAWERS:30,HINGED:30,COOKTOP:50};
+    const rankEnd={COOKTOP:10,DRAWERS:30,HINGED:30,DISHWASHER:40,SINK:50};
+    const rank=edge==='END'?rankEnd:rankStart;
+    return list.map((m,i)=>({m,i,r:rank[m.kind]??30})).sort((a,b)=>a.r-b.r||a.i-b.i).map(x=>x.m);
+  }
+  function separationBetween(list,aIndex,bIndex){
+    const lo=Math.min(aIndex,bIndex),hi=Math.max(aIndex,bIndex);
+    return list.slice(lo+1,hi).reduce((sum,m)=>sum+Math.min(Number(m.w)||0,maxRunFor(m)),0);
+  }
+  function separationModules(wall,width,prefix,label){
+    const out=[];let rest=Math.max(0,Math.round(width)),i=1;
+    while(rest>LIMITS.STRAIGHT_MAX){
+      const w=Math.min(LIMITS.PREFERRED_FILL,rest);
+      out.push(baseModule(`${prefix}-${wall}-${i++}`,label,w,'HINGED',wall,{anchor:false,system:true,ergonomic_spacer:true,pending:false}));
+      rest-=w;
+    }
+    if(rest>=LIMITS.MIN_STANDARD_MODULE)out.push(baseModule(`${prefix}-${wall}-${i++}`,label,rest,'HINGED',wall,{anchor:false,system:true,ergonomic_spacer:true,pending:false}));
+    else if(rest>0)out.push(baseModule(`${prefix}-${wall}-filler`,label,rest,'FILLER',wall,{anchor:false,system:true,ergonomic_spacer:true,pending:false,filler:true}));
+    return out;
+  }
+  function ensurePairSpacing(ordered,wall,bounds,kindA,kindB,hardMin,preferred,prefix,label){
+    const ia=ordered.findIndex(m=>m.kind===kindA),ib=ordered.findIndex(m=>m.kind===kindB);
+    if(ia<0||ib<0)return ordered;
+    const between=separationBetween(ordered,ia,ib);
+    if(between>=preferred)return ordered;
+    const free=Math.max(0,bounds.span-totalRun(ordered));
+    const hardDeficit=Math.max(0,hardMin-between),preferredDeficit=Math.max(0,preferred-between);
+    if(hardDeficit<=0){
+      if(preferredDeficit>0&&free>0){
+        const add=Math.min(preferredDeficit,free),at=Math.max(ia,ib);
+        ordered.splice(at,0,...separationModules(wall,add,prefix,label));
+      }
+      return ordered;
+    }
+    const add=Math.max(hardDeficit,Math.min(preferredDeficit,free));
+    const at=Math.max(ia,ib);
+    ordered.splice(at,0,...separationModules(wall,add,prefix,label));
+    if(free<hardDeficit)pushWarning(`ERGONOMIC_HARD_${kindA}_${kindB}_${wall}`,`По стене ${wall} недостаточно места для обязательного расстояния ${hardMin} мм между ${kindA==='SINK'?'мойкой':kindA} и ${kindB==='COOKTOP'?'варочной панелью':'духовкой'}. Система не должна выдавать производственный вариант без изменения конфигурации.`);
+    return ordered;
+  }
+  function promoteDrawerCadence(ordered){
+    let i=0;
+    while(i<ordered.length){
+      const first=ordered[i];
+      if(first.kind!=='HINGED'||!first.system||first.ergonomic_spacer||first.corner_guard){i++;continue}
+      const width=Math.round(first.w);let j=i+1;
+      while(j<ordered.length&&ordered[j].kind==='HINGED'&&ordered[j].system&&!ordered[j].ergonomic_spacer&&!ordered[j].corner_guard&&Math.round(ordered[j].w)===width)j++;
+      const count=j-i;
+      for(let start=i;start+2<j;start+=3){
+        const idx=start+1,m=ordered[idx];
+        ordered[idx]={...m,kind:'DRAWERS',label:'Ящики · 2',drawer_count:2,drawer_layout:'EQUAL',facade_count:undefined,drawer_structure:{components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true},auto_drawer_cadence:true};
+      }
+      i=j;
+    }
+    return ordered;
+  }
+  function keepOvenOutOfCorner(ordered,wall){
+    const edges=cornerEdgesForWall(wall);
+    const safe=m=>m&&!isOvenModule(m)&&m.kind!=='FILLER';
+    if(edges.has('START')&&isOvenModule(ordered[0])){
+      const idx=ordered.findIndex((m,i)=>i>0&&safe(m));
+      if(idx>0)[ordered[0],ordered[idx]]=[ordered[idx],ordered[0]];
+      else{
+        ordered.unshift(baseModule(`corner-guard-${wall}-start`,'Угловая зона',600,'HINGED',wall,{anchor:false,system:true,corner_guard:true,pending:false}));
+        pushWarning(`OVEN_CORNER_START_${wall}`,'Духовка не допускается в угловом модуле. Добавлена защитная зона; угловая конструкция будет уточняться отдельным правилом.');
+      }
+    }
+    if(edges.has('END')&&isOvenModule(ordered[ordered.length-1])){
+      let idx=-1;for(let i=ordered.length-2;i>=0;i--)if(safe(ordered[i])){idx=i;break}
+      if(idx>=0)[ordered[ordered.length-1],ordered[idx]]=[ordered[idx],ordered[ordered.length-1]];
+      else{
+        ordered.push(baseModule(`corner-guard-${wall}-end`,'Угловая зона',600,'HINGED',wall,{anchor:false,system:true,corner_guard:true,pending:false}));
+        pushWarning(`OVEN_CORNER_END_${wall}`,'Духовка не допускается в угловом модуле. Добавлена защитная зона; угловая конструкция будет уточняться отдельным правилом.');
+      }
+    }
+    return ordered;
+  }
+
   function arrangeWall(wall,list,room){
     const bounds=runBounds(wall,room),variant=variantState(),edge=edgeForWall(wall);
     let regular=list.filter(m=>!m.tall),tall=list.filter(m=>m.tall);
@@ -185,6 +265,7 @@
       const n=Number(variant.module_shift)%regular.length;
       regular=regular.slice(n).concat(regular.slice(0,n));
     }
+    regular=ergonomicRegularOrder(regular,edge);
 
     if(tall.length){
       const fridge=tall.filter(m=>m.kind==='FRIDGE'),otherTall=tall.filter(m=>m.kind!=='FRIDGE');
@@ -196,16 +277,18 @@
     }
 
     let ordered=edge==='START'?tall.concat(regular):regular.concat(tall);
-    let used=ordered.reduce((sum,m)=>sum+Math.min(m.w,maxRunFor(m)),0);
+    let used=totalRun(ordered);
 
     if(wall==='A'&&bounds.span-used>=CUTLERY_W){
-      const cutlery=baseModule('cutlery','Ящики для приборов',CUTLERY_W,'DRAWERS','A',{anchor:false,system:true});
+      const cutlery=baseModule('cutlery','Ящики для приборов',CUTLERY_W,'DRAWERS','A',{anchor:false,system:true,drawer_count:2});
       let idx=ordered.findIndex(m=>m.kind==='SINK');
       if(idx<0)idx=edge==='END'&&tall.length?ordered.findIndex(m=>m.tall):ordered.length;
       ordered.splice(idx>=0?idx+1:ordered.length,0,cutlery);
-      used+=CUTLERY_W;
     }
 
+    ordered=ensurePairSpacing(ordered,wall,bounds,'SINK','COOKTOP',ERGO.SINK_COOKTOP_HARD_MIN,ERGO.SINK_COOKTOP_PREFERRED,'prep-zone','Рабочая зона');
+    ordered=ensurePairSpacing(ordered,wall,bounds,'SINK','TALL_OVEN',ERGO.SINK_OVEN_SAME_WALL_MIN,ERGO.SINK_OVEN_SAME_WALL_MIN,'oven-separation','Разделительный модуль');
+    used=totalRun(ordered);
     const remaining=bounds.span-used;
     if(remaining>0){
       const fills=systemFillModules(wall,remaining);
@@ -221,6 +304,8 @@
       pushWarning(`RUN_OVERFLOW_${wall}`,`По стене ${wall} выбранный обязательный набор длиннее доступного участка на ${Math.round(-remaining)} мм. Модули, которые физически не помещаются, не выводятся за границы комнаты — требуется изменить состав или конфигурацию.`);
     }
 
+    ordered=promoteDrawerCadence(ordered);
+    ordered=keepOvenOutOfCorner(ordered,wall);
     let cursor=bounds.start;
     return ordered.map(m=>{
       const runSize=Math.min(m.w,maxRunFor(m)),offset=Number(offsetOverrides()[m.id])||0;
