@@ -22,7 +22,10 @@
   function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
   function isCornerModule(m){return !!m&&(m.kind==='CORNER'||m.corner===true)}
   function runWidth(m){return m?.wall==='A'?Number(m.w)||0:Number(m.d||m.w)||0}
-  function maxRunFor(m){return isCornerModule(m)?LIMITS.CORNER_MAX:LIMITS.STRAIGHT_MAX}
+  function maxRunFor(m){
+    if(m?.freestanding===true)return Math.max(LIMITS.STRAIGHT_MAX,runWidth(m)||LIMITS.STRAIGHT_MAX);
+    return isCornerModule(m)?LIMITS.CORNER_MAX:LIMITS.STRAIGHT_MAX;
+  }
   function hingedFacadeCountFor(m){
     const run=Math.max(100,runWidth(m)||Number(m?.w)||600),available=Math.max(100,run-3);
     return Math.max(1,Math.ceil(available/LIMITS.HINGED_FACADE_MAX));
@@ -420,12 +423,18 @@
   canvas.addEventListener('wheel',event=>{event.preventDefault();const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
 
   $('modelDimensionsToggle').addEventListener('click',()=>{if(viewMode!==VIEW_FOCUS)return;focusDimensionsVisible=!focusDimensionsVisible;syncFocusControls();renderScene(false)});
-  $('focusBackButton')?.addEventListener('click',()=>{$('moduleDialog')?.close?.();exitModuleFocus()});
+  $('focusBackButton')?.addEventListener('click',()=>{
+    const dialog=$('moduleDialog');
+    if(dialog?.open)dialog.close();else exitModuleFocus();
+  });
   function exitModuleFocus(){
     enterNormalKitchenView();syncFocusControls();
     renderScene(false);
   }
-  $('moduleClose').addEventListener('click',()=>{$('moduleDialog').close?.();exitModuleFocus()});
+  $('moduleClose').addEventListener('click',()=>{
+    const dialog=$('moduleDialog');
+    if(dialog?.open)dialog.close();else exitModuleFocus();
+  });
   $('moduleDialog').addEventListener('close',()=>{if(viewMode===VIEW_FOCUS)exitModuleFocus()});
   $('moduleApply')?.addEventListener('click',()=>applyModuleCustomization().catch(error=>setValidation(error.message)));
   $('moduleReset')?.addEventListener('click',()=>resetModuleCustomization().catch(error=>setValidation(error.message)));
