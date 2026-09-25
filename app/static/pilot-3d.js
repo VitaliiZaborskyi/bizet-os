@@ -154,11 +154,16 @@
         const left=module.x+module.w*i/count,right=module.x+module.w*(i+1)/count,cx=(left+right)/2;
         if(orient==='VERTICAL'){
           const onRight=(module.opening||'').includes('LEFT'),x=onRight?right-offset:left+offset;
-          handle(x,module.z+module.h*.72,'VERTICAL',Math.min(150,module.h*.22));
-        }else handle(cx,module.z+module.h-offset,'HORIZONTAL',Math.min(150,(right-left)*.48));
+          const hz=module.level==='upper'?module.z+Math.min(140,module.h*.26):module.z+module.h*.72;
+          handle(x,hz,'VERTICAL',Math.min(150,module.h*.22));
+        }else{
+          const hz=module.level==='upper'?module.z+offset:module.z+module.h-offset;
+          handle(cx,hz,'HORIZONTAL',Math.min(150,(right-left)*.48));
+        }
       }
     }
-    if(module.kind==='FRIDGE'&&module.content&&!['FRIDGE_ONLY','FREEZER_ONLY'].includes(module.content))hline(.48);
+    if(module.kind==='FRIDGE'&&module.content==='FRIDGE_FREEZER')hline(.34);
+    else if(module.kind==='FRIDGE'&&module.content&&!['FRIDGE_ONLY','FREEZER_ONLY'].includes(module.content))hline(.48);
     const ovenFace=(z0,z1)=>{
       polygon(ctx,[p([module.x+module.w*.11,module.y-3,z0]),p([module.x+module.w*.89,module.y-3,z0]),p([module.x+module.w*.89,module.y-3,z1]),p([module.x+module.w*.11,module.y-3,z1])],'#202327','#08090a',1.2);
       line(ctx,p([module.x+module.w*.20,module.y-4,z1-22]),p([module.x+module.w*.80,module.y-4,z1-22]),'#b9bdc0',2.4);
@@ -221,10 +226,12 @@
     });
     const front=moduleFrontFace(facadeFaces,module);
 
-    // Structural rails/ribs use the same 18 mm panel thickness as the carcass.
-    const railT=t;
-    panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
-    if(module.kind==='SINK')panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+    // Structural rails/ribs belong to lower carcasses only.
+    if(module.level!=='upper'){
+      const railT=t;
+      panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+      if(module.kind==='SINK')panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+    }
     if(module.kind==='COOKTOP'&&module.oven_appliance_present){
       const oh=Math.max(420,Math.min(600,h*.72));
       drawBox(ctx,projector,{x:x+45,y:y+45,z:z+70,w:Math.max(120,w-90),d:Math.max(120,d-90),h:oh},{body:'#25282b',side:'#161819',front:'#151719',top:'#3c4043',stroke:'rgba(0,0,0,.7)'});
@@ -290,10 +297,13 @@
       module.hardware_hinge_asset_status=hardware.BLUM_HINGE_STRAIGHT_PLATE?.geometry_status||'CAD_IDENTIFIED_EXTERNAL_PROXY';
       module.hinge_vertical_rule={top_mm:Number(hingeRule.top),bottom_mm:Number(hingeRule.bottom)};
     }
-    [z+h*.22,z+h*.5,z+h*.78].forEach(fz=>{
-      drawFocusDot(ctx,projector,[x+t*.55,y+35,fz]);
-      drawFocusDot(ctx,projector,[x+w-t*.55,y+35,fz]);
-    });
+    if(module.level==='upper'){
+      const hangerW=32,hangerD=24,hangerH=38,hangerY=y+d-hangerD-t,hangerZ=z+h-hangerH-22;
+      [x+t+6,x+w-t-hangerW-6].forEach(hx=>{
+        drawBox(ctx,projector,{x:hx,y:hangerY,z:hangerZ,w:hangerW,d:hangerD,h:hangerH},{body:'#73787b',side:'#565b5e',front:'#8a8f92',top:'#a1a5a7',stroke:'rgba(0,0,0,.45)'});
+      });
+      module.upper_hanger_visual='LEFT_RIGHT_REAR_TOP';
+    }
     return front;
   }
 
@@ -313,9 +323,22 @@
   }
 
   function drawWorktop(ctx,projector,group){
-    const base=group.filter(m=>m.level!=='upper'&&!m.tall);if(!base.length)return;const c=colors();
-    if(base[0].wall==='A'){const minX=Math.min(...base.map(m=>m.x)),maxX=Math.max(...base.map(m=>m.x+m.w)),minY=Math.min(...base.map(m=>m.y)),depth=Math.max(...base.map(m=>m.d));const z=Math.max(...base.map(m=>m.z+m.h));drawBox(ctx,projector,{x:minX,y:minY-18,z,w:maxX-minX,d:depth+36,h:26},{body:c.worktop,side:c.worktop,front:c.worktop,top:'#373737',stroke:'rgba(0,0,0,.25)'})}
-    else{const minY=Math.min(...base.map(m=>m.y)),maxY=Math.max(...base.map(m=>m.y+m.d)),x=base[0].wall==='B'?Math.min(...base.map(m=>m.x))-18:Math.min(...base.map(m=>m.x))-18,w=Math.max(...base.map(m=>m.w))+36,z=Math.max(...base.map(m=>m.z+m.h));drawBox(ctx,projector,{x,y:minY,z,w,d:maxY-minY,h:26},{body:c.worktop,side:c.worktop,front:c.worktop,top:'#373737',stroke:'rgba(0,0,0,.25)'})}
+    const MAX=4100,base=group.filter(m=>m.level!=='upper'&&!m.tall);if(!base.length)return;const c=colors(),p=projector.point;
+    if(base[0].wall==='A'){
+      const minX=Math.min(...base.map(m=>m.x)),maxX=Math.max(...base.map(m=>m.x+m.w)),minY=Math.min(...base.map(m=>m.y)),depth=Math.max(...base.map(m=>m.d)),z=Math.max(...base.map(m=>m.z+m.h)),span=maxX-minX;
+      for(let off=0;off<span;off+=MAX){
+        const len=Math.min(MAX,span-off);
+        drawBox(ctx,projector,{x:minX+off,y:minY-18,z,w:len,d:depth+36,h:26},{body:c.worktop,side:c.worktop,front:c.worktop,top:'#373737',stroke:'rgba(0,0,0,.25)'});
+        if(off>0){const j=minX+off;line(ctx,p([j,minY-18,z+27]),p([j,minY+depth+18,z+27]),'#e8e8e8',2.3)}
+      }
+    }else{
+      const minY=Math.min(...base.map(m=>m.y)),maxY=Math.max(...base.map(m=>m.y+m.d)),x=Math.min(...base.map(m=>m.x))-18,w=Math.max(...base.map(m=>m.w))+36,z=Math.max(...base.map(m=>m.z+m.h)),span=maxY-minY;
+      for(let off=0;off<span;off+=MAX){
+        const len=Math.min(MAX,span-off);
+        drawBox(ctx,projector,{x,y:minY+off,z,w,d:len,h:26},{body:c.worktop,side:c.worktop,front:c.worktop,top:'#373737',stroke:'rgba(0,0,0,.25)'});
+        if(off>0){const j=minY+off;line(ctx,p([x,j,z+27]),p([x+w,j,z+27]),'#e8e8e8',2.3)}
+      }
+    }
   }
   function drawPlinth(ctx,projector,group){
     const base=group.filter(m=>m.level!=='upper'&&!m.tall);if(!base.length)return;const c=colors();
@@ -338,18 +361,37 @@
     }
   }
 
+  function drawFreestandingFridge(ctx,projector,module,c){
+    const gap=Math.max(15,Number(module.appliance_clearance_mm)||15),appliance=Math.max(450,Number(module.appliance_width_mm)||600),fullH=module.z+module.h;
+    let box;
+    if(module.wall==='A')box={x:module.x+gap,y:module.y+6,z:0,w:Math.min(appliance,Math.max(100,module.w-gap*2)),d:Math.max(100,module.d-6),h:fullH};
+    else box={x:module.x+6,y:module.y+gap,z:0,w:Math.max(100,module.w-6),d:Math.min(appliance,Math.max(100,module.d-gap*2)),h:fullH};
+    const faces=drawBox(ctx,projector,box,{body:'#5b6065',side:'#484d51',front:'#6c7277',top:'#7e8489',stroke:'rgba(0,0,0,.38)'});
+    const front=moduleFrontFace(faces,module),p=projector.point,splitZ=fullH*.34;
+    if(module.wall==='A'){
+      const y=box.y-2;
+      line(ctx,p([box.x+box.w*.04,y,splitZ]),p([box.x+box.w*.96,y,splitZ]),'rgba(20,20,20,.58)',1.4);
+      line(ctx,p([box.x+box.w*.88,y,splitZ+40]),p([box.x+box.w*.88,y,fullH*.88]),'rgba(15,15,15,.72)',3);
+      line(ctx,p([box.x+box.w*.88,y,fullH*.08]),p([box.x+box.w*.88,y,splitZ-35]),'rgba(15,15,15,.72)',3);
+    }else{
+      const x=module.wall==='B'?box.x+box.w+2:box.x-2;
+      line(ctx,p([x,box.y+box.d*.04,splitZ]),p([x,box.y+box.d*.96,splitZ]),'rgba(20,20,20,.58)',1.4);
+    }
+    return front;
+  }
+
   function drawFreestandingDishwasher(ctx,projector,module,c){
-    const panel=Math.max(0,Number(module.side_panel_mm)||18),appliance=Math.max(300,Number(module.appliance_width_mm)||600);
+    const panel=Math.max(0,Number(module.side_panel_mm)||18),gap=Math.max(15,Number(module.appliance_clearance_mm)||15),appliance=Math.max(300,Number(module.appliance_width_mm)||600);
     let applianceBox=null,leftPanel=null,rightPanel=null;
     const fullH=module.z+module.h;
     if(module.wall==='A'){
       leftPanel={x:module.x,y:module.y,z:0,w:panel,d:module.d,h:fullH};
-      applianceBox={x:module.x+panel,y:module.y+10,z:0,w:appliance,d:Math.max(100,module.d-10),h:fullH};
-      rightPanel={x:module.x+panel+appliance,y:module.y,z:0,w:panel,d:module.d,h:fullH};
+      applianceBox={x:module.x+panel+gap,y:module.y+10,z:0,w:appliance,d:Math.max(100,module.d-10),h:fullH};
+      rightPanel={x:module.x+panel+gap+appliance+gap,y:module.y,z:0,w:panel,d:module.d,h:fullH};
     }else{
       leftPanel={x:module.x,y:module.y,z:0,w:module.w,d:panel,h:fullH};
-      applianceBox={x:module.x+8,y:module.y+panel,z:0,w:Math.max(100,module.w-8),d:appliance,h:fullH};
-      rightPanel={x:module.x,y:module.y+panel+appliance,z:0,w:module.w,d:panel,h:fullH};
+      applianceBox={x:module.x+8,y:module.y+panel+gap,z:0,w:Math.max(100,module.w-8),d:appliance,h:fullH};
+      rightPanel={x:module.x,y:module.y+panel+gap+appliance+gap,z:0,w:module.w,d:panel,h:fullH};
     }
     drawBox(ctx,projector,leftPanel,{body:c.module,side:c.moduleSide,front:c.moduleFront,top:c.moduleTop});
     const applianceFaces=drawBox(ctx,projector,applianceBox,{body:'#60656a',side:'#4b5054',front:'#72777c',top:'#858a8e',stroke:'rgba(0,0,0,.36)'});
@@ -421,8 +463,6 @@
         // No navigation number in MODULE_FOCUS_MODE; numbering belongs to the full-kitchen view.
         hits.push({id:module.id,points:front});
       });
-      ctx.save();ctx.font='700 11px -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillStyle=c.dimension;
-      ctx.fillText('Проведите пальцем по модулю, чтобы вращать его',width/2,height-18);ctx.restore();
       return{camera:{yaw:projector.yaw,pitch:projector.pitch,distanceScale:projector.distanceScale},hitAreas:hits,hitTest(x,y){for(let i=hits.length-1;i>=0;i--)if(pointInPolygon(x,y,hits[i].points))return hits[i].id;return null}};
     }
 
@@ -430,7 +470,9 @@
     activeWalls.forEach(wall=>drawPlinth(ctx,projector,lower.filter(m=>m.wall===wall)));
     const drawModule=module=>{
       let front=null;
-      if(module.kind==='DISHWASHER'&&module.freestanding){
+      if(module.kind==='FRIDGE'&&module.freestanding){
+        front=drawFreestandingFridge(ctx,projector,module,c);
+      }else if(module.kind==='DISHWASHER'&&module.freestanding){
         front=drawFreestandingDishwasher(ctx,projector,module,c);
       }else if(module.kind==='UPPER_HOOD'&&module.hood_type==='FREESTANDING'){
         front=drawFreestandingHood(ctx,projector,module,c);
@@ -440,16 +482,10 @@
         const style=freeFridge?{body:'#5b6065',side:'#484d51',front:'#6c7277',top:'#7e8489',stroke:'rgba(0,0,0,.38)'}:system?{body:c.system,side:c.moduleSide,front:c.system,top:c.moduleTop}:anchor?{body:c.module,side:c.moduleSide,front:c.anchor,top:c.moduleTop}:{};
         const faces=drawBox(ctx,projector,module,style);front=moduleFrontFace(faces,module);
         drawModuleDetails(ctx,projector,module,c);
-        if(freeFridge&&module.wall==='A'){
-          const p=projector.point,y=module.y-2,mid=module.x+module.w*.5;
-          line(ctx,p([mid,y,module.z+module.h*.06]),p([mid,y,module.z+module.h*.94]),'rgba(20,20,20,.48)',1.1);
-          line(ctx,p([module.x+module.w*.82,y,module.z+module.h*.33]),p([module.x+module.w*.82,y,module.z+module.h*.67]),'rgba(15,15,15,.72)',3);
-        }
       }
       drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front});
     };
     lower.forEach(drawModule);activeWalls.forEach(wall=>drawWorktop(ctx,projector,lower.filter(m=>m.wall===wall)));lower.forEach(m=>drawTopAppliance(ctx,projector,m));upper.forEach(drawModule);if(options.showModuleDimensions===true)drawModuleRunDimensions(ctx,projector,lower,c);
-    ctx.save();ctx.font='700 11px -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillStyle=c.dimension;ctx.fillText('Проведите пальцем по сцене, чтобы вращать 3D',width/2,height-18);ctx.restore();
     return{camera:{yaw:projector.yaw,pitch:projector.pitch,distanceScale:projector.distanceScale},hitAreas:hits,hitTest(x,y){for(let i=hits.length-1;i>=0;i--)if(pointInPolygon(x,y,hits[i].points))return hits[i].id;return null}};
   }
 
