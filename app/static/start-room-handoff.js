@@ -14,6 +14,8 @@ const CONFIGS = [
 let screenFiveActive = false;
 let selectedConfiguration = sessionStorage.getItem(CONFIG_SELECTION_KEY) || localStorage.getItem(CONFIG_SELECTION_KEY) || '';
 let savingConfiguration = false;
+let roomImportObjectUrl = '';
+let selectedRoomImportMeta = null;
 
 function isRu() {
   return (document.getElementById('languageSelect')?.value || document.documentElement.lang || 'ru') === 'ru';
@@ -393,6 +395,90 @@ async function patchProject(path, value, reason) {
   return response.json();
 }
 
+function roomImportKind(file) {
+  const name = String(file?.name || '').toLowerCase();
+  const mime = String(file?.type || '').toLowerCase();
+  if (mime === 'application/pdf' || name.endsWith('.pdf')) return 'PDF';
+  if (mime.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif)$/i.test(name)) return 'PHOTO';
+  return 'UNSUPPORTED';
+}
+
+function clearRoomImportPreview() {
+  if (roomImportObjectUrl) URL.revokeObjectURL(roomImportObjectUrl);
+  roomImportObjectUrl = '';
+}
+
+async function handleStartRoomFile(file) {
+  const panel = document.getElementById('startRoomFilePanel');
+  const preview = document.getElementById('startRoomFilePreview');
+  const meta = document.getElementById('startRoomFileMeta');
+  const status = document.getElementById('startRoomFileStatus');
+  if (!panel || !preview || !meta || !status || !file) return;
+  const kind = roomImportKind(file);
+  panel.hidden = false;
+  status.textContent = '';
+  if (kind === 'UNSUPPORTED') {
+    preview.innerHTML = '';
+    meta.textContent = isRu() ? 'Этот формат пока не поддерживается. Используйте PDF или фотографию.' : 'This format is not supported yet. Use PDF or an image.';
+    selectedRoomImportMeta = null;
+    return;
+  }
+  clearRoomImportPreview();
+  roomImportObjectUrl = URL.createObjectURL(file);
+  if (kind === 'PDF') {
+    preview.innerHTML = `<object data="${roomImportObjectUrl}" type="application/pdf" class="start-room-file-object"><div class="start-room-pdf-fallback">PDF · ${file.name}</div></object>`;
+  } else {
+    preview.innerHTML = `<img src="${roomImportObjectUrl}" alt="${file.name.replace(/"/g,'&quot;')}" class="start-room-file-image">`;
+  }
+  selectedRoomImportMeta = {
+    source: 'FILE',
+    file_name: file.name,
+    file_type: kind,
+    mime_type: file.type || '',
+    file_size: file.size,
+    target_model: 'ROOM_MODEL',
+    status: 'FILE_SELECTED_CALIBRATION_REQUIRED',
+    client_preview: true
+  };
+  meta.textContent = `${file.name} · ${kind} · ${Math.max(1, Math.round(file.size / 1024))} KB`;
+  status.textContent = isRu() ? 'Файл принят. Для масштаба укажите один известный реальный размер.' : 'File accepted. Enter one known real dimension to calibrate scale.';
+  try {
+    await patchProject('scene.visual_settings.room_import', selectedRoomImportMeta, 'R10.3.1 start import: PDF/photo selected');
+  } catch (_) {
+    status.textContent = isRu() ? 'Предпросмотр работает, но метаданные проекта пока не сохранились. Повторите.' : 'Preview works, but project metadata was not saved. Try again.';
+  }
+}
+
+function bindStartRoomImport(screen) {
+  const button = screen.querySelector('#startUploadFileButton');
+  const input = screen.querySelector('#startRoomFileInput');
+  const apply = screen.querySelector('#startRoomScaleApply');
+  if (!button || !input || !apply) return;
+  button.onclick = () => input.click();
+  input.onchange = () => handleStartRoomFile(input.files?.[0]);
+  apply.onclick = async () => {
+    const status = screen.querySelector('#startRoomFileStatus');
+    const known = Math.round(Number(screen.querySelector('#startRoomKnownDimension')?.value) || 0);
+    if (!selectedRoomImportMeta) {
+      status.textContent = isRu() ? 'Сначала загрузите PDF или фотографию.' : 'Upload a PDF or image first.';
+      return;
+    }
+    if (known < 300) {
+      status.textContent = isRu() ? 'Укажите известный размер не меньше 300 мм.' : 'Enter a known dimension of at least 300 mm.';
+      return;
+    }
+    selectedRoomImportMeta = {
+      ...selectedRoomImportMeta,
+      known_dimension_mm: known,
+      calibration_reference: 'USER_KNOWN_DIMENSION',
+      status: 'CALIBRATED_ONE_DIMENSION',
+      confidence: 'USER_CALIBRATED'
+    };
+    await patchProject('scene.visual_settings.room_import', selectedRoomImportMeta, 'R10.3.1 start import: one-dimension calibration');
+    status.textContent = isRu() ? `Масштаб зафиксирован по известному размеру ${known} мм. Геометрия будет передана в Room Model.` : `Scale calibrated from the known ${known} mm dimension. Geometry will feed the Room Model.`;
+  };
+}
+
 function syncConfigurationSelection() {
   document.querySelectorAll('[data-start-config]').forEach(card => {
     const selected = card.dataset.startConfig === selectedConfiguration;
@@ -430,8 +516,6 @@ async function saveConfiguration(code) {
     const id = currentProjectId();
     if (id) {
       sessionStorage.setItem('bizet_route_splash','1');
-      if (window.BizetTransition?.play) window.BizetTransition.play({duration:3000});
-      await new Promise(resolve => window.setTimeout(resolve, 80));
       window.location.assign('/workspace?project=' + encodeURIComponent(id));
     }
   }
@@ -443,6 +527,7 @@ function buildScreenFive() {
   if (!summaryCard || summaryCard.hidden || !experience || screenFiveActive) return;
 
   screenFiveActive = true;
+  document.body.dataset.startKind = 'configuration';
   summaryCard.hidden = true;
   experience.classList.add('screen-five-active');
   document.body.classList.add('config-screen-five-open');
@@ -467,19 +552,33 @@ function buildScreenFive() {
           ${config.code === 'CUSTOM' ? `<small class="config-card-note">${isRu() ? 'Нестандартная форма — уточним дальше' : 'Non-standard layout — refine it later'}</small>` : ''}
         </button>`).join('')}
     </div>
+    <section class="start-room-import-entry" aria-label="${isRu() ? 'Загрузка файла помещения' : 'Room file upload'}">
+      <button class="start-upload-file-button" id="startUploadFileButton" type="button">${isRu() ? 'Загрузить файл' : 'Upload file'}</button>
+      <input id="startRoomFileInput" type="file" accept=".pdf,image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" hidden>
+      <small>${isRu() ? 'PDF или фотография помещения' : 'PDF or room photo'}</small>
+      <div class="start-room-file-panel" id="startRoomFilePanel" hidden>
+        <div class="start-room-file-preview" id="startRoomFilePreview"></div>
+        <p class="start-room-file-meta" id="startRoomFileMeta"></p>
+        <label class="start-room-known-dimension"><span>${isRu() ? 'Один известный реальный размер, мм' : 'One known real dimension, mm'}</span><input id="startRoomKnownDimension" type="number" inputmode="numeric" min="300" step="1" placeholder="3000"></label>
+        <button class="start-room-scale-apply" id="startRoomScaleApply" type="button">${isRu() ? 'Применить масштаб' : 'Apply scale'}</button>
+        <p class="start-room-file-status" id="startRoomFileStatus"></p>
+      </div>
+    </section>
     <p class="screen-five-error" id="configurationScreenFiveError" hidden></p>
-    <p class="config-auto-note">${isRu() ? 'После выбора BIZET OS автоматически перейдёт к размерам помещения.' : 'After selection BIZET OS will automatically continue to the room dimensions.'}</p>`;
+    <p class="config-auto-note">${isRu() ? 'После выбора конфигурации BIZET OS откроет первый 3D-вариант.' : 'After choosing a configuration BIZET OS opens the first 3D option.'}</p>`;
   experience.appendChild(screen);
 
   screen.querySelectorAll('[data-start-config]').forEach(card => {
     card.addEventListener('click', () => saveConfiguration(card.dataset.startConfig));
   });
+  bindStartRoomImport(screen);
   syncConfigurationSelection();
   window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 function destroyScreenFive() {
   screenFiveActive = false;
+  clearRoomImportPreview();
   document.getElementById('configurationScreenFive')?.remove();
   document.getElementById('experience')?.classList.remove('screen-five-active');
   document.body.classList.remove('config-screen-five-open');
