@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from typing import Literal
+from datetime import datetime, timezone
 
 from app.engine.application_no import next_order_no
 from app.engine.rules import DecisionEngine
@@ -34,9 +36,51 @@ class RecalculateResponse(BaseModel):
 @router.post("/projects", response_model=ProjectState)
 def create_project(payload: CreateProjectRequest | None = None):
     project = payload.project if payload and payload.project else ProjectState()
-    if not project.identity.order_no:
-        project.identity.order_no = next_order_no()
+    # R10.2: stage A is only a session. Permanent order number is assigned at Point B.
     repository.create(project)
+    return project
+
+
+class ActivateOrderRequest(BaseModel):
+    country_code: str | None = None
+    city_code: str | None = None
+
+
+class SetOrderStageRequest(BaseModel):
+    stage: Literal["B", "C"]
+
+
+@router.post("/projects/{project_id}/activate-order", response_model=ProjectState)
+def activate_order(project_id: str, payload: ActivateOrderRequest | None = None):
+    project = repository.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if not project.identity.order_no:
+        country = (payload.country_code if payload else None) or project.context.country_code or "XX"
+        city = (payload.city_code if payload else None) or project.context.city_code or "XXX"
+        project.identity.order_no = next_order_no(country, city)
+        project.identity.order_country_code = country.upper()
+        project.identity.order_city_code = city.upper()
+        project.identity.order_assigned_at = datetime.now(timezone.utc)
+    if project.identity.order_stage == "A":
+        project.identity.order_stage = "B"
+    repository.save(project)
+    return project
+
+
+@router.post("/projects/{project_id}/order-stage", response_model=ProjectState)
+def set_order_stage(project_id: str, payload: SetOrderStageRequest):
+    project = repository.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if not project.identity.order_no:
+        raise HTTPException(status_code=409, detail="Order number is assigned only at Point B")
+    if payload.stage == "C":
+        project.identity.order_stage = "C"
+        project.identity.sold_at = datetime.now(timezone.utc)
+    elif project.identity.order_stage != "C":
+        project.identity.order_stage = "B"
+    repository.save(project)
     return project
 
 
