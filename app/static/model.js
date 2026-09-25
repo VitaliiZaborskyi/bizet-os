@@ -9,6 +9,8 @@
   let layoutWarnings=[];
   const LIMITS=window.BizetR10Rules?.moduleLimitsMm||{STRAIGHT_MAX:900,CORNER_MAX:1250,PREFERRED_FILL:600,HINGED_FACADE_MAX:597,MIN_STANDARD_MODULE:300};
   const ERGO=window.BizetR10Rules?.ergonomicsMm||{SINK_COOKTOP_HARD_MIN:500,SINK_COOKTOP_PREFERRED:900,SINK_OVEN_SAME_WALL_MIN:1000,TRIANGLE_LEG_MIN:1200,TRIANGLE_LEG_MAX:2700,TRIANGLE_SUM_MAX:7900};
+  const CORNER=window.BizetR10Rules?.cornerRules||{ZONE_DEPTH:600,MAX_CORNER_MODULE:1250,ALLOWED_KINDS:['SINK','CORNER']};
+  const COMPOSITION=window.BizetR10Rules?.compositionRules||{centerPrimaryApplianceOnLongRun:true,skipWhenCommunicationsConfirmed:true};
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
   const LOWER_DEPTH=560,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
@@ -235,24 +237,73 @@
     }
     return ordered;
   }
-  function keepOvenOutOfCorner(ordered,wall){
-    const edges=cornerEdgesForWall(wall);
-    const safe=m=>m&&!isOvenModule(m)&&m.kind!=='FILLER';
-    if(edges.has('START')&&isOvenModule(ordered[0])){
-      const idx=ordered.findIndex((m,i)=>i>0&&safe(m));
-      if(idx>0)[ordered[0],ordered[idx]]=[ordered[idx],ordered[0]];
-      else{
-        ordered.unshift(baseModule(`corner-guard-${wall}-start`,'Угловая зона',600,'HINGED',wall,{anchor:false,system:true,corner_guard:true,pending:false}));
-        pushWarning(`OVEN_CORNER_START_${wall}`,'Духовка не допускается в угловом модуле. Добавлена защитная зона; угловая конструкция будет уточняться отдельным правилом.');
-      }
+  function sinkCornerEdgeForWall(wall){
+    if(inputs.sink_placement!=='AT_CORNER'||sinkWall()!==wall)return null;
+    const edges=[...cornerEdgesForWall(wall)];
+    if(edges.length<=1)return edges[0]||null;
+    return inputs.sink_side==='RIGHT'?'END':'START';
+  }
+  function makeCornerModule(wall,edge){
+    return baseModule(`corner-${wall}-${edge.toLowerCase()}`,'Угловой модуль',Number(CORNER.ZONE_DEPTH)||600,'CORNER',wall,{
+      anchor:false,system:true,pending:true,corner:true,corner_guard:true,
+      module_run_limit_mm:Number(CORNER.MAX_CORNER_MODULE)||LIMITS.CORNER_MAX,
+      corner_edge:edge
+    });
+  }
+  function ensureCornerZones(ordered,wall){
+    const edges=cornerEdgesForWall(wall),sinkEdge=sinkCornerEdgeForWall(wall);
+    const moveSink=edge=>{
+      const idx=ordered.findIndex(m=>m.kind==='SINK');
+      if(idx<0)return false;
+      const [sink]=ordered.splice(idx,1);
+      if(edge==='START')ordered.unshift(sink);else ordered.push(sink);
+      sink.corner=true;sink.corner_edge=edge;sink.module_run_limit_mm=Number(CORNER.MAX_CORNER_MODULE)||LIMITS.CORNER_MAX;
+      return true;
+    };
+    if(edges.has('START')){
+      if(sinkEdge==='START')moveSink('START');
+      if(!ordered[0]||!CORNER.ALLOWED_KINDS.includes(ordered[0].kind))ordered.unshift(makeCornerModule(wall,'START'));
     }
-    if(edges.has('END')&&isOvenModule(ordered[ordered.length-1])){
-      let idx=-1;for(let i=ordered.length-2;i>=0;i--)if(safe(ordered[i])){idx=i;break}
-      if(idx>=0)[ordered[ordered.length-1],ordered[idx]]=[ordered[idx],ordered[ordered.length-1]];
-      else{
-        ordered.push(baseModule(`corner-guard-${wall}-end`,'Угловая зона',600,'HINGED',wall,{anchor:false,system:true,corner_guard:true,pending:false}));
-        pushWarning(`OVEN_CORNER_END_${wall}`,'Духовка не допускается в угловом модуле. Добавлена защитная зона; угловая конструкция будет уточняться отдельным правилом.');
+    if(edges.has('END')){
+      if(sinkEdge==='END')moveSink('END');
+      const last=ordered[ordered.length-1];
+      if(!last||!CORNER.ALLOWED_KINDS.includes(last.kind))ordered.push(makeCornerModule(wall,'END'));
+    }
+    ['START','END'].forEach(edge=>{
+      if(!edges.has(edge))return;
+      const m=edge==='START'?ordered[0]:ordered[ordered.length-1];
+      if(m&&!CORNER.ALLOWED_KINDS.includes(m.kind)){
+        pushWarning(`CORNER_HARD_${wall}_${edge}`,`HARD: в угловой зоне стены ${wall} допускается только мойка или угловой модуль. ${m.label||m.kind} перенесён из угла.`);
       }
+    });
+    return ordered;
+  }
+  function centerCompositionAnchor(ordered,wall,bounds){
+    if(!COMPOSITION.centerPrimaryApplianceOnLongRun||inputs.communications_status==='USER_CONFIRMED')return ordered;
+    const anchorIndex=ordered.findIndex(m=>m.kind==='TALL_OVEN')>=0?ordered.findIndex(m=>m.kind==='TALL_OVEN'):ordered.findIndex(m=>m.kind==='COOKTOP');
+    if(anchorIndex<0)return ordered;
+    const anchor=ordered[anchorIndex];
+    const base=ordered.filter((_,i)=>i!==anchorIndex);
+    const hasStartCorner=base[0]?.kind==='CORNER'||(base[0]?.kind==='SINK'&&base[0]?.corner_edge==='START');
+    const hasEndCorner=base[base.length-1]?.kind==='CORNER'||(base[base.length-1]?.kind==='SINK'&&base[base.length-1]?.corner_edge==='END');
+    const startReserve=hasStartCorner?runWidth(base[0]):0,endReserve=hasEndCorner?runWidth(base[base.length-1]):0;
+    const target=bounds.start+(bounds.span-startReserve-endReserve)/2+startReserve;
+    const minPos=hasStartCorner?1:0,maxPos=base.length-(hasEndCorner?1:0);
+    let best=null;
+    for(let pos=minPos;pos<=maxPos;pos++){
+      const candidate=[...base.slice(0,pos),anchor,...base.slice(pos)];
+      const ai=candidate.indexOf(anchor),si=candidate.findIndex(m=>m.kind==='SINK');
+      if(si>=0&&anchor.kind==='COOKTOP'&&separationBetween(candidate,ai,si)<ERGO.SINK_COOKTOP_HARD_MIN)continue;
+      if(si>=0&&anchor.kind==='TALL_OVEN'&&separationBetween(candidate,ai,si)<ERGO.SINK_OVEN_SAME_WALL_MIN)continue;
+      const before=candidate.slice(0,ai).reduce((s,m)=>s+Math.min(runWidth(m),maxRunFor(m)),0);
+      const center=bounds.start+before+Math.min(runWidth(anchor),maxRunFor(anchor))/2;
+      const score=Math.abs(center-target);
+      if(!best||score<best.score)best={candidate,score};
+    }
+    if(best){
+      anchor.composition_target='RUN_CENTER';
+      anchor.composition_score_mm=Math.round(best.score);
+      return best.candidate;
     }
     return ordered;
   }
@@ -305,7 +356,8 @@
     }
 
     ordered=promoteDrawerCadence(ordered);
-    ordered=keepOvenOutOfCorner(ordered,wall);
+    ordered=ensureCornerZones(ordered,wall);
+    ordered=centerCompositionAnchor(ordered,wall,bounds);
     let cursor=bounds.start;
     return ordered.map(m=>{
       const runSize=Math.min(m.w,maxRunFor(m)),offset=Number(offsetOverrides()[m.id])||0;
