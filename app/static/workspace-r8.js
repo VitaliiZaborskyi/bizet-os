@@ -67,7 +67,7 @@
    $('undoButton').disabled=history.length===0;refreshPanel();updateReadiness();
  }
  function panelTitle(panel){return({room:['01 · ПОМЕЩЕНИЕ','Помещение'],appliances:['02 · ТЕХНИКА','Бытовая техника'],upper:['03 · ВЕРХНИЕ МОДУЛИ','Верхние модули'],communications:['04 · КОММУНИКАЦИИ','Коммуникации'],elements:['05 · ЭЛЕМЕНТЫ СТЕН','Элементы стен'],materials:['06 · МАТЕРИАЛЫ','Материалы']})[panel]}
- let activePanel='room';
+ let activePanel=null;
  function renderPanel(panel){
    activePanel=panel;const h=panelTitle(panel);$('panelKicker').textContent=h[0];$('panelTitle').textContent=h[1];let html='';
    const I=rt.getInputs(),C=rt.getContext();
@@ -108,7 +108,7 @@
    renderPanel(panel);
    $('editorPanel').scrollTop=0;
  }
- function refreshPanel(){renderPanel(activePanel)}
+ function refreshPanel(){if(activePanel)renderPanel(activePanel)}
  function renderElements(){const n=$('elementList');if(!n)return;const els=rt.getElements();n.innerHTML=els.length?els.map((e,i)=>'<div class="r8-field"><span>'+(i+1)+'. '+esc(e.type)+' · стена '+esc(e.wall)+'</span><button class="r8-save" data-remove-element="'+i+'">Удалить</button></div>').join(''):'<p>Пока нет дополнительных элементов.</p>';n.querySelectorAll('[data-remove-element]').forEach(b=>b.onclick=async()=>{pushUndo();const a=[...rt.getElements()];a.splice(Number(b.dataset.removeElement),1);await rt.patchElements(a);renderElements();updateReadiness()})}
  async function runAction(a){
    if(a==='apply-appliances'){
@@ -182,8 +182,8 @@
  $('randomVariant').onclick=()=>applyVariant((variantPos+1)%5);
  $('undoButton').onclick=undo;
  $('baseInfoButton').onclick=()=>{$('baseInfoPopover').hidden=false};$('baseInfoClose').onclick=()=>{$('baseInfoPopover').hidden=true};
- $('panelClose').onclick=()=>{$('editorPanel').hidden=true};
+ $('panelClose').onclick=()=>{$('editorPanel').hidden=true;activePanel=null;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>rt?.render?.())};
  document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.onclick=()=>selectPanel(b.dataset.panel));
- async function ready(){for(let i=0;i<100;i++){if(window.BizetModelRuntime?.ready){rt=window.BizetModelRuntime;break}await sleep(80)}if(!rt)return;await ensureTemplate();await initVariantSlots();updateReadiness();selectPanel('room')}
+ async function ready(){for(let i=0;i<100;i++){if(window.BizetModelRuntime?.ready){rt=window.BizetModelRuntime;break}await sleep(80)}if(!rt)return;await ensureTemplate();await initVariantSlots();updateReadiness();activePanel=null;$('editorPanel').hidden=true;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>{rt.render();requestAnimationFrame(()=>rt.render())})}
  ready();
 })();
