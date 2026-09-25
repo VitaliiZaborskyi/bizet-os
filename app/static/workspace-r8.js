@@ -104,6 +104,7 @@
    $('editorPanel').hidden=false;
  }
  function selectPanel(panel){
+   rt?.exitFocus?.();
    document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.toggle('is-active',b.dataset.panel===panel));
    renderPanel(panel);
    $('editorPanel').scrollTop=0;
