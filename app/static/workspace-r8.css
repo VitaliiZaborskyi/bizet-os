@@ -39,3 +39,10 @@ html[data-theme="dark"] .r8-module-grid input,html[data-theme="dark"] .r8-module
 
 /* R10 contrast: light pill surfaces always use dark ink. */
 .r8-pill,.r8-arrow{color:#171716}
+
+/* R10.1 focus/navigation and room-constraint feedback */
+.r10-focus-back{font-weight:700}
+.r10-constraint-banner{position:absolute;left:14px;right:14px;top:62px;z-index:12;padding:10px 12px;border-radius:14px;background:rgba(255,244,214,.94);color:#382700;border:1px solid rgba(120,83,0,.2);font-size:11px;line-height:1.35;backdrop-filter:blur(8px)}
+.r10-constraint-banner strong{display:block;font-size:10px;letter-spacing:.08em;margin-bottom:3px}
+html[data-theme="dark"] .r10-constraint-banner{background:rgba(64,46,10,.94);color:#ffe8a3;border-color:rgba(255,220,125,.2)}
+@media(max-width:820px){.r10-constraint-banner{left:10px;right:10px;top:58px;font-size:10px}}
