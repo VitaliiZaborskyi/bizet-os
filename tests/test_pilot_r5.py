@@ -48,7 +48,7 @@ def test_model_restores_rotation_pinch_zoom_and_initial_fit():
     base = read("app/static/model.js")
     pre = read("app/static/model-r5-pre.js")
     post = read("app/static/model-r5.js")
-    assert "pointermove" in base and "camera.yaw" in base
+    assert "pointermove" in base and "cam.yaw" in base and "viewMode===VIEW_FOCUS?focusCamera:camera" in base
     assert "distanceScale" in pre and "narrow?1.14:1.06" in pre
     assert "touches.size<2" in post
     assert "WheelEvent('wheel'" in post
