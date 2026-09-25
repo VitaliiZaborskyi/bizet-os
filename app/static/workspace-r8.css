@@ -33,3 +33,6 @@ html[data-theme="dark"] .r8-module-grid input,html[data-theme="dark"] .r8-module
   .r8-module-grid{grid-template-columns:1fr}
   .r8-module-actions{grid-template-columns:1fr}
 }
+
+/* R10 phase 2: iPhone/Pointer camera gesture owns the 3D canvas. */
+#modelCanvas{touch-action:none}
