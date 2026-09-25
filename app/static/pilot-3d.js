@@ -180,19 +180,20 @@
   }
 
   function drawScilmLegProxy(ctx,projector,x,y,z,height){
-    const metal='rgba(45,48,50,.92)',dark='rgba(25,27,28,.96)',stroke='rgba(5,5,5,.55)';
-    drawBox(ctx,projector,{x:x-30,y:y-30,z:z+height-10,w:60,d:60,h:10},{body:metal,side:dark,front:metal,top:'#65696c',stroke});
-    drawBox(ctx,projector,{x:x-14,y:y-14,z:z+12,w:28,d:28,h:Math.max(20,height-22)},{body:'#35393b',side:'#25282a',front:'#454a4d',top:'#606568',stroke});
-    drawBox(ctx,projector,{x:x-25,y:y-25,z,w:50,d:50,h:12},{body:'#292c2e',side:'#1f2123',front:'#383b3d',top:'#4b4f52',stroke});
+    const p=projector.point,base=p([x,y,z+4]),top=p([x,y,z+height-6]);
+    ctx.save();
+    ctx.lineCap='round';ctx.strokeStyle='rgba(45,48,50,.94)';ctx.lineWidth=8;
+    ctx.beginPath();ctx.moveTo(base[0],base[1]);ctx.lineTo(top[0],top[1]);ctx.stroke();
+    [base,top].forEach((q,i)=>{ctx.beginPath();ctx.arc(q[0],q[1],i?6.5:9.5,0,Math.PI*2);ctx.fillStyle=i?'#666b6e':'#2b2e30';ctx.fill();ctx.strokeStyle='rgba(5,5,5,.48)';ctx.lineWidth=1;ctx.stroke()});
+    ctx.restore();
   }
 
   function drawBlumHingeProxy(ctx,projector,module,centerZ){
-    const p=projector.point,x=module.x+18,y=module.y-16;
-    // Manufacturer-specific pilot proxy: 35 mm cup, CLIP arm, straight plate.
-    const cup=p([x+17,y,centerZ]),armA=p([x+34,y+4,centerZ]),armB=p([x+72,y+18,centerZ]),plateA=p([x+72,y+18,centerZ]),plateB=p([x+112,y+18,centerZ]);
-    ctx.save();ctx.beginPath();ctx.arc(cup[0],cup[1],5.5,0,Math.PI*2);ctx.fillStyle='#9da2a5';ctx.fill();ctx.lineWidth=1;ctx.strokeStyle='#4f5457';ctx.stroke();
-    line(ctx,armA,armB,'#7e8488',5);line(ctx,plateA,plateB,'#686e72',7);
-    const s1=p([x+82,y+18,centerZ]),s2=p([x+104,y+18,centerZ]);ctx.fillStyle='#25282a';[s1,s2].forEach(q=>{ctx.beginPath();ctx.arc(q[0],q[1],1.8,0,Math.PI*2);ctx.fill()});ctx.restore();
+    const p=projector.point,x=module.x+18,y=module.y-12,cup=p([x+17,y,centerZ]);
+    // R10.3 visual rule: only the Ø35 concealed-hinge cup is shown in focus mode.
+    ctx.save();ctx.beginPath();ctx.arc(cup[0],cup[1],7.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(162,166,168,.92)';ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle='#4f5457';ctx.stroke();
+    ctx.beginPath();ctx.arc(cup[0],cup[1],3.2,0,Math.PI*2);ctx.strokeStyle='rgba(70,74,76,.72)';ctx.lineWidth=1;ctx.stroke();ctx.restore();
   }
 
   function drawFocusedModuleDimensions(ctx,projector,module,c){
@@ -220,17 +221,20 @@
     });
     const front=moduleFrontFace(facadeFaces,module);
 
-    // Structural rail / rib.
-    const railH=Math.min(80,Math.max(45,h*.08));
-    panel({x:x+t,y:y+d-70,z:z+h-railH-t,w:Math.max(20,w-2*t),d:45,h:railH},'rgba(175,180,180,.24)');
-    if(module.kind==='SINK')panel({x:x+t,y:y+26,z:z+h-railH-t,w:Math.max(20,w-2*t),d:45,h:railH},'rgba(175,180,180,.24)');
+    // Structural rails/ribs use the same 18 mm panel thickness as the carcass.
+    const railT=t;
+    panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+    if(module.kind==='SINK')panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
     if(module.kind==='COOKTOP'&&module.oven_appliance_present){
       const oh=Math.max(420,Math.min(600,h*.72));
       drawBox(ctx,projector,{x:x+45,y:y+45,z:z+70,w:Math.max(120,w-90),d:Math.max(120,d-90),h:oh},{body:'#25282b',side:'#161819',front:'#151719',top:'#3c4043',stroke:'rgba(0,0,0,.7)'});
     }
     if(module.kind==='TALL_OVEN'){
-      const oz=z+h*.34,oh=h*.20;
+      const oz=z+h*.34,oh=Math.min(600,Math.max(520,h*.20));
+      panel({x:x+t,y:y+22,z:oz-t,w:Math.max(20,w-2*t),d:Math.max(30,d-44),h:t},'rgba(205,208,205,.28)');
       drawBox(ctx,projector,{x:x+45,y:y+45,z:oz,w:Math.max(120,w-90),d:Math.max(120,d-90),h:oh},{body:'#25282b',side:'#161819',front:'#151719',top:'#3c4043',stroke:'rgba(0,0,0,.7)'});
+      module.oven_support_shelf_position='BELOW_OVEN';
+      module.oven_nominal_zone_mm=600;
     }
 
     // Shelves.
@@ -414,7 +418,7 @@
         drawModuleDetails(ctx,projector,module,c);
         drawTopAppliance(ctx,projector,module);
         if(options.showModuleDimensions)drawFocusedModuleDimensions(ctx,projector,module,c);
-        drawNumber(ctx,front,module.number,c);
+        // No navigation number in MODULE_FOCUS_MODE; numbering belongs to the full-kitchen view.
         hits.push({id:module.id,points:front});
       });
       ctx.save();ctx.font='700 11px -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif';ctx.textAlign='center';ctx.fillStyle=c.dimension;
