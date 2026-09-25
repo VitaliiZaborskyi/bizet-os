@@ -237,7 +237,7 @@ def test_r101_room_run_never_expands_beyond_measured_wall():
 def test_r101_room_height_wrapper_adapts_and_never_mutates_focus_geometry():
     dims = read("model-r6-dimensions.js")
     assert "function fittedHeights(room)" in dims
-    assert "Math.min(roomH-100" in dims
+    assert "Math.min(roomH-module.z" in dims
     assert "if(options.focusMode)return original(canvas,options)" in dims
     assert "module.room_height_adapted=adapted" in dims
 
