@@ -241,6 +241,7 @@ function renderStep() {
   $('choiceGrid').hidden = false;
 
   const step = activeStepDefinition();
+  document.body.dataset.startKind=step.field;
   $('stepMeta').textContent = `${copy('step')} ${currentStep + 1} ${copy('of')} ${STEPS.length}`;
   $('stepTitle').textContent = t(step.title);
   $('stepSubtitle').textContent = t(step.subtitle);
@@ -333,6 +334,7 @@ async function editSummaryStep(index) {
 }
 
 async function renderSummary() {
+  document.body.dataset.startKind='summary';
   $('introBlock').hidden = true;
   $('choiceGrid').hidden = true;
   $('backButton').hidden = false;
