@@ -9,10 +9,10 @@ def read(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
 
 
-def test_r8_configuration_auto_advances_without_continue_button():
+def test_r10_configuration_auto_advances_to_workspace_without_continue_button():
     js = read("start-room-handoff.js")
     assert "configurationContinue5" not in js
-    assert "window.location.assign('/room-setup?project='" in js
+    assert "window.location.assign('/workspace?project='" in js
     assert "config-auto-note" in js
 
 
