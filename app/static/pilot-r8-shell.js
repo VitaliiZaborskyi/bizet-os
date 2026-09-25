@@ -40,6 +40,11 @@
     s.id='r8SplashStyle';
     s.textContent=`
       #backButton[hidden]{display:none!important}
+      .topbar .settings-wrap,.setup-topbar .settings-wrap,.r8-topbar .settings-wrap{
+        position:absolute!important;right:18px!important;top:50%!important;transform:translateY(-50%)!important;
+        margin:0!important;display:flex!important;align-items:center!important;gap:6px!important;z-index:70!important
+      }
+      @media(max-width:820px){.topbar .settings-wrap,.setup-topbar .settings-wrap,.r8-topbar .settings-wrap{right:10px!important}}
       .settings-panel{
         background:#fff!important;background-color:#fff!important;opacity:1!important;
         backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
@@ -48,18 +53,16 @@
       .r8-transition{
         position:fixed;inset:0;z-index:99999;background:
           radial-gradient(circle at 50% 46%,rgba(255,255,255,.045),transparent 28%),
-          linear-gradient(180deg,#090909,#111);
+          radial-gradient(circle at 50% 48%,#132746 0%,#091423 34%,#030912 72%,#02060c 100%);
         overflow:hidden;display:grid;place-items:center;opacity:1;transition:opacity .34s ease;
       }
       .r8-transition.is-leaving{opacity:0;pointer-events:none}
       .r8-transition-stage{position:relative;width:100%;height:100%;display:grid;place-items:center;perspective:1200px}
       .r8-word{
         position:absolute;left:50%;top:50%;white-space:nowrap;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
-        color:transparent;background:
-          linear-gradient(110deg,#4b4b4b 0%,#f8f8f8 15%,#777 27%,#fff 42%,#5f5f5f 55%,#e9e9e9 70%,#696969 82%,#f6f6f6 100%);
-        background-size:260% 100%;-webkit-background-clip:text;background-clip:text;
-        text-shadow:0 10px 36px rgba(255,255,255,.08),0 18px 70px rgba(0,0,0,.7);
-        filter:drop-shadow(0 1px 0 rgba(255,255,255,.34));
+        color:#f5f7fb;background:none;
+        text-shadow:0 8px 30px rgba(54,114,196,.10),0 18px 70px rgba(0,0,0,.72);
+        filter:none;
       }
       .r8-word-z{
         font-size:clamp(22px,2.3vw,34px);font-weight:650;letter-spacing:.38em;
@@ -70,7 +73,8 @@
         animation:r8FlyB var(--r8-duration) cubic-bezier(.16,.82,.18,1) both;
       }
       .r8-word-os{
-        font-size:clamp(58px,8vw,102px);font-weight:610;letter-spacing:-.06em;
+        font-size:clamp(58px,8vw,102px);font-weight:700;letter-spacing:-.06em;color:#2f7cff;
+        text-shadow:0 0 30px rgba(47,124,255,.20),0 18px 70px rgba(0,0,0,.72);
         animation:r8FlyOS var(--r8-duration) cubic-bezier(.16,.82,.18,1) both;
       }
       .r8-flash{
@@ -134,6 +138,7 @@
   }
 
   let playing=false;
+  const SPLASH_FAILSAFE_MS=4200;
   function play({duration=2500}={}){
     if(playing)return Promise.resolve();
     playing=true;
@@ -146,7 +151,9 @@
       const reduced=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
       const effective=reduced?420:duration;
       setTimeout(()=>overlay.classList.add('is-leaving'),Math.max(220,effective-300));
-      setTimeout(()=>{overlay.remove();playing=false;resolve()},effective+80);
+      const finish=()=>{if(!overlay.isConnected)return;overlay.remove();playing=false;resolve()};
+      setTimeout(finish,effective+80);
+      setTimeout(finish,Math.max(SPLASH_FAILSAFE_MS,effective+600));
     });
   }
   window.BizetTransition={play};
