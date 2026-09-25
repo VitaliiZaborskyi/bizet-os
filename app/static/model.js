@@ -372,9 +372,38 @@
     sorted.forEach((m,i)=>m.number=i+1);return sorted;
   }
 
+  function moduleCenter(m){return{x:(Number(m.x)||0)+(Number(m.w)||0)/2,y:(Number(m.y)||0)+(Number(m.d)||0)/2}}
+  function sameWallGap(a,b){
+    if(!a||!b||a.wall!==b.wall)return Infinity;
+    const sa=a.wall==='A'?Number(a.x)||0:Number(a.y)||0,ea=sa+(a.wall==='A'?(Number(a.w)||0):(Number(a.d)||0));
+    const sb=b.wall==='A'?Number(b.x)||0:Number(b.y)||0,eb=sb+(b.wall==='A'?(Number(b.w)||0):(Number(b.d)||0));
+    if(ea<=sb)return sb-ea;if(eb<=sa)return sa-eb;return 0;
+  }
+  function evaluateErgonomics(list){
+    const lower=list.filter(m=>m.level!=='upper'),sink=lower.find(m=>m.kind==='SINK'),cook=lower.find(m=>m.kind==='COOKTOP'),oven=lower.find(m=>m.kind==='TALL_OVEN'),fridge=lower.find(m=>m.kind==='FRIDGE');
+    if(sink&&cook&&sink.wall===cook.wall){
+      const gap=sameWallGap(sink,cook);
+      if(gap<ERGO.SINK_COOKTOP_HARD_MIN)pushWarning('SINK_COOKTOP_HARD',`Между мойкой и варочной только ${Math.round(gap)} мм. HARD минимум — ${ERGO.SINK_COOKTOP_HARD_MIN} мм; производственный вариант запрещён без перестройки.`);
+      else if(gap<ERGO.SINK_COOKTOP_PREFERRED)pushWarning('SINK_COOKTOP_PREFERRED',`Между мойкой и варочной ${Math.round(gap)} мм. Допустимо, но предпочтительная рабочая зона — ${ERGO.SINK_COOKTOP_PREFERRED} мм.`);
+    }
+    if(sink&&oven&&sink.wall===oven.wall){
+      const gap=sameWallGap(sink,oven);
+      if(gap<ERGO.SINK_OVEN_SAME_WALL_MIN)pushWarning('SINK_OVEN_SPACING',`Мойка и пенал с духовкой на одной стене должны быть разнесены минимум на ${ERGO.SINK_OVEN_SAME_WALL_MIN} мм. Сейчас: ${Math.round(gap)} мм.`);
+    }
+    if(fridge&&sink&&cook){
+      const pts=[moduleCenter(fridge),moduleCenter(sink),moduleCenter(cook)];
+      const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+      const legs=[dist(pts[0],pts[1]),dist(pts[1],pts[2]),dist(pts[2],pts[0])],sum=legs.reduce((s,v)=>s+v,0);
+      if(legs.some(v=>v<ERGO.TRIANGLE_LEG_MIN||v>ERGO.TRIANGLE_LEG_MAX)||sum>ERGO.TRIANGLE_SUM_MAX){
+        pushWarning('WORK_TRIANGLE_PILOT',`Эргономический контур холодильник–мойка–варочная: стороны ${legs.map(v=>Math.round(v)).join(' / ')} мм, сумма ${Math.round(sum)} мм. Система сохранила HARD-ограничения, но рекомендует проверить рабочий маршрут.`);
+      }
+    }
+  }
+
   function buildModules(){
     layoutWarnings=[];
     const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(lower.concat(upper));
+    evaluateErgonomics(all);
     const standardPackageH=LOWER_TOTAL_H+Math.max(550,Number(inputs.upper_gap_mm)||600)+750;
     if(room.heightMm<standardPackageH&&upper.length){
       pushWarning('ROOM_HEIGHT_ADAPTED',`Высота помещения ${Math.round(room.heightMm)} мм ниже стандартной схемы. Верхние/высокие модули адаптированы по высоте; производителю нужна проверка, возможна корректировка стоимости.`);
