@@ -32,11 +32,25 @@
     drillingDiameterMm:5,
     classification:'PILOT_VISUAL_PRODUCTION_LINK'
   });
+  const CORNER_RULES=Object.freeze({
+    ZONE_DEPTH:600,
+    MAX_CORNER_MODULE:1250,
+    ALLOWED_KINDS:Object.freeze(['SINK','CORNER']),
+    FORBIDDEN_APPLIANCES:Object.freeze(['COOKTOP','DISHWASHER','FRIDGE','TALL_OVEN','OVEN','MICROWAVE','TALL']),
+    classification:'HARD'
+  });
+  const COMPOSITION_RULES=Object.freeze({
+    centerPrimaryApplianceOnLongRun:true,
+    skipWhenCommunicationsConfirmed:true,
+    classification:'PILOT_COMPOSITION_SCORE'
+  });
   window.BizetR10Rules=Object.freeze({
     hingeVerticalMm:HINGE_VERTICAL_MM,
     moduleLimitsMm:MODULE_LIMITS_MM,
     ergonomicsMm:ERGONOMICS_MM,
     handleRules:HANDLE_RULES,
+    cornerRules:CORNER_RULES,
+    compositionRules:COMPOSITION_RULES,
     hingeSideCupPosition:Object.freeze({status:'DEFERRED_REQUIRES_OWNER_FREEZE'}),
     additionalHingeCount:Object.freeze({status:'HUMAN_OPEN'})
   });
