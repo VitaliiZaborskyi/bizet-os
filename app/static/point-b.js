@@ -233,8 +233,14 @@
     const cutM=panelArea*6;
     const edgeM=panelArea*6*1.2;
     const hw=countHardware(modules,details);
-    const lowerRun=modules.filter(m=>m.wall==='A'&&m.level!=='upper'&&!m.tall&&m.kind!=='FRIDGE').reduce((s,m)=>s+runW(m),0);
-    const worktopSlabs=Math.max(1,Math.ceil(lowerRun/PRICES.WORKTOP_LENGTH_MM));
+    const worktopGroups={};
+    modules.filter(m=>m.level!=='upper'&&!m.tall&&m.kind!=='FRIDGE').forEach(m=>{
+      const wall=m.wall||'A',start=wall==='A'?Number(m.x)||0:Number(m.y)||0,end=start+runW(m);
+      if(!worktopGroups[wall])worktopGroups[wall]={min:start,max:end};else{worktopGroups[wall].min=Math.min(worktopGroups[wall].min,start);worktopGroups[wall].max=Math.max(worktopGroups[wall].max,end)}
+    });
+    const worktopRuns=Object.values(worktopGroups).map(g=>Math.max(0,g.max-g.min));
+    const worktopSlabs=Math.max(1,worktopRuns.reduce((sum,len)=>sum+Math.ceil(len/PRICES.WORKTOP_LENGTH_MM),0));
+    const worktopJoints=worktopRuns.reduce((sum,len)=>sum+Math.max(0,Math.ceil(len/PRICES.WORKTOP_LENGTH_MM)-1),0);
     const rows=[];
     const add=(group,item,qty,unit,rate,note='')=>rows.push({group,item,qty,unit,rate,total:qty*rate,note});
     add('Материалы','ЛДСП 18 Carcas',areas.CARCAS,'м²',PRICES.CARCAS_M2);
@@ -242,7 +248,7 @@
     add('Материалы','ЛДСП 18 Facade',areas.FACADE,'м²',PRICES.FACADE_M2);
     add('Материалы','HDF 3 mm',areas.HDF,'м²',PRICES.HDF_M2);
     add('Материалы','PVC 22×0.8',edgeM,'п.м',PRICES.EDGE_MATERIAL_M,'Эмпирика: площадь плит × 6 + 20%');
-    add('Материалы','Столешница EGGER 4100×600×38',worktopSlabs,'шт',PRICES.WORKTOP_SLAB,'Клиент оплачивает целую заготовку; остаток не вычитается');
+    add('Материалы','Столешница EGGER 4100×600×38',worktopSlabs,'шт',PRICES.WORKTOP_SLAB,`Максимум 4100 мм без стыка; стыков по текущим прогонам: ${worktopJoints}`);
     add('Работы','Распил',cutM,'п.м',PRICES.CUT_M,'Площадь плит × 6');
     add('Работы','Кромкование',edgeM,'п.м',PRICES.EDGE_LABOR_M);
     add('Работы','Обычные отверстия',hw.HOLE,'шт',PRICES.HOLE);
@@ -267,7 +273,7 @@
     add('Работы','Упаковка',panelArea,'м²',PRICES.PACKING_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     add('Работы','Установка',panelArea,'м²',PRICES.INSTALL_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     const cost=rows.reduce((s,r)=>s+r.total,0),client=cost*2;
-    return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
+    return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,worktopJoints,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
   }
 
   function moduleDrawing(modules,room,orderRef=''){
