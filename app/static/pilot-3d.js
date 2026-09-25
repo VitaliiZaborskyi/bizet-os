@@ -184,16 +184,25 @@
       panel({x:x+34,y:y+42,z:dz,w:Math.max(40,w-68),d:innerD,h:t},'rgba(122,132,136,.28)');
       panel({x:x+34,y:y+42,z:dz+t,w:t,d:innerD,h:Math.min(90,dh)},'rgba(122,132,136,.26)');
       panel({x:x+w-52,y:y+42,z:dz+t,w:t,d:innerD,h:Math.min(90,dh)},'rgba(122,132,136,.26)');
+      panel({x:x+34,y:y+42,z:dz+t,w:Math.max(40,w-68),d:t,h:Math.min(90,dh)},'rgba(130,138,141,.30)');
+      panel({x:x+34,y:y+42+innerD-t,z:dz+t,w:Math.max(40,w-68),d:t,h:Math.min(90,dh)},'rgba(112,120,123,.30)');
+      panel({x:x+20,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
+      panel({x:x+w-30,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
     }
 
-    // Phase 4 drawer internals: bottom + side walls only. Front/rear box walls are phase 8.
+    // Phase 8 drawer internals: complete box + slides, facade remains a separate ghosted object.
     if(module.kind==='DRAWERS'){
       const count=Math.max(2,Math.min(5,Number(module.drawer_count)||2)),inside=Math.max(100,h-40),each=inside/count;
       for(let i=0;i<count;i++){
         const dz=z+20+i*each,dh=Math.max(70,each-18),sideH=Math.min(115,dh*.48);
-        panel({x:x+34,y:y+42,z:dz,w:Math.max(40,w-68),d:Math.max(60,d-82),h:t},'rgba(122,132,136,.28)');
-        panel({x:x+34,y:y+42,z:dz+t,w:t,d:Math.max(60,d-82),h:sideH},'rgba(122,132,136,.26)');
-        panel({x:x+w-52,y:y+42,z:dz+t,w:t,d:Math.max(60,d-82),h:sideH},'rgba(122,132,136,.26)');
+        const innerD=Math.max(60,d-82);
+        panel({x:x+34,y:y+42,z:dz,w:Math.max(40,w-68),d:innerD,h:t},'rgba(122,132,136,.28)');
+        panel({x:x+34,y:y+42,z:dz+t,w:t,d:innerD,h:sideH},'rgba(122,132,136,.26)');
+        panel({x:x+w-52,y:y+42,z:dz+t,w:t,d:innerD,h:sideH},'rgba(122,132,136,.26)');
+        panel({x:x+34,y:y+42,z:dz+t,w:Math.max(40,w-68),d:t,h:sideH},'rgba(130,138,141,.30)');
+        panel({x:x+34,y:y+42+innerD-t,z:dz+t,w:Math.max(40,w-68),d:t,h:sideH},'rgba(112,120,123,.30)');
+        panel({x:x+20,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
+        panel({x:x+w-30,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
       }
     }
 
