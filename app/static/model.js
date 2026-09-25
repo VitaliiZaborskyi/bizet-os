@@ -290,7 +290,7 @@
     const base=ordered.filter((_,i)=>i!==anchorIndex);
     const hasStartCorner=base[0]?.kind==='CORNER'||(base[0]?.kind==='SINK'&&base[0]?.corner_edge==='START');
     const hasEndCorner=base[base.length-1]?.kind==='CORNER'||(base[base.length-1]?.kind==='SINK'&&base[base.length-1]?.corner_edge==='END');
-    const startReserve=hasStartCorner?runWidth(base[0]):0,endReserve=hasEndCorner?runWidth(base[base.length-1]):0;
+    const startReserve=hasStartCorner?(Number(base[0].w)||0):0,endReserve=hasEndCorner?(Number(base[base.length-1].w)||0):0;
     const target=bounds.start+(bounds.span-startReserve-endReserve)/2+startReserve;
     const minPos=hasStartCorner?1:0,maxPos=base.length-(hasEndCorner?1:0);
     let best=null;
@@ -299,8 +299,8 @@
       const ai=candidate.indexOf(anchor),si=candidate.findIndex(m=>m.kind==='SINK');
       if(si>=0&&anchor.kind==='COOKTOP'&&separationBetween(candidate,ai,si)<ERGO.SINK_COOKTOP_HARD_MIN)continue;
       if(si>=0&&anchor.kind==='TALL_OVEN'&&separationBetween(candidate,ai,si)<ERGO.SINK_OVEN_SAME_WALL_MIN)continue;
-      const before=candidate.slice(0,ai).reduce((s,m)=>s+Math.min(runWidth(m),maxRunFor(m)),0);
-      const center=bounds.start+before+Math.min(runWidth(anchor),maxRunFor(anchor))/2;
+      const before=candidate.slice(0,ai).reduce((s,m)=>s+Math.min(Number(m.w)||0,maxRunFor(m)),0);
+      const center=bounds.start+before+Math.min(Number(anchor.w)||0,maxRunFor(anchor))/2;
       const score=Math.abs(center-target);
       if(!best||score<best.score)best={candidate,score};
     }
