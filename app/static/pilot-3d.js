@@ -189,16 +189,29 @@
       }
     }
 
-    // Temporary hardware placeholders. Phases 5/6 replace them with verified assets.
+    // Temporary fallback geometry remains explicitly separate from verified manufacturer assets.
+    const hardware=window.BizetHardwareAssets||{};
     if(module.level!=='upper'&&!module.tall){
+      const legAsset=hardware.SCILM_ADJUSTABLE_LEG;
       const legZ=Math.max(0,z-95),legH=Math.max(35,z-legZ),ix=Math.min(70,w*.14),iy=Math.min(70,d*.16);
       [[x+ix,y+iy],[x+w-ix-28,y+iy],[x+ix,y+d-iy-28],[x+w-ix-28,y+d-iy-28]].forEach(([lx,ly])=>{
         panel({x:lx,y:ly,z:legZ,w:28,d:28,h:legH},'rgba(55,59,62,.72)');
       });
+      module.hardware_leg_asset_status=legAsset?.geometry_status||'ASSET_REQUIRED';
     }
     if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER'].includes(module.kind)){
-      const levels=module.kind==='SINK'?[.20,.78]:[.18,.82];
-      levels.forEach(ratio=>panel({x:x+18,y:y-20,z:z+h*ratio-12,w:18,d:20,h:24},'rgba(60,64,66,.68)'));
+      const rules=window.BizetR10Rules?.hingeVerticalMm||{};
+      const hingeRule=module.kind==='SINK'?(rules.SINK_BASE||{top:150,bottom:100}):(rules.STANDARD||{top:100,bottom:100});
+      const bottomZ=z+Math.min(h-20,Math.max(20,Number(hingeRule.bottom)||100));
+      const topZ=z+h-Math.min(h-20,Math.max(20,Number(hingeRule.top)||100));
+      const hingeZ=[bottomZ,topZ].filter((value,index,array)=>index===0||Math.abs(value-array[0])>40);
+      hingeZ.forEach(centerZ=>{
+        // Fallback is schematic only until the verified Blum CAD geometry is acquired.
+        panel({x:x+18,y:y-20,z:centerZ-12,w:18,d:20,h:24},'rgba(60,64,66,.68)');
+        panel({x:x+3,y:y-12,z:centerZ-6,w:34,d:12,h:12},'rgba(82,86,88,.62)');
+      });
+      module.hardware_hinge_asset_status=hardware.BLUM_HINGE_STRAIGHT_PLATE?.geometry_status||'ASSET_REQUIRED';
+      module.hinge_vertical_rule={top_mm:Number(hingeRule.top),bottom_mm:Number(hingeRule.bottom)};
     }
     [z+h*.22,z+h*.5,z+h*.78].forEach(fz=>{
       drawFocusDot(ctx,projector,[x+t*.55,y+35,fz]);
