@@ -157,11 +157,17 @@
     }
     return[detail(module,startNo,1,'ЛДСП 18 Facade','Facade Dishwasher',Math.max(100,module.h+module.z-TOP_GAP),Math.max(100,W-GAP),1,EDGE,2,2,'Крепление к фасаду ПММ')];
   }
+  function fillerDetail(module,startNo){
+    const W=Math.max(20,runW(module)),H=Math.max(100,round(module.h));
+    return[detail(module,startNo,1,'ЛДСП 18 Carcas','Filler Panel',H,W,1,EDGE,2,2,'','PILOT: конструкция/привязка филлера требует финального freeze')];
+  }
+
   function detailsFor(modules){
     const all=[];let no=1;
     modules.filter(m=>m.wall==='A').forEach(m=>{
       let rows=[];
-      if(m.kind==='DISHWASHER')rows=dishwasher(m,no);
+      if(m.kind==='FILLER')rows=fillerDetail(m,no);
+      else if(m.kind==='DISHWASHER')rows=dishwasher(m,no);
       else if(m.kind==='SINK')rows=sinkBase(m,no);
       else if(m.kind==='DRAWERS')rows=drawersBase(m,no,Math.max(2,Math.min(5,Number(m.drawer_count)||2)));
       else if(m.kind==='UPPER_HOOD')rows=upper(m,no,false,true);
@@ -181,7 +187,7 @@
     const H={CONFIRMAT:0,MINIFIX:0,DOWEL:0,RAFIX:0,SCREW:0,HINGE:0,HINGE_CUP:0,LEG:0,LEG_CLIP:0,HANDLE:0,SHELF_SUPPORT:0,DRAWER_SLIDE:0,METAL_DRAWER:0,EURO_SCREW:0,HOLE:0,GROOVE_M:0,HANGER:0,HANGER_PLATE:0,WALL_DOWEL:0};
     modules.filter(m=>m.wall==='A').forEach(m=>{
       const D=depth(m),perSide=fastenersPerSide(D);
-      if(m.level!=='upper'&&!m.tall&&!['DISHWASHER','FRIDGE'].includes(m.kind)){
+      if(m.level!=='upper'&&!m.tall&&!['DISHWASHER','FRIDGE','FILLER'].includes(m.kind)){
         let addedConfirmats=0;
         if(m.kind==='SINK')addedConfirmats=2*perSide+6;
         else if(m.kind==='DRAWERS')addedConfirmats=2*perSide+4;
