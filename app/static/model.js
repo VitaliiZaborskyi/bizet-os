@@ -8,6 +8,7 @@
   let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72},focusDimensionsVisible=true;
   let layoutWarnings=[];
   const LIMITS=window.BizetR10Rules?.moduleLimitsMm||{STRAIGHT_MAX:900,CORNER_MAX:1250,PREFERRED_FILL:600,HINGED_FACADE_MAX:597,MIN_STANDARD_MODULE:300};
+  const ERGO=window.BizetR10Rules?.ergonomicsMm||{SINK_COOKTOP_HARD_MIN:500,SINK_COOKTOP_PREFERRED:900,SINK_OVEN_SAME_WALL_MIN:1000,TRIANGLE_LEG_MIN:1200,TRIANGLE_LEG_MAX:2700,TRIANGLE_SUM_MAX:7900};
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
   const LOWER_DEPTH=560,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
@@ -19,6 +20,21 @@
   function roomValues(){return{lengthMm:measured('wall_length',6000),depthMm:measured('wall_depth',4200),heightMm:measured('room_height',2800)}}
   function configuration(){return sessionStorage.getItem(CONFIG_KEY)||localStorage.getItem(CONFIG_KEY)||'WALL_CENTER'}
   function activeWalls(){const map={WALL_CENTER:['A'],WALL_LEFT:['A'],WALL_RIGHT:['A'],L_LEFT:['A','B'],L_RIGHT:['A','C'],U_SHAPE:['A','B','C'],CUSTOM:['A']};return map[configuration()]||['A']}
+  function autoWall(requested,avoidWall=null,preferWall='A'){
+    const walls=activeWalls();
+    if(requested&&requested!=='AUTO'&&walls.includes(requested))return requested;
+    if(preferWall&&walls.includes(preferWall)&&preferWall!==avoidWall)return preferWall;
+    return walls.find(w=>w!==avoidWall)||walls[0]||'A';
+  }
+  function cornerEdgesForWall(wall){
+    const cfg=configuration(),edges=new Set();
+    if((cfg==='L_LEFT'||cfg==='U_SHAPE')&&wall==='A')edges.add('START');
+    if((cfg==='L_RIGHT'||cfg==='U_SHAPE')&&wall==='A')edges.add('END');
+    if((cfg==='L_LEFT'||cfg==='U_SHAPE')&&wall==='B')edges.add('START');
+    if((cfg==='L_RIGHT'||cfg==='U_SHAPE')&&wall==='C')edges.add('START');
+    return edges;
+  }
+  function isOvenModule(m){return !!m&&(m.kind==='TALL_OVEN'||(m.kind==='COOKTOP'&&m.oven_appliance_present))}
   function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
   function isCornerModule(m){return !!m&&(m.kind==='CORNER'||m.corner===true)}
   function runWidth(m){return m?.wall==='A'?Number(m.w)||0:Number(m.d||m.w)||0}
@@ -80,11 +96,23 @@
   }
 
   function sinkWall(){const config=configuration(),side=inputs.sink_side;if(config==='L_LEFT')return side==='LEFT'?'B':'A';if(config==='L_RIGHT')return side==='RIGHT'?'C':'A';if(config==='U_SHAPE')return side==='LEFT'?'B':'C';return'A'}
+  function resolvedCooktopWall(){
+    const sink=sinkWall(),requested=inputs.cooktop_wall;
+    return autoWall(requested,sink,'A');
+  }
+  function resolvedOvenWall(){
+    const sink=sinkWall(),cook=resolvedCooktopWall(),requested=inputs.oven_wall;
+    return autoWall(requested,sink,cook);
+  }
   function baseModule(id,label,width,kind,wall='A',extra={}){
     const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra};
     if(kind==='DRAWERS')module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
     module.module_run_limit_mm=maxRunFor(module);
     module.facade_width_limit_mm=LIMITS.HINGED_FACADE_MAX;
+    module.handle_type=module.handle_type||'STANDARD';
+    module.handle_orientation=module.handle_orientation||(kind==='DRAWERS'?'HORIZONTAL':'HORIZONTAL');
+    module.handle_offset_mm=Number(module.handle_offset_mm)||50;
+    if(isOvenModule(module))module.corner_forbidden=true;
     if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER','TALL_OVEN'].includes(kind))module.facade_count=hingedFacadeCountFor(module);
     return applyBaseOverride(module);
   }
@@ -110,12 +138,12 @@
       const sidePanel=free?18:0;
       list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2,'DISHWASHER',wall,{freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel}));
     }
-    const cooktopWall=walls.includes(inputs.cooktop_wall)?inputs.cooktop_wall:'A';
-    list.push(baseModule('cooktop',inputs.oven_location==='LOWER'?'Варочная + духовка':'Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED',oven_appliance_present:inputs.oven_location==='LOWER'}));
+    const cooktopWall=resolvedCooktopWall();
+    list.push(baseModule('cooktop',inputs.oven_location==='LOWER'?'Варочная + духовка':'Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED',oven_appliance_present:inputs.oven_location==='LOWER',corner_forbidden:inputs.oven_location==='LOWER'}));
     if(inputs.oven_location==='TALL'){
-      const wall=walls.includes(inputs.oven_wall)?inputs.oven_wall:'A';
+      const wall=resolvedOvenWall();
       const tallHeight=Math.max(900,Math.min(roomValues().heightMm-140,2100));
-      list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',oven_appliance_present:true,mandatory_lower_drawer:true,lower_drawer_count:1,lower_drawer_structure:{components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true},microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
+      list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',oven_appliance_present:true,mandatory_lower_drawer:true,lower_drawer_count:1,corner_forbidden:true,lower_drawer_structure:{components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true},microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
     }
     return list;
   }
