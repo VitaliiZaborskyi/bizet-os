@@ -321,6 +321,7 @@
     module_opening_overrides:{...(visual.module_opening_overrides||{})}
   }}
   async function applyWorkspaceState(state,reason='R8 saved variant'){
+    enterNormalKitchenView();
     const next={...visual};
     if(state.inputs)next.guided_inputs={...state.inputs};
     if(state.variant)next.r8_variant={...state.variant};
@@ -336,6 +337,7 @@
     try{
       const fresh=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{cache:'no-store'});
       project=fresh.project||fresh;visual={...(project.scene?.visual_settings||{})};inputs={...(visual.guided_inputs||{})};setFurniturePalette();
+      enterNormalKitchenView();$('moduleDialog')?.close?.();
       requestAnimationFrame(()=>{renderScene(false);requestAnimationFrame(()=>renderScene(false))});
       $('modelStatus').textContent='Проект восстановлен после паузы.';
     }catch(error){
@@ -344,7 +346,7 @@
     }
     resumeFromSleep.busy=false;
   }
-  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
+  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();else exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
 
   const canvas=$('modelCanvas');
   canvas.addEventListener('pointerdown',event=>{const cam=viewMode===VIEW_FOCUS?focusCamera:camera;drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:cam.yaw,pitch:cam.pitch};dragMoved=false;canvas.setPointerCapture?.(event.pointerId)});
@@ -363,7 +365,9 @@
   $('moduleApply')?.addEventListener('click',()=>applyModuleCustomization().catch(error=>setValidation(error.message)));
   $('moduleReset')?.addEventListener('click',()=>resetModuleCustomization().catch(error=>setValidation(error.message)));
   $('materialsButton').addEventListener('click',()=>location.assign(`/materials?project=${encodeURIComponent(projectId)}`));$('backButton').addEventListener('click',()=>history.back());
-  window.addEventListener('resize',()=>requestAnimationFrame(()=>renderScene(false)));window.addEventListener('bizet:themechange',()=>requestAnimationFrame(()=>renderScene(false)));window.addEventListener('bizet:resume',()=>resumeFromSleep());
+  window.addEventListener('resize',()=>{if(viewMode===VIEW_FOCUS){$('moduleDialog')?.close?.();enterNormalKitchenView()}requestAnimationFrame(()=>renderScene(false))});
+  window.addEventListener('bizet:themechange',()=>requestAnimationFrame(()=>renderScene(false)));
+  window.addEventListener('bizet:resume',()=>resumeFromSleep());
 
   (async()=>{
     if(!projectId){$('modelStatus').textContent='Проект не найден';return}let engineOk=false;
