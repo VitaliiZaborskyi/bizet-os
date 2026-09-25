@@ -3,7 +3,9 @@
   const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
   const projectId=params.get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
   if(projectId){sessionStorage.setItem(PROJECT_KEY,projectId);localStorage.setItem(PROJECT_KEY,projectId)}
+  const VIEW_NORMAL='NORMAL_KITCHEN_VIEW',VIEW_FOCUS='MODULE_FOCUS_MODE';
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false,dimensionsVisible=true;
+  let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72};
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
   const LOWER_DEPTH=560,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
@@ -194,7 +196,36 @@
     $('moduleStrip').innerHTML=modules.map(m=>`<button class="module-strip-button${m.system||m.pending?' is-system':''}" type="button" data-module="${m.id}"><strong>${m.number}</strong><span>${m.label}</span></button>`).join('');
     $('moduleStrip').querySelectorAll('[data-module]').forEach(btn=>btn.addEventListener('click',()=>openModule(btn.dataset.module)));
   }
-  function renderScene(engineOk=false){setFurniturePalette();modules=buildModules();scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),modules,camera,showDimensions:dimensionsVisible,architecturalElements:project?.room?.architectural_elements||[]});renderStrip();$('modelStatus').textContent=engineOk?'Module Engine доступен · текущий 3D уже использует подтверждённые исходные точки; остаточное деление ещё не заморожено.':'3D-пилот · исходные точки собраны, незакреплённое остаточное деление остаётся визуальным слоем.'}
+  function renderNormalKitchen(engineOk=false){
+    viewMode=VIEW_NORMAL;
+    scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
+      room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),
+      modules,camera,showDimensions:dimensionsVisible,
+      architecturalElements:project?.room?.architectural_elements||[]
+    });
+    $('modelStatus').textContent=engineOk?'Module Engine доступен · полная кухня активна.':'3D-пилот · полная кухня активна.';
+  }
+  function renderModuleFocus(){
+    if(!activeModule){renderNormalKitchen(false);return}
+    const current=modules.find(m=>m.id===activeModule.id);
+    if(!current){activeModule=null;renderNormalKitchen(false);return}
+    activeModule=current;
+    const run=Math.max(300,runDimension(current)),dep=Math.max(280,depthDimension(current));
+    const room={lengthMm:run+1000,depthMm:dep+1000,heightMm:Math.max(1200,current.h+520)};
+    const clone={...current,wall:'A',x:500,y:room.depthMm-dep-320,z:120,w:run,d:dep,number:current.number};
+    scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
+      room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
+      camera:focusCamera,showDimensions:false,architecturalElements:[]
+    });
+    $('modelStatus').textContent='Режим модуля · закройте редактор, чтобы вернуться к полной кухне.';
+  }
+  function renderScene(engineOk=false){
+    setFurniturePalette();
+    modules=buildModules();
+    renderStrip();
+    if(viewMode===VIEW_FOCUS&&activeModule)renderModuleFocus();
+    else renderNormalKitchen(engineOk);
+  }
 
   function offsets(){return{...(visual.module_offsets_mm||{})}}
   function runDimension(m){return m.wall==='A'?m.w:m.d}
@@ -214,6 +245,7 @@
   }
   function openModule(id){
     activeModule=modules.find(m=>m.id===id)||null;if(!activeModule)return;
+    viewMode=VIEW_FOCUS;focusCamera={yaw:-.36,pitch:.34,distanceScale:.72};
     $('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;
     $('moduleCopy').textContent=detailText(activeModule);
     const w=$('moduleWidth'),h=$('moduleHeight'),d=$('moduleDepth'),o=$('moduleOpening'),pos=$('moduleOffsetInput');
@@ -223,7 +255,10 @@
     o.value=openingOverrides()[activeModule.id]||activeModule.opening||'AUTO';
     pos.value=Number(offsets()[activeModule.id])||0;
     setValidation('');
-    $('moduleDialog').showModal?.();
+    renderScene(false);
+    const dialog=$('moduleDialog');
+    if(dialog.open)dialog.close();
+    if(typeof dialog.show==='function')dialog.show();else dialog.showModal?.();
   }
   async function applyModuleCustomization(){
     if(!activeModule)return;
@@ -242,17 +277,20 @@
     };
     opens[activeModule.id]=$('moduleOpening').value||'AUTO';
     offs[activeModule.id]=off;
-    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs,module_direct_edit_status:'PILOT_PARAMETRIC_EDIT'},`Module customization ${activeModule.id}`);
-    renderScene(false);
-    $('modelStatus').textContent='Модуль обновлён. 3D и зависимые остаточные модули перестроены.';
+    const editedId=activeModule.id;
+    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs,module_direct_edit_status:'PILOT_PARAMETRIC_EDIT'},`Module customization ${editedId}`);
+    viewMode=VIEW_NORMAL;activeModule=null;
     $('moduleDialog').close?.();
+    renderScene(false);
+    $('modelStatus').textContent='Модуль обновлён. Полная кухня восстановлена.';
   }
   async function resetModuleCustomization(){
     if(!activeModule)return;
     const sizes=sizeOverrides(),opens=openingOverrides(),offs=offsets();
     delete sizes[activeModule.id];delete opens[activeModule.id];delete offs[activeModule.id];
-    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs},`Reset module customization ${activeModule.id}`);
-    renderScene(false);$('moduleDialog').close?.();
+    const resetId=activeModule.id;
+    await saveVisual({...visual,module_size_overrides:sizes,module_opening_overrides:opens,module_offsets_mm:offs},`Reset module customization ${resetId}`);
+    viewMode=VIEW_NORMAL;activeModule=null;$('moduleDialog').close?.();renderScene(false);
   }
 
   async function patchInputs(patch,reason='R8 workspace'){
@@ -294,17 +332,22 @@
     }
     resumeFromSleep.busy=false;
   }
-  window.BizetModelRuntime={ready:false,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
+  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
 
   const canvas=$('modelCanvas');
-  canvas.addEventListener('pointerdown',event=>{drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:camera.yaw,pitch:camera.pitch};dragMoved=false;canvas.setPointerCapture?.(event.pointerId)});
-  canvas.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.hypot(dx,dy)>4)dragMoved=true;if(!dragMoved)return;camera.yaw=drag.yaw-dx*.008;camera.pitch=clamp(drag.pitch+dy*.006,.08,.85);renderScene(false)});
-  function endPointer(event){if(!drag||drag.id!==event.pointerId)return;const wasMoved=dragMoved;drag=null;canvas.releasePointerCapture?.(event.pointerId);if(!wasMoved&&scene){const rect=canvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);if(id)openModule(id)}}
+  canvas.addEventListener('pointerdown',event=>{const cam=viewMode===VIEW_FOCUS?focusCamera:camera;drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:cam.yaw,pitch:cam.pitch};dragMoved=false;canvas.setPointerCapture?.(event.pointerId)});
+  canvas.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.hypot(dx,dy)>4)dragMoved=true;if(!dragMoved)return;const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.yaw=drag.yaw-dx*.008;cam.pitch=clamp(drag.pitch+dy*.006,.08,.85);renderScene(false)});
+  function endPointer(event){if(!drag||drag.id!==event.pointerId)return;const wasMoved=dragMoved;drag=null;canvas.releasePointerCapture?.(event.pointerId);if(!wasMoved&&scene&&viewMode===VIEW_NORMAL){const rect=canvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);if(id)openModule(id)}}
   canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',()=>{drag=null});
-  canvas.addEventListener('wheel',event=>{event.preventDefault();camera.distanceScale=clamp(camera.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
+  canvas.addEventListener('wheel',event=>{event.preventDefault();const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
 
   $('modelDimensionsToggle').addEventListener('click',()=>{dimensionsVisible=!dimensionsVisible;$('modelDimensionsToggle').textContent=`Размеры · ${dimensionsVisible?'вкл':'выкл'}`;$('modelDimensionsToggle').setAttribute('aria-pressed',String(dimensionsVisible));renderScene(false)});
-  $('moduleClose').addEventListener('click',()=>$('moduleDialog').close?.());
+  function exitModuleFocus(){
+    viewMode=VIEW_NORMAL;activeModule=null;drag=null;
+    renderScene(false);
+  }
+  $('moduleClose').addEventListener('click',()=>{$('moduleDialog').close?.();exitModuleFocus()});
+  $('moduleDialog').addEventListener('close',()=>{if(viewMode===VIEW_FOCUS)exitModuleFocus()});
   $('moduleApply')?.addEventListener('click',()=>applyModuleCustomization().catch(error=>setValidation(error.message)));
   $('moduleReset')?.addEventListener('click',()=>resetModuleCustomization().catch(error=>setValidation(error.message)));
   $('materialsButton').addEventListener('click',()=>location.assign(`/materials?project=${encodeURIComponent(projectId)}`));$('backButton').addEventListener('click',()=>history.back());
