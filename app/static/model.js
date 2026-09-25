@@ -5,7 +5,7 @@
   if(projectId){sessionStorage.setItem(PROJECT_KEY,projectId);localStorage.setItem(PROJECT_KEY,projectId)}
   const VIEW_NORMAL='NORMAL_KITCHEN_VIEW',VIEW_FOCUS='MODULE_FOCUS_MODE';
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false;
-  let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72},focusDimensionsVisible=true;
+  let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72},focusDimensionsVisible=true,normalDimensionsVisible=true;
   let layoutWarnings=[];
   const LIMITS=window.BizetR10Rules?.moduleLimitsMm||{STRAIGHT_MAX:900,CORNER_MAX:1250,PREFERRED_FILL:600,HINGED_FACADE_MAX:597,MIN_STANDARD_MODULE:300};
   const ERGO=window.BizetR10Rules?.ergonomicsMm||{SINK_COOKTOP_HARD_MIN:500,SINK_COOKTOP_PREFERRED:900,SINK_OVEN_SAME_WALL_MIN:1000,TRIANGLE_LEG_MIN:1200,TRIANGLE_LEG_MAX:2700,TRIANGLE_SUM_MAX:7900};
@@ -38,6 +38,12 @@
   }
   function isOvenModule(m){return !!m&&(m.kind==='TALL_OVEN'||(m.kind==='COOKTOP'&&m.oven_appliance_present))}
   function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+  function freestandingGap(width){
+    const w=Math.max(300,Number(width)||600);
+    if(w<=600)return 15;
+    if(w<=900)return 30;
+    return 50;
+  }
   function isCornerModule(m){return !!m&&(m.kind==='CORNER'||m.corner===true)}
   function runWidth(m){return m?.wall==='A'?Number(m.w)||0:Number(m.d||m.w)||0}
   function maxRunFor(m){
@@ -62,7 +68,10 @@
     const inFocus=viewMode===VIEW_FOCUS;
     const back=$('focusBackButton'),dims=$('modelDimensionsToggle');
     if(back)back.hidden=!inFocus;
-    if(dims){dims.hidden=!inFocus;dims.textContent=`Размеры модуля · ${focusDimensionsVisible?'вкл':'выкл'}`;dims.setAttribute('aria-pressed',String(focusDimensionsVisible))}
+    if(dims){
+      const on=inFocus?focusDimensionsVisible:normalDimensionsVisible;
+      dims.hidden=false;dims.textContent='📏';dims.setAttribute('aria-label',on?'Скрыть размеры':'Показать размеры');dims.title=on?'Скрыть размеры':'Показать размеры';dims.setAttribute('aria-pressed',String(on));
+    }
   }
   function variantState(){return {...(visual.r8_variant||{})}}
   function sizeOverrides(){return {...(visual.module_size_overrides||{})}}
@@ -127,13 +136,13 @@
     const list=[],walls=activeWalls(),fWall=fridgeWall();
     if(inputs.fridge_present==='YES'){
       const width=Number(inputs.fridge_width_mm)||600,tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
-      const freeFridge=inputs.fridge_type==='FREESTANDING';
-      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:PLINTH_H,content:inputs.fridge_content||'PENDING',freestanding:freeFridge,appliance_width_mm:width};
+      const freeFridge=inputs.fridge_type==='FREESTANDING',clearance=freeFridge?freestandingGap(width):0,runWidth=freeFridge?width+clearance*2:width;
+      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:PLINTH_H,content:freeFridge?'FRIDGE_FREEZER':(inputs.fridge_content||'PENDING'),freestanding:freeFridge,appliance_width_mm:width,appliance_clearance_mm:clearance,freezer_bottom:true};
       if(inputs.fridge_type==='BUILT_IN'&&width===1200){
         list.push(baseModule('fridge-left','Холодильник L',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_left_unit||'PENDING'}));
         list.push(baseModule('fridge-right','Холодильник R',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_right_unit||'PENDING'}));
       }else{
-        list.push(baseModule('fridge','Холодильник',width,'FRIDGE',fWall,fridgeExtra));
+        list.push(baseModule('fridge','Холодильник',runWidth,'FRIDGE',fWall,fridgeExtra));
       }
     }
     list.push(baseModule('sink','Мойка',600,'SINK',sinkWall(),{widthStatus:'PILOT_VISUAL_PLACEHOLDER',sink_mount_type:inputs.sink_mount_type,sink_bowl_count:inputs.sink_bowl_count,sink_disposer:inputs.sink_disposer,sink_filters:inputs.sink_filters}));
@@ -141,8 +150,8 @@
       const wall=walls.includes(inputs.dishwasher_wall)?inputs.dishwasher_wall:'A';
       const applianceWidth=Number(inputs.dishwasher_width_mm)||600;
       const free=inputs.dishwasher_type==='FREESTANDING';
-      const sidePanel=free?18:0;
-      list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2,'DISHWASHER',wall,{freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel}));
+      const sidePanel=free?18:0,clearance=free?freestandingGap(applianceWidth):0;
+      list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2+clearance*2,'DISHWASHER',wall,{freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel,appliance_clearance_mm:clearance}));
     }
     const cooktopWall=resolvedCooktopWall();
     list.push(baseModule('cooktop',inputs.oven_location==='LOWER'?'Варочная + духовка':'Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED',oven_appliance_present:inputs.oven_location==='LOWER',corner_forbidden:inputs.oven_location==='LOWER'}));
@@ -446,14 +455,6 @@
       const gap=sameWallGap(sink,oven);
       if(gap<ERGO.SINK_OVEN_SAME_WALL_MIN)pushWarning('SINK_OVEN_SPACING',`Мойка и пенал с духовкой на одной стене должны быть разнесены минимум на ${ERGO.SINK_OVEN_SAME_WALL_MIN} мм. Сейчас: ${Math.round(gap)} мм.`);
     }
-    if(fridge&&sink&&cook){
-      const pts=[moduleCenter(fridge),moduleCenter(sink),moduleCenter(cook)];
-      const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-      const legs=[dist(pts[0],pts[1]),dist(pts[1],pts[2]),dist(pts[2],pts[0])],sum=legs.reduce((s,v)=>s+v,0);
-      if(legs.some(v=>v<ERGO.TRIANGLE_LEG_MIN||v>ERGO.TRIANGLE_LEG_MAX)||sum>ERGO.TRIANGLE_SUM_MAX){
-        pushWarning('WORK_TRIANGLE_PILOT',`Эргономический контур холодильник–мойка–варочная: стороны ${legs.map(v=>Math.round(v)).join(' / ')} мм, сумма ${Math.round(sum)} мм. Система сохранила HARD-ограничения, но рекомендует проверить рабочий маршрут.`);
-      }
-    }
   }
 
   function buildModules(){
@@ -480,7 +481,7 @@
     viewMode=VIEW_NORMAL;
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),
-      modules,camera,showDimensions:true,showModuleDimensions:false,
+      modules,camera,showDimensions:normalDimensionsVisible,showModuleDimensions:false,
       architecturalElements:project?.room?.architectural_elements||[]
     });
     syncFocusControls();syncConstraintBanner();
@@ -517,7 +518,7 @@
     if(m.kind==='SINK'){const mount={TOP_MOUNT:'накладная',FLUSH:'вровень',UNDERMOUNT:'под столешницей'}[m.sink_mount_type]||'тип монтажа не указан';return `Мойка: ${mount}, чаш: ${m.sink_bowl_count||'—'}, измельчитель: ${m.sink_disposer==='YES'?'да':'нет'}, фильтры: ${m.sink_filters==='YES'?'да':'нет'}.`}
     if(m.kind==='TALL_OVEN'){const parts=['духовка'];if(m.microwave_present==='YES')parts.push(m.microwave_type==='BUILT_IN'?'встраиваемая микроволновка 600×450':'отдельностоящая микроволновка, отделение H350');if(m.coffee_present==='YES')parts.push(m.coffee_type==='BUILT_IN'?'встраиваемая кофемашина 600×450':'отдельностоящая кофемашина');return `Пенал: ${parts.join(' · ')}.`}
     if(m.kind==='UPPER_HOOD')return `Вытяжка ${m.hood_width_mm||'—'} мм · ${m.hood_type==='BUILT_IN'?'встраиваемая':'отдельностоящая'}.`;
-    if(m.kind==='FRIDGE'&&m.freestanding)return'Отдельностоящий холодильник. В автоконфигураторе он всегда остаётся крайним.';
+    if(m.kind==='FRIDGE'&&m.freestanding)return`Отдельностоящий холодильник · верх холодильник / нижняя морозилка · технологический зазор ${m.appliance_clearance_mm||15} мм с каждой стороны.`;
     if(m.kind==='DISHWASHER'&&m.freestanding)return'Отдельностоящая ПММ с двумя видимыми боковинами по 18 мм.';
     if(m.pending)return'Остаточное пространство. Этот модуль пока формируется системным алгоритмом.';
     return'Локальная настройка модуля. После применения BIZET OS перестраивает зависимую модель.';
@@ -619,13 +620,39 @@
   window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();else exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
 
   const canvas=$('modelCanvas');
-  canvas.addEventListener('pointerdown',event=>{const cam=viewMode===VIEW_FOCUS?focusCamera:camera;drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:cam.yaw,pitch:cam.pitch};dragMoved=false;canvas.setPointerCapture?.(event.pointerId)});
-  canvas.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.hypot(dx,dy)>4)dragMoved=true;if(!dragMoved)return;const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.yaw=drag.yaw-dx*.008;cam.pitch=clamp(drag.pitch+dy*.006,.08,.85);renderScene(false)});
-  function endPointer(event){if(!drag||drag.id!==event.pointerId)return;const wasMoved=dragMoved;drag=null;canvas.releasePointerCapture?.(event.pointerId);if(!wasMoved&&scene&&viewMode===VIEW_NORMAL){const rect=canvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);if(id)openModule(id)}}
+  canvas.addEventListener('pointerdown',event=>{
+    const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
+    drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:cam.yaw,pitch:cam.pitch,mode:null};
+    dragMoved=false;
+  });
+  canvas.addEventListener('pointermove',event=>{
+    if(!drag||drag.id!==event.pointerId)return;
+    const dx=event.clientX-drag.x,dy=event.clientY-drag.y,dist=Math.hypot(dx,dy);
+    if(dist<10)return;
+    if(!drag.mode){
+      if(Math.abs(dy)>Math.abs(dx)*1.12){drag.mode='SCROLL';return}
+      drag.mode='ROTATE';dragMoved=true;canvas.setPointerCapture?.(event.pointerId);
+    }
+    if(drag.mode!=='ROTATE')return;
+    const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
+    cam.yaw=drag.yaw-dx*.008;cam.pitch=clamp(drag.pitch+dy*.0045,.08,.85);renderScene(false);
+  });
+  function endPointer(event){
+    if(!drag||drag.id!==event.pointerId)return;
+    const mode=drag.mode,wasMoved=dragMoved;drag=null;
+    try{canvas.releasePointerCapture?.(event.pointerId)}catch(_){}
+    if(mode!=='ROTATE'&&!wasMoved&&scene&&viewMode===VIEW_NORMAL){
+      const rect=canvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);if(id)openModule(id);
+    }
+  }
   canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',()=>{drag=null});
   canvas.addEventListener('wheel',event=>{event.preventDefault();const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
 
-  $('modelDimensionsToggle').addEventListener('click',()=>{if(viewMode!==VIEW_FOCUS)return;focusDimensionsVisible=!focusDimensionsVisible;syncFocusControls();renderScene(false)});
+  $('modelDimensionsToggle').addEventListener('click',()=>{
+    if(viewMode===VIEW_FOCUS)focusDimensionsVisible=!focusDimensionsVisible;
+    else normalDimensionsVisible=!normalDimensionsVisible;
+    syncFocusControls();renderScene(false);
+  });
   $('constraintButton')?.addEventListener('click',()=>{
     const btn=$('constraintButton'),el=$('constraintBanner'),open=btn.getAttribute('aria-expanded')==='true';
     btn.setAttribute('aria-expanded',String(!open));el.hidden=open;
