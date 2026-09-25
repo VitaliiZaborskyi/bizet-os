@@ -60,7 +60,7 @@
     const warning=d.bom.unpriced?.length? `<p class="r8-pointb-warning">${t('Часть сервисных тарифов ещё не включена и требует подтверждения.','Some service tariffs are not included yet and require confirmation.')}</p>`:'';
     $('pointBReport').innerHTML=`<p class="r8-pointb-kicker">ZABORSKY · BIZET OS${identityCache?' · '+esc(identityRef()):''}</p><h2>${t('Ваш проект кухни','Your kitchen project')}</h2><div class="r9-customer-price"><span>${esc(d.p.name)}</span><strong>${money(d.clientPrice)}</strong></div>${warning}<h3>${t('Спецификация кухни','Kitchen specification')}</h3>${specTable(d.modules)}<div class="r8-doc-actions"><button id="r9ProposalPrint">${t('Коммерческое предложение / PDF','Commercial proposal / PDF')}</button></div><p class="r9-muted">${t('Себестоимость, внутренние коэффициенты, крепёж и технологические операции доступны только производителю/администратору.','Internal cost, coefficients, fasteners and manufacturing operations are restricted to manufacturer/admin access.')}</p>`;
     $('pointBDialog').showModal();
-    $('r9ProposalPrint').onclick=printProposal;
+    $('r9ProposalPrint').onclick=()=>printProposal().catch(error=>alert(error.message));
   }
   function showManufacturer(){
     const d=data();if(!d)return;
@@ -113,20 +113,21 @@
     try{return document.getElementById('modelCanvas')?.toDataURL('image/png')||''}catch(_){return''}
   }
   // DEFERRED: one-sheet comparison across multiple manufacturers and/or alternative kitchen configurations.
-  function printProposal(){
+  async function printProposal(){
     const d=data();if(!d)return;
+    const identity=await ensureOrderIdentity();
     const today=new Intl.DateTimeFormat(lang()==='en'?'en-GB':'ru-RU').format(new Date());
-    const cfg=configurationLabel(d.rt.getConfiguration()),runs=runSummary(d),features=proposalFeatures(d),snapshot=proposalSnapshot();
+    const cfg=configurationLabel(d.rt.getConfiguration()),runs=runSummary(d),features=proposalFeatures(d),snapshot=proposalSnapshot(),orderRef=identityRef(identity);
     const featureHtml=features.map(x=>`<div class="feature">- ${esc(x)}</div>`).join('');
     const imageHtml=snapshot?`<img class="kitchen-shot" src="${snapshot}" alt="3D kitchen">`:`<div class="image-placeholder">${t('3D модель кухни','Kitchen 3D model')}</div>`;
     const unit=t('компл.','set'),price=money(d.clientPrice);
     const html=`<!doctype html><html><head><meta charset="utf-8"><title>BIZET Commercial Proposal</title><style>
       @page{size:A4;margin:8mm}
       *{box-sizing:border-box}html,body{margin:0;padding:0;color:#171717;background:#fff}
-      body{font-family:"Century Gothic",CenturyGothic,Arial,sans-serif;font-size:9.5px}
+      body{font-family:"Century Gothic",CenturyGothic,"Avenir Next","Trebuchet MS",Arial,sans-serif;font-size:9.5px}
       .page{width:100%;min-height:270mm;display:flex;flex-direction:column}
       header{display:flex;justify-content:space-between;align-items:flex-end;padding:0 2mm 4mm;border-bottom:1.4px solid #4b4b4b}
-      .logo small{display:block;font-size:7px;letter-spacing:.32em;margin-bottom:2px}.logo strong{font-size:23px;letter-spacing:-.04em}.logo i{font-style:normal;color:#2f7cff}
+      .logo-box{width:58mm;height:18mm;border-radius:2.5mm;background:#07111f;display:flex;align-items:center;justify-content:center;overflow:hidden}.logo-box img{display:block;width:52mm;height:auto}
       .meta{text-align:right;font-size:8px;line-height:1.5;color:#5a5a5a}.meta strong{color:#171717;font-size:10px}
       h1{font-size:15px;text-align:center;margin:4mm 0 2.5mm;letter-spacing:.02em}
       table{width:100%;border-collapse:collapse;table-layout:fixed}
@@ -135,15 +136,15 @@
       td{text-align:center}.item{text-align:left}.features{text-align:left;line-height:1.5}.feature{margin:0 0 1.2mm}.feature:last-child{margin-bottom:0}
       .kitchen-shot{display:block;width:100%;height:40mm;object-fit:contain;background:#f0efeb}.image-placeholder{height:40mm;display:grid;place-items:center;background:#f0efeb;color:#777}
       .item strong{display:block;font-size:12px;margin-bottom:2mm}.item .sub{font-size:8.5px;line-height:1.5;color:#555}
-      .num{font-size:11px}.price{font-weight:700;font-size:10px;white-space:nowrap}
+      .num{font-size:11px;background:#5c5c5c;color:#fff;font-weight:800}.price{font-weight:700;font-size:10px;white-space:nowrap}
       .total-row td{border-top:1.8px solid #333;font-size:10px}.total-label{text-align:right;font-weight:700}.total{font-size:12px;font-weight:800}
       .notes{margin-top:5mm;padding-top:3mm;border-top:1px solid #aaa;font-size:8px;line-height:1.55;color:#4d4d4d}
       .notes p{margin:0 0 1.5mm}.notes strong{color:#171717}
       .footer{margin-top:auto;padding-top:4mm;border-top:1px solid #aaa;display:flex;justify-content:space-between;gap:8mm;font-size:7.5px;color:#666}
       @media print{.page{min-height:auto}}
     </style></head><body><div class="page">
-      <header><div class="logo"><small>ZABORSKY</small><strong>BIZET <i>OS</i></strong></div><div class="meta"><strong>${t('Коммерческое предложение','Commercial Proposal')}</strong><br>${today}<br>${t('Производитель','Manufacturer')}: ${esc(d.p.name)}</div></header>
-      <h1>${t('Список услуг по изделиям','Furniture proposal')}</h1>
+      <header><div class="logo-box"><img src="/static/bizet-os-zaborsky-document-logo.svg" alt="ZABORSKY BIZET OS"></div><div class="meta"><strong>${t('Коммерческое предложение','Commercial Proposal')}</strong><br>${esc(orderRef)}<br>${today}<br>${t('Производитель','Manufacturer')}: ${esc(d.p.name)}</div></header>
+      <h1>${t('Список изделий','List of products')}</h1>
       <table>
         <colgroup><col style="width:4%"><col style="width:13%"><col style="width:21%"><col style="width:34%"><col style="width:7%"><col style="width:5%"><col style="width:8%"><col style="width:8%"></colgroup>
         <thead><tr><th>№</th><th>${t('Изделие','Item')}</th><th>${t('Изображение / схема','Image / scheme')}</th><th>${t('Комплектация','Specification')}</th><th>${t('Ед.изм.','Unit')}</th><th>${t('Кол-во','Qty')}</th><th>${t('Цена','Price')}</th><th>${t('Сумма','Amount')}</th></tr></thead>
@@ -163,11 +164,11 @@
         <p>${t('Детальная разбивка по модулям, деталям, фурнитуре и крепежу вынесена в отдельную спецификацию.','The module, part, hardware and fastener breakdown is provided in a separate specification.')}</p>
       </div>
       <div class="footer"><span>BIZET OS · ${t('проектирование и комплектация мебели','furniture design and specification')}</span><span>${esc(d.p.name)}</span></div>
-    </div><script>window.onload=()=>setTimeout(()=>window.print(),180)</script></body></html>`;
+    </div><script>window.onload=()=>setTimeout(()=>window.print(),260)</script></body></html>`;
     const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();}
   }
   function refresh(){
-    ensureUI();const d=data();if(!d)return;
+    ensureUI();loadIdentity();const d=data();if(!d)return;
     const r=role(),p=d.p;
     $('pointBPrice').textContent=money(d.clientPrice);
     const label=$('pointBFinalActions')?.querySelector('.r8-final-price span');if(label)label.textContent=t('Предварительная цена ','Estimated price ')+p.name;
@@ -183,6 +184,6 @@
     window.addEventListener('bizet:resume',()=>setTimeout(refresh,300));
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,400)},true);
   }
-  window.BizetOwnerBusiness={refresh,producers:PRODUCERS,role,producer};
+  window.BizetOwnerBusiness={refresh,producers:PRODUCERS,role,producer,loadIdentity,ensureOrderIdentity,identityRef:()=>identityRef(),getIdentity:()=>identityCache};
   boot();
 })();
