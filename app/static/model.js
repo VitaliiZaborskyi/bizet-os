@@ -100,7 +100,7 @@
       }
     }
     list.push(baseModule('sink','Мойка',600,'SINK',sinkWall(),{widthStatus:'PILOT_VISUAL_PLACEHOLDER',sink_mount_type:inputs.sink_mount_type,sink_bowl_count:inputs.sink_bowl_count,sink_disposer:inputs.sink_disposer,sink_filters:inputs.sink_filters}));
-    if(inputs.dishwasher_type){
+    if(inputs.dishwasher_type&&inputs.dishwasher_type!=='NO'){
       const wall=walls.includes(inputs.dishwasher_wall)?inputs.dishwasher_wall:'A';
       const applianceWidth=Number(inputs.dishwasher_width_mm)||600;
       const free=inputs.dishwasher_type==='FREESTANDING';
