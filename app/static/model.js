@@ -50,9 +50,13 @@
   }
   function pushWarning(code,text){if(!layoutWarnings.some(w=>w.code===code&&w.text===text))layoutWarnings.push({code,text})}
   function syncConstraintBanner(){
-    const el=$('constraintBanner');if(!el)return;
-    if(!layoutWarnings.length){el.hidden=true;el.innerHTML='';return}
-    el.hidden=false;el.innerHTML='<strong>НЕСТАНДАРТНАЯ КОНФИГУРАЦИЯ</strong>'+layoutWarnings.map(w=>w.text).join(' ');
+    const el=$('constraintBanner'),btn=$('constraintButton');if(!el||!btn)return;
+    if(!layoutWarnings.length){
+      el.hidden=true;el.innerHTML='';btn.hidden=true;btn.classList.remove('is-warning');btn.setAttribute('aria-expanded','false');return;
+    }
+    btn.hidden=false;btn.classList.add('is-warning');btn.title=`Предупреждения проекта: ${layoutWarnings.length}`;
+    el.innerHTML='<strong>ПРОВЕРЬТЕ КОНФИГУРАЦИЮ</strong>'+layoutWarnings.map(w=>'<p>'+w.text+'</p>').join('');
+    if(btn.getAttribute('aria-expanded')!=='true')el.hidden=true;
   }
   function syncFocusControls(){
     const inFocus=viewMode===VIEW_FOCUS;
@@ -622,6 +626,10 @@
   canvas.addEventListener('wheel',event=>{event.preventDefault();const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
 
   $('modelDimensionsToggle').addEventListener('click',()=>{if(viewMode!==VIEW_FOCUS)return;focusDimensionsVisible=!focusDimensionsVisible;syncFocusControls();renderScene(false)});
+  $('constraintButton')?.addEventListener('click',()=>{
+    const btn=$('constraintButton'),el=$('constraintBanner'),open=btn.getAttribute('aria-expanded')==='true';
+    btn.setAttribute('aria-expanded',String(!open));el.hidden=open;
+  });
   $('focusBackButton')?.addEventListener('click',()=>{
     const dialog=$('moduleDialog');
     if(dialog?.open)dialog.close();else exitModuleFocus();
