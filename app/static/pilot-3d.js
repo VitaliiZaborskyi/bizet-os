@@ -136,6 +136,7 @@
     if(module.kind==='FRIDGE'&&module.content&&!['FRIDGE_ONLY','FREEZER_ONLY'].includes(module.content))hline(.48);
     if(module.kind==='TALL_OVEN'){
       const rect=(z0,z1,fill)=>polygon(ctx,[p([module.x+module.w*.12,module.y-2,z0]),p([module.x+module.w*.88,module.y-2,z0]),p([module.x+module.w*.88,module.y-2,z1]),p([module.x+module.w*.12,module.y-2,z1])],fill,'rgba(0,0,0,.48)',1);
+      hline(.16);
       let cursor=module.z+module.h*.34;rect(cursor,cursor+module.h*.20,'#252525');cursor+=module.h*.23;
       if(module.microwave_present==='YES'){rect(cursor,cursor+module.h*.14,module.microwave_type==='BUILT_IN'?'#303030':'#555');cursor+=module.h*.17}
       if(module.coffee_present==='YES')rect(cursor,cursor+module.h*.14,module.coffee_type==='BUILT_IN'?'#292929':'#595959');
@@ -176,6 +177,13 @@
         const sz=z+h*i/(count+1);
         panel({x:x+t,y:y+22,z:sz-t/2,w:Math.max(20,w-2*t),d:Math.max(30,d-44),h:t},'rgba(205,208,205,.24)');
       }
+    }
+
+    if(module.kind==='TALL_OVEN'&&module.mandatory_lower_drawer){
+      const dz=z+34,dh=Math.max(110,h*.12),innerD=Math.max(80,d-90);
+      panel({x:x+34,y:y+42,z:dz,w:Math.max(40,w-68),d:innerD,h:t},'rgba(122,132,136,.28)');
+      panel({x:x+34,y:y+42,z:dz+t,w:t,d:innerD,h:Math.min(90,dh)},'rgba(122,132,136,.26)');
+      panel({x:x+w-52,y:y+42,z:dz+t,w:t,d:innerD,h:Math.min(90,dh)},'rgba(122,132,136,.26)');
     }
 
     // Phase 4 drawer internals: bottom + side walls only. Front/rear box walls are phase 8.
