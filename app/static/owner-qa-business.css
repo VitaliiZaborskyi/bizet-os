@@ -10,3 +10,20 @@
 .r9-customer-price{display:flex;justify-content:space-between;gap:14px;align-items:end;border:1px solid var(--r8-line);border-radius:16px;padding:16px;margin:14px 0}.r9-customer-price span{font-size:12px;color:var(--r8-muted)}.r9-customer-price strong{font-size:26px}
 .r9-client-table table{width:100%;border-collapse:collapse}.r9-client-table th,.r9-client-table td{padding:9px;border-bottom:1px solid var(--r8-line);font-size:11px;text-align:left}
 @media(max-width:650px){.r9-producer-grid{grid-template-columns:1fr}.r9-customer-price{align-items:flex-start;flex-direction:column}}
+
+/* R10.3 purchase / think flow */
+.r10-commerce-dialog{border:0;padding:0;background:transparent;color:inherit;width:min(820px,calc(100vw - 28px));max-height:92dvh}
+.r10-commerce-dialog::backdrop{background:rgba(0,0,0,.62);backdrop-filter:blur(7px)}
+.r10-commerce-card{position:relative;background:var(--r8-panel);color:var(--r8-ink);border:1px solid var(--r8-line);border-radius:26px;padding:26px;box-shadow:0 30px 100px rgba(0,0,0,.35);max-height:90dvh;overflow:auto}
+.r10-commerce-close{position:absolute;right:14px;top:12px;width:38px;height:38px;border:0;border-radius:50%;background:#f3f1ec;color:#171716;font-size:24px;cursor:pointer}
+.r10-commerce-field{display:grid;gap:6px;margin:14px 0;font-size:12px;color:var(--r8-muted)}
+.r10-commerce-field input{width:100%;border:1px solid var(--r8-line);border-radius:14px;background:#fff;color:#171716;padding:13px 14px;font:inherit}
+.r10-commerce-primary{border:0;border-radius:999px;background:var(--r8-blue);color:#fff;padding:12px 18px;font-weight:750;cursor:pointer}
+.r10-commerce-status{font-size:11px;line-height:1.5;color:var(--r8-muted);margin:12px 0 0}
+.r10-payment-summary{display:flex;justify-content:space-between;gap:12px;align-items:baseline;border:1px solid var(--r8-line);border-radius:16px;padding:14px;margin:14px 0}
+.r10-payment-summary strong{font-size:24px}
+@media(max-width:650px){
+  .r10-commerce-dialog{width:calc(100vw - 16px);max-height:94dvh}
+  .r10-commerce-card{padding:22px 14px 18px;border-radius:22px}
+  .r9-producer-grid{grid-template-columns:1fr}
+}
