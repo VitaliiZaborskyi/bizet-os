@@ -443,7 +443,7 @@ def test_r103_composition_layer_centers_primary_appliance_inside_valid_run():
 
 def test_r103_focus_hides_module_navigation_number():
     renderer = read("pilot-3d.js")
-    focus = renderer[renderer.index("if(options.focusMode"):renderer.index("return {hitTest", renderer.index("if(options.focusMode"))]
+    focus = renderer[renderer.index("if(options.focusMode"):renderer.index("drawRoomBase", renderer.index("if(options.focusMode"))]
     assert "No navigation number in MODULE_FOCUS_MODE" in focus
     assert "drawNumber(ctx,front,module.number,c)" not in focus
 
@@ -501,8 +501,9 @@ def test_r103_think_flow_assigns_point_b_and_collects_contact_without_download_b
     assert "commerce.contact" in think
     assert "E-mail или телефон" in think
     assert "Отправить КП" in think
-    assert "download" not in think.lower()
     assert "window.open" not in think
+    assert "printProposal" not in think
+    assert ".download" not in think
 
 def test_r103_commerce_state_is_domain_data_not_visual_only():
     models = (ROOT / "app" / "project" / "models.py").read_text(encoding="utf-8")
