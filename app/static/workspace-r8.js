@@ -75,7 +75,7 @@
      const room=rt.getRoom(),importState=rt.getVisual().room_import||{};
      html='<section class="r8-section"><h3>Как задать помещение</h3><div class="r8-choice-row r10-room-source"><button data-action="room-source-manual">Ручной ввод</button><button data-action="room-source-scan">Скан</button><button data-action="room-source-file">Загрузить файл</button></div><input id="r10RoomFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg,image/*,application/pdf" hidden><p class="r10-room-import-status" id="r10RoomImportStatus">'+esc(importState.message||'Три входа приводятся к единой Room Model.')+'</p></section>';
      html+='<section class="r8-section"><h3>Геометрия</h3><div class="r8-two">'+numberField('Длина основной стены, мм','__room_length',room.lengthMm,1000)+numberField('Глубина помещения, мм','__room_depth',room.depthMm,1000)+'</div>'+numberField('Высота помещения, мм','__room_height',room.heightMm,2000)+'</section>';
-     html+='<section class="r8-section r10-file-calibration" '+(importState.source==='FILE'?'':'hidden')+'><h3>Калибровка файла</h3><p>Если в файле нет подтверждённого размера, укажите один реальный размер. В пилоте это длина стены A.</p><label class="r8-field"><span>Известная длина стены A, мм</span><input id="r10KnownDimension" type="number" inputmode="numeric" min="300" step="1" value="'+esc(importState.known_dimension_mm||room.lengthMm)+'"></label><button class="r8-save" data-action="calibrate-import">Применить масштаб</button></section>';
+     html+='<section class="r8-section r10-file-calibration" '+(importState.source==='FILE'?'':'hidden')+'><h3>Калибровка файла</h3><p>Укажите один известный реальный размер. После анализа BIZET OS пересчитает Room Model.</p><label class="r8-field"><span>Известный размер, мм</span><input id="r10KnownDimension" type="number" inputmode="numeric" min="300" step="1" value="'+esc(importState.known_dimension_mm||room.lengthMm)+'"></label><button class="r8-save" data-action="calibrate-import">Применить масштаб</button>'+(importState.status==='ROOM_MODEL_PREVIEW_READY'?'<button class="r8-secondary" data-action="confirm-import">Подтвердить помещение</button>':'')+'</section>';
      html+='<section class="r8-section"><h3>Потолок</h3>'+field('Тип потолка','ceiling',[['STRETCH_A','Натяжной — подготовленное основание'],['STRETCH_B','Готовый натяжной'],['GYPSUM','Гипсокартон'],['OPEN_GAP','Открытый зазор']])+'</section>';
    }
    if(panel==='appliances'){
@@ -115,16 +115,23 @@
    if(ext==='dwg')return'DWG';
    return'UNSUPPORTED';
  }
+ async function roomImportApi(path,options={}){
+   const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(projectId)}/room-import/${path}`,options);
+   const body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.detail||'room_import_failed');return body;
+ }
  function bindRoomImport(){
    const input=$('r10RoomFileInput');if(!input)return;
    input.onchange=async()=>{
      const file=input.files?.[0];if(!file)return;
-     const kind=classifyRoomFile(file),supported=kind!=='UNSUPPORTED';
-     const message=supported
-       ?`${file.name} · ${kind}. Файл принят. Для точного масштаба подтвердите один известный размер; распознанная геометрия должна быть подтверждена перед производством.`
-       :`${file.name}: формат пока не поддерживается этим пилотом.`;
-     await rt.patchVisual({room_import:{source:'FILE',file_name:file.name,file_type:kind,file_size:file.size,status:supported?'FILE_ACCEPTED_CALIBRATION_REQUIRED':'UNSUPPORTED',target_model:'ROOM_MODEL',message}});
-     refreshPanel();
+     const kind=classifyRoomFile(file);
+     if(!['PDF','RASTER_IMAGE'].includes(kind)){await rt.patchVisual({room_import:{source:'FILE',file_name:file.name,file_type:kind,status:'UNSUPPORTED',target_model:'ROOM_MODEL',message:'В R10.3.2 геометрию анализируем из PDF или фото.'}});refreshPanel();return}
+     const status=$('r10RoomImportStatus');if(status)status.textContent='Анализирую геометрию…';
+     try{
+       const form=new FormData();form.append('file',file,file.name);
+       const body=await roomImportApi('analyze',{method:'POST',body:form});
+       await rt.patchVisual({room_import:body.room_import});
+       refreshPanel();
+     }catch(error){if(status)status.textContent='Ошибка анализа: '+error.message}
    };
  }
  function selectPanel(panel){
@@ -146,10 +153,18 @@
    if(a==='calibrate-import'){
      const known=Math.round(Number($('r10KnownDimension')?.value)||0);
      if(known<300){$('r10RoomImportStatus').textContent='Укажите реальный размер не меньше 300 мм.';return}
-     pushUndo();await rt.patchRoom('lengthMm',known);
-     const prev=rt.getVisual().room_import||{};
-     await rt.patchVisual({room_import:{...prev,known_dimension_mm:known,calibration_reference:'WALL_A',status:'CALIBRATED_WALL_A',target_model:'ROOM_MODEL',message:`Масштаб откалиброван по стене A = ${known} мм. Контур/ломаная геометрия требует подтверждения после распознавания.`}});
-     refreshPanel();updateReadiness();return;
+     pushUndo();
+     try{
+       const body=await roomImportApi('calibrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({known_dimension_mm:known})});
+       rt=window.BizetModelRuntime;await rt.resume?.();refreshPanel();updateReadiness();
+       const size=body.room_import?.canonical_room_model?.bounding_size_mm||{};
+       $('r10RoomImportStatus').textContent=`Room Model применена: ${size.length||'—'} × ${size.depth||'—'} мм. Подтвердите помещение.`;
+     }catch(error){$('r10RoomImportStatus').textContent='Калибровка не применена: '+error.message}
+     return;
+   }
+   if(a==='confirm-import'){
+     try{await roomImportApi('confirm',{method:'POST'});await rt.resume?.();refreshPanel();updateReadiness()}catch(error){$('r10RoomImportStatus').textContent='Не удалось подтвердить: '+error.message}
+     return;
    }
    if(a==='apply-appliances'){
      pushUndo();
