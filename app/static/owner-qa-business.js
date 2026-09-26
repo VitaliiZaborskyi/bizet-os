@@ -191,6 +191,12 @@
   function proposalSnapshot(){
     try{return document.getElementById('modelCanvas')?.toDataURL('image/png')||''}catch(_){return''}
   }
+  function proposalVisualization(d){
+    const visual=d?.rt?.getVisual?.()||{},external=String(visual.visualization_render_url||'').trim();
+    if(external)return{src:external,kind:'RENDER'};
+    const snapshot=proposalSnapshot();
+    return{src:snapshot,kind:'ENGINEERING_PREVIEW'};
+  }
   // DEFERRED: one-sheet comparison across multiple manufacturers and/or alternative kitchen configurations.
   async function printProposal(){
     const d=data();if(!d)return;
@@ -199,9 +205,10 @@
     w.document.write('<!doctype html><title>BIZET OS</title><body style="font-family:Arial,sans-serif;padding:24px">BIZET OS · preparing document…</body>');
     const identity=await ensureOrderIdentity();
     const today=new Intl.DateTimeFormat(lang()==='en'?'en-GB':'ru-RU').format(new Date());
-    const cfg=configurationLabel(d.rt.getConfiguration()),runs=runSummary(d),features=proposalFeatures(d),snapshot=proposalSnapshot(),orderRef=identityRef(identity);
+    const cfg=configurationLabel(d.rt.getConfiguration()),runs=runSummary(d),features=proposalFeatures(d),visualization=proposalVisualization(d),orderRef=identityRef(identity);
     const featureHtml=features.map(x=>`<div class="feature">- ${esc(x)}</div>`).join('');
-    const imageHtml=snapshot?`<img class="kitchen-shot" src="${snapshot}" alt="3D kitchen">`:`<div class="image-placeholder">${t('3D модель кухни','Kitchen 3D model')}</div>`;
+    const imageHtml=visualization.src?`<img class="kitchen-shot" src="${visualization.src}" alt="Kitchen visualization">`:`<div class="image-placeholder">${t('3D модель кухни','Kitchen 3D model')}</div>`;
+    const visualLabel=visualization.kind==='RENDER'?t('Визуализация проекта','Project visualization'):t('Инженерная 3D-модель · фотореалистичный рендер подключается отдельным визуализатором','Engineering 3D model · photoreal render uses a separate visualizer');
     const unit=t('компл.','set'),price=money(d.clientPrice);
     const html=`<!doctype html><html><head><meta charset="utf-8"><title>BIZET Commercial Proposal</title><style>
       @page{size:A4;margin:8mm}
@@ -212,11 +219,12 @@
       .logo-box{width:58mm;height:18mm;border-radius:2.5mm;background:#07111f;display:flex;align-items:center;justify-content:center;overflow:hidden}.logo-box img{display:block;width:52mm;height:auto}
       .meta{text-align:right;font-size:8px;line-height:1.5;color:#5a5a5a}.meta strong{color:#171717;font-size:10px}
       h1{font-size:15px;text-align:center;margin:4mm 0 2.5mm;letter-spacing:.02em}
+      .hero{margin:0 0 4mm;border:1px solid #777;overflow:hidden;background:#f0efeb}.hero .kitchen-shot{height:88mm}.hero-label{padding:1.5mm 2mm;font-size:7.5px;color:#666;background:#fff;border-top:1px solid #aaa}.price-hero{display:flex;justify-content:space-between;align-items:end;margin:0 0 4mm;padding:3mm 4mm;border:1.4px solid #333}.price-hero span{font-size:9px;color:#555}.price-hero strong{font-size:22px;line-height:1}
       table{width:100%;border-collapse:collapse;table-layout:fixed}
       th,td{border:1px solid #555;padding:2.2mm 1.6mm;vertical-align:middle}
       th{background:#5c5c5c;color:#fff;font-size:8px;font-weight:700;text-align:center}
       td{text-align:center}.item{text-align:left}.features{text-align:left;line-height:1.5}.feature{margin:0 0 1.2mm}.feature:last-child{margin-bottom:0}
-      .kitchen-shot{display:block;width:100%;height:40mm;object-fit:contain;background:#f0efeb}.image-placeholder{height:40mm;display:grid;place-items:center;background:#f0efeb;color:#777}
+      .kitchen-shot{display:block;width:100%;height:40mm;object-fit:contain;background:#f0efeb}.image-placeholder{height:88mm;display:grid;place-items:center;background:#f0efeb;color:#777}
       .item strong{display:block;font-size:12px;margin-bottom:2mm}.item .sub{font-size:8.5px;line-height:1.5;color:#555}
       .num{font-size:11px;background:#5c5c5c;color:#fff;font-weight:800}.price{font-weight:700;font-size:10px;white-space:nowrap}
       .total-row td{border-top:1.8px solid #333;font-size:10px}.total-label{text-align:right;font-weight:700}.total{font-size:12px;font-weight:800}
@@ -226,19 +234,20 @@
       @media print{.page{min-height:auto}}
     </style></head><body><div class="page">
       <header><div class="logo-box"><img src="/static/bizet-os-zaborsky-document-logo.svg" alt="ZABORSKY BIZET OS"></div><div class="meta"><strong>${t('Коммерческое предложение','Commercial Proposal')}</strong><br>${esc(orderRef)}<br>${today}<br>${t('Производитель','Manufacturer')}: ${esc(d.p.name)}</div></header>
+      <div class="hero">${imageHtml}<div class="hero-label">${esc(visualLabel)}</div></div>
+      <div class="price-hero"><span>${t('Стоимость проекта','Project price')} · ${esc(d.p.name)}</span><strong>${price}</strong></div>
       <h1>${t('Список изделий','List of products')}</h1>
       <table>
-        <colgroup><col style="width:4%"><col style="width:13%"><col style="width:21%"><col style="width:34%"><col style="width:7%"><col style="width:5%"><col style="width:8%"><col style="width:8%"></colgroup>
-        <thead><tr><th>№</th><th>${t('Изделие','Item')}</th><th>${t('Изображение / схема','Image / scheme')}</th><th>${t('Комплектация','Specification')}</th><th>${t('Ед.изм.','Unit')}</th><th>${t('Кол-во','Qty')}</th><th>${t('Цена','Price')}</th><th>${t('Сумма','Amount')}</th></tr></thead>
+        <colgroup><col style="width:5%"><col style="width:22%"><col style="width:47%"><col style="width:8%"><col style="width:6%"><col style="width:12%"></colgroup>
+        <thead><tr><th>№</th><th>${t('Изделие','Item')}</th><th>${t('Комплектация','Specification')}</th><th>${t('Ед.изм.','Unit')}</th><th>${t('Кол-во','Qty')}</th><th>${t('Сумма','Amount')}</th></tr></thead>
         <tbody>
           <tr>
             <td class="num">1</td>
             <td class="item"><strong>${t('Кухня','Kitchen')}</strong><div class="sub">${esc(cfg)}<br>${esc(runs)}</div></td>
-            <td>${imageHtml}</td>
             <td class="features">${featureHtml}</td>
-            <td>${unit}</td><td>1</td><td class="price">${price}</td><td class="price">${price}</td>
+            <td>${unit}</td><td>1</td><td class="price">${price}</td>
           </tr>
-          <tr class="total-row"><td colspan="7" class="total-label">${t('Всего','Total')}</td><td class="total">${price}</td></tr>
+          <tr class="total-row"><td colspan="5" class="total-label">${t('Всего','Total')}</td><td class="total">${price}</td></tr>
         </tbody>
       </table>
       <div class="notes">
