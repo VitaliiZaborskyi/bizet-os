@@ -34,6 +34,91 @@
   window.addEventListener('pageshow',event=>signalResume(event.persisted?'bfcache':'pageshow'));
   window.addEventListener('focus',()=>{if(hiddenAt&&Date.now()-hiddenAt>1500)signalResume('focus')});
 
+
+  const BACKGROUND_KEY='bizet_os_background';
+  const BACKGROUNDS=[
+    {id:'BIZET_BLUE',name:'BIZET Blue',tone:'dark',css:'radial-gradient(circle at 18% 12%,rgba(47,124,255,.58),transparent 31%),radial-gradient(circle at 82% 78%,rgba(30,73,145,.42),transparent 34%),linear-gradient(145deg,#07111f 0%,#10294d 46%,#06101d 100%)'},
+    {id:'GRAPHITE',name:'Graphite',tone:'dark',css:'radial-gradient(circle at 76% 14%,rgba(150,154,164,.20),transparent 30%),radial-gradient(circle at 20% 82%,rgba(82,87,96,.28),transparent 32%),linear-gradient(150deg,#101113,#2d3035 52%,#141517 100%)'},
+    {id:'ARCTIC',name:'Arctic',tone:'light',css:'radial-gradient(circle at 15% 20%,rgba(124,184,255,.34),transparent 30%),radial-gradient(circle at 82% 68%,rgba(210,232,255,.78),transparent 35%),linear-gradient(145deg,#f8fbff,#e7f1fb 52%,#dce9f6)'},
+    {id:'AURORA',name:'Aurora',tone:'dark',css:'radial-gradient(circle at 18% 70%,rgba(46,226,195,.30),transparent 34%),radial-gradient(circle at 72% 22%,rgba(117,77,255,.40),transparent 36%),radial-gradient(circle at 88% 78%,rgba(47,124,255,.34),transparent 32%),linear-gradient(145deg,#061218,#14142a 52%,#07111f)'},
+    {id:'SAND',name:'Sand',tone:'light',css:'radial-gradient(circle at 18% 18%,rgba(255,255,255,.74),transparent 30%),radial-gradient(circle at 82% 78%,rgba(178,137,90,.20),transparent 34%),linear-gradient(145deg,#f3eadc,#ddc9ad 52%,#eee3d3)'},
+    {id:'DEEP_NIGHT',name:'Deep Night',tone:'dark',css:'radial-gradient(circle at 50% 12%,rgba(47,124,255,.22),transparent 28%),radial-gradient(circle at 78% 70%,rgba(61,76,115,.20),transparent 32%),linear-gradient(160deg,#01040a,#07101f 52%,#02050b)'}
+  ];
+  function wallpaperById(id){return BACKGROUNDS.find(x=>x.id===id)||BACKGROUNDS[0]}
+  function ensureWallpaperStyle(){
+    if(document.getElementById('bizetWallpaperStyle'))return;
+    const style=document.createElement('style');style.id='bizetWallpaperStyle';style.textContent=`
+      html{min-height:100%;background:#07111f}
+      body{min-height:100%;background-image:var(--bizet-wallpaper)!important;background-color:var(--bizet-wallpaper-base,#07111f)!important;background-attachment:fixed!important;background-size:cover!important;background-position:center!important}
+      .app-shell,.r8-shell{background:transparent!important}
+      .bizet-background-field{display:block;padding:10px 0 4px;border-top:1px solid var(--line,rgba(127,127,127,.2));margin-top:8px}
+      .bizet-background-label{display:block;color:var(--muted,var(--r8-muted,#777));font-size:13px;margin-bottom:9px}
+      .bizet-background-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+      .bizet-background-choice{position:relative;height:50px;border:2px solid transparent;border-radius:12px;cursor:pointer;padding:0;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 3px 10px rgba(0,0,0,.12)}
+      .bizet-background-choice[aria-pressed="true"]{border-color:#2f7cff;box-shadow:0 0 0 2px rgba(47,124,255,.20),inset 0 0 0 1px rgba(255,255,255,.28)}
+      .bizet-background-choice span{position:absolute;left:7px;right:7px;bottom:5px;color:#fff;font-size:9px;font-weight:750;text-shadow:0 1px 4px rgba(0,0,0,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .r10-workspace-settings-panel{width:min(330px,calc(100vw - 24px));z-index:150}
+      @media(max-width:620px){.bizet-background-grid{grid-template-columns:repeat(2,1fr)}}
+    `;document.head.appendChild(style);
+  }
+  function syncWallpaperButtons(id){document.querySelectorAll('[data-bizet-background]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.bizetBackground===id)))}
+  function applyWallpaper(id,{syncTheme=false}={}){
+    const preset=wallpaperById(id);
+    document.documentElement.dataset.bizetBackground=preset.id;
+    document.documentElement.style.setProperty('--bizet-wallpaper',preset.css);
+    document.documentElement.style.setProperty('--bizet-wallpaper-base',preset.tone==='light'?'#e8edf3':'#07111f');
+    localStorage.setItem(BACKGROUND_KEY,preset.id);
+    syncWallpaperButtons(preset.id);
+    if(syncTheme){
+      const theme=preset.tone;
+      document.documentElement.dataset.theme=theme;
+      localStorage.setItem(THEME_KEY,theme);
+      const selects=[document.getElementById('themeSelect'),document.getElementById('workspaceThemeSelect')].filter(Boolean);
+      selects.forEach(sel=>{sel.value=theme;sel.dispatchEvent(new Event('change',{bubbles:true}))});
+      window.dispatchEvent(new CustomEvent('bizet:themechange',{detail:{theme,source:'background'}}));
+    }
+  }
+  function pickerMarkup(){
+    const selected=localStorage.getItem(BACKGROUND_KEY)||'BIZET_BLUE';
+    return '<div class="bizet-background-grid">'+BACKGROUNDS.map(p=>'<button class="bizet-background-choice" type="button" data-bizet-background="'+p.id+'" aria-pressed="'+String(p.id===selected)+'" title="'+p.name+'" style="background:'+p.css.replace(/"/g,'&quot;')+'"><span>'+p.name+'</span></button>').join('')+'</div>';
+  }
+  function bindPicker(host){
+    if(!host||host.dataset.bizetWallpaperReady==='1')return;
+    host.dataset.bizetWallpaperReady='1';
+    host.innerHTML='<div class="bizet-background-field"><span class="bizet-background-label">'+((document.getElementById('languageSelect')?.value||document.documentElement.lang)==='en'?'Background':'Фон')+'</span>'+pickerMarkup()+'</div>';
+    host.querySelectorAll('[data-bizet-background]').forEach(btn=>btn.addEventListener('click',()=>applyWallpaper(btn.dataset.bizetBackground,{syncTheme:true})));
+  }
+  function ensureWallpaperUI(){
+    ensureWallpaperStyle();
+    applyWallpaper(localStorage.getItem(BACKGROUND_KEY)||'BIZET_BLUE');
+    const startPanel=document.getElementById('settingsPanel');
+    if(startPanel&&!startPanel.querySelector('.bizet-background-host')){
+      const host=document.createElement('div');host.className='bizet-background-host';
+      const themeField=document.getElementById('themeSelect')?.closest('.settings-field');
+      if(themeField)themeField.insertAdjacentElement('afterend',host);else startPanel.appendChild(host);
+      bindPicker(host);
+      document.getElementById('languageSelect')?.addEventListener('change',()=>{host.dataset.bizetWallpaperReady='0';bindPicker(host)});
+    }
+    const workspacePanel=document.getElementById('workspaceSettingsPanel');
+    if(workspacePanel){
+      bindPicker(document.getElementById('workspaceBackgroundHost'));
+      const select=document.getElementById('workspaceThemeSelect');
+      if(select){
+        select.value=document.documentElement.dataset.theme||initialTheme;
+        select.addEventListener('change',()=>{document.documentElement.dataset.theme=select.value;localStorage.setItem(THEME_KEY,select.value);window.dispatchEvent(new CustomEvent('bizet:themechange',{detail:{theme:select.value,source:'settings'}}))});
+      }
+      const button=document.getElementById('settingsButton');
+      if(button&&!button.dataset.bizetSettingsBound){
+        button.dataset.bizetSettingsBound='1';
+        button.addEventListener('click',event=>{event.stopPropagation();const open=workspacePanel.hidden;workspacePanel.hidden=!open;button.setAttribute('aria-expanded',String(open))});
+        workspacePanel.addEventListener('click',event=>event.stopPropagation());
+        document.addEventListener('click',()=>{workspacePanel.hidden=true;button.setAttribute('aria-expanded','false')});
+        document.addEventListener('keydown',event=>{if(event.key==='Escape'){workspacePanel.hidden=true;button.setAttribute('aria-expanded','false')}});
+      }
+    }
+  }
+  ensureWallpaperUI();
+
   if(window.BizetTransition) return;
   if(!document.getElementById('r8SplashStyle')){
     const s=document.createElement('style');
