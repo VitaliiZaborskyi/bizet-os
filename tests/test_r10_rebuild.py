@@ -636,15 +636,17 @@ def test_r1031_configuration_screen_scrolls_and_file_import_accepts_pdf_and_phot
     assert "canonical_room_model" in handoff
 
 
-def test_r1033_module_focus_renders_immediately_without_scroll_hack():
+def test_r1035_module_focus_renders_immediately_on_click_without_scroll_hack():
     model = read("model.js")
     block = model[model.index("function openModule"):model.index("async function applyModuleCustomization")]
     assert "enterModuleFocus(selected)" in block
+    assert "const redrawFocus=" in block
     assert "renderScene(false)" in block
+    assert "getBoundingClientRect()" in block
     assert "dialog.show()" in block
     assert "scrollIntoView" not in block
-    assert "requestAnimationFrame" in block
-    assert block.count("renderScene(false)") >= 3
+    assert "requestAnimationFrame(redrawFocus)" in block
+    assert "setTimeout(redrawFocus,90)" in block
 
 def test_r1033_viewport_resize_never_exits_module_focus():
     model = read("model.js")
@@ -729,3 +731,70 @@ def test_r1034_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
 def test_r1034_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
     assert 'version="R10.3.4"' in main
+
+
+def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
+    html = read("workspace-r8.html")
+    model = read("model.js")
+    css = read("workspace-r8.css")
+    assert 'id="focusModuleLabel"' in html
+    assert 'id="focusVariantRibbon"' in html
+    assert "label.textContent=" in model
+    assert "document.body.classList.toggle('r10-module-focus',inFocus)" in model
+    for token in [".r8-variant-controls","#workspaceTools","#pointBFinalActions",".r8-module-strip-label","#moduleStrip"]:
+        assert token in css[css.index("body.r10-module-focus"):]
+
+
+def test_r1035_removes_obsolete_undo_and_visible_3d_status_line():
+    html = read("workspace-r8.html")
+    assert 'id="undoButton"' not in html
+    assert 'id="modelStatus" hidden' in html
+    assert "3D-пилот · полная кухня активна." not in html
+
+
+def test_r1035_focus_variant_ribbon_has_working_drawer_and_hinged_presets():
+    model = read("model.js")
+    html = read("workspace-r8.html")
+    for token in ["DRAWERS_2","DRAWERS_3","DRAWERS_4","DRAWERS_5","HINGED_2"]:
+        assert token in model
+    assert "module_variant_overrides" in model
+    assert "applyFocusPreset" in model
+    assert "bizet:modelchange" in model
+    assert 'id="focusVariantOptions"' in html
+
+
+def test_r1035_focus_preset_survives_auto_drawer_cadence_and_variant_slots():
+    model = read("model.js")
+    cadence = model[model.index("function promoteDrawerCadence"):model.index("function sinkCornerEdgeForWall")]
+    assert "first.module_variant_preset" in cadence
+    assert "!ordered[j].module_variant_preset" in cadence
+    capture = model[model.index("function captureWorkspaceState"):model.index("async function applyWorkspaceState")]
+    assert "module_variant_overrides" in capture
+    apply = model[model.index("async function applyWorkspaceState"):model.index("function snapshot")]
+    assert "state.module_variant_overrides" in apply
+
+
+def test_r1035_price_difference_between_saved_kitchen_variants_is_driven_by_antresol_layout():
+    workspace = read("workspace-r8.js")
+    model = read("model.js")
+    templates = workspace[workspace.index("const VARIANT_TEMPLATES"):workspace.index("let variantSlots")]
+    assert templates.count("upper_layout:'ANTRESOL'") == 2
+    assert templates.count("upper_layout:'STANDARD'") == 3
+    upper = model[model.index("function upperFromLower"):model.index("function numbered")]
+    assert "if(variant.upper_layout==='ANTRESOL')" in upper
+    assert "kind:'UPPER_TOP'" in upper
+
+
+def test_r1035_price_actions_are_inserted_directly_after_module_strip():
+    pointb = read("point-b.js")
+    ensure = pointb[pointb.index("function ensureUI"):pointb.index("function current")]
+    assert "const anchor=$('moduleStrip')||$('modelStatus')" in ensure
+    assert "insertAdjacentElement('afterend',host)" in ensure
+
+
+def test_r1035_mobile_labels_and_spacing_prioritize_single_screen_iphone():
+    css = read("workspace-r8.css")
+    assert "height:clamp(280px,47svh,400px)" in css
+    assert "font-size:13px;font-weight:820" in css
+    assert "bottom:calc(70px + env(safe-area-inset-bottom))" in css
+    assert "font-size:11px;font-weight:820" in css
