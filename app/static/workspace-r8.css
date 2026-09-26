@@ -177,3 +177,15 @@ body.r10-module-focus #moduleStrip{display:none!important}
 
 /* R10.3.7 — keep the 2D canvas on its own WebKit compositor layer during focus repaint. */
 #modelCanvas{-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden}
+
+/* R10.3.8 — separate render surfaces for full kitchen and module isolation.
+   Both stay laid out at full stage size; only visibility/pointer ownership changes. */
+.r10-kitchen-canvas,.r10-focus-canvas{
+  position:absolute;inset:0;width:100%;height:100%;display:block;
+  transition:none!important;
+}
+.r10-kitchen-canvas{opacity:1;visibility:visible;pointer-events:auto;z-index:1}
+.r10-focus-canvas{opacity:0;visibility:hidden;pointer-events:none;z-index:2}
+body.r10-module-focus .r10-kitchen-canvas{opacity:0;visibility:hidden;pointer-events:none}
+body.r10-module-focus .r10-focus-canvas{opacity:1;visibility:visible;pointer-events:auto}
+.r8-stage-top,.r10-constraint-banner,.r10-focus-module-label,.r8-variant-controls{z-index:10}
