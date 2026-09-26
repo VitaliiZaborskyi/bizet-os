@@ -61,17 +61,39 @@
   function colors(){
     const dark=document.documentElement.dataset.theme==='dark';
     const palette=document.documentElement.dataset.furniturePalette||'light';
+    const floorPreset=document.documentElement.dataset.floorPreset||'';
+    const wallPreset=document.documentElement.dataset.wallPreset||'';
+    const facadePreset=document.documentElement.dataset.facadePreset||'';
+    const carcassPreset=document.documentElement.dataset.carcassPreset||'';
+    const worktopPreset=document.documentElement.dataset.worktopPreset||'';
     const lightSet={module:'#d7cfc1',moduleSide:'#c2b9aa',moduleFront:'#f0ece4',moduleTop:'#e8e2d7',system:'#d8d2c7',anchor:'#e7c858'};
     const darkSet={module:'#383a3d',moduleSide:'#292b2e',moduleFront:'#4a4d52',moduleTop:'#55585e',system:'#34363a',anchor:'#5f6f91'};
     const otherSet={module:'#b8b19f',moduleSide:'#8d8779',moduleFront:'#d7d0bc',moduleTop:'#cbc3ad',system:'#aaa391',anchor:'#789074'};
-    const furniture=palette==='dark'?darkSet:palette==='other'?otherSet:lightSet;
+    const furniture={...(palette==='dark'?darkSet:palette==='other'?otherSet:lightSet)};
+    const facadeMap={IVORY:'#eee8dc',OAK:'#c7a77e',GRAPHITE:'#45484c',SAGE:'#aab49f',WHITE:'#f3f2ed'};
+    const carcassMap={WHITE:'#e9e8e3',GREY:'#a9abad',OAK:'#bd9b73',GRAPHITE:'#505256'};
+    const worktopMap={BLACK:'#242424',STONE:'#77746e',OAK:'#9d7851',LIGHT_STONE:'#c9c3b7'};
+    if(facadeMap[facadePreset])furniture.moduleFront=facadeMap[facadePreset];
+    if(carcassMap[carcassPreset]){
+      furniture.module=carcassMap[carcassPreset];
+      furniture.moduleSide=carcassMap[carcassPreset];
+      furniture.moduleTop=carcassMap[carcassPreset];
+    }
+    const roomLight={
+      floor:{OAK_NATURAL:'#cbb58f',STONE_LIGHT:'#d1cec5',TILE_SAND:'#d7c9ad',CONCRETE_WARM:'#bbb7ae'}[floorPreset]||'#ddd7ca',
+      wall:{WARM_WHITE:'#e9e5db',SAND:'#d9ccb7',GREIGE:'#c9c4b9',STONE:'#bebbb4'}[wallPreset]||'#e5e0d6'
+    };
+    const roomDark={
+      floor:{OAK_NATURAL:'#5b4c38',STONE_LIGHT:'#4b4b48',TILE_SAND:'#544b3d',CONCRETE_WARM:'#464541'}[floorPreset]||'#2a2925',
+      wall:{WARM_WHITE:'#4a4842',SAND:'#4f4639',GREIGE:'#45443f',STONE:'#42413f'}[wallPreset]||'#34322e'
+    };
+    const worktop=worktopMap[worktopPreset]||(dark?'#111':'#242424');
     return dark?{
-      bg:'#1c1c1a',floor:'#2a2925',wall:'#34322e',wallSoft:'rgba(67,64,58,.32)',wallActive:'rgba(189,157,66,.30)',grid:'rgba(245,240,230,.08)',line:'rgba(245,240,230,.25)',dimension:'rgba(245,240,230,.86)',ink:'#f3f1ec',module:furniture.module,moduleSide:furniture.moduleSide,moduleFront:furniture.moduleFront,moduleTop:furniture.moduleTop,system:furniture.system,anchor:furniture.anchor,worktop:'#111',badgeBg:'#f3f1ec',badgeInk:'#171716'
+      bg:'#1c1c1a',floor:roomDark.floor,wall:roomDark.wall,wallSoft:'rgba(67,64,58,.32)',wallActive:'rgba(189,157,66,.30)',grid:'rgba(245,240,230,.08)',line:'rgba(245,240,230,.25)',dimension:'rgba(245,240,230,.86)',ink:'#f3f1ec',module:furniture.module,moduleSide:furniture.moduleSide,moduleFront:furniture.moduleFront,moduleTop:furniture.moduleTop,system:furniture.system,anchor:furniture.anchor,worktop,badgeBg:'#f3f1ec',badgeInk:'#171716'
     }:{
-      bg:'#eeebe3',floor:'#ddd7ca',wall:'#e5e0d6',wallSoft:'rgba(208,202,191,.27)',wallActive:'rgba(242,201,76,.25)',grid:'rgba(23,23,22,.065)',line:'rgba(23,23,22,.22)',dimension:'rgba(23,23,22,.78)',ink:'#171716',module:furniture.module,moduleSide:furniture.moduleSide,moduleFront:furniture.moduleFront,moduleTop:furniture.moduleTop,system:furniture.system,anchor:furniture.anchor,worktop:'#242424',badgeBg:'#171716',badgeInk:'#f5f4f1'
+      bg:'#eeebe3',floor:roomLight.floor,wall:roomLight.wall,wallSoft:'rgba(208,202,191,.27)',wallActive:'rgba(242,201,76,.25)',grid:'rgba(23,23,22,.065)',line:'rgba(23,23,22,.22)',dimension:'rgba(23,23,22,.78)',ink:'#171716',module:furniture.module,moduleSide:furniture.moduleSide,moduleFront:furniture.moduleFront,moduleTop:furniture.moduleTop,system:furniture.system,anchor:furniture.anchor,worktop,badgeBg:'#171716',badgeInk:'#f5f4f1'
     };
   }
-
   function validPoints(points){return points.filter(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1]))}
   function polygon(ctx,points,fill,stroke,lineWidth=1.1){const pts=validPoints(points);if(pts.length<3)return;ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);pts.slice(1).forEach(p=>ctx.lineTo(p[0],p[1]));ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lineWidth;ctx.stroke()}}
   function line(ctx,a,b,stroke,width=1,dash=[]){if(!a||!b)return;ctx.save();ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();ctx.restore()}
