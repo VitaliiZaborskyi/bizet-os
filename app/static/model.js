@@ -949,13 +949,14 @@
   }
 
   async function patchInputs(patch,reason='R8 workspace'){
-    inputs={...inputs,...patch};await saveVisual({...visual,guided_inputs:inputs,r8_workspace:true},reason);renderScene(false);return snapshot();
+    inputs={...inputs,...patch};await saveVisual({...visual,guided_inputs:inputs,r8_workspace:true},reason);renderScene(false);
+    window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'inputs',patch}}));return snapshot();
   }
-  async function patchVariant(patch){await saveVisual({...visual,r8_variant:{...(visual.r8_variant||{}),...patch}},'R8 variant');renderScene(false);return snapshot()}
-  async function patchVisual(patch){await saveVisual({...visual,...patch},'R8 visual');renderScene(false);return snapshot()}
+  async function patchVariant(patch){await saveVisual({...visual,r8_variant:{...(visual.r8_variant||{}),...patch}},'R8 variant');renderScene(false);window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'variant'}}));return snapshot()}
+  async function patchVisual(patch){await saveVisual({...visual,...patch},'R8 visual');setFurniturePalette();renderScene(false);window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'visual'}}));return snapshot()}
   async function patchElements(elements){const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path:'room.architectural_elements',value:elements,source:'USER_ENTERED',confirmed:true,reason:'R8 wall elements'})});project=result.project||result;renderScene(false);return snapshot()}
-  async function patchRoom(key,value){const path={lengthMm:'room.geometry.wall_length',depthMm:'room.geometry.wall_depth',heightMm:'room.geometry.room_height'}[key];if(!path)return snapshot();const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path,value:Math.round(Number(value)||0),source:'USER_ENTERED',confirmed:false,reason:'R8 room geometry'})});project=result.project||result;renderScene(false);return snapshot()}
-  async function setPalette(value){visual={...visual,r8_palette:value};if(project?.context)project.context.visual_direction=value;await saveVisual(visual,'R8 palette');setFurniturePalette();renderScene(false);return snapshot()}
+  async function patchRoom(key,value){const path={lengthMm:'room.geometry.wall_length',depthMm:'room.geometry.wall_depth',heightMm:'room.geometry.room_height'}[key];if(!path)return snapshot();const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path,value:Math.round(Number(value)||0),source:'USER_ENTERED',confirmed:false,reason:'R8 room geometry'})});project=result.project||result;renderScene(false);window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'room'}}));return snapshot()}
+  async function setPalette(value){visual={...visual,r8_palette:value};if(project?.context)project.context.visual_direction=value;await saveVisual(visual,'R8 palette');setFurniturePalette();renderScene(false);window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'palette'}}));return snapshot()}
   function captureWorkspaceState(){return{
     inputs:{...inputs},
     variant:{...(visual.r8_variant||{})},
