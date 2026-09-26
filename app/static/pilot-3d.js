@@ -288,11 +288,17 @@
     });
     const front=moduleFrontFace(facadeFaces,module);
 
-    // Structural rails/ribs belong to lower carcasses only.
-    if(module.level!=='upper'){
-      const railT=t;
-      panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
-      if(module.kind==='SINK')panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+    // R10.4.0: ordinary lower carcasses always have two ribs — front and rear.
+    // Sink and lower-oven modules keep their own construction rules.
+    if(module.level!=='upper'&&!module.tall){
+      const railT=t,ordinaryOven=module.kind==='COOKTOP'&&module.oven_appliance_present;
+      if(module.kind==='SINK'){
+        panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+        panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+      }else if(!ordinaryOven){
+        panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+        panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+      }
     }
     if(module.kind==='COOKTOP'&&module.oven_appliance_present){
       const oh=Math.max(420,Math.min(600,h*.72));
@@ -306,13 +312,22 @@
       module.oven_nominal_zone_mm=600;
     }
 
-    // Shelves.
+    // Shelves: 0–2 for ordinary lower/upper modules, 0–3 for tall modules.
     if(!['DRAWERS','DISHWASHER','OVEN','TALL_OVEN','FRIDGE'].includes(module.kind)){
-      const count=Math.max(1,Math.min(2,Number(module.shelf_count)||1));
+      const maxShelves=module.tall?3:2,count=Math.max(0,Math.min(maxShelves,Number(module.shelf_count)??1));
       for(let i=1;i<=count;i++){
         const sz=z+h*i/(count+1);
         panel({x:x+t,y:y+22,z:sz-t/2,w:Math.max(20,w-2*t),d:Math.max(30,d-44),h:t},'rgba(205,208,205,.24)');
       }
+    }
+
+    // A middle side is generated only where an internal facade boundary actually carries hinges.
+    if(Array.isArray(module.middle_side_boundaries)&&module.middle_side_boundaries.length&&module.facade_orientation!=='HORIZONTAL'){
+      const facadeCount=Math.max(1,Number(module.facade_count)||1);
+      module.middle_side_boundaries.forEach(boundary=>{
+        const px=x+w*boundary/facadeCount-t/2;
+        panel({x:px,y:y+18,z:z+t,w:t,d:Math.max(40,d-36),h:Math.max(40,h-2*t)},'rgba(188,194,194,.25)');
+      });
     }
 
     if(module.kind==='TALL_OVEN'&&module.mandatory_lower_drawer){
@@ -326,19 +341,34 @@
       panel({x:x+w-30,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
     }
 
-    // Phase 8 drawer internals: complete box + slides, facade remains a separate ghosted object.
+    // Drawer box height is a HARD rule: facade height minus exactly 50 mm.
     if(module.kind==='DRAWERS'){
-      const count=Math.max(2,Math.min(5,Number(module.drawer_count)||2)),inside=Math.max(100,h-40),each=inside/count;
+      const count=Math.max(2,Math.min(5,Number(module.drawer_count)||2));
+      const facadeH=Math.floor((h-5-3*(count-1))/count),boxH=Math.max(1,facadeH-50),innerD=Math.max(60,d-82);
       for(let i=0;i<count;i++){
-        const dz=z+20+i*each,dh=Math.max(70,each-18),sideH=Math.min(115,dh*.48);
-        const innerD=Math.max(60,d-82);
+        const dz=z+3+i*(facadeH+3);
         panel({x:x+34,y:y+42,z:dz,w:Math.max(40,w-68),d:innerD,h:t},'rgba(122,132,136,.28)');
-        panel({x:x+34,y:y+42,z:dz+t,w:t,d:innerD,h:sideH},'rgba(122,132,136,.26)');
-        panel({x:x+w-52,y:y+42,z:dz+t,w:t,d:innerD,h:sideH},'rgba(122,132,136,.26)');
-        panel({x:x+34,y:y+42,z:dz+t,w:Math.max(40,w-68),d:t,h:sideH},'rgba(130,138,141,.30)');
-        panel({x:x+34,y:y+42+innerD-t,z:dz+t,w:Math.max(40,w-68),d:t,h:sideH},'rgba(112,120,123,.30)');
+        panel({x:x+34,y:y+42,z:dz+t,w:t,d:innerD,h:boxH},'rgba(122,132,136,.26)');
+        panel({x:x+w-52,y:y+42,z:dz+t,w:t,d:innerD,h:boxH},'rgba(122,132,136,.26)');
+        panel({x:x+34,y:y+42,z:dz+t,w:Math.max(40,w-68),d:t,h:boxH},'rgba(130,138,141,.30)');
+        panel({x:x+34,y:y+42+innerD-t,z:dz+t,w:Math.max(40,w-68),d:t,h:boxH},'rgba(112,120,123,.30)');
         panel({x:x+20,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
         panel({x:x+w-30,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
+      }
+    }
+
+    // Tall cabinet drawers: hidden drawers stay behind the hinged facade; visible drawers own the lower facade zone.
+    if(module.tall&&!['TALL_OVEN','FRIDGE'].includes(module.kind)&&module.tall_drawer_mode&&module.tall_drawer_mode!=='NONE'){
+      const count=Math.max(1,Math.min(3,Number(module.tall_drawer_count)||2));
+      const stack=module.tall_drawer_mode==='VISIBLE'?Math.min(h,Math.max(180,Number(module.visible_drawer_stack_height_mm)||Math.min(760,h*.4))):Math.min(h*.42,760);
+      const facadeH=Math.floor((stack-3*(count-1))/count),boxH=Math.max(1,facadeH-50),innerD=Math.max(60,d-82);
+      for(let i=0;i<count;i++){
+        const dz=z+3+i*(facadeH+3);
+        panel({x:x+34,y:y+42,z:dz,w:Math.max(40,w-68),d:innerD,h:t},'rgba(122,132,136,.28)');
+        panel({x:x+34,y:y+42,z:dz+t,w:t,d:innerD,h:boxH},'rgba(122,132,136,.26)');
+        panel({x:x+w-52,y:y+42,z:dz+t,w:t,d:innerD,h:boxH},'rgba(122,132,136,.26)');
+        panel({x:x+34,y:y+42,z:dz+t,w:Math.max(40,w-68),d:t,h:boxH},'rgba(130,138,141,.30)');
+        panel({x:x+34,y:y+42+innerD-t,z:dz+t,w:Math.max(40,w-68),d:t,h:boxH},'rgba(112,120,123,.30)');
       }
     }
 
