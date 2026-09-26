@@ -1,4 +1,7 @@
 from pathlib import Path
+import shutil
+import subprocess
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "app" / "static"
@@ -1078,3 +1081,13 @@ def test_r1040_tall_appliance_logic_remains_frozen_until_module_library():
     classifier = model[model.index("function moduleEditorKind"):model.index("function draftFromModule")]
     assert "TALL_OVEN" in classifier
     assert "TALL_PLAIN" in classifier
+
+
+def test_r1040_javascript_syntax_when_node_is_available():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not available in this test environment")
+    for name in ["model.js", "pilot-3d.js", "point-b.js", "workspace-r8.js", "owner-qa-business.js"]:
+        path = STATIC / name
+        result = subprocess.run([node, "--check", str(path)], capture_output=True, text=True)
+        assert result.returncode == 0, f"{name}: {result.stderr}"
