@@ -10,7 +10,7 @@ def read(path: str) -> str:
 def test_start_flow_keeps_configuration_as_standalone_screen():
     js = read('app/static/start-room-handoff.js')
     assert 'configurationScreenFive' in js
-    assert 'summaryCard.hidden = true' in js
+    assert 'summaryCard.hidden=true' in js or 'summaryCard.hidden = true' in js
     assert "experience.classList.add('screen-five-active')" in js
     assert "document.body.classList.add('config-screen-five-open')" in js
     for code in ['WALL_CENTER', 'WALL_LEFT', 'WALL_RIGHT', 'L_LEFT', 'L_RIGHT', 'U_SHAPE', 'CUSTOM']:
