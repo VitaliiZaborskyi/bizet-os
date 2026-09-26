@@ -314,7 +314,7 @@
 
     // Shelves: 0–2 for ordinary lower/upper modules, 0–3 for tall modules.
     if(!['DRAWERS','DISHWASHER','OVEN','TALL_OVEN','FRIDGE'].includes(module.kind)){
-      const maxShelves=module.tall?3:2,count=Math.max(0,Math.min(maxShelves,Number(module.shelf_count)??1));
+      const maxShelves=module.tall?3:2,rawShelves=module.shelf_count===undefined?1:Number(module.shelf_count),count=Math.max(0,Math.min(maxShelves,Number.isFinite(rawShelves)?rawShelves:1));
       for(let i=1;i<=count;i++){
         const sz=z+h*i/(count+1);
         panel({x:x+t,y:y+22,z:sz-t/2,w:Math.max(20,w-2*t),d:Math.max(30,d-44),h:t},'rgba(205,208,205,.24)');
@@ -429,9 +429,10 @@
     }
   }
   function drawPlinth(ctx,projector,group){
-    const base=group.filter(m=>m.level!=='upper'&&!m.tall);if(!base.length)return;const c=colors();
-    if(base[0].wall==='A'){const minX=Math.min(...base.map(m=>m.x)),maxX=Math.max(...base.map(m=>m.x+m.w)),minY=Math.min(...base.map(m=>m.y));drawBox(ctx,projector,{x:minX,y:minY+45,z:0,w:maxX-minX,d:Math.max(80,base[0].d-90),h:90},{body:'#30302e',side:'#272725',front:'#2d2d2b',top:'#383836',stroke:c.line})}
-    else{const minY=Math.min(...base.map(m=>m.y)),maxY=Math.max(...base.map(m=>m.y+m.d)),x=base[0].wall==='B'?45:base[0].x+45,w=Math.max(80,base[0].w-90);drawBox(ctx,projector,{x,y:minY,z:0,w,d:maxY-minY,h:90},{body:'#30302e',side:'#272725',front:'#2d2d2b',top:'#383836',stroke:c.line})}
+    const base=group.filter(m=>m.level!=='upper'&&!m.tall);if(!base.length)return;const c=colors(),plinthH=Math.max(0,Math.min(300,Math.max(...base.map(m=>Number(m.z)||0))));
+    if(plinthH<=0)return;
+    if(base[0].wall==='A'){const minX=Math.min(...base.map(m=>m.x)),maxX=Math.max(...base.map(m=>m.x+m.w)),minY=Math.min(...base.map(m=>m.y));drawBox(ctx,projector,{x:minX,y:minY+45,z:0,w:maxX-minX,d:Math.max(80,base[0].d-90),h:plinthH},{body:'#30302e',side:'#272725',front:'#2d2d2b',top:'#383836',stroke:c.line})}
+    else{const minY=Math.min(...base.map(m=>m.y)),maxY=Math.max(...base.map(m=>m.y+m.d)),x=base[0].wall==='B'?45:base[0].x+45,w=Math.max(80,base[0].w-90);drawBox(ctx,projector,{x,y:minY,z:0,w,d:maxY-minY,h:plinthH},{body:'#30302e',side:'#272725',front:'#2d2d2b',top:'#383836',stroke:c.line})}
   }
   function drawTopAppliance(ctx,projector,module){
     if(module.wall!=='A'||module.level==='upper')return;const p=projector.point,topZ=module.z+module.h+30;
