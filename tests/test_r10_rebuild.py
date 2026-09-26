@@ -39,7 +39,7 @@ def test_r10_phase2_full_kitchen_camera_keeps_pointer_and_touch_controls():
     assert "canvas.addEventListener('pointerup'" in model
     assert "canvas.addEventListener('wheel'" in model
     assert "cam.yaw=" in model and "cam.pitch=" in model
-    assert "#modelCanvas{touch-action:pan-y pinch-zoom}" in css
+    assert "#modelCanvas{touch-action:none" in css
 
 
 def test_r10_phase3_explicit_normal_and_focus_state_machine_contract():
@@ -189,7 +189,7 @@ def test_r10_light_pill_controls_use_dark_text():
     assert ".r8-pill,.r8-arrow{color:#171716}" in css
 
 
-def test_r10_normal_view_is_forced_after_variant_resume_resize_and_panel_open():
+def test_r1033_normal_view_is_forced_for_variant_resume_and_panel_open_but_not_resize():
     model = read("model.js")
     workspace = read("workspace-r8.js")
     apply_block = model[model.index("async function applyWorkspaceState"):model.index("function snapshot")]
@@ -197,7 +197,8 @@ def test_r10_normal_view_is_forced_after_variant_resume_resize_and_panel_open():
     assert "enterNormalKitchenView()" in apply_block
     assert "enterNormalKitchenView()" in resume_block
     assert "window.addEventListener('resize'" in model
-    assert "enterNormalKitchenView()" in model[model.index("window.addEventListener('resize'"):]
+    resize_block = model[model.index("function redrawForViewportChange"):model.index("window.addEventListener('bizet:themechange'")]
+    assert "enterNormalKitchenView()" not in resize_block
     assert "rt?.exitFocus?.()" in workspace
 
 
