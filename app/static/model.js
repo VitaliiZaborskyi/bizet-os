@@ -513,7 +513,7 @@
         placed.d=runSize;placed.w=depth;
       }
       cursor+=runSize;
-      if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER','TALL_OVEN'].includes(placed.kind))placed.facade_count=hingedFacadeCountFor(placed);
+      if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER','TALL_OVEN'].includes(placed.kind)&&!placed.facade_count_user)placed.facade_count=hingedFacadeCountFor(placed);
       return placed;
     }).filter(Boolean);
   }
@@ -545,7 +545,8 @@
       if(Number(o.depth_mm)>0){if(m.wall==='A')m.d=Math.max(100,Number(o.depth_mm));else m.w=Math.max(100,Number(o.depth_mm))}
       if(Number(o.height_mm)>0)m.h=Math.max(100,Number(o.height_mm));
       m.opening=openingOverrides()[m.id]||m.opening||'AUTO';
-      if(['UPPER','UPPER_TOP','UPPER_DRYER'].includes(m.kind))m.facade_count=hingedFacadeCountFor(m);
+      applyModuleEdit(m,true);
+      if(['UPPER','UPPER_TOP','UPPER_DRYER'].includes(m.kind)&&!m.facade_count_user)m.facade_count=hingedFacadeCountFor(m);
     });
     return result;
   }
