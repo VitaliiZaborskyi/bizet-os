@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import datetime, timezone
@@ -14,6 +14,7 @@ from app.project.repository import repository
 from app.quest.engine import QuestEngine
 from app.quest.mapper import decision_to_client, decision_to_debug
 from app.quest.service import QuestAnswerError, QuestAnswerService
+from app.services.room_import import analyze_room_file
 
 router = APIRouter(prefix="/api/v1.1")
 mutation_service = ProjectMutationService()
@@ -108,6 +109,138 @@ def patch_project(project_id: str, command: ChangeCommand):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     repository.save(result.project)
     return result
+
+
+class RoomImportCalibrateRequest(BaseModel):
+    known_dimension_mm: int = Field(ge=300, le=30000)
+
+
+def _room_import_state(project: ProjectState) -> dict:
+    value = project.scene.visual_settings.get("room_import")
+    return dict(value) if isinstance(value, dict) else {}
+
+
+@router.post("/projects/{project_id}/room-import/analyze")
+async def analyze_room_import(project_id: str, file: UploadFile = File(...)):
+    project = repository.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=422, detail="Empty file")
+    if len(raw) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File is larger than 15 MB")
+    try:
+        analysis = analyze_room_file(raw, file.filename or "upload", file.content_type)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Could not analyze room file: {exc}") from exc
+
+    state = {
+        "source": "FILE",
+        "file_name": file.filename or "upload",
+        "file_type": analysis.file_type,
+        "mime_type": file.content_type or "",
+        "file_size": len(raw),
+        "target_model": "ROOM_MODEL",
+        "status": "ANALYZED_SCALE_REQUIRED",
+        "analysis": analysis.as_dict(),
+        "message": "Geometry candidate detected. Confirm one known real dimension to calibrate scale.",
+    }
+    project.scene.visual_settings["room_import"] = state
+    repository.save(project)
+    return {"room_import": state}
+
+
+@router.post("/projects/{project_id}/room-import/calibrate")
+def calibrate_room_import(project_id: str, payload: RoomImportCalibrateRequest):
+    project = repository.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    state = _room_import_state(project)
+    analysis = state.get("analysis") if isinstance(state.get("analysis"), dict) else {}
+    bbox = analysis.get("bbox_norm") or []
+    width_px = float(analysis.get("width_px") or 0)
+    height_px = float(analysis.get("height_px") or 0)
+    if len(bbox) != 4 or width_px <= 0 or height_px <= 0:
+        raise HTTPException(status_code=409, detail="Analyze a PDF or photo before calibration")
+    bw_px = max(1.0, float(bbox[2]) * width_px)
+    bh_px = max(1.0, float(bbox[3]) * height_px)
+    length_mm = int(payload.known_dimension_mm)
+    depth_mm = int(round(length_mm * bh_px / bw_px))
+    depth_mm = max(600, min(30000, depth_mm))
+    confidence = max(0.2, min(0.95, float(analysis.get("confidence") or 0.4)))
+
+    result = mutation_service.apply(project, ChangeCommand(
+        path="room.geometry.wall_length", value=length_mm, source="IMPORTED",
+        confidence=confidence, confirmed=False, reason="R10.3.2 room import calibrated known dimension",
+    ))
+    project = result.project
+    result = mutation_service.apply(project, ChangeCommand(
+        path="room.geometry.wall_depth", value=depth_mm, source="IMPORTED",
+        confidence=max(0.15, confidence - 0.1), confirmed=False, reason="R10.3.2 room import derived depth from detected geometry",
+    ))
+    project = result.project
+
+    x0, y0, bw, bh = map(float, bbox)
+    contour = analysis.get("contour_norm") or [[x0, y0], [x0 + bw, y0], [x0 + bw, y0 + bh], [x0, y0 + bh]]
+    polygon_mm = []
+    for point in contour:
+        px, py = float(point[0]), float(point[1])
+        local_x = (px - x0) / max(bw, 1e-9)
+        local_y = (py - y0) / max(bh, 1e-9)
+        polygon_mm.append([int(round(local_x * length_mm)), int(round(local_y * depth_mm))])
+    if len(polygon_mm) < 3:
+        polygon_mm = [[0, 0], [length_mm, 0], [length_mm, depth_mm], [0, depth_mm]]
+
+    walls = []
+    labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for i, start in enumerate(polygon_mm):
+        end = polygon_mm[(i + 1) % len(polygon_mm)]
+        walls.append({
+            "label": labels[i] if i < len(labels) else f"W{i+1}",
+            "start_mm": start,
+            "end_mm": end,
+            "length_mm": int(round(((end[0]-start[0])**2 + (end[1]-start[1])**2) ** 0.5)),
+        })
+
+    state.update({
+        "known_dimension_mm": length_mm,
+        "calibration_reference": "DETECTED_ENVELOPE_PRIMARY_SPAN",
+        "status": "ROOM_MODEL_PREVIEW_READY",
+        "requires_user_confirmation": True,
+        "canonical_room_model": {
+            "polygon_mm": polygon_mm,
+            "walls": walls,
+            "bounding_size_mm": {"length": length_mm, "depth": depth_mm},
+            "source": "IMPORTED",
+            "confidence": confidence,
+        },
+        "message": f"Room Model preview: {length_mm} × {depth_mm} mm. Confirm before production use.",
+    })
+    project.scene.visual_settings["room_import"] = state
+    repository.save(project)
+    return {"project": project, "room_import": state}
+
+
+@router.post("/projects/{project_id}/room-import/confirm", response_model=ProjectState)
+def confirm_room_import(project_id: str):
+    project = repository.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    state = _room_import_state(project)
+    if state.get("status") != "ROOM_MODEL_PREVIEW_READY":
+        raise HTTPException(status_code=409, detail="Calibrate room import before confirmation")
+    for attr in ("wall_length", "wall_depth"):
+        measured = getattr(project.room.geometry, attr)
+        if measured:
+            measured.provenance.confirmed = True
+            measured.provenance.source = "USER_CONFIRMED"
+    state["status"] = "ROOM_MODEL_CONFIRMED"
+    state["requires_user_confirmation"] = False
+    state["message"] = "Imported Room Model confirmed by user."
+    project.scene.visual_settings["room_import"] = state
+    repository.save(project)
+    return project
 
 
 @router.post("/projects/{project_id}/recalculate", response_model=RecalculateResponse)
