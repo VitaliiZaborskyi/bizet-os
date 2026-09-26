@@ -14,3 +14,14 @@
   .r8-final-price{grid-column:1/-1;justify-content:space-between;align-items:baseline}
   .r8-final-actions>button{font-size:13px;min-width:0;padding:12px 10px}
 }
+
+
+/* R10.3.5: compact customer strip so normal iPhone workspace fits without required page scroll. */
+.r8-final-actions{margin:4px 2px 0}
+@media(max-width:820px){
+  .r8-final-actions{margin-top:3px;gap:6px}
+  .r8-final-price{min-height:26px}
+  .r8-final-price span{font-size:11px}
+  .r8-final-price strong{font-size:21px}
+  .r8-final-actions>button{padding:9px 8px;font-size:12px}
+}
