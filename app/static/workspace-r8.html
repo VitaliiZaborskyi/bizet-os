@@ -9,9 +9,9 @@
   <link rel="stylesheet" href="/static/model.css">
   <link rel="stylesheet" href="/static/model-r5.css">
   <link rel="stylesheet" href="/static/pilot-shell.css">
-  <link rel="stylesheet" href="/static/workspace-r8.css?v=164">
-  <link rel="stylesheet" href="/static/point-b.css?v=164">
-  <link rel="stylesheet" href="/static/owner-qa-business.css?v=164">
+  <link rel="stylesheet" href="/static/workspace-r8.css?v=165">
+  <link rel="stylesheet" href="/static/point-b.css?v=165">
+  <link rel="stylesheet" href="/static/owner-qa-business.css?v=165">
 </head>
 <body class="r8-workspace-body">
   <div class="r8-shell">
@@ -50,19 +50,25 @@
           <div class="r8-stage-top">
             <button class="r8-pill r10-focus-back" id="focusBackButton" type="button" hidden>← Вся кухня</button>
             <button class="r8-pill r10-dimensions-icon" id="modelDimensionsToggle" type="button" aria-pressed="true" aria-label="Скрыть размеры" title="Скрыть размеры">📏</button>
-            <button class="r8-pill r8-undo" id="undoButton" type="button" disabled title="Отменить последнее изменение">↶</button>
             <button class="r8-pill r10-warning-button" id="constraintButton" type="button" hidden aria-expanded="false" title="Предупреждения проекта">!</button>
           </div>
           <div class="r10-constraint-banner" id="constraintBanner" hidden></div>
+          <div class="r10-focus-module-label" id="focusModuleLabel" hidden></div>
           <div class="r8-variant-controls" aria-label="Варианты кухни">
             <div class="r8-variant-dots" id="variantDots" aria-label="Пять сохранённых вариантов"></div>
             <button class="r8-random" id="randomVariant" type="button">Другой вариант</button>
           </div>
         </div>
 
+        <section class="r10-focus-variants" id="focusVariantRibbon" hidden aria-label="Варианты модуля">
+          <div class="r10-focus-variants-head">Варианты модуля</div>
+          <div class="r10-focus-variant-track" id="focusVariantOptions"></div>
+          <p class="r10-focus-variant-status" id="focusVariantStatus" hidden></p>
+        </section>
+
         <div class="r8-module-strip-label">Список модулей</div>
         <div class="module-strip r8-module-strip" id="moduleStrip" aria-label="Модули кухни"></div>
-        <p class="model-status r8-status" id="modelStatus">Формируем базовый вариант…</p>
+        <p class="model-status r8-status" id="modelStatus" hidden aria-live="polite">Формируем базовый вариант…</p>
       </section>
 
       <aside class="r8-panel" id="editorPanel" hidden>
@@ -109,18 +115,18 @@
 
   <button id="materialsButton" type="button" hidden>Материалы</button>
 
-  <script src="/static/pilot-r8-shell.js?v=164"></script>
+  <script src="/static/pilot-r8-shell.js?v=165"></script>
   <script src="/static/pilot-shell.js"></script>
-  <script src="/static/r10-domain-rules.js?v=164"></script>
-  <script src="/static/r10-hardware-assets.js?v=164"></script>
-  <script src="/static/pilot-3d.js?v=164"></script>
+  <script src="/static/r10-domain-rules.js?v=165"></script>
+  <script src="/static/r10-hardware-assets.js?v=165"></script>
+  <script src="/static/pilot-3d.js?v=165"></script>
   <script src="/static/model-r5-pre.js"></script>
-  <script src="/static/model-r6-dimensions.js?v=164"></script>
-  <script src="/static/model.js?v=164"></script>
+  <script src="/static/model-r6-dimensions.js?v=165"></script>
+  <script src="/static/model.js?v=165"></script>
   <script src="/static/model-r5.js"></script>
   <script src="/static/pilot-r6.js"></script>
-  <script src="/static/workspace-r8.js?v=164"></script>
-  <script src="/static/point-b.js?v=164"></script>
-  <script src="/static/owner-qa-business.js?v=164"></script>
+  <script src="/static/workspace-r8.js?v=165"></script>
+  <script src="/static/point-b.js?v=165"></script>
+  <script src="/static/owner-qa-business.js?v=165"></script>
 </body>
 </html>
