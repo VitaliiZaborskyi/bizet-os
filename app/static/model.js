@@ -827,7 +827,7 @@
     prepareRenderLayout();
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),
-      modules,camera,showDimensions:normalDimensionsVisible,showModuleDimensions:false,
+      modules,camera:{...camera,screenYOffset:window.innerWidth<=820?-38:0},showDimensions:normalDimensionsVisible,showModuleDimensions:false,
       architecturalElements:project?.room?.architectural_elements||[]
     });
     syncConstraintBanner();renderFocusVariantRibbon(null);
@@ -892,6 +892,9 @@
   }
   function openModule(id){
     const selected=modules.find(m=>m.id===id)||null;if(!enterModuleFocus(selected))return;
+    moduleDraftBase={...selected,facade_openings:Array.isArray(selected.facade_openings)?[...selected.facade_openings]:selected.facade_openings};
+    moduleDraft=draftFromModule(selected);
+    moduleDraftBasePrice=modulePriceOf(selected);
     $('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;
     $('moduleCopy').textContent=detailText(activeModule);
     const w=$('moduleWidth'),h=$('moduleHeight'),d=$('moduleDepth'),o=$('moduleOpening'),pos=$('moduleOffsetInput');
@@ -906,6 +909,7 @@
     const dialog=$('moduleDialog');
     if(dialog.open)dialog.close();
     renderScene(false);
+    renderModuleEditor(activeModule);
     scheduleRenderAfterLayout('focus-entry');
     requestAnimationFrame(()=>scheduleRenderAfterLayout('focus-entry-second-frame'));
     runFocusPaintBurst(activeModule.id);
@@ -1054,7 +1058,7 @@
 
   $('focusVariantOptions')?.addEventListener('click',event=>{
     const btn=event.target.closest('[data-focus-preset]');if(!btn||btn.disabled)return;
-    applyFocusPreset(btn.dataset.focusPreset).catch(error=>{const status=$('focusVariantStatus');if(status){status.hidden=false;status.textContent=error.message}});
+    try{applyFocusPreset(btn.dataset.focusPreset)}catch(error){const status=$('focusVariantStatus');if(status){status.hidden=false;status.textContent=error.message}}
   });
 
   $('modelDimensionsToggle').addEventListener('click',()=>{
@@ -1068,16 +1072,15 @@
   });
   $('focusBackButton')?.addEventListener('click',()=>{
     if($('moduleDialog')?.open)$('moduleDialog').close();
-    exitModuleFocus();
+    cancelModuleDraft();
   });
   $('focusBackInline')?.addEventListener('click',()=>{
     const dialog=$('moduleDialog');
     if(dialog?.open)dialog.close();
-    exitModuleFocus();
+    cancelModuleDraft();
   });
   function exitModuleFocus(){
-    enterNormalKitchenView();syncFocusControls();
-    renderScene(false);
+    cancelModuleDraft();
   }
   $('moduleClose').addEventListener('click',()=>{
     const dialog=$('moduleDialog');
@@ -1086,6 +1089,8 @@
   $('moduleDialog').addEventListener('close',()=>{if(viewMode===VIEW_FOCUS)exitModuleFocus()});
   $('moduleApply')?.addEventListener('click',()=>applyModuleCustomization().catch(error=>setValidation(error.message)));
   $('moduleReset')?.addEventListener('click',()=>resetModuleCustomization().catch(error=>setValidation(error.message)));
+  $('moduleEditSave')?.addEventListener('click',()=>saveModuleDraft().catch(error=>{const rule=$('moduleEditRule');if(rule){rule.hidden=false;rule.textContent=error.message}}));
+  $('moduleEditCancel')?.addEventListener('click',()=>cancelModuleDraft());
   $('materialsButton').addEventListener('click',()=>location.assign(`/materials?project=${encodeURIComponent(projectId)}`));$('backButton').addEventListener('click',()=>history.back());
   function redrawForViewportChange(){scheduleRenderAfterLayout('viewport')}
   window.addEventListener('resize',redrawForViewportChange);
