@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'bizet_os_project_id';
 const CONFIG_SELECTION_KEY = 'bizet_pilot_configuration';
+const ROOM_MODEL_TARGET = 'ROOM_MODEL';
 
 const CONFIGS = [
   { code: 'WALL_CENTER', cls: 'center', ru: 'Линейная — по центру', en: 'Linear — centred', walls: ['A'] },
