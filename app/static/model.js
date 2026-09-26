@@ -632,9 +632,9 @@
   canvas.addEventListener('pointermove',event=>{
     if(!drag||drag.id!==event.pointerId)return;
     const dx=event.clientX-drag.x,dy=event.clientY-drag.y,dist=Math.hypot(dx,dy);
-    if(dist<10)return;
+    if(dist<6)return;
     if(!drag.mode){
-      if(Math.abs(dy)>Math.abs(dx)*1.9){drag.mode='SCROLL';return}
+      if(Math.abs(dy)>Math.abs(dx)*2.2){drag.mode='SCROLL';return}
       drag.mode='ROTATE';dragMoved=true;canvas.setPointerCapture?.(event.pointerId);
     }
     if(drag.mode!=='ROTATE')return;
