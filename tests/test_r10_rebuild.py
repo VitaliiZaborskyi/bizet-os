@@ -636,25 +636,26 @@ def test_r1031_configuration_screen_scrolls_and_file_import_accepts_pdf_and_phot
     assert "canonical_room_model" in handoff
 
 
-def test_r1035_module_focus_renders_immediately_on_click_without_scroll_hack():
+def test_r1036_module_focus_renders_against_final_layout_without_tap():
     model = read("model.js")
     block = model[model.index("function openModule"):model.index("async function applyModuleCustomization")]
     assert "enterModuleFocus(selected)" in block
-    assert "const redrawFocus=" in block
     assert "renderScene(false)" in block
-    assert "getBoundingClientRect()" in block
     assert "dialog.show()" in block
+    assert "scheduleRenderAfterLayout('focus-entry')" in block
+    assert "focus-entry-second-frame" in block
     assert "scrollIntoView" not in block
-    assert "requestAnimationFrame(redrawFocus)" in block
-    assert "setTimeout(redrawFocus,90)" in block
 
-def test_r1033_viewport_resize_never_exits_module_focus():
+def test_r1036_viewport_and_stage_resize_rerender_without_exiting_focus():
     model = read("model.js")
     resize = model[model.index("function redrawForViewportChange"):model.index("window.addEventListener('bizet:themechange'")]
-    assert "renderScene(false)" in resize
+    assert "scheduleRenderAfterLayout('viewport')" in resize
     assert "enterNormalKitchenView" not in resize
     assert "moduleDialog" not in resize
     assert "visualViewport" in resize
+    assert "ResizeObserver" in resize
+    assert "stage-resize" in resize
+    assert "orientationchange" in resize
 
 def test_r1032_worktop_shared_rule_uses_previous_module_boundary():
     rules = read("r10-domain-rules.js")
@@ -729,9 +730,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1035_fastapi_reports_current_version():
+def test_r1036_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.3.5"' in main
+    assert 'version="R10.3.6"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -799,3 +800,28 @@ def test_r1035_mobile_labels_and_spacing_prioritize_single_screen_iphone():
     assert "font-size:13px;font-weight:820" in css
     assert "bottom:calc(70px + env(safe-area-inset-bottom))" in css
     assert "font-size:11px;font-weight:820" in css
+
+
+def test_r1036_layout_state_is_applied_before_canvas_draw():
+    model = read("model.js")
+    normal = model[model.index("function renderNormalKitchen"):model.index("function renderModuleFocus")]
+    focus = model[model.index("function renderModuleFocus"):model.index("function renderScene")]
+    assert normal.index("prepareRenderLayout()") < normal.index("drawKitchenScene")
+    assert focus.index("prepareRenderLayout()") < focus.index("drawKitchenScene")
+    prepare = model[model.index("function prepareRenderLayout"):model.index("function scheduleRenderAfterLayout")]
+    assert "syncFocusControls()" in prepare
+    assert "void stage.offsetHeight" in prepare
+
+
+def test_r1036_render_scheduler_has_no_pointer_dependency():
+    model = read("model.js")
+    scheduler = model[model.index("function scheduleRenderAfterLayout"):model.index("function variantState")]
+    assert "requestAnimationFrame" in scheduler
+    assert "renderScene(false)" in scheduler
+    assert "pointer" not in scheduler.lower()
+
+
+def test_r1036_workspace_cache_busts_renderer_assets():
+    html = read("workspace-r8.html")
+    assert "/static/model.js?v=166" in html
+    assert "/static/workspace-r8.css?v=166" in html
