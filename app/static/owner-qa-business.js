@@ -262,6 +262,7 @@
     let tries=0,timer=setInterval(()=>{tries++;if(window.BizetPointB&&window.BizetModelRuntime?.ready){clearInterval(timer);refresh()}else if(tries>160)clearInterval(timer)},100);
     window.addEventListener('bizet:modelready',()=>setTimeout(refresh,80));
     window.addEventListener('bizet:resume',()=>setTimeout(refresh,300));
+    window.addEventListener('bizet:modelchange',()=>setTimeout(refresh,100));
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,400)},true);
   }
   window.BizetOwnerBusiness={refresh,producers:PRODUCERS,role,producer,loadIdentity,ensureOrderIdentity,identityRef:()=>identityRef(),getIdentity:()=>identityCache,showBuyFlow,showThinkFlow,showPaymentFlow};
