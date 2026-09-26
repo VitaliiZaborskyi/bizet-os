@@ -625,7 +625,6 @@
   window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();else exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
 
   const canvas=$('modelCanvas');
-  const pageScrollTop=()=>Math.max(0,Number(window.scrollY||document.scrollingElement?.scrollTop||0));
   function beginCanvasGesture(event){
     if(event.pointerType==='touch'&&event.isPrimary===false)return;
     const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
@@ -634,7 +633,6 @@
       pointerType:event.pointerType||'mouse',
       x:event.clientX,y:event.clientY,
       yaw:cam.yaw,pitch:cam.pitch,
-      scrollTop:pageScrollTop(),
       mode:null
     };
     dragMoved=false;
@@ -646,22 +644,16 @@
     if(dist<5)return;
 
     if(!drag.mode){
-      if(drag.pointerType==='touch'&&Math.abs(dy)>Math.abs(dx)*1.25)drag.mode='SCROLL';
-      else drag.mode='ROTATE';
+      drag.mode='ROTATE';
       dragMoved=true;
     }
 
-    if(drag.mode==='SCROLL'){
-      // touch-action:none keeps Safari from cancelling the stream; we reproduce natural vertical page motion.
-      if(event.cancelable)event.preventDefault();
-      window.scrollTo(0,Math.max(0,drag.scrollTop-dy));
-      return;
-    }
-
+    // R10.3.4: the canvas never scrolls the page. Native page scroll stays available outside the canvas.
     if(event.cancelable)event.preventDefault();
     const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
     cam.yaw=drag.yaw-dx*.0095;
-    cam.pitch=clamp(drag.pitch+dy*.005,.08,.85);
+    if(viewMode===VIEW_FOCUS)cam.pitch=clamp(drag.pitch+dy*.006,-1.12,1.12);
+    else cam.pitch=drag.pitch;
     renderScene(false);
   }
   function endCanvasGesture(event){
