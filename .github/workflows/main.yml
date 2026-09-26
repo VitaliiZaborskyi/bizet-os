@@ -2,7 +2,7 @@ name: BIZET OS Tests
 
 on:
   push:
-    branches: [main, build-1.1-d-config-first-pilot-r5, build-1.1-d-config-first-pilot-r6, r7-demo-fix, r8-model-first, r10-3-3-3d-interaction-fix-20260926]
+    branches: [main, build-1.1-d-config-first-pilot-r5, build-1.1-d-config-first-pilot-r6, r7-demo-fix, r8-model-first, r10-3-3-3d-interaction-fix-20260926, r10-3-4-single-screen-input-backgrounds-20260926]
   pull_request:
     branches: [main]
   workflow_dispatch:
