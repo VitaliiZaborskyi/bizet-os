@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import datetime, timezone
+import re
 
 from app.engine.application_no import next_order_no
 from app.engine.rules import DecisionEngine
@@ -15,6 +16,7 @@ from app.quest.engine import QuestEngine
 from app.quest.mapper import decision_to_client, decision_to_debug
 from app.quest.service import QuestAnswerError, QuestAnswerService
 from app.services.room_import import analyze_room_file
+from app.services.mail import build_proposal_email, send_with_resend, resend_configured, MailProviderNotConfigured, MailDeliveryError
 
 router = APIRouter(prefix="/api/v1.1")
 mutation_service = ProjectMutationService()
@@ -109,6 +111,69 @@ def patch_project(project_id: str, command: ChangeCommand):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     repository.save(result.project)
     return result
+
+
+class SendProposalRequest(BaseModel):
+    recipient: str
+    price: str
+    manufacturer: str
+    configuration: str
+    runs: str = ""
+    features: list[str] = Field(default_factory=list)
+
+
+@router.get("/mail/status")
+def mail_status():
+    return {"provider": "RESEND", "configured": resend_configured()}
+
+
+@router.post("/projects/{project_id}/proposal/send")
+def send_project_proposal(project_id: str, payload: SendProposalRequest):
+    project = repository.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    recipient = payload.recipient.strip()
+    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", recipient):
+        raise HTTPException(status_code=422, detail="A valid e-mail is required")
+    if not project.identity.order_no:
+        raise HTTPException(status_code=409, detail="Activate Point B before sending a proposal")
+
+    order_ref = project.identity.display_reference
+    body = build_proposal_email(order_ref, payload.model_dump())
+    try:
+        message_id = send_with_resend(
+            recipient,
+            f"BIZET OS · Commercial Proposal · {order_ref}",
+            body,
+        )
+    except MailProviderNotConfigured as exc:
+        project.commerce.proposal_delivery_status = "NOT_CONFIGURED"
+        project.commerce.proposal_provider = "RESEND"
+        repository.save(project)
+        raise HTTPException(status_code=503, detail="MAIL_PROVIDER_NOT_CONFIGURED") from exc
+    except MailDeliveryError as exc:
+        project.commerce.proposal_status = "FAILED"
+        project.commerce.proposal_delivery_status = "FAILED"
+        project.commerce.proposal_provider = "RESEND"
+        repository.save(project)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    project.commerce.contact = recipient
+    project.commerce.proposal_status = "SENT"
+    project.commerce.proposal_delivery_status = "SENT"
+    project.commerce.proposal_provider = "RESEND"
+    project.commerce.proposal_message_id = message_id
+    project.commerce.proposal_recipient = recipient
+    project.commerce.proposal_sent_at = datetime.now(timezone.utc)
+    repository.save(project)
+    return {
+        "status": "SENT",
+        "provider": "RESEND",
+        "message_id": message_id,
+        "recipient": recipient,
+        "sent_at": project.commerce.proposal_sent_at,
+        "order_ref": order_ref,
+    }
 
 
 class RoomImportCalibrateRequest(BaseModel):
