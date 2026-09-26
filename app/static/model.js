@@ -68,7 +68,10 @@
     const inFocus=viewMode===VIEW_FOCUS;
     document.body.classList.toggle('r10-module-focus',inFocus);
     const back=$('focusBackButton'),dims=$('modelDimensionsToggle'),label=$('focusModuleLabel'),ribbon=$('focusVariantRibbon');
+    const normalCanvas=$('modelCanvas'),focusCanvas=$('focusCanvas');
     const kitchenVariants=document.querySelector('.r8-variant-controls');
+    if(normalCanvas)normalCanvas.setAttribute('aria-hidden',String(inFocus));
+    if(focusCanvas)focusCanvas.setAttribute('aria-hidden',String(!inFocus));
     if(back)back.hidden=!inFocus;
     if(kitchenVariants)kitchenVariants.hidden=inFocus;
     if(label){
@@ -581,7 +584,7 @@
     prepareRenderLayout();
     const forceCanvasReset=focusCanvasResetFrames>0;
     if(forceCanvasReset)focusCanvasResetFrames--;
-    scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
+    scene=window.BizetPilot3D.drawKitchenScene($('focusCanvas'),{
       room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
       camera:focusCamera,showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,architecturalElements:[],focusMode:true,
       forceCanvasReset
@@ -639,11 +642,10 @@
     pos.value=Number(offsets()[activeModule.id])||0;
     setValidation('');
 
-    // R10.3.6: entering focus changes layout first, then paints against the final canvas size.
-    renderScene(false);
+    // R10.3.8: isolation owns a dedicated canvas. Do not open the legacy dialog during the transition.
     const dialog=$('moduleDialog');
     if(dialog.open)dialog.close();
-    if(typeof dialog.show==='function')dialog.show();else dialog.showModal?.();
+    renderScene(false);
     scheduleRenderAfterLayout('focus-entry');
     requestAnimationFrame(()=>scheduleRenderAfterLayout('focus-entry-second-frame'));
     runFocusPaintBurst(activeModule.id);
@@ -725,24 +727,28 @@
     }
     resumeFromSleep.busy=false;
   }
-  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();else exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>scheduleRenderAfterLayout('runtime-render')};
+  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>scheduleRenderAfterLayout('runtime-render')};
 
-  const canvas=$('modelCanvas');
+  const normalCanvas=$('modelCanvas'),focusCanvas=$('focusCanvas');
+  function activeCanvas(){return viewMode===VIEW_FOCUS?focusCanvas:normalCanvas}
   function beginCanvasGesture(event){
+    const surface=event.currentTarget;
+    if(surface!==activeCanvas())return;
     if(event.pointerType==='touch'&&event.isPrimary===false)return;
     const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
     drag={
       id:event.pointerId,
+      surface,
       pointerType:event.pointerType||'mouse',
       x:event.clientX,y:event.clientY,
       yaw:cam.yaw,pitch:cam.pitch,
       mode:null
     };
     dragMoved=false;
-    try{canvas.setPointerCapture?.(event.pointerId)}catch(_){}
+    try{surface.setPointerCapture?.(event.pointerId)}catch(_){}
   }
   function moveCanvasGesture(event){
-    if(!drag||drag.id!==event.pointerId)return;
+    if(!drag||drag.id!==event.pointerId||drag.surface!==event.currentTarget)return;
     const dx=event.clientX-drag.x,dy=event.clientY-drag.y,dist=Math.hypot(dx,dy);
     if(dist<5)return;
 
@@ -751,7 +757,7 @@
       dragMoved=true;
     }
 
-    // R10.3.4: the canvas never scrolls the page. Native page scroll stays available outside the canvas.
+    // The active canvas owns the gesture; page scroll remains available outside the 3D stage.
     if(event.cancelable)event.preventDefault();
     const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
     cam.yaw=drag.yaw-dx*.0095;
@@ -760,20 +766,31 @@
     renderScene(false);
   }
   function endCanvasGesture(event){
-    if(!drag||drag.id!==event.pointerId)return;
-    const mode=drag.mode,wasMoved=dragMoved;
+    if(!drag||drag.id!==event.pointerId||drag.surface!==event.currentTarget)return;
+    const surface=drag.surface,mode=drag.mode,wasMoved=dragMoved;
     drag=null;
-    try{canvas.releasePointerCapture?.(event.pointerId)}catch(_){}
-    if(!wasMoved&&!mode&&scene&&viewMode===VIEW_NORMAL){
-      const rect=canvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);
-      if(id)openModule(id);
+    try{surface.releasePointerCapture?.(event.pointerId)}catch(_){}
+    if(!wasMoved&&!mode&&scene&&viewMode===VIEW_NORMAL&&surface===normalCanvas){
+      const rect=normalCanvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);
+      if(id)window.setTimeout(()=>openModule(id),0);
     }
   }
-  canvas.addEventListener('pointerdown',beginCanvasGesture,{passive:false});
-  canvas.addEventListener('pointermove',moveCanvasGesture,{passive:false});
-  canvas.addEventListener('pointerup',endCanvasGesture,{passive:false});
-  canvas.addEventListener('pointercancel',event=>{if(drag?.id===event.pointerId)drag=null});
-  canvas.addEventListener('wheel',event=>{event.preventDefault();const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
+  function bindCanvasSurface(surface){
+    if(!surface)return;
+    surface.addEventListener('pointerdown',beginCanvasGesture,{passive:false});
+    surface.addEventListener('pointermove',moveCanvasGesture,{passive:false});
+    surface.addEventListener('pointerup',endCanvasGesture,{passive:false});
+    surface.addEventListener('pointercancel',event=>{if(drag?.id===event.pointerId&&drag.surface===surface)drag=null});
+    surface.addEventListener('wheel',event=>{
+      if(surface!==activeCanvas())return;
+      event.preventDefault();
+      const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
+      cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);
+      renderScene(false);
+    },{passive:false});
+  }
+  bindCanvasSurface(normalCanvas);
+  bindCanvasSurface(focusCanvas);
 
   $('focusVariantOptions')?.addEventListener('click',event=>{
     const btn=event.target.closest('[data-focus-preset]');if(!btn||btn.disabled)return;
@@ -790,12 +807,13 @@
     btn.setAttribute('aria-expanded',String(!open));el.hidden=open;
   });
   $('focusBackButton')?.addEventListener('click',()=>{
-    const dialog=$('moduleDialog');
-    if(dialog?.open)dialog.close();else exitModuleFocus();
+    if($('moduleDialog')?.open)$('moduleDialog').close();
+    exitModuleFocus();
   });
   $('focusBackInline')?.addEventListener('click',()=>{
     const dialog=$('moduleDialog');
-    if(dialog?.open)dialog.close();else exitModuleFocus();
+    if(dialog?.open)dialog.close();
+    exitModuleFocus();
   });
   function exitModuleFocus(){
     enterNormalKitchenView();syncFocusControls();
