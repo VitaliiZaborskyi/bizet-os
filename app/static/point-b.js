@@ -306,7 +306,8 @@
     add('Работы','Чашка петли',hw.HINGE_CUP,'шт',PRICES.HINGE_CUP);
     add('Работы','Пазование',hw.GROOVE_M,'п.м',PRICES.GROOVE_M);
     add('Фурнитура','Петля BLUM + ответная планка',hw.HINGE,'компл',PRICES.HINGE_BLUM);
-    add('Фурнитура','Ножка',hw.LEG,'шт',PRICES.LEG);
+    const legHeight=Math.max(0,...modules.filter(m=>m.level!=='upper'&&!m.tall).map(m=>Math.round(Number(m.z)||0)));
+    add('Фурнитура',`Ножка H ${legHeight||100} мм`,hw.LEG,'шт',PRICES.LEG,'Высота выбирается от цоколя проекта');
     add('Фурнитура','Клипса цоколя',hw.LEG_CLIP,'шт',PRICES.LEG_CLIP);
     add('Фурнитура','Ручка',hw.HANDLE,'шт',PRICES.HANDLE);
     if(hw.M4_HANDLE)add('Крепёж','Винт ручки M4×25',hw.M4_HANDLE,'шт',0,'OPEN — цена расходника не заморожена; 2 шт на ручку');
