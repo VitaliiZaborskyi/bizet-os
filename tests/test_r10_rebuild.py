@@ -469,7 +469,7 @@ def test_r103_room_acquisition_has_manual_scan_file_and_single_dimension_calibra
         assert token in workspace
     assert ".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg" in workspace
     assert "known_dimension_mm" in workspace
-    assert "CALIBRATED_WALL_A" in workspace
+    assert "ROOM_MODEL_PREVIEW_READY" in workspace
 
 def test_r103_mobile_light_step_bar_always_uses_dark_text():
     css = read("workspace-r8.css")
