@@ -6,7 +6,7 @@
   const VIEW_NORMAL='NORMAL_KITCHEN_VIEW',VIEW_FOCUS='MODULE_FOCUS_MODE';
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false;
   let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72},focusDimensionsVisible=true,normalDimensionsVisible=true;
-  let layoutWarnings=[],preparedViewMode=null,stageResizeFrame=0,lastStageSize='';
+  let layoutWarnings=[],preparedViewMode=null,stageResizeFrame=0,lastStageSize='',focusCanvasResetFrames=0,focusPaintToken=0;
   const LIMITS=window.BizetR10Rules?.moduleLimitsMm||{STRAIGHT_MAX:900,CORNER_MAX:1250,PREFERRED_FILL:600,HINGED_FACADE_MAX:597,MIN_STANDARD_MODULE:300};
   const ERGO=window.BizetR10Rules?.ergonomicsMm||{SINK_COOKTOP_HARD_MIN:500,SINK_COOKTOP_PREFERRED:900,SINK_OVEN_SAME_WALL_MIN:1000,TRIANGLE_LEG_MIN:1200,TRIANGLE_LEG_MAX:2700,TRIANGLE_SUM_MAX:7900};
   const CORNER=window.BizetR10Rules?.cornerRules||{ZONE_DEPTH:600,MAX_CORNER_MODULE:1250,ALLOWED_KINDS:['SINK','CORNER']};
@@ -145,11 +145,12 @@
   function resetCamera(){camera=window.BizetPilot3D?.cameraDefaults?.(configuration())||{yaw:0,pitch:.33,distanceScale:1}}
 
   function enterNormalKitchenView(){
-    viewMode=VIEW_NORMAL;activeModule=null;drag=null;
+    viewMode=VIEW_NORMAL;activeModule=null;drag=null;focusCanvasResetFrames=0;focusPaintToken++;
   }
   function enterModuleFocus(module){
     if(!module)return false;
     activeModule=module;viewMode=VIEW_FOCUS;focusCamera={yaw:-.36,pitch:.34,distanceScale:.72};
+    focusCanvasResetFrames=8;focusPaintToken++;
     return true;
   }
 
@@ -578,9 +579,12 @@
     const room={lengthMm:run+1000,depthMm:dep+1000,heightMm:Math.max(1200,current.h+520)};
     const clone={...current,wall:'A',x:500,y:room.depthMm-dep-320,z:120,w:run,d:dep,number:current.number};
     prepareRenderLayout();
+    const forceCanvasReset=focusCanvasResetFrames>0;
+    if(forceCanvasReset)focusCanvasResetFrames--;
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
-      camera:focusCamera,showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,architecturalElements:[],focusMode:true
+      camera:focusCamera,showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,architecturalElements:[],focusMode:true,
+      forceCanvasReset
     });
     syncConstraintBanner();renderFocusVariantRibbon(activeModule);
     $('modelStatus').textContent='Режим модуля · «Вся кухня» вернёт общий вид.';
@@ -606,6 +610,20 @@
     if(m.pending)return'Остаточное пространство. Этот модуль пока формируется системным алгоритмом.';
     return'Локальная настройка модуля. После применения BIZET OS перестраивает зависимую модель.';
   }
+  function runFocusPaintBurst(moduleId){
+    const token=focusPaintToken;
+    let frames=0;
+    const paint=()=>{
+      if(token!==focusPaintToken||viewMode!==VIEW_FOCUS||activeModule?.id!==moduleId)return;
+      renderScene(false);
+      frames++;
+      if(frames<6)requestAnimationFrame(paint);
+    };
+    requestAnimationFrame(paint);
+    [70,160,280].forEach(delay=>window.setTimeout(()=>{
+      if(token===focusPaintToken&&viewMode===VIEW_FOCUS&&activeModule?.id===moduleId)renderScene(false);
+    },delay));
+  }
   function setValidation(message=''){
     const el=$('moduleValidation');if(!el)return;el.textContent=message;el.hidden=!message;
   }
@@ -628,6 +646,7 @@
     if(typeof dialog.show==='function')dialog.show();else dialog.showModal?.();
     scheduleRenderAfterLayout('focus-entry');
     requestAnimationFrame(()=>scheduleRenderAfterLayout('focus-entry-second-frame'));
+    runFocusPaintBurst(activeModule.id);
   }
   async function applyModuleCustomization(){
     if(!activeModule)return;
