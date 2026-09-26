@@ -427,6 +427,13 @@
     $('pointBPriceButton').onclick=()=>showReport('price');
     $('pointBDocsButton').onclick=()=>showReport('docs');
   }
+  function modulePrice(module){
+    if(!module)return{cost:0,client:0,bom:null,details:[]};
+    const normalized={...module,wall:'A',x:0,y:0,w:Math.max(20,runW(module)),d:Math.max(20,depth(module)),number:module.number||1};
+    const details=detailsFor([normalized]),bom=buildBOM([normalized],details,{includeWorktop:false,includePlinth:true});
+    return{cost:bom.cost,client:bom.client,bom,details};
+  }
+
   function current(){
     const rt=window.BizetModelRuntime;if(!rt?.ready)return null;
     const modules=rt.getModules(),room=rt.getRoom(),details=detailsFor(modules),bom=buildBOM(modules,details);
@@ -464,7 +471,7 @@
     window.addEventListener('bizet:modelready',refresh);window.addEventListener('bizet:resume',()=>setTimeout(refresh,250));window.addEventListener('bizet:modelchange',()=>setTimeout(refresh,80));
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,350)},true);
   }
-  window.BizetPointB={version:VERSION,prices:PRICES,detailsFor,buildBOM,moduleDrawing,communicationsDrawing,productionModuleSheet,refresh};
+  window.BizetPointB={version:VERSION,prices:PRICES,detailsFor,buildBOM,modulePrice,moduleDrawing,communicationsDrawing,productionModuleSheet,refresh};
   window.BizetPointBOriginalDocs=()=>showReport('docs');
   boot();
 })();
