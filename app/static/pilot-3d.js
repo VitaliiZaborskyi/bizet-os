@@ -1,12 +1,24 @@
 (() => {
   const DEG=Math.PI/180;
 
-  function setupCanvas(canvas){
+  function setupCanvas(canvas,forceReset=false){
     const rect=canvas.getBoundingClientRect();
     const dpr=Math.min(window.devicePixelRatio||1,2);
     const width=Math.max(1,Math.round(rect.width)),height=Math.max(1,Math.round(rect.height));
-    if(canvas.width!==Math.round(width*dpr)||canvas.height!==Math.round(height*dpr)){canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr)}
+    const targetWidth=Math.max(1,Math.round(width*dpr)),targetHeight=Math.max(1,Math.round(height*dpr));
+    if(forceReset){
+      // R10.3.7: iOS/WebKit can keep presenting the previous 2D backing store until the next pointer paint.
+      // Reallocate the surface explicitly during focus transitions so the new scene is committed without a tap.
+      canvas.width=1;canvas.height=1;void canvas.offsetWidth;
+      canvas.width=targetWidth;canvas.height=targetHeight;
+    }else if(canvas.width!==targetWidth||canvas.height!==targetHeight){
+      canvas.width=targetWidth;canvas.height=targetHeight;
+    }
     const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,width,height);return{ctx,width,height};
+  }
+  function flushCanvas(ctx,force=false){
+    if(!force)return;
+    try{ctx.getImageData(0,0,1,1)}catch(_){}
   }
 
   const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
@@ -444,7 +456,8 @@
   }
 
   function drawKitchenScene(canvas,options={}){
-    const {ctx,width,height}=setupCanvas(canvas),configuration=options.configuration||'WALL_CENTER',room=options.room||{};
+    const forceCanvasReset=options.forceCanvasReset===true;
+    const {ctx,width,height}=setupCanvas(canvas,forceCanvasReset),configuration=options.configuration||'WALL_CENTER',room=options.room||{};
     const projector=createProjector(width,height,room,configuration,options.camera||{}),activeWalls=options.activeWalls||[],c=colors();
     const modules=Array.isArray(options.modules)?options.modules:[],hits=[];
     const lower=modules.filter(m=>m.level!=='upper'),upper=modules.filter(m=>m.level==='upper');
@@ -459,6 +472,7 @@
         // No navigation number in MODULE_FOCUS_MODE; numbering belongs to the full-kitchen view.
         hits.push({id:module.id,points:front});
       });
+      flushCanvas(ctx,forceCanvasReset);
       return{camera:{yaw:projector.yaw,pitch:projector.pitch,distanceScale:projector.distanceScale},hitAreas:hits,hitTest(x,y){for(let i=hits.length-1;i>=0;i--)if(pointInPolygon(x,y,hits[i].points))return hits[i].id;return null}};
     }
 
@@ -482,6 +496,7 @@
       drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front});
     };
     lower.forEach(drawModule);activeWalls.forEach(wall=>drawWorktop(ctx,projector,lower.filter(m=>m.wall===wall)));lower.forEach(m=>drawTopAppliance(ctx,projector,m));upper.forEach(drawModule);if(options.showModuleDimensions===true)drawModuleRunDimensions(ctx,projector,lower,c);
+    flushCanvas(ctx,forceCanvasReset);
     return{camera:{yaw:projector.yaw,pitch:projector.pitch,distanceScale:projector.distanceScale},hitAreas:hits,hitTest(x,y){for(let i=hits.length-1;i>=0;i--)if(pointInPolygon(x,y,hits[i].points))return hits[i].id;return null}};
   }
 
