@@ -962,7 +962,8 @@
     module_offsets_mm:{...(visual.module_offsets_mm||{})},
     module_size_overrides:{...(visual.module_size_overrides||{})},
     module_opening_overrides:{...(visual.module_opening_overrides||{})},
-    module_variant_overrides:{...(visual.module_variant_overrides||{})}
+    module_variant_overrides:{...(visual.module_variant_overrides||{})},
+    module_edit_overrides:{...(visual.module_edit_overrides||{})}
   }}
   async function applyWorkspaceState(state,reason='R8 saved variant'){
     enterNormalKitchenView();
@@ -973,6 +974,7 @@
     if(state.module_size_overrides)next.module_size_overrides={...state.module_size_overrides};
     if(state.module_opening_overrides)next.module_opening_overrides={...state.module_opening_overrides};
     if(state.module_variant_overrides)next.module_variant_overrides={...state.module_variant_overrides};
+    if(state.module_edit_overrides)next.module_edit_overrides={...state.module_edit_overrides};
     await saveVisual(next,reason);renderScene(false);return snapshot();
   }
   function snapshot(){return{...captureWorkspaceState(),visual:{...visual},elements:[...(project?.room?.architectural_elements||[])],context:{...(project?.context||{})},room:roomValues(),modules:[...modules]}}
