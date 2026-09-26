@@ -10,6 +10,38 @@
    {reverse_wall_a:true,module_shift:1,upper_layout:'ANTRESOL',upper_opening:'LIFT',tall_group_flip:true},
    {reverse_wall_a:false,module_shift:2,upper_layout:'STANDARD',upper_opening:'LIFT',tall_group_flip:true}
  ];
+ const MATERIAL_LIBRARY={
+   floor:{title:'Пол',types:{
+     TILE:{label:'Плитка',presets:[['TILE_SAND','Песочная','#d7c9ad'],['STONE_LIGHT','Светлый камень','#d1cec5'],['TILE_GREY','Серая','#aeb0ae']]},
+     PARQUET:{label:'Паркет',presets:[['OAK_NATURAL','Дуб натуральный','#cbb58f'],['OAK_SMOKED','Дуб дымчатый','#8c7358'],['ASH_LIGHT','Ясень светлый','#d5c29f']]},
+     LAMINATE:{label:'Ламинат',presets:[['LAMINATE_OAK','Дуб','#b99c72'],['LAMINATE_GREY','Серо-бежевый','#aaa59b'],['LAMINATE_DARK','Тёмный','#655b50']]},
+     MICROCEMENT:{label:'Микроцемент',presets:[['CONCRETE_WARM','Тёплый','#bbb7ae'],['CONCRETE_GREY','Серый','#9d9e9c'],['CONCRETE_LIGHT','Светлый','#d0cec8']]}
+   }},
+   walls:{title:'Стены',types:{
+     PAINT:{label:'Краска',presets:[['WARM_WHITE','Тёплый белый','#e9e5db'],['SAND','Песочный','#d9ccb7'],['GREIGE','Грейдж','#c9c4b9']]},
+     TILE:{label:'Плитка',presets:[['STONE','Камень','#bebbb4'],['WALL_TILE_LIGHT','Светлая','#ddd8ce'],['WALL_TILE_GRAPHITE','Графит','#777775']]},
+     PLASTER:{label:'Штукатурка',presets:[['PLASTER_WARM','Тёплая','#d2c6b5'],['PLASTER_GREY','Серая','#b2b0a9'],['PLASTER_WHITE','Белая','#e8e5de']]},
+     PANEL:{label:'Панели',presets:[['PANEL_OAK','Дуб','#b69268'],['PANEL_WALNUT','Орех','#7a5b42'],['PANEL_LIGHT','Светлая','#d7cbb8']]}
+   }},
+   ceiling:{title:'Потолок',types:{
+     PAINT:{label:'Краска',presets:[['CEILING_WHITE','Белый','#f1efe9'],['CEILING_WARM','Тёплый белый','#e8e1d4'],['CEILING_GREY','Светло-серый','#d0d0cd']]},
+     STRETCH:{label:'Натяжной',presets:[['STRETCH_MATTE','Матовый','#efeee9'],['STRETCH_SATIN','Сатин','#e5e3dd'],['STRETCH_GREY','Серый','#c8c9c7']]},
+     GYPSUM:{label:'Гипсокартон',presets:[['GYPSUM_WHITE','Белый','#eceae4'],['GYPSUM_WARM','Тёплый','#e2dbce'],['GYPSUM_GREY','Серый','#c9c9c5']]}
+   }},
+   facade:{title:'Фасады',types:{
+     BOARD:{label:'Плитный материал',presets:[['IVORY','Айвори','#eee8dc'],['GRAPHITE','Графит','#45484c'],['SAGE','Шалфей','#aab49f']]},
+     WOOD:{label:'Древесный',presets:[['OAK','Дуб','#c7a77e'],['WALNUT','Орех','#7a5b42'],['ASH','Ясень','#d1b58c']]}
+   }},
+   carcass:{title:'Корпус',types:{
+     BOARD:{label:'ЛДСП',presets:[['WHITE','Белый','#e9e8e3'],['GREY','Серый','#a9abad'],['GRAPHITE','Графит','#505256'],['OAK','Дуб','#bd9b73']]}
+   }},
+   worktop:{title:'Столешница',types:{
+     STONE:{label:'Камень',presets:[['LIGHT_STONE','Светлый камень','#c9c3b7'],['STONE','Серый камень','#77746e'],['BLACK','Чёрный','#242424']]},
+     WOOD:{label:'Дерево',presets:[['OAK','Дуб','#9d7851'],['WALNUT_TOP','Орех','#6c4c37'],['ASH_TOP','Ясень','#b89a74']]}
+   }}
+ };
+ let materialPickerDraft=null;
+
  let variantSlots=[],variantPos=0;
  const clone=value=>JSON.parse(JSON.stringify(value));
  const saveLocks=()=>localStorage.setItem('bizet_r8_locks',JSON.stringify([...locks]));
