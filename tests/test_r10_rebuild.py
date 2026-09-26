@@ -730,9 +730,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1036_fastapi_reports_current_version():
+def test_r1037_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.3.6"' in main
+    assert 'version="R10.3.7"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -821,7 +821,49 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
     assert "pointer" not in scheduler.lower()
 
 
-def test_r1036_workspace_cache_busts_renderer_assets():
+def test_r1037_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=166" in html
-    assert "/static/workspace-r8.css?v=166" in html
+    assert "/static/model.js?v=167" in html
+    assert "/static/pilot-3d.js?v=167" in html
+    assert "/static/workspace-r8.css?v=167" in html
+
+
+def test_r1037_focus_transition_forces_new_canvas_backing_store():
+    renderer = read("pilot-3d.js")
+    setup = renderer[renderer.index("function setupCanvas"):renderer.index("const add=")]
+    assert "forceReset=false" in setup
+    assert "canvas.width=1;canvas.height=1" in setup
+    assert "void canvas.offsetWidth" in setup
+    assert "canvas.width=targetWidth;canvas.height=targetHeight" in setup
+    kitchen = renderer[renderer.index("function drawKitchenScene"):renderer.index("window.BizetPilot3D")]
+    assert "options.forceCanvasReset===true" in kitchen
+    assert "flushCanvas(ctx,forceCanvasReset)" in kitchen
+
+
+def test_r1037_focus_entry_runs_multi_frame_paint_burst_without_pointer_event():
+    model = read("model.js")
+    burst = model[model.index("function runFocusPaintBurst"):model.index("function setValidation")]
+    assert "requestAnimationFrame(paint)" in burst
+    assert "frames<6" in burst
+    assert "[70,160,280]" in burst
+    assert "renderScene(false)" in burst
+    assert "pointer" not in burst.lower()
+    open_block = model[model.index("function openModule"):model.index("async function applyModuleCustomization")]
+    assert "runFocusPaintBurst(activeModule.id)" in open_block
+
+
+def test_r1037_focus_renderer_consumes_hard_reset_frames():
+    model = read("model.js")
+    focus = model[model.index("function renderModuleFocus"):model.index("function renderScene")]
+    assert "focusCanvasResetFrames>0" in focus
+    assert "focusCanvasResetFrames--" in focus
+    assert "forceCanvasReset" in focus
+    enter = model[model.index("function enterNormalKitchenView"):model.index("function sinkWall")]
+    assert "focusCanvasResetFrames=8" in enter
+    assert "focusPaintToken++" in enter
+
+
+def test_r1037_webkit_canvas_has_dedicated_compositor_layer():
+    css = read("workspace-r8.css")
+    assert "-webkit-transform:translateZ(0)" in css
+    assert "-webkit-backface-visibility:hidden" in css
