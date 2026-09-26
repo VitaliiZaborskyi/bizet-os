@@ -568,7 +568,7 @@ def test_r1031_vertical_swipe_scrolls_page_horizontal_swipe_rotates_model():
     assert "#modelCanvas{touch-action:pan-y pinch-zoom}" in css
     start = model.rindex("const canvas=$('modelCanvas')")
     gesture = model[start:model.index("$('constraintButton')", start)]
-    assert "Math.abs(dy)>Math.abs(dx)*1.12" in gesture
+    assert "Math.abs(dy)>Math.abs(dx)*2.2" in gesture
     assert "drag.mode='SCROLL'" in gesture
     assert "drag.mode='ROTATE'" in gesture
     assert "canvas.setPointerCapture" in gesture
@@ -597,9 +597,11 @@ def test_r1031_worktop_is_split_at_4100_and_bom_counts_per_run():
     renderer = read("pilot-3d.js")
     pointb = read("point-b.js")
     wt = renderer[renderer.index("function drawWorktop"):renderer.index("function drawPlinth")]
-    assert "const MAX=4100" in wt
-    assert "off<span;off+=MAX" in wt
-    assert "if(off>0)" in wt
+    assert "worktopRunPlan" in wt
+    rules = read("r10-domain-rules.js")
+    assert "MAX_UNSPLICED_MM:4100" in rules
+    assert "NEAREST_MODULE_BOUNDARY_NOT_EXCEEDING_MAX" in rules
+    assert "eligible[eligible.length-1]" in rules
     assert "worktopGroups" in pointb
     assert "worktopJoints" in pointb
     assert "Максимум 4100 мм без стыка" in pointb
@@ -621,9 +623,48 @@ def test_r1031_os_blue_is_exact_splash_blue_everywhere_in_ui():
 def test_r1031_configuration_screen_scrolls_and_file_import_accepts_pdf_and_photo():
     handoff = read("start-room-handoff.js")
     css = read("next-pilot.css")
-    for token in ["Загрузить файл","startRoomFileInput","roomImportKind","application/pdf","image/","startRoomFilePreview","startRoomKnownDimension","Применить масштаб","CALIBRATED_ONE_DIMENSION","ROOM_MODEL"]:
+    for token in ["Загрузить файл","startRoomFileInput","roomImportKind","application/pdf","image/","startRoomFilePreview","startRoomKnownDimension","Применить масштаб","room-import","analyze","calibrate","Подтвердить помещение"]:
         assert token in handoff
     assert 'body.config-screen-five-open{height:auto!important;overflow-y:auto!important' in css
     assert "configuration-choice-grid{grid-template-columns:1fr!important" in css
     assert "URL.createObjectURL(file)" in handoff
-    assert "scene.visual_settings.room_import" in handoff
+    assert "canonical_room_model" in handoff
+
+
+def test_r1032_module_focus_opens_layout_before_double_render():
+    model = read("model.js")
+    block = model[model.index("function openModule"):model.index("async function applyModuleCustomization")]
+    assert "dialog.show()" in block
+    assert "scrollIntoView" in block
+    assert "requestAnimationFrame" in block
+    assert block.count("renderScene(false)") >= 2
+
+def test_r1032_worktop_shared_rule_uses_previous_module_boundary():
+    rules = read("r10-domain-rules.js")
+    block = rules[rules.index("function worktopRunPlan"):rules.index("window.BizetR10Rules")]
+    assert "target=cursor+MAX" in block
+    assert "v<=target" in block
+    assert "eligible[eligible.length-1]" in block
+    renderer = read("pilot-3d.js")
+    pointb = read("point-b.js")
+    assert "BizetR10Rules?.worktopRunPlan" in renderer
+    assert "BizetR10Rules?.worktopRunPlan" in pointb
+
+def test_r1032_import_flow_has_detected_geometry_overlay_and_confirmation():
+    handoff = read("start-room-handoff.js")
+    css = read("next-pilot.css")
+    assert "roomImportOverlay" in handoff
+    assert "segments_norm" in handoff
+    assert "canonical_room_model" in handoff
+    assert "ROOM_MODEL" in handoff
+    assert "Подтвердить помещение" in handoff
+    assert ".start-room-analysis-overlay" in css
+
+def test_r1032_think_flow_calls_real_proposal_send_endpoint():
+    business = read("owner-qa-business.js")
+    assert "async function sendProposalEmail" in business
+    assert "/proposal/send" in business
+    think = business[business.index("async function showThinkFlow"):business.index("async function showBuyFlow")]
+    assert "sendProposalEmail(contact,d)" in think
+    assert "КП отправлено" in think
+    assert "MAIL_PROVIDER_NOT_CONFIGURED" in business
