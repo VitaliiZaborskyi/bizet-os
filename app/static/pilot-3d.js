@@ -181,20 +181,47 @@
       const offset=Math.max(20,Number(module.handle_offset_mm)||50);
       acc=0;for(let i=0;i<count;i++){const bottom=acc,top=acc+weights[i];const hz=module.z+module.h*top-Math.min(offset,module.h*weights[i]*.38);handle(module.x+module.w*.5,hz,'HORIZONTAL',Math.min(150,module.w*.36));acc=top}
     }
-    else if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER'].includes(module.kind)){
-      const count=Math.max(1,Number(module.facade_count)||1);
-      for(let i=1;i<count;i++)vline(i/count);
-      const orient=module.handle_orientation||'HORIZONTAL',offset=Math.max(18,Number(module.handle_offset_mm)||50);
+    else if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER'].includes(module.kind)&&!module.tall){
+      const count=Math.max(1,Number(module.facade_count)||1),horizontal=module.level==='upper'&&module.facade_orientation==='HORIZONTAL';
+      if(horizontal){for(let i=1;i<count;i++)hline(i/count)}
+      else{for(let i=1;i<count;i++)vline(i/count)}
+      const orient=module.handle_orientation||'HORIZONTAL',offset=Math.max(18,Number(module.handle_offset_mm)||50),opens=Array.isArray(module.facade_openings)?module.facade_openings:[];
       for(let i=0;i<count;i++){
-        const left=module.x+module.w*i/count,right=module.x+module.w*(i+1)/count,cx=(left+right)/2;
+        if(horizontal){
+          const low=module.z+module.h*i/count,high=module.z+module.h*(i+1)/count;
+          handle(module.x+module.w*.5,low+Math.min(offset,(high-low)*.35),'HORIZONTAL',Math.min(180,module.w*.42));
+          continue;
+        }
+        const left=module.x+module.w*i/count,right=module.x+module.w*(i+1)/count,cx=(left+right)/2,opening=opens[i]||((module.opening||'').includes('RIGHT')?'RIGHT':'LEFT');
         if(orient==='VERTICAL'){
-          const onRight=(module.opening||'').includes('LEFT'),x=onRight?right-offset:left+offset;
+          const onRight=opening==='LEFT',x=onRight?right-offset:left+offset;
           const hz=module.level==='upper'?module.z+Math.min(140,module.h*.26):module.z+module.h*.72;
           handle(x,hz,'VERTICAL',Math.min(150,module.h*.22));
         }else{
+          const x=opening==='LEFT'?right-offset:left+offset;
           const hz=module.level==='upper'?module.z+offset:module.z+module.h-offset;
-          handle(cx,hz,'HORIZONTAL',Math.min(150,(right-left)*.48));
+          handle(x,hz,'HORIZONTAL',Math.min(110,(right-left)*.42));
         }
+      }
+    }
+    if(module.tall&&!['TALL_OVEN','FRIDGE'].includes(module.kind)){
+      const mode=module.tall_drawer_mode||'NONE',drawerCount=Math.max(1,Math.min(3,Number(module.tall_drawer_count)||2));
+      const stack=mode==='VISIBLE'?Math.min(module.h,Math.max(0,Number(module.visible_drawer_stack_height_mm)||0)):0;
+      if(stack>0){
+        for(let i=1;i<=drawerCount;i++){
+          const ratio=(stack*i/drawerCount)/module.h;
+          if(i<drawerCount)hline(ratio);
+          const low=module.z+stack*(i-1)/drawerCount,high=module.z+stack*i/drawerCount;
+          handle(module.x+module.w*.5,high-Math.min(50,(high-low)*.3),'HORIZONTAL',Math.min(150,module.w*.36));
+        }
+        if(stack<module.h)hline(stack/module.h);
+      }
+      const facadeCount=Math.max(1,Math.min(3,Number(module.tall_facade_count||module.facade_count)||1)),remaining=Math.max(100,module.h-stack),opens=Array.isArray(module.facade_openings)?module.facade_openings:[];
+      for(let i=1;i<facadeCount;i++)hline((stack+remaining*i/facadeCount)/module.h);
+      for(let i=0;i<facadeCount;i++){
+        const low=module.z+stack+remaining*i/facadeCount,high=module.z+stack+remaining*(i+1)/facadeCount,opening=opens[i]||(['LEFT','RIGHT'][i%2]);
+        const x=opening==='LEFT'?module.x+module.w-50:module.x+50;
+        handle(x,(low+high)/2,'VERTICAL',Math.min(160,(high-low)*.30));
       }
     }
     if(module.kind==='FRIDGE'&&module.content==='FRIDGE_FREEZER')hline(.34);
