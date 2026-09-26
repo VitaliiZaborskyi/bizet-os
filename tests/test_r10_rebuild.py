@@ -34,12 +34,14 @@ def test_r10_phase1_full_kitchen_renderer_still_receives_all_modules():
 def test_r10_phase2_full_kitchen_camera_keeps_pointer_and_touch_controls():
     model = read("model.js")
     css = read("workspace-r8.css")
-    assert "canvas.addEventListener('pointerdown'" in model
-    assert "canvas.addEventListener('pointermove'" in model
-    assert "canvas.addEventListener('pointerup'" in model
-    assert "canvas.addEventListener('wheel'" in model
+    assert "surface.addEventListener('pointerdown'" in model
+    assert "surface.addEventListener('pointermove'" in model
+    assert "surface.addEventListener('pointerup'" in model
+    assert "surface.addEventListener('wheel'" in model
+    assert "bindCanvasSurface(normalCanvas)" in model
+    assert "bindCanvasSurface(focusCanvas)" in model
     assert "cam.yaw=" in model and "cam.pitch=" in model
-    assert "#modelCanvas{touch-action:none" in css
+    assert "#modelCanvas,#focusCanvas{touch-action:none" in css
 
 
 def test_r10_phase3_explicit_normal_and_focus_state_machine_contract():
@@ -566,13 +568,13 @@ def test_r1031_functional_triangle_warning_is_completely_suppressed():
 def test_r1034_canvas_owns_3d_gestures_and_page_scroll_stays_outside_canvas():
     model = read("model.js")
     css = read("workspace-r8.css")
-    assert "#modelCanvas{touch-action:none" in css
-    start = model.rindex("const canvas=$('modelCanvas')")
+    assert "#modelCanvas,#focusCanvas{touch-action:none" in css
+    start = model.rindex("const normalCanvas=$('modelCanvas'),focusCanvas=$('focusCanvas');")
     gesture = model[start:model.index("$('modelDimensionsToggle')", start)]
     assert "drag.mode='SCROLL'" not in gesture
     assert "window.scrollTo" not in gesture
     assert "drag.mode='ROTATE'" in gesture
-    assert "canvas.setPointerCapture" in gesture
+    assert "surface.setPointerCapture" in gesture
     assert "event.preventDefault()" in gesture
     assert "if(viewMode===VIEW_FOCUS)cam.pitch=clamp" in gesture
     assert "else cam.pitch=drag.pitch" in gesture
@@ -888,7 +890,8 @@ def test_r1038_has_dedicated_focus_canvas_surface():
 
 def test_r1038_only_active_canvas_owns_gestures():
     model = read("model.js")
-    block = model[model.index("const normalCanvas=$('modelCanvas')"):model.index("$('focusVariantOptions')")]
+    start = model.rindex("const normalCanvas=$('modelCanvas'),focusCanvas=$('focusCanvas');")
+    block = model[start:model.index("$('focusVariantOptions')", start)]
     assert "function activeCanvas()" in block
     assert "surface!==activeCanvas()" in block
     assert "bindCanvasSurface(normalCanvas)" in block
