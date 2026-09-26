@@ -412,20 +412,23 @@ def test_r102_production_drawing_engine_pilot_matches_reference_grammar():
     assert "BIZET_Production_Module_Pilot.svg" in pointb
 
 
-def test_r1031_only_approved_mobile_steps_lock_viewport_and_other_steps_scroll():
+def test_r1039_unapproved_start_choices_follow_one_screen_grid_grammar():
     start = read("start.js")
     css = read("start.css")
+    next_css = read("next-pilot.css")
     assert "document.body.dataset.startKind=step.field" in start
     assert "ru: 'Тип дома'" in start
     assert "en: 'Home type'" in start
     assert 'body[data-start-kind="object_type"]' in css
     assert 'body[data-start-kind="visual_direction"]' in css
-    assert '.choice-grid[data-count="4"]' in css
-    assert 'grid-template-columns:repeat(2,minmax(0,1fr))' in css
-    assert '.choice-grid[data-count="3"]' in css
-    assert 'grid-template-rows:repeat(3,minmax(0,1fr))' in css
-    assert 'body[data-start-kind="zone_type"]' not in css
-    assert 'body[data-start-kind="complexity_category"]' not in css
+    assert 'body[data-start-kind="product_type"]' in css
+    assert 'body[data-start-kind="complexity_category"]' in css
+    assert "step.field === 'product_type' && option.value === 'ZONE_OTHER'" in start
+    assert "step.field === 'complexity_category' && option.value === 'V'" in start
+    assert "r1039-wide-choice" in start
+    assert "grid-template-columns:repeat(2,minmax(0,1fr))" in next_css
+    assert "grid-template-rows:repeat(2,minmax(0,1fr)) 48px" in next_css
+    assert "background:#2f7cff!important" in next_css
 
 def test_r1031_configuration_to_workspace_uses_one_slow_routed_splash():
     handoff = read("start-room-handoff.js")
@@ -627,13 +630,19 @@ def test_r1031_os_blue_is_exact_splash_blue_everywhere_in_ui():
     assert ".r8-splash-logo span{color:#2f7cff" in workspace_css
     assert "color:#2f7cff" in shell
 
-def test_r1031_configuration_screen_scrolls_and_file_import_accepts_pdf_and_photo():
+def test_r1039_configuration_is_one_screen_2x3_plus_disabled_custom_and_keeps_file_import():
     handoff = read("start-room-handoff.js")
     css = read("next-pilot.css")
     for token in ["Загрузить файл","startRoomFileInput","roomImportKind","application/pdf","image/","startRoomFilePreview","startRoomKnownDimension","Применить масштаб","room-import","analyze","calibrate","Подтвердить помещение"]:
         assert token in handoff
-    assert 'body.config-screen-five-open{height:auto!important;overflow-y:auto!important' in css
-    assert "configuration-choice-grid{grid-template-columns:1fr!important" in css
+    assert "CONFIGS.filter(config=>config.code!=='CUSTOM')" in handoff
+    assert 'class="configuration-choice-card configuration-custom-choice"' in handoff
+    assert "Своя конфигурация · скоро" in handoff
+    assert "custom.disabled=true" in handoff
+    assert 'body[data-start-kind="configuration"].config-screen-five-open' in css
+    assert "grid-template-columns:repeat(2,minmax(0,1fr))!important" in css
+    assert "grid-template-rows:repeat(3,minmax(0,1fr)) 44px!important" in css
+    assert "overflow:hidden!important" in css
     assert "URL.createObjectURL(file)" in handoff
     assert "canonical_room_model" in handoff
 
@@ -733,9 +742,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1038_fastapi_reports_current_version():
+def test_r1039_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.3.8"' in main
+    assert 'version="R10.3.9"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -907,3 +916,21 @@ def test_r1038_focus_canvas_has_same_touch_and_pinch_contract():
     assert "focusCanvas=document.getElementById('focusCanvas')" in bridge
     assert "canvasSet=new Set([canvas,focusCanvas].filter(Boolean))" in bridge
     assert "pinchSurface?.dispatchEvent(new WheelEvent('wheel'" in bridge
+
+
+def test_r1039_start_assets_are_cache_busted():
+    html = read("index.html")
+    assert "/static/start.css?v=169" in html
+    assert "/static/next-pilot.css?v=169" in html
+    assert "/static/start.js?v=169" in html
+    assert "/static/start-room-handoff.js?v=169" in html
+    assert "/static/next-pilot-start.js?v=169" in html
+
+
+def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visible():
+    checkpoint = (ROOT / "R10_4_0_MUST_HAVE_CHECKPOINT.md").read_text(encoding="utf-8")
+    assert "CRITICAL — iPhone module isolation / 3D autoregeneration" in checkpoint
+    assert "still NOT resolved" in checkpoint
+    assert "MOBILE_WORKSPACE" in checkpoint
+    assert "DESKTOP_WORKSPACE" in checkpoint
+    assert "one engineering core" in checkpoint.lower()
