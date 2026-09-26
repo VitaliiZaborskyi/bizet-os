@@ -395,6 +395,23 @@ async function patchProject(path, value, reason) {
   return response.json();
 }
 
+async function roomImportRequest(path, options={}) {
+  const projectId=currentProjectId();
+  if(!projectId)throw new Error('project_not_found');
+  const response=await fetch(`/api/v1.1/projects/${encodeURIComponent(projectId)}/room-import/${path}`,options);
+  const payload=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(payload.detail||'room_import_failed');
+  return payload;
+}
+
+function roomImportOverlay(analysis) {
+  const segments=Array.isArray(analysis?.segments_norm)?analysis.segments_norm:[];
+  const contour=Array.isArray(analysis?.contour_norm)?analysis.contour_norm:[];
+  const lineHtml=segments.slice(0,40).map(s=>`<line x1="${s[0]*1000}" y1="${s[1]*1000}" x2="${s[2]*1000}" y2="${s[3]*1000}"/>`).join('');
+  const poly=contour.length?contour.map(p=>`${p[0]*1000},${p[1]*1000}`).join(' '):'';
+  return `<svg class="start-room-analysis-overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">${poly?`<polygon points="${poly}"/>`:''}${lineHtml}</svg>`;
+}
+
 function roomImportKind(file) {
   const name = String(file?.name || '').toLowerCase();
   const mime = String(file?.type || '').toLowerCase();
@@ -425,27 +442,25 @@ async function handleStartRoomFile(file) {
   }
   clearRoomImportPreview();
   roomImportObjectUrl = URL.createObjectURL(file);
-  if (kind === 'PDF') {
-    preview.innerHTML = `<object data="${roomImportObjectUrl}" type="application/pdf" class="start-room-file-object"><div class="start-room-pdf-fallback">PDF · ${file.name}</div></object>`;
-  } else {
-    preview.innerHTML = `<img src="${roomImportObjectUrl}" alt="${file.name.replace(/"/g,'&quot;')}" class="start-room-file-image">`;
-  }
-  selectedRoomImportMeta = {
-    source: 'FILE',
-    file_name: file.name,
-    file_type: kind,
-    mime_type: file.type || '',
-    file_size: file.size,
-    target_model: 'ROOM_MODEL',
-    status: 'FILE_SELECTED_CALIBRATION_REQUIRED',
-    client_preview: true
-  };
+  preview.innerHTML = kind === 'PDF'
+    ? `<object data="${roomImportObjectUrl}" type="application/pdf" class="start-room-file-object"><div class="start-room-pdf-fallback">PDF · ${file.name}</div></object>`
+    : `<img src="${roomImportObjectUrl}" alt="${file.name.replace(/"/g,'&quot;')}" class="start-room-file-image">`;
   meta.textContent = `${file.name} · ${kind} · ${Math.max(1, Math.round(file.size / 1024))} KB`;
-  status.textContent = isRu() ? 'Файл принят. Для масштаба укажите один известный реальный размер.' : 'File accepted. Enter one known real dimension to calibrate scale.';
+  status.textContent = isRu() ? 'Анализирую геометрию…' : 'Analyzing geometry…';
+
   try {
-    await patchProject('scene.visual_settings.room_import', selectedRoomImportMeta, 'R10.3.1 start import: PDF/photo selected');
-  } catch (_) {
-    status.textContent = isRu() ? 'Предпросмотр работает, но метаданные проекта пока не сохранились. Повторите.' : 'Preview works, but project metadata was not saved. Try again.';
+    const form=new FormData();form.append('file',file,file.name);
+    const response=await roomImportRequest('analyze',{method:'POST',body:form});
+    selectedRoomImportMeta=response.room_import;
+    const analysis=selectedRoomImportMeta?.analysis||{};
+    preview.insertAdjacentHTML('beforeend',roomImportOverlay(analysis));
+    const confidence=Math.round((Number(analysis.confidence)||0)*100);
+    status.textContent = isRu()
+      ? `BIZET нашёл предварительный контур и ${analysis.segments_norm?.length||0} опорных линий · confidence ${confidence}%. Укажите один известный размер.`
+      : `BIZET found a preliminary contour and ${analysis.segments_norm?.length||0} reference lines · confidence ${confidence}%. Enter one known dimension.`;
+  } catch (error) {
+    selectedRoomImportMeta=null;
+    status.textContent = (isRu() ? 'Не удалось проанализировать файл: ' : 'Could not analyze file: ') + error.message;
   }
 }
 
@@ -453,7 +468,8 @@ function bindStartRoomImport(screen) {
   const button = screen.querySelector('#startUploadFileButton');
   const input = screen.querySelector('#startRoomFileInput');
   const apply = screen.querySelector('#startRoomScaleApply');
-  if (!button || !input || !apply) return;
+  const confirm = screen.querySelector('#startRoomConfirm');
+  if (!button || !input || !apply || !confirm) return;
   button.onclick = () => input.click();
   input.onchange = () => handleStartRoomFile(input.files?.[0]);
   apply.onclick = async () => {
@@ -467,17 +483,32 @@ function bindStartRoomImport(screen) {
       status.textContent = isRu() ? 'Укажите известный размер не меньше 300 мм.' : 'Enter a known dimension of at least 300 mm.';
       return;
     }
-    selectedRoomImportMeta = {
-      ...selectedRoomImportMeta,
-      known_dimension_mm: known,
-      calibration_reference: 'USER_KNOWN_DIMENSION',
-      status: 'CALIBRATED_ONE_DIMENSION',
-      confidence: 'USER_CALIBRATED'
-    };
-    await patchProject('scene.visual_settings.room_import', selectedRoomImportMeta, 'R10.3.1 start import: one-dimension calibration');
-    status.textContent = isRu() ? `Масштаб зафиксирован по известному размеру ${known} мм. Геометрия будет передана в Room Model.` : `Scale calibrated from the known ${known} mm dimension. Geometry will feed the Room Model.`;
+    try{
+      const response=await roomImportRequest('calibrate',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({known_dimension_mm:known})
+      });
+      selectedRoomImportMeta=response.room_import;
+      const size=selectedRoomImportMeta?.canonical_room_model?.bounding_size_mm||{};
+      const walls=selectedRoomImportMeta?.canonical_room_model?.walls||[];
+      status.innerHTML = isRu()
+        ? `<strong>Room Model:</strong> ${size.length||'—'} × ${size.depth||'—'} мм · стены ${walls.map(w=>w.label).join(', ')}. Это уже записано в геометрию проекта. Проверьте и подтвердите.`
+        : `<strong>Room Model:</strong> ${size.length||'—'} × ${size.depth||'—'} mm · walls ${walls.map(w=>w.label).join(', ')}. It is now applied to project geometry. Review and confirm.`;
+      confirm.hidden=false;
+    }catch(error){
+      status.textContent=(isRu()?'Калибровка не применена: ':'Calibration failed: ')+error.message;
+    }
+  };
+  confirm.onclick=async()=>{
+    const status=screen.querySelector('#startRoomFileStatus');
+    try{
+      const project=await roomImportRequest('confirm',{method:'POST'});
+      selectedRoomImportMeta=project.scene?.visual_settings?.room_import||selectedRoomImportMeta;
+      confirm.hidden=true;
+      status.textContent=isRu()?'Помещение подтверждено. Эти размеры будут использованы при построении 3D.':'Room confirmed. These dimensions will be used for the 3D model.';
+    }catch(error){status.textContent=(isRu()?'Не удалось подтвердить: ':'Could not confirm: ')+error.message}
   };
 }
+
 
 function syncConfigurationSelection() {
   document.querySelectorAll('[data-start-config]').forEach(card => {
@@ -561,6 +592,7 @@ function buildScreenFive() {
         <p class="start-room-file-meta" id="startRoomFileMeta"></p>
         <label class="start-room-known-dimension"><span>${isRu() ? 'Один известный реальный размер, мм' : 'One known real dimension, mm'}</span><input id="startRoomKnownDimension" type="number" inputmode="numeric" min="300" step="1" placeholder="3000"></label>
         <button class="start-room-scale-apply" id="startRoomScaleApply" type="button">${isRu() ? 'Применить масштаб' : 'Apply scale'}</button>
+        <button class="start-room-confirm" id="startRoomConfirm" type="button" hidden>${isRu() ? 'Подтвердить помещение' : 'Confirm room'}</button>
         <p class="start-room-file-status" id="startRoomFileStatus"></p>
       </div>
     </section>
