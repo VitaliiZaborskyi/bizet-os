@@ -261,10 +261,13 @@ function renderStep() {
     const image = option.image ? `url("${option.image}")` : 'none';
     const fallback = option.fallback || 'linear-gradient(145deg,#ddd,#777)';
     const selectedClass = option.value === selected ? ' selected' : '';
+    const wideSpecial = (step.field === 'product_type' && option.value === 'ZONE_OTHER') ||
+      (step.field === 'complexity_category' && option.value === 'V');
+    const layoutClass = wideSpecial ? ' r1039-wide-choice' : '';
     const variantFilter = option.variantFilter || 'none';
     const kicker = option.kicker ? `<span class="card-kicker">${t(option.kicker)}</span>` : '';
     const note = option.note ? `<span class="card-note">${t(option.note)}</span>` : '';
-    return `<button class="choice-card${selectedClass}" type="button" data-value="${option.value}" data-variant="${option.value}" style='--card-image:${image};--card-fallback:${fallback};--variant-filter:${variantFilter}'>
+    return `<button class="choice-card${selectedClass}${layoutClass}" type="button" data-value="${option.value}" data-variant="${option.value}" style='--card-image:${image};--card-fallback:${fallback};--variant-filter:${variantFilter}'>
       <span class="card-content">
         ${kicker}
         <span class="card-title">${t(option.title)}</span>
