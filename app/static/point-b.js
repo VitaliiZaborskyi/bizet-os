@@ -1,12 +1,12 @@
 (()=> {
-  const VERSION='R10.3.5-POINT-B-2026-09-26';
+  const VERSION='R10.4.0-POINT-B-2026-09-27';
   const PRICES={
     CARCAS_M2:776,FACADE_M2:1200,HDF_M2:120,
     CUT_M:20,EDGE_LABOR_M:30,EDGE_MATERIAL_M:30,
     HOLE:7,HINGE_CUP:40,GROOVE_M:40,
     HINGE_BLUM:200,LEG:25,LEG_CLIP:12,SCREW:0.30,HANDLE:200,SHELF_SUPPORT:12,
     CONFIRMAT:1,MINIFIX:5,DOWEL:0.8,RAFIX:10,
-    DRAWER_SLIDE:1200,METAL_DRAWER:2200,EURO_SCREW:1.5,
+    DRAWER_SLIDE:1200,METAL_DRAWER:2200,EURO_SCREW:1.5,LIFT_MECH:0,
     WORKTOP_SLAB:8000,WORKTOP_LENGTH_MM:4100,
     ASSEMBLY_M2:0,PACKING_M2:0,INSTALL_M2:0,DELIVERY_TRIP:0,RPR_HOUR:0
   };
@@ -79,7 +79,7 @@
     return out;
   }
   function drawerParts(module,drawerNo,facadeH,startNo){
-    const out=[],W=runW(module),D=depth(module),drawerH=Math.max(80,round(facadeH-50)),dw=Math.max(200,W-85),dd=Math.max(200,D-20);
+    const out=[],W=runW(module),D=depth(module),drawerH=Math.max(1,round(facadeH-50)),dw=Math.max(200,W-85),dd=Math.max(200,D-20);
     let n=startNo,s=1;const p=`${module.number}.${drawerNo}.`;
     out.push(detail(module,n++,s++,'ЛДСП 18 Drawer','Drawer Left',dd,drawerH,1,EDGE,2,2,'Минификс + шкант', '',p+'001'));
     out.push(detail(module,n++,s++,'ЛДСП 18 Drawer','Drawer Right',dd,drawerH,1,EDGE,2,2,'Минификс + шкант','',p+'002'));
