@@ -149,7 +149,12 @@ class PricingState(BaseModel):
 
 class CommerceState(BaseModel):
     contact: str | None = None
-    proposal_status: Literal["NOT_REQUESTED", "DRAFT_READY", "CONTACT_CAPTURED", "QUEUED"] = "NOT_REQUESTED"
+    proposal_status: Literal["NOT_REQUESTED", "DRAFT_READY", "CONTACT_CAPTURED", "QUEUED", "SENT", "FAILED"] = "NOT_REQUESTED"
+    proposal_delivery_status: Literal["NOT_CONFIGURED", "READY", "SENT", "FAILED"] = "NOT_CONFIGURED"
+    proposal_provider: str | None = None
+    proposal_message_id: str | None = None
+    proposal_recipient: str | None = None
+    proposal_sent_at: datetime | None = None
     selected_manufacturer: str | None = None
     payment_status: Literal["NOT_STARTED", "FORM_OPEN", "PAYMENT_PROVIDER_REQUIRED", "PAID"] = "NOT_STARTED"
 
