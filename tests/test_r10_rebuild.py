@@ -562,16 +562,18 @@ def test_r1031_functional_triangle_warning_is_completely_suppressed():
     assert "Эргономический контур холодильник–мойка–варочная" not in model
     assert "SINK_COOKTOP_HARD" in model
 
-def test_r1031_vertical_swipe_scrolls_page_horizontal_swipe_rotates_model():
+def test_r1033_canvas_owns_touch_stream_vertical_scrolls_page_other_motion_rotates():
     model = read("model.js")
     css = read("workspace-r8.css")
-    assert "#modelCanvas{touch-action:pan-y pinch-zoom}" in css
+    assert "#modelCanvas{touch-action:none" in css
     start = model.rindex("const canvas=$('modelCanvas')")
-    gesture = model[start:model.index("$('constraintButton')", start)]
-    assert "Math.abs(dy)>Math.abs(dx)*2.2" in gesture
+    gesture = model[start:model.index("$('modelDimensionsToggle')", start)]
+    assert "Math.abs(dy)>Math.abs(dx)*1.25" in gesture
     assert "drag.mode='SCROLL'" in gesture
     assert "drag.mode='ROTATE'" in gesture
+    assert "window.scrollTo(0,Math.max(0,drag.scrollTop-dy))" in gesture
     assert "canvas.setPointerCapture" in gesture
+    assert "event.preventDefault()" in gesture
     assert "pointerdown" in gesture and "pointermove" in gesture
 
 def test_r1031_workspace_labels_progress_and_randomizer_contract():
@@ -631,13 +633,23 @@ def test_r1031_configuration_screen_scrolls_and_file_import_accepts_pdf_and_phot
     assert "canonical_room_model" in handoff
 
 
-def test_r1032_module_focus_opens_layout_before_double_render():
+def test_r1033_module_focus_renders_immediately_without_scroll_hack():
     model = read("model.js")
     block = model[model.index("function openModule"):model.index("async function applyModuleCustomization")]
+    assert "enterModuleFocus(selected)" in block
+    assert "renderScene(false)" in block
     assert "dialog.show()" in block
-    assert "scrollIntoView" in block
+    assert "scrollIntoView" not in block
     assert "requestAnimationFrame" in block
-    assert block.count("renderScene(false)") >= 2
+    assert block.count("renderScene(false)") >= 3
+
+def test_r1033_viewport_resize_never_exits_module_focus():
+    model = read("model.js")
+    resize = model[model.index("function redrawForViewportChange"):model.index("window.addEventListener('bizet:themechange'")]
+    assert "renderScene(false)" in resize
+    assert "enterNormalKitchenView" not in resize
+    assert "moduleDialog" not in resize
+    assert "visualViewport" in resize
 
 def test_r1032_worktop_shared_rule_uses_previous_module_boundary():
     rules = read("r10-domain-rules.js")
