@@ -189,3 +189,103 @@ body.r10-module-focus #moduleStrip{display:none!important}
 body.r10-module-focus .r10-kitchen-canvas{opacity:0;visibility:hidden;pointer-events:none}
 body.r10-module-focus .r10-focus-canvas{opacity:1;visibility:visible;pointer-events:auto}
 .r8-stage-top,.r10-constraint-banner,.r10-focus-module-label,.r8-variant-controls{z-index:10}
+
+
+/* R10.4.0 — integrated module editor, visible mobile project settings and reclaimed 3D viewport. */
+.r104-module-editor{
+  margin:8px 0 0;padding:12px;border:1px solid var(--r8-line);border-radius:18px;
+  background:var(--r8-panel);box-shadow:0 10px 28px rgba(0,0,0,.07)
+}
+.r104-module-editor[hidden]{display:none!important}
+.r104-module-editor-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:10px}
+.r104-module-editor-head small{display:block;font-size:9px;letter-spacing:.12em;color:var(--r8-muted);margin-bottom:3px}
+.r104-module-editor-head>div>strong{font-size:15px;line-height:1.15}
+.r104-module-price{text-align:right;min-width:126px}
+.r104-module-price span{display:block;font-size:9px;color:var(--r8-muted)}
+.r104-module-price strong{display:block;font-size:19px;line-height:1.08;margin-top:2px}
+.r104-module-price small{display:block;font-size:9px;color:var(--r8-muted);margin-top:2px}
+.r104-module-editor-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.r104-edit-field{display:grid;gap:4px;min-width:0}
+.r104-edit-field>span{font-size:9px;line-height:1.15;color:var(--r8-muted)}
+.r104-edit-field input,.r104-edit-field select{
+  width:100%;min-width:0;border:1px solid var(--r8-line);background:#fff;color:#171716;
+  border-radius:10px;padding:9px 9px;font:inherit;font-size:12px
+}
+.r104-edit-field.r104-wide{grid-column:span 2}
+.r104-facade-openings{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.r104-facade-openings .r104-edit-field{flex:1 1 110px}
+.r104-module-info{
+  grid-column:1/-1;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--r8-blue) 8%,var(--r8-panel));
+  font-size:10px;line-height:1.35;color:var(--r8-muted)
+}
+.r104-module-rule{margin:8px 0 0;padding:8px 10px;border-radius:10px;background:#fff1ee;color:#8a241d;font-size:10px;line-height:1.35}
+.r104-module-editor-actions{display:grid;grid-template-columns:.8fr 1.2fr;gap:8px;margin-top:9px}
+.r104-module-editor-actions .r8-save{margin-top:0}
+html[data-theme="dark"] .r104-edit-field input,
+html[data-theme="dark"] .r104-edit-field select{background:#282825;color:#f4f2ed}
+
+.r104-material-dialog{border:0;padding:0;background:transparent;color:inherit;width:min(620px,calc(100vw - 24px))}
+.r104-material-dialog::backdrop{background:rgba(0,0,0,.58);backdrop-filter:blur(7px)}
+.r104-material-card{
+  position:relative;background:var(--r8-panel);color:var(--r8-ink);border:1px solid var(--r8-line);
+  border-radius:24px;padding:22px;box-shadow:0 30px 100px rgba(0,0,0,.32)
+}
+.r104-material-close{position:absolute;right:13px;top:11px;width:36px;height:36px;border:0;border-radius:50%;background:#f3f1ec;color:#171716;font-size:22px}
+.r104-material-kicker{margin:0 0 7px;font-size:9px;letter-spacing:.13em;color:var(--r8-muted)}
+.r104-material-card h2{margin:0 42px 14px 0;font-size:24px;letter-spacing:-.035em}
+.r104-material-swatches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.r104-material-swatch{
+  min-height:72px;border:1px solid var(--r8-line);border-radius:14px;background:var(--swatch,#ddd);
+  color:#171716;position:relative;overflow:hidden;cursor:pointer;padding:8px;text-align:left
+}
+.r104-material-swatch::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(255,255,255,.72),transparent 62%)}
+.r104-material-swatch strong{position:absolute;left:8px;right:8px;bottom:7px;z-index:2;font-size:10px}
+.r104-material-swatch.is-selected{outline:3px solid var(--r8-blue);outline-offset:1px}
+.r104-upload-texture{display:grid;gap:5px;padding:11px;border:1px dashed var(--r8-line);border-radius:14px;font-size:11px}
+.r104-upload-texture input{font-size:10px}
+.r104-upload-texture small{color:var(--r8-muted)}
+.r104-material-actions{display:grid;grid-template-columns:1fr 1.3fr;gap:8px;margin-top:12px}
+.r104-material-actions .r8-save{margin:0}
+.r104-surface-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.r104-surface-buttons button{border:1px solid var(--r8-line);background:#fff;color:#171716;border-radius:12px;padding:10px 8px;font-size:11px;cursor:pointer}
+.r104-surface-buttons button strong{display:block;margin-top:3px;font-size:9px;color:#6f706b;font-weight:600}
+
+@media(max-width:820px){
+  /* Reclaim the blank area visible in owner QA for the actual model. */
+  .r8-stage{height:clamp(350px,58svh,520px);min-height:350px}
+  .r8-canvas-column{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+  .r8-tools{
+    min-height:66px;
+    padding:22px 6px 6px!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+  }
+  .r8-tools-label{
+    position:absolute!important;left:14px!important;top:5px!important;bottom:auto!important;
+    z-index:2!important;font-size:10px!important;font-weight:820!important;color:#171716!important;
+  }
+  .r8-tools>button{padding:8px 9px!important;min-width:44px!important}
+  body.r10-module-focus .r8-stage{height:clamp(300px,42svh,390px);min-height:300px}
+  body.r10-module-focus .r8-canvas-column{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .r104-module-editor{margin-top:6px;padding:10px;border-radius:16px}
+  .r104-module-editor-head{margin-bottom:8px}
+  .r104-module-editor-body{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .r104-edit-field.r104-wide{grid-column:span 2}
+  .r104-module-editor-actions{grid-template-columns:1fr 1.2fr}
+  .r104-module-editor-actions button{padding:10px 8px;font-size:12px}
+  .r10-focus-variants{display:none!important}
+  .r104-material-card{padding:19px 13px 14px;border-radius:21px}
+  .r104-material-swatches{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .r104-material-swatch{min-height:66px}
+}
+@media(max-width:820px) and (max-height:700px){
+  .r8-stage{height:52svh;min-height:300px}
+  body.r10-module-focus .r8-stage{height:37svh;min-height:260px}
+  .r104-module-price strong{font-size:17px}
+  .r104-edit-field input,.r104-edit-field select{padding:7px 8px}
+}
+
+/* Keep the randomizer from visually owning the kitchen: camera uses a safe area, control stays compact. */
+@media(max-width:820px){
+  .r8-variant-controls{bottom:9px;transform:translateX(-50%) scale(.94);transform-origin:center bottom}
+}
