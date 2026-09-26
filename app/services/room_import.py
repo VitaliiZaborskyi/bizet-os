@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from io import BytesIO
 from typing import Any
 
-import cv2
 import fitz
-import numpy as np
 
 
 @dataclass
@@ -33,71 +30,95 @@ class RoomImportAnalysis:
         }
 
 
+def _clamp01(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
 def _norm_point(x: float, y: float, width: float, height: float) -> list[float]:
-    return [round(max(0.0, min(1.0, x / max(width, 1.0))), 5), round(max(0.0, min(1.0, y / max(height, 1.0))), 5)]
+    return [round(_clamp01(x / max(width, 1.0)), 5), round(_clamp01(y / max(height, 1.0)), 5)]
 
 
-def _analysis_from_image(image: np.ndarray, file_type: str, method: str) -> RoomImportAnalysis:
-    if image is None or image.size == 0:
-        raise ValueError("Could not decode image")
+def _select_peaks(scores: list[tuple[float, int]], limit: int, min_gap: int) -> list[int]:
+    chosen: list[int] = []
+    for _, pos in sorted(scores, reverse=True):
+        if all(abs(pos - other) >= min_gap for other in chosen):
+            chosen.append(pos)
+        if len(chosen) >= limit:
+            break
+    return sorted(chosen)
 
-    height, width = image.shape[:2]
-    scale = min(1.0, 1200.0 / max(width, height))
-    if scale < 1.0:
-        work = cv2.resize(image, (max(1, int(width * scale)), max(1, int(height * scale))), interpolation=cv2.INTER_AREA)
+
+def _analysis_from_pixmap(pix: fitz.Pixmap, file_type: str, method: str) -> RoomImportAnalysis:
+    width, height = int(pix.width), int(pix.height)
+    n = int(pix.n)
+    samples = pix.samples
+    step = max(1, int(max(width, height) / 420))
+
+    def gray(x: int, y: int) -> int:
+        idx = (y * width + x) * n
+        if n >= 3:
+            return (int(samples[idx]) * 30 + int(samples[idx + 1]) * 59 + int(samples[idx + 2]) * 11) // 100
+        return int(samples[idx])
+
+    row_scores: list[tuple[float, int]] = []
+    for y in range(step, height - step, step):
+        total = 0
+        count = 0
+        for x in range(0, width, step):
+            total += abs(gray(x, y) - gray(x, y - step))
+            count += 1
+        row_scores.append((total / max(1, count), y))
+
+    col_scores: list[tuple[float, int]] = []
+    for x in range(step, width - step, step):
+        total = 0
+        count = 0
+        for y in range(0, height, step):
+            total += abs(gray(x, y) - gray(x - step, y))
+            count += 1
+        col_scores.append((total / max(1, count), x))
+
+    min_gap_x = max(step * 3, int(width * 0.08))
+    min_gap_y = max(step * 3, int(height * 0.08))
+    xs = _select_peaks(col_scores, 4, min_gap_x)
+    ys = _select_peaks(row_scores, 4, min_gap_y)
+
+    if len(xs) >= 2:
+        x0, x1 = xs[0], xs[-1]
     else:
-        work = image.copy()
-
-    wh, ww = work.shape[:2]
-    gray = cv2.cvtColor(work, cv2.COLOR_BGR2GRAY) if len(work.shape) == 3 else work
-    gray = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(gray, 55, 145)
-
-    min_line = max(35, int(min(ww, wh) * 0.12))
-    raw = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=max(35, int(min(ww, wh) * 0.06)),
-                          minLineLength=min_line, maxLineGap=max(10, int(min(ww, wh) * 0.025)))
-    segments: list[tuple[int, int, int, int, float]] = []
-    if raw is not None:
-        for row in raw[:, 0, :]:
-            x1, y1, x2, y2 = map(int, row)
-            length = float(np.hypot(x2 - x1, y2 - y1))
-            if length >= min_line:
-                segments.append((x1, y1, x2, y2, length))
-    segments.sort(key=lambda s: s[4], reverse=True)
-    segments = segments[:24]
-
-    if segments:
-        pts = np.array([(x, y) for s in segments for x, y in ((s[0], s[1]), (s[2], s[3]))], dtype=np.float32)
-        x, y, bw, bh = cv2.boundingRect(pts.astype(np.int32))
+        x0, x1 = int(width * 0.08), int(width * 0.92)
+    if len(ys) >= 2:
+        y0, y1 = ys[0], ys[-1]
     else:
-        # Fallback: use the strongest edge contour rather than pretending exact geometry.
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if contours:
-            contour = max(contours, key=cv2.contourArea)
-            x, y, bw, bh = cv2.boundingRect(contour)
-        else:
-            x, y, bw, bh = 0, 0, ww, wh
+        y0, y1 = int(height * 0.08), int(height * 0.92)
 
-    # Keep the preliminary contour explicit. It is a detected envelope, not production geometry.
-    contour_px = [(x, y), (x + bw, y), (x + bw, y + bh), (x, y + bh)]
-    contour_norm = [_norm_point(px, py, ww, wh) for px, py in contour_px]
-    bbox_norm = [round(x / ww, 5), round(y / wh, 5), round(bw / ww, 5), round(bh / wh, 5)]
-    segment_norm = [
-        [*_norm_point(x1, y1, ww, wh), *_norm_point(x2, y2, ww, wh)]
-        for x1, y1, x2, y2, _ in segments
+    if x1 - x0 < width * 0.25:
+        x0, x1 = int(width * 0.08), int(width * 0.92)
+    if y1 - y0 < height * 0.25:
+        y0, y1 = int(height * 0.08), int(height * 0.92)
+
+    segments: list[list[float]] = []
+    for x in xs:
+        segments.append([*_norm_point(x, y0, width, height), *_norm_point(x, y1, width, height)])
+    for y in ys:
+        segments.append([*_norm_point(x0, y, width, height), *_norm_point(x1, y, width, height)])
+
+    contour = [
+        _norm_point(x0, y0, width, height),
+        _norm_point(x1, y0, width, height),
+        _norm_point(x1, y1, width, height),
+        _norm_point(x0, y1, width, height),
     ]
-
-    line_factor = min(1.0, len(segments) / 10.0)
-    envelope_factor = min(1.0, (bw * bh) / max(1.0, ww * wh) * 2.0)
-    confidence = round(0.25 + 0.45 * line_factor + 0.20 * envelope_factor, 3)
+    bbox = [round(x0 / width, 5), round(y0 / height, 5), round((x1 - x0) / width, 5), round((y1 - y0) / height, 5)]
+    confidence = round(min(0.78, 0.28 + 0.07 * len(segments)), 3)
     return RoomImportAnalysis(
         file_type=file_type,
         width_px=width,
         height_px=height,
-        segments_norm=segment_norm,
-        contour_norm=contour_norm,
-        bbox_norm=bbox_norm,
-        confidence=min(0.9, confidence),
+        segments_norm=segments,
+        contour_norm=contour,
+        bbox_norm=bbox,
+        confidence=confidence,
         method=method,
     )
 
@@ -116,10 +137,17 @@ def analyze_room_file(data: bytes, filename: str, content_type: str | None = Non
         width, height = float(page.rect.width), float(page.rect.height)
         for drawing in drawings:
             for item in drawing.get("items", []):
-                if not item or item[0] != "l":
+                if not item:
                     continue
-                p1, p2 = item[1], item[2]
-                vector_segments.append([*_norm_point(p1.x, p1.y, width, height), *_norm_point(p2.x, p2.y, width, height)])
+                if item[0] == "l":
+                    p1, p2 = item[1], item[2]
+                    vector_segments.append([*_norm_point(p1.x, p1.y, width, height), *_norm_point(p2.x, p2.y, width, height)])
+                elif item[0] == "re":
+                    rect = item[1]
+                    pts = [(rect.x0, rect.y0), (rect.x1, rect.y0), (rect.x1, rect.y1), (rect.x0, rect.y1)]
+                    for i in range(4):
+                        a, b = pts[i], pts[(i + 1) % 4]
+                        vector_segments.append([*_norm_point(a[0], a[1], width, height), *_norm_point(b[0], b[1], width, height)])
         if len(vector_segments) >= 4:
             xs = [v for s in vector_segments for v in (s[0], s[2])]
             ys = [v for s in vector_segments for v in (s[1], s[3])]
@@ -130,20 +158,19 @@ def analyze_room_file(data: bytes, filename: str, content_type: str | None = Non
                 file_type="PDF",
                 width_px=max(1, int(round(width))),
                 height_px=max(1, int(round(height))),
-                segments_norm=vector_segments[:40],
+                segments_norm=vector_segments[:48],
                 contour_norm=contour,
                 bbox_norm=[round(x0, 5), round(y0, 5), round(x1 - x0, 5), round(y1 - y0, 5)],
                 confidence=round(confidence, 3),
                 method="PDF_VECTOR_LINES",
             )
-        pix = page.get_pixmap(matrix=fitz.Matrix(1.7, 1.7), alpha=False)
-        image = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
-        if pix.n == 4:
-            image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGR)
-        else:
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        return _analysis_from_image(image, "PDF", "PDF_RASTER_HOUGH")
+        pix = page.get_pixmap(matrix=fitz.Matrix(1.35, 1.35), alpha=False)
+        return _analysis_from_pixmap(pix, "PDF", "PDF_RASTER_EDGE_PROFILE")
 
-    array = np.frombuffer(data, dtype=np.uint8)
-    image = cv2.imdecode(array, cv2.IMREAD_COLOR)
-    return _analysis_from_image(image, "PHOTO", "IMAGE_HOUGH")
+    try:
+        pix = fitz.Pixmap(data)
+    except Exception as exc:
+        raise ValueError("Unsupported or unreadable image") from exc
+    if pix.alpha:
+        pix = fitz.Pixmap(fitz.csRGB, pix)
+    return _analysis_from_pixmap(pix, "PHOTO", "IMAGE_EDGE_PROFILE")
