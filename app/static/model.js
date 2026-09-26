@@ -5,6 +5,7 @@
   if(projectId){sessionStorage.setItem(PROJECT_KEY,projectId);localStorage.setItem(PROJECT_KEY,projectId)}
   const VIEW_NORMAL='NORMAL_KITCHEN_VIEW',VIEW_FOCUS='MODULE_FOCUS_MODE';
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false;
+  let moduleDraft=null,moduleDraftBase=null,moduleDraftBasePrice=0;
   let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72},focusDimensionsVisible=true,normalDimensionsVisible=true;
   let layoutWarnings=[],preparedViewMode=null,stageResizeFrame=0,lastStageSize='',focusCanvasResetFrames=0,focusPaintToken=0;
   const LIMITS=window.BizetR10Rules?.moduleLimitsMm||{STRAIGHT_MAX:900,CORNER_MAX:1250,PREFERRED_FILL:600,HINGED_FACADE_MAX:597,MIN_STANDARD_MODULE:300};
@@ -13,8 +14,11 @@
   const COMPOSITION=window.BizetR10Rules?.compositionRules||{centerPrimaryApplianceOnLongRun:true,skipWhenCommunicationsConfirmed:true};
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
-  const LOWER_DEPTH=560,PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900,LOWER_BODY_H=LOWER_TOTAL_H-PLINTH_H-WORKTOP_H;
+  const LOWER_DEPTH=560,DEFAULT_PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900;
   const UPPER_DEPTH=320,UPPER_HOOD_DEPTH=350,UPPER_MAX_H=1000,CUTLERY_W=400;
+  function plinthHeight(){return clamp(Math.round(Number(inputs.plinth_height_mm??DEFAULT_PLINTH_H)||DEFAULT_PLINTH_H),0,300)}
+  function lowerBodyHeight(){return Math.max(300,LOWER_TOTAL_H-plinthHeight()-WORKTOP_H)}
+  function visibleTallDrawerLimit(){return LOWER_TOTAL_H-WORKTOP_H}
 
   async function request(url,options={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});if(!r.ok){let p={};try{p=await r.json()}catch(_){};throw new Error(typeof p.detail==='string'?p.detail:'Не удалось загрузить модель.')}return r.json()}
   async function saveVisual(next,reason){visual=next;const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path:'scene.visual_settings',value:visual,reason})});project=result.project||result;visual={...(project.scene?.visual_settings||visual)};inputs={...(visual.guided_inputs||inputs)}}
@@ -167,7 +171,7 @@
     return autoWall(requested,sink,cook);
   }
   function baseModule(id,label,width,kind,wall='A',extra={}){
-    const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:LOWER_BODY_H,z:PLINTH_H,level:'lower',anchor:true,...extra};
+    const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:lowerBodyHeight(),z:plinthHeight(),level:'lower',anchor:true,...extra};
     if(kind==='DRAWERS')module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
     module.module_run_limit_mm=maxRunFor(module);
     module.facade_width_limit_mm=LIMITS.HINGED_FACADE_MAX;
@@ -184,7 +188,7 @@
     if(inputs.fridge_present==='YES'){
       const width=Number(inputs.fridge_width_mm)||600,tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
       const freeFridge=inputs.fridge_type==='FREESTANDING',clearance=freeFridge?freestandingGap(width):0,runWidth=freeFridge?width+clearance*2:width;
-      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:PLINTH_H,content:freeFridge?'FRIDGE_FREEZER':(inputs.fridge_content||'PENDING'),freestanding:freeFridge,appliance_width_mm:width,appliance_clearance_mm:clearance,freezer_bottom:true};
+      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:plinthHeight(),content:freeFridge?'FRIDGE_FREEZER':(inputs.fridge_content||'PENDING'),freestanding:freeFridge,appliance_width_mm:width,appliance_clearance_mm:clearance,freezer_bottom:true};
       if(inputs.fridge_type==='BUILT_IN'&&width===1200){
         list.push(baseModule('fridge-left','Холодильник L',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_left_unit||'PENDING'}));
         list.push(baseModule('fridge-right','Холодильник R',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_right_unit||'PENDING'}));
