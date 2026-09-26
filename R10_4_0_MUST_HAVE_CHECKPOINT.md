@@ -49,3 +49,18 @@ R10.3.9 establishes this grammar for Zone, Equipment level and Kitchen configura
 
 R10.4.0 should be treated as a coherence release, not a collection of isolated patches.
 Before calling it ready, mobile and desktop flows must be reviewed as complete user journeys, while the critical iPhone isolation bug stays explicitly visible until verified closed.
+
+## R10.4.0 frozen owner decisions — 2026-09-27
+
+- Plinth behavior is **Variant A**: overall worktop height remains 900 mm; changing plinth height changes lower-carcass body height (900 - worktop 38 - plinth).
+- Plain tall cabinets may use 1–3 hinged facade zones, up to 3 shelves, and hidden or visible drawer blocks.
+- HARD: the total height of the visible drawer block in a plain tall cabinet may not exceed **862 mm** (900 - worktop 38).
+- Tall cabinets with appliances are intentionally left on the current logic until the module-library phase.
+- Upper horizontal facades may use a lift mechanism or hinges + lift; the exact hardware system and price remain library data and must not be invented in R10.4.0.
+- Module edits are draft changes in isolation. They become part of the saved kitchen only after the user presses **Save module**.
+- Isolation shows the changing price of the active module, not the total project price.
+- Ordinary lower cabinets use two structural rails/ribs (front + rear), except sink and lower-oven constructions which retain their own rules.
+- Ordinary upper cabinets have no generic structural ribs; hood and dish-dryer modules remain special cases.
+- Room and furniture material selection is introduced with a small pilot preset library plus custom texture upload. A future photoreal visualization renderer consumes the same saved material/geometry data; the engineering canvas itself is not presented as photoreal rendering.
+
+The critical iPhone isolation-paint issue above remains OPEN until direct owner QA closes it.
