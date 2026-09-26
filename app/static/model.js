@@ -71,7 +71,7 @@
   function syncFocusControls(){
     const inFocus=viewMode===VIEW_FOCUS;
     document.body.classList.toggle('r10-module-focus',inFocus);
-    const back=$('focusBackButton'),dims=$('modelDimensionsToggle'),label=$('focusModuleLabel'),ribbon=$('focusVariantRibbon');
+    const back=$('focusBackButton'),dims=$('modelDimensionsToggle'),label=$('focusModuleLabel'),ribbon=$('focusVariantRibbon'),editor=$('moduleEditPanel');
     const normalCanvas=$('modelCanvas'),focusCanvas=$('focusCanvas');
     const kitchenVariants=document.querySelector('.r8-variant-controls');
     if(normalCanvas)normalCanvas.setAttribute('aria-hidden',String(inFocus));
@@ -83,6 +83,7 @@
       if(inFocus&&activeModule)label.textContent=`${activeModule.number} · ${activeModule.label}`;
     }
     if(ribbon)ribbon.hidden=!inFocus;
+    if(editor)editor.hidden=!inFocus||!activeModule;
     if(dims){
       const on=inFocus?focusDimensionsVisible:normalDimensionsVisible;
       dims.hidden=false;dims.textContent='📏';dims.setAttribute('aria-label',on?'Скрыть размеры':'Показать размеры');dims.title=on?'Скрыть размеры':'Показать размеры';dims.setAttribute('aria-pressed',String(on));
@@ -220,7 +221,7 @@
   function resetCamera(){camera=window.BizetPilot3D?.cameraDefaults?.(configuration())||{yaw:0,pitch:.33,distanceScale:1}}
 
   function enterNormalKitchenView(){
-    viewMode=VIEW_NORMAL;activeModule=null;drag=null;focusCanvasResetFrames=0;focusPaintToken++;
+    viewMode=VIEW_NORMAL;activeModule=null;moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;drag=null;focusCanvasResetFrames=0;focusPaintToken++;
   }
   function enterModuleFocus(module){
     if(!module)return false;
