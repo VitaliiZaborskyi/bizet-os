@@ -66,8 +66,16 @@
   }
   function syncFocusControls(){
     const inFocus=viewMode===VIEW_FOCUS;
-    const back=$('focusBackButton'),dims=$('modelDimensionsToggle');
+    document.body.classList.toggle('r10-module-focus',inFocus);
+    const back=$('focusBackButton'),dims=$('modelDimensionsToggle'),label=$('focusModuleLabel'),ribbon=$('focusVariantRibbon');
+    const kitchenVariants=document.querySelector('.r8-variant-controls');
     if(back)back.hidden=!inFocus;
+    if(kitchenVariants)kitchenVariants.hidden=inFocus;
+    if(label){
+      label.hidden=!inFocus||!activeModule;
+      if(inFocus&&activeModule)label.textContent=`${activeModule.number} · ${activeModule.label}`;
+    }
+    if(ribbon)ribbon.hidden=!inFocus;
     if(dims){
       const on=inFocus?focusDimensionsVisible:normalDimensionsVisible;
       dims.hidden=false;dims.textContent='📏';dims.setAttribute('aria-label',on?'Скрыть размеры':'Показать размеры');dims.title=on?'Скрыть размеры':'Показать размеры';dims.setAttribute('aria-pressed',String(on));
@@ -76,6 +84,7 @@
   function variantState(){return {...(visual.r8_variant||{})}}
   function sizeOverrides(){return {...(visual.module_size_overrides||{})}}
   function openingOverrides(){return {...(visual.module_opening_overrides||{})}}
+  function moduleVariantOverrides(){return {...(visual.module_variant_overrides||{})}}
   function offsetOverrides(){return {...(visual.module_offsets_mm||{})}}
   function setFurniturePalette(){const d=String(visual.r8_palette||project?.context?.visual_direction||'LIGHT').toLowerCase();document.documentElement.dataset.furniturePalette=d}
   function fridgeWall(){
@@ -95,6 +104,18 @@
     if(Number(o.depth_mm)>0)module.d=Math.max(100,Number(o.depth_mm));
     if(Number(o.height_mm)>0)module.h=Math.max(100,Number(o.height_mm));
     module.opening=openingOverrides()[module.id]||module.opening||'AUTO';
+    const preset=moduleVariantOverrides()[module.id];
+    if(preset&&module.level!=='upper'&&!module.tall&&['HINGED','DRAWERS'].includes(module.kind)){
+      module.module_variant_preset=preset.type||'';
+      if(preset.type==='DRAWERS'){
+        const count=clamp(Math.round(Number(preset.drawer_count)||2),2,5);
+        module.kind='DRAWERS';module.label=`Ящики · ${count}`;module.drawer_count=count;module.drawer_layout='EQUAL';
+        module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
+        module.facade_count=undefined;module.opening='DRAWERS';
+      }else if(preset.type==='HINGED_2'){
+        module.kind='HINGED';module.label='Распашной · 2 фасада';module.facade_count=2;module.opening='HINGED';module.drawer_count=undefined;
+      }
+    }
     return module;
   }
 
@@ -238,9 +259,9 @@
     let i=0;
     while(i<ordered.length){
       const first=ordered[i];
-      if(first.kind!=='HINGED'||!first.system||first.ergonomic_spacer||first.corner_guard){i++;continue}
+      if(first.kind!=='HINGED'||!first.system||first.ergonomic_spacer||first.corner_guard||first.module_variant_preset){i++;continue}
       const width=Math.round(first.w);let j=i+1;
-      while(j<ordered.length&&ordered[j].kind==='HINGED'&&ordered[j].system&&!ordered[j].ergonomic_spacer&&!ordered[j].corner_guard&&Math.round(ordered[j].w)===width)j++;
+      while(j<ordered.length&&ordered[j].kind==='HINGED'&&ordered[j].system&&!ordered[j].ergonomic_spacer&&!ordered[j].corner_guard&&!ordered[j].module_variant_preset&&Math.round(ordered[j].w)===width)j++;
       const count=j-i;
       for(let start=i;start+2<j;start+=3){
         const idx=start+1,m=ordered[idx];
@@ -477,6 +498,44 @@
     $('moduleStrip').innerHTML=modules.map(m=>`<button class="module-strip-button${m.system||m.pending?' is-system':''}" type="button" data-module="${m.id}"><strong>${m.number}</strong><span>${m.label}</span></button>`).join('');
     $('moduleStrip').querySelectorAll('[data-module]').forEach(btn=>btn.addEventListener('click',()=>openModule(btn.dataset.module)));
   }
+  const FOCUS_PRESETS=[
+    {id:'DRAWERS_2',type:'DRAWERS',drawer_count:2,label:'2 ящика',thumb:'drawers-2'},
+    {id:'DRAWERS_3',type:'DRAWERS',drawer_count:3,label:'3 ящика',thumb:'drawers-3'},
+    {id:'DRAWERS_4',type:'DRAWERS',drawer_count:4,label:'4 ящика',thumb:'drawers-4'},
+    {id:'DRAWERS_5',type:'DRAWERS',drawer_count:5,label:'5 ящиков',thumb:'drawers-5'},
+    {id:'HINGED_2',type:'HINGED_2',label:'2 распашных',thumb:'hinged-2'}
+  ];
+  function currentFocusPreset(module){
+    const saved=moduleVariantOverrides()[module?.id];
+    if(saved?.type==='DRAWERS')return `DRAWERS_${clamp(Math.round(Number(saved.drawer_count)||2),2,5)}`;
+    if(saved?.type==='HINGED_2')return'HINGED_2';
+    if(module?.kind==='DRAWERS')return `DRAWERS_${clamp(Math.round(Number(module.drawer_count)||2),2,5)}`;
+    return module?.kind==='HINGED'?'HINGED_2':'';
+  }
+  function renderFocusVariantRibbon(module){
+    const host=$('focusVariantOptions'),status=$('focusVariantStatus');if(!host)return;
+    if(!module){host.innerHTML='';if(status)status.hidden=true;return}
+    const compatible=module.level!=='upper'&&!module.tall&&['HINGED','DRAWERS'].includes(module.kind);
+    const selected=currentFocusPreset(module);
+    host.innerHTML=FOCUS_PRESETS.map(p=>`<button class="r10-focus-variant-card${selected===p.id?' is-selected':''}" type="button" data-focus-preset="${p.id}" ${compatible?'':'disabled'}><span class="r10-module-thumb ${p.thumb}" aria-hidden="true"></span><strong>${p.label}</strong></button>`).join('');
+    if(status){
+      status.hidden=compatible;
+      status.textContent=compatible?'':'Для этого типа модуля варианты конфигурации будут добавлены отдельным набором.';
+    }
+  }
+  async function applyFocusPreset(id){
+    if(viewMode!==VIEW_FOCUS||!activeModule)return;
+    const preset=FOCUS_PRESETS.find(p=>p.id===id);if(!preset)return;
+    if(activeModule.level==='upper'||activeModule.tall||!['HINGED','DRAWERS'].includes(activeModule.kind))return;
+    const overrides=moduleVariantOverrides();
+    overrides[activeModule.id]=preset.type==='DRAWERS'?{type:'DRAWERS',drawer_count:preset.drawer_count}:{type:'HINGED_2'};
+    const keepId=activeModule.id;
+    await saveVisual({...visual,module_variant_overrides:overrides,module_direct_edit_status:'PILOT_FOCUS_VARIANT'},`Focus module preset ${keepId}: ${id}`);
+    modules=buildModules();activeModule=modules.find(m=>m.id===keepId)||activeModule;
+    renderScene(false);
+    window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'focus-preset',module_id:keepId,preset:id}}));
+  }
+
   function renderNormalKitchen(engineOk=false){
     viewMode=VIEW_NORMAL;
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
@@ -484,7 +543,7 @@
       modules,camera,showDimensions:normalDimensionsVisible,showModuleDimensions:false,
       architecturalElements:project?.room?.architectural_elements||[]
     });
-    syncFocusControls();syncConstraintBanner();
+    syncFocusControls();syncConstraintBanner();renderFocusVariantRibbon(null);
     $('modelStatus').textContent=engineOk?'Module Engine доступен · полная кухня активна.':'3D-пилот · полная кухня активна.';
   }
   function renderModuleFocus(){
@@ -499,7 +558,7 @@
       room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
       camera:focusCamera,showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,architecturalElements:[],focusMode:true
     });
-    syncFocusControls();syncConstraintBanner();
+    syncFocusControls();syncConstraintBanner();renderFocusVariantRibbon(activeModule);
     $('modelStatus').textContent='Режим модуля · «Вся кухня» вернёт общий вид.';
   }
   function renderScene(engineOk=false){
@@ -538,14 +597,15 @@
     pos.value=Number(offsets()[activeModule.id])||0;
     setValidation('');
 
-    // R10.3.3: focus is a model state, not a side-effect of viewport scrolling.
-    // Draw it immediately, then open controls and reflow-safe redraw twice.
-    renderScene(false);
+    // R10.3.5: focus redraw is tied directly to the module click and survives mobile reflow.
+    const redrawFocus=()=>{if(viewMode!==VIEW_FOCUS)return;void $('modelCanvas').getBoundingClientRect();renderScene(false)};
+    redrawFocus();
     const dialog=$('moduleDialog');
     if(dialog.open)dialog.close();
     if(typeof dialog.show==='function')dialog.show();else dialog.showModal?.();
-    requestAnimationFrame(()=>renderScene(false));
-    requestAnimationFrame(()=>requestAnimationFrame(()=>renderScene(false)));
+    requestAnimationFrame(redrawFocus);
+    requestAnimationFrame(()=>requestAnimationFrame(redrawFocus));
+    window.setTimeout(redrawFocus,90);
   }
   async function applyModuleCustomization(){
     if(!activeModule)return;
@@ -594,7 +654,8 @@
     variant:{...(visual.r8_variant||{})},
     module_offsets_mm:{...(visual.module_offsets_mm||{})},
     module_size_overrides:{...(visual.module_size_overrides||{})},
-    module_opening_overrides:{...(visual.module_opening_overrides||{})}
+    module_opening_overrides:{...(visual.module_opening_overrides||{})},
+    module_variant_overrides:{...(visual.module_variant_overrides||{})}
   }}
   async function applyWorkspaceState(state,reason='R8 saved variant'){
     enterNormalKitchenView();
@@ -604,6 +665,7 @@
     if(state.module_offsets_mm)next.module_offsets_mm={...state.module_offsets_mm};
     if(state.module_size_overrides)next.module_size_overrides={...state.module_size_overrides};
     if(state.module_opening_overrides)next.module_opening_overrides={...state.module_opening_overrides};
+    if(state.module_variant_overrides)next.module_variant_overrides={...state.module_variant_overrides};
     await saveVisual(next,reason);renderScene(false);return snapshot();
   }
   function snapshot(){return{...captureWorkspaceState(),visual:{...visual},elements:[...(project?.room?.architectural_elements||[])],context:{...(project?.context||{})},room:roomValues(),modules:[...modules]}}
@@ -671,6 +733,11 @@
   canvas.addEventListener('pointerup',endCanvasGesture,{passive:false});
   canvas.addEventListener('pointercancel',event=>{if(drag?.id===event.pointerId)drag=null});
   canvas.addEventListener('wheel',event=>{event.preventDefault();const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
+
+  $('focusVariantOptions')?.addEventListener('click',event=>{
+    const btn=event.target.closest('[data-focus-preset]');if(!btn||btn.disabled)return;
+    applyFocusPreset(btn.dataset.focusPreset).catch(error=>{const status=$('focusVariantStatus');if(status){status.hidden=false;status.textContent=error.message}});
+  });
 
   $('modelDimensionsToggle').addEventListener('click',()=>{
     if(viewMode===VIEW_FOCUS)focusDimensionsVisible=!focusDimensionsVisible;
