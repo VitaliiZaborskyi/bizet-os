@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#f5f5f2">\n  <script>try{if(sessionStorage.getItem("bizet_route_splash")==="1")document.documentElement.classList.add("r10-route-loading")}catch(_){}</script>
+  <meta name="theme-color" content="#f5f5f2">
+  <script>try{if(sessionStorage.getItem("bizet_route_splash")==="1")document.documentElement.classList.add("r10-route-loading")}catch(_){}</script>
   <title>BIZET OS — Рабочая модель</title>
   <link rel="stylesheet" href="/static/start.css">
   <link rel="stylesheet" href="/static/model.css">
   <link rel="stylesheet" href="/static/model-r5.css">
   <link rel="stylesheet" href="/static/pilot-shell.css">
-  <link rel="stylesheet" href="/static/workspace-r8.css?v=168">
-  <link rel="stylesheet" href="/static/point-b.css?v=168">
-  <link rel="stylesheet" href="/static/owner-qa-business.css?v=168">
+  <link rel="stylesheet" href="/static/workspace-r8.css?v=170">
+  <link rel="stylesheet" href="/static/point-b.css?v=170">
+  <link rel="stylesheet" href="/static/owner-qa-business.css?v=170">
 </head>
 <body class="r8-workspace-body">
   <div class="r8-shell">
@@ -67,6 +68,26 @@
           <p class="r10-focus-variant-status" id="focusVariantStatus" hidden></p>
         </section>
 
+        <section class="r104-module-editor" id="moduleEditPanel" hidden aria-label="Правка модуля">
+          <div class="r104-module-editor-head">
+            <div>
+              <small>ПРАВКА МОДУЛЯ</small>
+              <strong id="moduleEditTitle">Модуль</strong>
+            </div>
+            <div class="r104-module-price">
+              <span>Цена модуля</span>
+              <strong id="moduleDraftPrice">—</strong>
+              <small id="moduleDraftDelta"></small>
+            </div>
+          </div>
+          <div class="r104-module-editor-body" id="moduleEditBody"></div>
+          <p class="r104-module-rule" id="moduleEditRule" hidden></p>
+          <div class="r104-module-editor-actions">
+            <button class="r8-secondary" id="moduleEditCancel" type="button">Отменить</button>
+            <button class="r8-save" id="moduleEditSave" type="button">Сохранить модуль</button>
+          </div>
+        </section>
+
         <div class="r8-module-strip-label">Список модулей</div>
         <div class="module-strip r8-module-strip" id="moduleStrip" aria-label="Модули кухни"></div>
         <p class="model-status r8-status" id="modelStatus" hidden aria-live="polite">Формируем базовый вариант…</p>
@@ -116,18 +137,37 @@
 
   <button id="materialsButton" type="button" hidden>Материалы</button>
 
-  <script src="/static/pilot-r8-shell.js?v=168"></script>
+  <dialog class="r104-material-dialog" id="surfaceMaterialDialog">
+    <div class="r104-material-card">
+      <button class="r104-material-close" id="surfaceMaterialClose" type="button" aria-label="Закрыть">×</button>
+      <p class="r104-material-kicker">BIZET OS · MATERIAL PICKER</p>
+      <h2 id="surfaceMaterialTitle">Материал поверхности</h2>
+      <label class="r8-field"><span>Тип</span><select id="surfaceMaterialType"></select></label>
+      <div class="r104-material-swatches" id="surfaceMaterialSwatches"></div>
+      <label class="r104-upload-texture">
+        <span>Своя текстура</span>
+        <input id="surfaceTextureInput" type="file" accept="image/*">
+        <small id="surfaceTextureStatus">JPG / PNG / WEBP</small>
+      </label>
+      <div class="r104-material-actions">
+        <button class="r8-secondary" id="surfaceMaterialCancel" type="button">Отмена</button>
+        <button class="r8-save" id="surfaceMaterialApply" type="button">Применить</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/static/pilot-r8-shell.js?v=170"></script>
   <script src="/static/pilot-shell.js"></script>
-  <script src="/static/r10-domain-rules.js?v=168"></script>
-  <script src="/static/r10-hardware-assets.js?v=168"></script>
-  <script src="/static/pilot-3d.js?v=168"></script>
+  <script src="/static/r10-domain-rules.js?v=170"></script>
+  <script src="/static/r10-hardware-assets.js?v=170"></script>
+  <script src="/static/pilot-3d.js?v=170"></script>
   <script src="/static/model-r5-pre.js"></script>
-  <script src="/static/model-r6-dimensions.js?v=168"></script>
-  <script src="/static/model.js?v=168"></script>
-  <script src="/static/model-r5.js?v=168"></script>
+  <script src="/static/model-r6-dimensions.js?v=170"></script>
+  <script src="/static/model.js?v=170"></script>
+  <script src="/static/model-r5.js?v=170"></script>
   <script src="/static/pilot-r6.js"></script>
-  <script src="/static/workspace-r8.js?v=168"></script>
-  <script src="/static/point-b.js?v=168"></script>
-  <script src="/static/owner-qa-business.js?v=168"></script>
+  <script src="/static/workspace-r8.js?v=170"></script>
+  <script src="/static/point-b.js?v=170"></script>
+  <script src="/static/owner-qa-business.js?v=170"></script>
 </body>
 </html>
