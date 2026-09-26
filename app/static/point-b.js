@@ -1,5 +1,5 @@
 (()=> {
-  const VERSION='R10.3.2-POINT-B-2026-09-26';
+  const VERSION='R10.3.5-POINT-B-2026-09-26';
   const PRICES={
     CARCAS_M2:776,FACADE_M2:1200,HDF_M2:120,
     CUT_M:20,EDGE_LABOR_M:30,EDGE_MATERIAL_M:30,
@@ -369,7 +369,7 @@
     if($('pointBFinalActions'))return;
     const host=document.createElement('div');host.id='pointBFinalActions';host.className='r8-final-actions';
     host.innerHTML='<div class="r8-final-price"><span>Итоговая стоимость</span><strong id="pointBPrice">—</strong></div><button id="pointBPriceButton" type="button">Подумаю</button><button id="pointBDocsButton" type="button">Купить</button>';
-    $('modelStatus').insertAdjacentElement('afterend',host);
+    const anchor=$('moduleStrip')||$('modelStatus');anchor.insertAdjacentElement('afterend',host);
     const dialog=document.createElement('dialog');dialog.id='pointBDialog';dialog.className='r8-pointb-dialog';
     dialog.innerHTML='<div class="r8-pointb-card"><button id="pointBClose" class="r8-pointb-close" type="button">×</button><div id="pointBReport"></div></div>';
     document.body.appendChild(dialog);
@@ -411,7 +411,7 @@
   function boot(){
     ensureUI();
     let n=0;const timer=setInterval(()=>{n++;if(window.BizetModelRuntime?.ready){clearInterval(timer);refresh()}else if(n>120)clearInterval(timer)},100);
-    window.addEventListener('bizet:modelready',refresh);window.addEventListener('bizet:resume',()=>setTimeout(refresh,250));
+    window.addEventListener('bizet:modelready',refresh);window.addEventListener('bizet:resume',()=>setTimeout(refresh,250));window.addEventListener('bizet:modelchange',()=>setTimeout(refresh,80));
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,350)},true);
   }
   window.BizetPointB={version:VERSION,prices:PRICES,detailsFor,buildBOM,moduleDrawing,communicationsDrawing,productionModuleSheet,refresh};
