@@ -6,7 +6,7 @@
   const VIEW_NORMAL='NORMAL_KITCHEN_VIEW',VIEW_FOCUS='MODULE_FOCUS_MODE';
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false;
   let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72},focusDimensionsVisible=true,normalDimensionsVisible=true;
-  let layoutWarnings=[];
+  let layoutWarnings=[],preparedViewMode=null,stageResizeFrame=0,lastStageSize='';
   const LIMITS=window.BizetR10Rules?.moduleLimitsMm||{STRAIGHT_MAX:900,CORNER_MAX:1250,PREFERRED_FILL:600,HINGED_FACADE_MAX:597,MIN_STANDARD_MODULE:300};
   const ERGO=window.BizetR10Rules?.ergonomicsMm||{SINK_COOKTOP_HARD_MIN:500,SINK_COOKTOP_PREFERRED:900,SINK_OVEN_SAME_WALL_MIN:1000,TRIANGLE_LEG_MIN:1200,TRIANGLE_LEG_MAX:2700,TRIANGLE_SUM_MAX:7900};
   const CORNER=window.BizetR10Rules?.cornerRules||{ZONE_DEPTH:600,MAX_CORNER_MODULE:1250,ALLOWED_KINDS:['SINK','CORNER']};
@@ -81,6 +81,28 @@
       dims.hidden=false;dims.textContent='📏';dims.setAttribute('aria-label',on?'Скрыть размеры':'Показать размеры');dims.title=on?'Скрыть размеры':'Показать размеры';dims.setAttribute('aria-pressed',String(on));
     }
   }
+  function prepareRenderLayout(){
+    // R10.3.6: focus/normal CSS changes the canvas geometry. Apply the UI state BEFORE sizing/drawing the canvas.
+    syncFocusControls();
+    if(preparedViewMode!==viewMode){
+      preparedViewMode=viewMode;
+      const stage=$('modelStage');
+      if(stage)void stage.offsetHeight;
+    }
+  }
+  function scheduleRenderAfterLayout(reason='layout'){
+    cancelAnimationFrame(stageResizeFrame);
+    stageResizeFrame=requestAnimationFrame(()=>{
+      if(!project||!window.BizetPilot3D)return;
+      const stage=$('modelStage');
+      if(stage){
+        const rect=stage.getBoundingClientRect(),key=`${Math.round(rect.width)}x${Math.round(rect.height)}:${viewMode}`;
+        lastStageSize=key;
+      }
+      renderScene(false);
+    });
+  }
+
   function variantState(){return {...(visual.r8_variant||{})}}
   function sizeOverrides(){return {...(visual.module_size_overrides||{})}}
   function openingOverrides(){return {...(visual.module_opening_overrides||{})}}
@@ -538,12 +560,13 @@
 
   function renderNormalKitchen(engineOk=false){
     viewMode=VIEW_NORMAL;
+    prepareRenderLayout();
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),
       modules,camera,showDimensions:normalDimensionsVisible,showModuleDimensions:false,
       architecturalElements:project?.room?.architectural_elements||[]
     });
-    syncFocusControls();syncConstraintBanner();renderFocusVariantRibbon(null);
+    syncConstraintBanner();renderFocusVariantRibbon(null);
     $('modelStatus').textContent=engineOk?'Module Engine доступен · полная кухня активна.':'3D-пилот · полная кухня активна.';
   }
   function renderModuleFocus(){
@@ -554,11 +577,12 @@
     const run=Math.max(300,runDimension(current)),dep=Math.max(280,depthDimension(current));
     const room={lengthMm:run+1000,depthMm:dep+1000,heightMm:Math.max(1200,current.h+520)};
     const clone={...current,wall:'A',x:500,y:room.depthMm-dep-320,z:120,w:run,d:dep,number:current.number};
+    prepareRenderLayout();
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
       camera:focusCamera,showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,architecturalElements:[],focusMode:true
     });
-    syncFocusControls();syncConstraintBanner();renderFocusVariantRibbon(activeModule);
+    syncConstraintBanner();renderFocusVariantRibbon(activeModule);
     $('modelStatus').textContent='Режим модуля · «Вся кухня» вернёт общий вид.';
   }
   function renderScene(engineOk=false){
@@ -597,15 +621,13 @@
     pos.value=Number(offsets()[activeModule.id])||0;
     setValidation('');
 
-    // R10.3.5: focus redraw is tied directly to the module click and survives mobile reflow.
-    const redrawFocus=()=>{if(viewMode!==VIEW_FOCUS)return;void $('modelCanvas').getBoundingClientRect();renderScene(false)};
-    redrawFocus();
+    // R10.3.6: entering focus changes layout first, then paints against the final canvas size.
+    renderScene(false);
     const dialog=$('moduleDialog');
     if(dialog.open)dialog.close();
     if(typeof dialog.show==='function')dialog.show();else dialog.showModal?.();
-    requestAnimationFrame(redrawFocus);
-    requestAnimationFrame(()=>requestAnimationFrame(redrawFocus));
-    window.setTimeout(redrawFocus,90);
+    scheduleRenderAfterLayout('focus-entry');
+    requestAnimationFrame(()=>scheduleRenderAfterLayout('focus-entry-second-frame'));
   }
   async function applyModuleCustomization(){
     if(!activeModule)return;
@@ -684,7 +706,7 @@
     }
     resumeFromSleep.busy=false;
   }
-  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();else exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
+  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();else exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>scheduleRenderAfterLayout('runtime-render')};
 
   const canvas=$('modelCanvas');
   function beginCanvasGesture(event){
@@ -768,13 +790,18 @@
   $('moduleApply')?.addEventListener('click',()=>applyModuleCustomization().catch(error=>setValidation(error.message)));
   $('moduleReset')?.addEventListener('click',()=>resetModuleCustomization().catch(error=>setValidation(error.message)));
   $('materialsButton').addEventListener('click',()=>location.assign(`/materials?project=${encodeURIComponent(projectId)}`));$('backButton').addEventListener('click',()=>history.back());
-  let resizeFrame=0;
-  function redrawForViewportChange(){
-    cancelAnimationFrame(resizeFrame);
-    resizeFrame=requestAnimationFrame(()=>renderScene(false));
-  }
+  function redrawForViewportChange(){scheduleRenderAfterLayout('viewport')}
   window.addEventListener('resize',redrawForViewportChange);
   window.visualViewport?.addEventListener('resize',redrawForViewportChange);
+  window.addEventListener('orientationchange',()=>scheduleRenderAfterLayout('orientation'));
+  const stageResizeObserver=typeof ResizeObserver==='function'?new ResizeObserver(entries=>{
+    const entry=entries[0];if(!entry||!project)return;
+    const rect=entry.contentRect,key=`${Math.round(rect.width)}x${Math.round(rect.height)}:${viewMode}`;
+    if(key===lastStageSize)return;
+    lastStageSize=key;
+    scheduleRenderAfterLayout('stage-resize');
+  }):null;
+  stageResizeObserver?.observe($('modelStage'));
   window.addEventListener('bizet:themechange',()=>requestAnimationFrame(()=>renderScene(false)));
   window.addEventListener('bizet:resume',()=>resumeFromSleep());
 
