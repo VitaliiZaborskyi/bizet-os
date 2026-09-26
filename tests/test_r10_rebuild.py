@@ -310,10 +310,14 @@ def test_r103_constraint_warning_is_compact_button_not_permanent_banner():
     assert "ROOM_HEIGHT_ADAPTED" in model
     assert "RUN_OVERFLOW_" in model
 
-def test_r101_filler_is_not_costed_as_full_cabinet():
+def test_r1040_filler_is_not_costed_as_full_cabinet_and_has_two_constructions():
     pointb = read("point-b.js")
     assert "function fillerDetail" in pointb
-    assert "'Filler Panel'" in pointb
+    assert "'Filler Flat'" in pointb
+    assert "'Filler Front'" in pointb
+    assert "'Filler Return'" in pointb
+    assert "module.filler_shape==='L_SHAPE'" in pointb
+    assert "module.filler_material==='FACADE'" in pointb
     assert "m.kind==='FILLER'" in pointb
     assert "['DISHWASHER','FRIDGE','FILLER']" in pointb
 
@@ -742,9 +746,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1039_fastapi_reports_current_version():
+def test_r1040_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.3.9"' in main
+    assert 'version="R10.4.0"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -833,12 +837,14 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
     assert "pointer" not in scheduler.lower()
 
 
-def test_r1038_workspace_cache_busts_renderer_assets():
+def test_r1040_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=168" in html
-    assert "/static/pilot-3d.js?v=168" in html
-    assert "/static/workspace-r8.css?v=168" in html
-    assert "/static/model-r5.js?v=168" in html
+    assert "/static/model.js?v=170" in html
+    assert "/static/pilot-3d.js?v=170" in html
+    assert "/static/workspace-r8.css?v=170" in html
+    assert "/static/model-r5.js?v=170" in html
+    assert "/static/workspace-r8.js?v=170" in html
+    assert "/static/point-b.js?v=170" in html
 
 
 def test_r1037_focus_transition_forces_new_canvas_backing_store():
@@ -934,3 +940,141 @@ def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visibl
     assert "MOBILE_WORKSPACE" in checkpoint
     assert "DESKTOP_WORKSPACE" in checkpoint
     assert "one engineering core" in checkpoint.lower()
+
+
+def test_r1040_isolation_has_integrated_draft_editor_and_explicit_save():
+    html = read("workspace-r8.html")
+    model = read("model.js")
+    for token in ['id="moduleEditPanel"', 'id="moduleEditBody"', 'id="moduleDraftPrice"', 'id="moduleEditSave"', 'id="moduleEditCancel"']:
+        assert token in html
+    assert "let moduleDraft=null" in model
+    assert "function renderModuleEditor" in model
+    assert "function saveModuleDraft" in model
+    assert "module_edit_overrides" in model
+    assert "R10.4.0_MODULE_SAVED" in model
+
+
+def test_r1040_hinged_and_drawer_width_rules_are_hard_in_editor():
+    model = read("model.js")
+    validator = model[model.index("function validateModuleDraft"):model.index("function editField")]
+    assert "1 распашной фасад: ширина модуля 150–600 мм." in validator
+    assert "2 распашных фасада: ширина модуля 600–900 мм." in validator
+    assert "3 распашных фасада допускаются только при ширине 900 мм." in validator
+    assert "Модуль с ящиками: ширина только 300–900 мм." in validator
+    assert "Количество ящиков: от 2 до 5." in validator
+    assert "visibleTallDrawerLimit()" in validator
+
+
+def test_r1040_drawer_box_height_is_facade_minus_exactly_50_mm_in_bom_and_focus_3d():
+    pointb = read("point-b.js")
+    renderer = read("pilot-3d.js")
+    assert "drawerH=Math.max(1,round(facadeH-50))" in pointb
+    assert "boxH=Math.max(1,facadeH-50)" in renderer
+    assert "Drawer box height is a HARD rule" in renderer
+
+
+def test_r1040_middle_side_follows_internal_hinge_boundaries():
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    pointb = read("point-b.js")
+    assert "function middleSideBoundaries" in model
+    assert "normalized[i]==='RIGHT'||normalized[i+1]==='LEFT'" in model
+    assert "module.middle_side_boundaries" in renderer
+    assert "Middle Side" in pointb
+
+
+def test_r1040_shelves_drive_geometry_and_bom_hardware():
+    model = read("model.js")
+    pointb = read("point-b.js")
+    renderer = read("pilot-3d.js")
+    assert "shelf_count" in model and "shelf_type" in model
+    assert "Регулируемая полка; полкодержатели" in pointb
+    assert "Жёсткая полка; крепление к бокам" in pointb
+    assert "H.SHELF_SUPPORT" in pointb
+    assert "fixedFasteners" in pointb
+    assert "const maxShelves=module.tall?3:2" in renderer
+
+
+def test_r1040_ordinary_lower_has_two_ribs_and_upper_has_no_generic_ribs():
+    renderer = read("pilot-3d.js")
+    pointb = read("point-b.js")
+    focus = renderer[renderer.index("R10.4.0: ordinary lower carcasses"):renderer.index("// Shelves:")]
+    assert "y:y+26" in focus
+    assert "y:y+d-70" in focus
+    assert "module.level!=='upper'" in focus
+    ordinary = pointb[pointb.index("function ordinaryBase"):pointb.index("function sinkBase")]
+    assert "'Rail Front'" in ordinary
+    assert "'Rail Back'" in ordinary
+    upper = pointb[pointb.index("function upper(module"):pointb.index("function tall(")]
+    assert "'Rail Front'" not in upper
+    assert "'Rail Back'" not in upper
+
+
+def test_r1040_plinth_preserves_900_worktop_height_and_recalculates_bom():
+    model = read("model.js")
+    pointb = read("point-b.js")
+    workspace = read("workspace-r8.js")
+    assert "LOWER_TOTAL_H=900" in model
+    assert "lowerBodyHeight(){return Math.max(300,LOWER_TOTAL_H-plinthHeight()-WORKTOP_H)}" in model
+    assert "visibleTallDrawerLimit(){return LOWER_TOTAL_H-WORKTOP_H}" in model
+    assert "plinth_height_mm:100" in workspace
+    assert "areas.PLINTH" in pointb
+    assert "Ножка H " in pointb
+    assert "legHeight" in pointb
+
+
+def test_r1040_room_and_furniture_material_picker_has_presets_and_upload():
+    html = read("workspace-r8.html")
+    workspace = read("workspace-r8.js")
+    renderer = read("pilot-3d.js")
+    for token in ['id="surfaceMaterialDialog"', 'id="surfaceTextureInput"', 'id="surfaceMaterialSwatches"']:
+        assert token in html
+    for token in ["const MATERIAL_LIBRARY", "TILE", "PARQUET", "MICROCEMENT", "facade:{", "carcass:{", "worktop:{", "FileReader", "custom_texture_data_url"]:
+        assert token in workspace
+    assert "document.documentElement.dataset.floorPreset" in renderer
+    assert "facadeMap" in renderer
+    assert "worktopMap" in renderer
+
+
+def test_r1040_module_price_excludes_whole_kitchen_worktop_and_is_live_in_editor():
+    pointb = read("point-b.js")
+    model = read("model.js")
+    assert "function modulePrice(module)" in pointb
+    assert "includeWorktop:false" in pointb
+    assert "modulePrice" in pointb[pointb.index("window.BizetPointB="):]
+    assert "function refreshModuleDraftPrice" in model
+    assert "moduleDraftPrice" in model
+    assert "moduleDraftDelta" in model
+
+
+def test_r1040_mobile_reclaims_blank_area_and_restores_project_settings_label():
+    css = read("workspace-r8.css")
+    block = css[css.index("/* R10.4.0 — integrated module editor"):]
+    assert ".r8-stage{height:clamp(350px,58svh,520px)" in block
+    assert ".r8-tools-label" in block
+    assert "position:absolute!important" in block
+    assert "top:5px!important" in block
+    assert "screenYOffset" in read("model.js")
+
+
+def test_r1040_removes_literal_newline_artifacts_from_workspace_and_room_html():
+    assert "\\n" not in read("workspace-r8.html")
+    assert "\\n" not in read("room.html")
+
+
+def test_r1040_proposal_reserves_large_visualization_area_and_renderer_hook():
+    business = read("owner-qa-business.js")
+    assert "visualization_render_url" in business
+    assert "ENGINEERING_PREVIEW" in business
+    assert "height:88mm" in business
+    assert "price-hero" in business
+    assert "фотореалистичный рендер подключается отдельным визуализатором" in business
+
+
+def test_r1040_tall_appliance_logic_remains_frozen_until_module_library():
+    pointb = read("point-b.js")
+    assert "appliance tall cabinet remains on the frozen pre-library logic" in pointb
+    model = read("model.js")
+    classifier = model[model.index("function moduleEditorKind"):model.index("function draftFromModule")]
+    assert "TALL_OVEN" in classifier
+    assert "TALL_PLAIN" in classifier
