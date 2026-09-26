@@ -464,9 +464,9 @@ def test_r103_focus_uses_18mm_rib_and_oven_shelf_below_appliance():
     assert "oven_support_shelf_position='BELOW_OVEN'" in focus
     assert "oven_nominal_zone_mm=600" in focus
 
-def test_r103_room_acquisition_has_manual_scan_file_and_single_dimension_calibration():
+def test_r1034_room_acquisition_has_template_scan_file_and_single_dimension_calibration():
     workspace = read("workspace-r8.js")
-    for token in ["Ручной ввод","Скан","Загрузить файл","r10RoomFileInput","classifyRoomFile","ROOM_MODEL","calibrate-import","Известный размер"]:
+    for token in ["Шаблон","Скан","Загрузить файл","r10RoomFileInput","classifyRoomFile","ROOM_MODEL","calibrate-import","Известный размер"]:
         assert token in workspace
     assert ".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg" in workspace
     assert "known_dimension_mm" in workspace
