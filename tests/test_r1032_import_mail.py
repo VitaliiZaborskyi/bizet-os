@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import io
 
-import cv2
 import fitz
-import numpy as np
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -21,13 +19,17 @@ def create_project() -> str:
 
 def test_room_import_png_analyze_calibrate_confirm_changes_project_geometry():
     pid = create_project()
-    img = np.full((500, 800, 3), 255, dtype=np.uint8)
-    cv2.rectangle(img, (80, 100), (720, 420), (0, 0, 0), 7)
-    ok, encoded = cv2.imencode(".png", img)
-    assert ok
+    doc = fitz.open()
+    page = doc.new_page(width=800, height=500)
+    shape = page.new_shape()
+    shape.draw_rect(fitz.Rect(80, 100, 720, 420))
+    shape.finish(color=(0, 0, 0), width=7)
+    shape.commit()
+    pix = page.get_pixmap(alpha=False)
+    png = pix.tobytes("png")
     analyze = client.post(
         f"/api/v1.1/projects/{pid}/room-import/analyze",
-        files={"file": ("plan.png", encoded.tobytes(), "image/png")},
+        files={"file": ("plan.png", png, "image/png")},
     )
     assert analyze.status_code == 200, analyze.text
     state = analyze.json()["room_import"]
