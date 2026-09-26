@@ -114,8 +114,76 @@
   function sizeOverrides(){return {...(visual.module_size_overrides||{})}}
   function openingOverrides(){return {...(visual.module_opening_overrides||{})}}
   function moduleVariantOverrides(){return {...(visual.module_variant_overrides||{})}}
+  function moduleEditOverrides(){return {...(visual.module_edit_overrides||{})}}
+  function moduleEditFor(id){
+    const saved=moduleEditOverrides()[id]||{};
+    return moduleDraft?.id===id?{...saved,...moduleDraft}:saved;
+  }
   function offsetOverrides(){return {...(visual.module_offsets_mm||{})}}
-  function setFurniturePalette(){const d=String(visual.r8_palette||project?.context?.visual_direction||'LIGHT').toLowerCase();document.documentElement.dataset.furniturePalette=d}
+  function normalizeOpenings(count,value){
+    const source=Array.isArray(value)?value:[];
+    return Array.from({length:Math.max(1,count)},(_,i)=>source[i]||(['LEFT','RIGHT'][i%2]));
+  }
+  function middleSideBoundaries(count,openings){
+    if(count<2)return[];
+    const normalized=normalizeOpenings(count,openings),boundaries=[];
+    for(let i=0;i<count-1;i++){
+      if(normalized[i]==='RIGHT'||normalized[i+1]==='LEFT')boundaries.push(i+1);
+    }
+    return boundaries;
+  }
+  function applyModuleEdit(module,positioned=false){
+    const edit=moduleEditFor(module.id);if(!edit||!Object.keys(edit).length)return module;
+    const run=Math.round(Number(edit.run_mm)||0);
+    if(run>0){
+      if(positioned&&module.wall!=='A')module.d=Math.max(100,run);else module.w=Math.max(100,run);
+    }
+    if(edit.configuration==='DRAWERS'&&module.level!=='upper'&&!module.tall&&!['SINK','DISHWASHER','COOKTOP','FRIDGE'].includes(module.kind)){
+      module.kind='DRAWERS';module.label=`Ящики · ${clamp(Math.round(Number(edit.drawer_count)||2),2,5)}`;module.drawer_count=clamp(Math.round(Number(edit.drawer_count)||2),2,5);
+      module.drawer_layout='EQUAL';module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
+      module.facade_count=undefined;module.opening='DRAWERS';
+    }else if(edit.configuration==='HINGED'&&module.level!=='upper'&&!module.tall&&!['SINK','DISHWASHER','COOKTOP','FRIDGE'].includes(module.kind)){
+      module.kind='HINGED';module.label='Распашной';module.drawer_count=undefined;
+    }
+    if(Number(edit.facade_count)>0){
+      module.facade_count=clamp(Math.round(Number(edit.facade_count)),1,3);module.facade_count_user=true;
+    }
+    if(edit.facade_orientation)module.facade_orientation=edit.facade_orientation;
+    if(edit.facade_orientation==='HORIZONTAL'){module.opening='LIFT';module.lift_mechanism=edit.lift_mechanism||'LIFT_ONLY'}
+    if(edit.opening)module.opening=edit.opening;
+    if(Array.isArray(edit.facade_openings)){
+      module.facade_openings=normalizeOpenings(module.facade_count||edit.facade_openings.length,edit.facade_openings);
+      module.middle_side_boundaries=middleSideBoundaries(module.facade_count||module.facade_openings.length,module.facade_openings);
+    }
+    if(edit.shelf_count!==undefined)module.shelf_count=clamp(Math.round(Number(edit.shelf_count)||0),0,module.tall?3:2);
+    if(edit.shelf_type)module.shelf_type=edit.shelf_type;
+    if(edit.drawer_count!==undefined)module.drawer_count=clamp(Math.round(Number(edit.drawer_count)||2),2,5);
+    if(module.tall&&!['TALL_OVEN','FRIDGE'].includes(module.kind)){
+      module.tall_facade_count=clamp(Math.round(Number(edit.tall_facade_count)||module.facade_count||1),1,3);
+      module.facade_count=module.tall_facade_count;module.facade_count_user=true;
+      module.tall_drawer_mode=edit.tall_drawer_mode||'NONE';
+      module.tall_drawer_count=module.tall_drawer_mode==='NONE'?0:clamp(Math.round(Number(edit.tall_drawer_count)||2),1,3);
+      module.visible_drawer_stack_height_mm=module.tall_drawer_mode==='VISIBLE'?visibleTallDrawerLimit():0;
+      module.facade_openings=normalizeOpenings(module.facade_count,edit.facade_openings);
+      module.middle_side_boundaries=middleSideBoundaries(module.facade_count,module.facade_openings);
+    }
+    if(module.kind==='FILLER'){
+      module.filler_shape=edit.filler_shape||module.filler_shape||'FLAT';
+      module.filler_material=edit.filler_material||module.filler_material||'CARCASS';
+    }
+    module.module_edit_status=moduleDraft?.id===module.id?'DRAFT_PREVIEW':'SAVED';
+    return module;
+  }
+  function setFurniturePalette(){
+    const d=String(visual.r8_palette||project?.context?.visual_direction||'LIGHT').toLowerCase();document.documentElement.dataset.furniturePalette=d;
+    const surfaces=visual.room_surface_materials||{},furniture=visual.furniture_materials||{};
+    document.documentElement.dataset.floorPreset=String(surfaces.floor?.preset||'');
+    document.documentElement.dataset.wallPreset=String(surfaces.walls?.preset||'');
+    document.documentElement.dataset.ceilingPreset=String(surfaces.ceiling?.preset||'');
+    document.documentElement.dataset.facadePreset=String(furniture.facade?.preset||'');
+    document.documentElement.dataset.carcassPreset=String(furniture.carcass?.preset||'');
+    document.documentElement.dataset.worktopPreset=String(furniture.worktop?.preset||'');
+  }
   function fridgeWall(){
     const cfg=configuration(),side=inputs.fridge_side||'LEFT';
     if(cfg==='L_LEFT'&&side==='LEFT')return'B';
@@ -145,7 +213,7 @@
         module.kind='HINGED';module.label='Распашной · 2 фасада';module.facade_count=2;module.opening='HINGED';module.drawer_count=undefined;
       }
     }
-    return module;
+    return applyModuleEdit(module,false);
   }
 
   let camera={yaw:0,pitch:.33,distanceScale:1};
