@@ -13,6 +13,7 @@ const CONFIGS = [
 ];
 
 let screenFiveActive = false;
+let screenFiveMode = 'SOURCE';
 let selectedConfiguration = sessionStorage.getItem(CONFIG_SELECTION_KEY) || localStorage.getItem(CONFIG_SELECTION_KEY) || '';
 let savingConfiguration = false;
 let roomImportObjectUrl = '';
@@ -317,6 +318,55 @@ function ensureConfigurationStyles() {
     @media (max-width:1000px) {
       .configuration-choice-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
+
+    .room-source-choice-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
+      max-width:980px;
+      margin:0 auto;
+    }
+    .room-source-card{
+      min-height:220px;
+      border:1px solid var(--line);
+      border-radius:26px;
+      background:color-mix(in srgb,var(--surface) 92%,transparent);
+      color:var(--ink);
+      padding:22px 18px;
+      text-align:left;
+      cursor:pointer;
+      box-shadow:0 8px 0 color-mix(in srgb,var(--ink) 10%,transparent),var(--shadow);
+      transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .room-source-card:active{transform:translateY(6px);box-shadow:0 2px 0 color-mix(in srgb,var(--ink) 14%,transparent),0 8px 18px rgba(0,0,0,.08)}
+    .room-source-card:focus-visible{outline:3px solid #2f7cff;outline-offset:3px}
+    .room-source-visual{
+      height:118px;
+      border-radius:18px;
+      margin-bottom:17px;
+      position:relative;
+      overflow:hidden;
+      background:color-mix(in srgb,var(--bg) 80%,#2f7cff 20%);
+      border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+    }
+    .room-source-visual.template::before{content:'';position:absolute;inset:22px;border:2px solid color-mix(in srgb,var(--ink) 58%,transparent);border-radius:8px;box-shadow:inset 0 0 0 10px color-mix(in srgb,#2f7cff 12%,transparent)}
+    .room-source-visual.file::before{content:'PDF  JPG';position:absolute;inset:0;display:grid;place-items:center;font-size:20px;font-weight:800;letter-spacing:.08em;color:color-mix(in srgb,var(--ink) 80%,#2f7cff)}
+    .room-source-visual.scan::before{content:'';position:absolute;inset:22px;border:2px dashed #2f7cff;border-radius:14px}
+    .room-source-visual.scan::after{content:'';position:absolute;left:18px;right:18px;top:50%;height:2px;background:#2f7cff;box-shadow:0 0 18px rgba(47,124,255,.65)}
+    .room-source-card strong{display:block;font-size:24px;letter-spacing:-.025em}
+    .room-source-card small{display:block;margin-top:8px;color:var(--muted);font-size:13px;line-height:1.4}
+    .room-source-status{max-width:760px;margin:20px auto 0;text-align:center;color:var(--muted);font-size:13px;min-height:20px}
+    .room-source-file-wrap{max-width:760px;margin:22px auto 0}
+    .room-source-next{display:block;min-width:280px;margin:18px auto 0}
+    @media(max-width:700px){
+      .room-source-choice-grid{grid-template-columns:1fr;gap:12px}
+      .room-source-card{min-height:148px;display:grid;grid-template-columns:112px 1fr;column-gap:16px;align-items:center;padding:12px 14px}
+      .room-source-visual{height:112px;margin:0}
+      .room-source-card strong{font-size:22px}
+      .room-source-card small{margin-top:5px}
+    }
+
     @media (max-width:700px) {
       body.config-screen-five-open .topbar { z-index:160 !important; }
       .experience.screen-five-active {
@@ -506,6 +556,7 @@ function bindStartRoomImport(screen) {
       selectedRoomImportMeta=project.scene?.visual_settings?.room_import||selectedRoomImportMeta;
       confirm.hidden=true;
       status.textContent=isRu()?'Помещение подтверждено. Эти размеры будут использованы при построении 3D.':'Room confirmed. These dimensions will be used for the 3D model.';
+      const next=screen.querySelector('#startRoomSourceContinue');if(next)next.hidden=false;
     }catch(error){status.textContent=(isRu()?'Не удалось подтвердить: ':'Could not confirm: ')+error.message}
   };
 }
@@ -553,64 +604,100 @@ async function saveConfiguration(code) {
   }
 }
 
-function buildScreenFive() {
-  const summaryCard = document.getElementById('summaryCard');
-  const experience = document.getElementById('experience');
-  if (!summaryCard || summaryCard.hidden || !experience || screenFiveActive) return;
-
-  screenFiveActive = true;
-  document.body.dataset.startKind = 'configuration';
-  summaryCard.hidden = true;
-  experience.classList.add('screen-five-active');
-  document.body.classList.add('config-screen-five-open');
-  document.getElementById('backButton').hidden = false;
-
-  const screen = document.createElement('section');
-  screen.id = 'configurationScreenFive';
-  screen.className = 'configuration-screen-five';
-  screen.setAttribute('aria-label', isRu() ? 'Шаг 5. Конфигурация кухни' : 'Step 5. Kitchen configuration');
-  screen.innerHTML = `
+function renderConfigurationScreen(screen) {
+  screenFiveMode='CONFIGURATION';
+  document.body.dataset.startKind='configuration';
+  screen.setAttribute('aria-label',isRu()?'Конфигурация кухни':'Kitchen configuration');
+  screen.innerHTML=`
     <div class="screen-five-head">
-      <p class="config-screen-kicker">${isRu() ? 'Шаг 5 из 5' : 'Step 5 of 5'}</p>
-      <div class="screen-five-progress" aria-hidden="true"><span></span><span></span><span></span><span></span><span class="active"></span></div>
-      <h1>${isRu() ? 'Выберите конфигурацию кухни' : 'Choose the kitchen configuration'}</h1>
-      <p class="config-screen-help">${isRu() ? 'Вид сверху. Выберите схему, которая ближе всего к вашему помещению.' : 'Top view. Choose the plan closest to your room.'}</p>
+      <h1>${isRu()?'Выберите конфигурацию кухни':'Choose the kitchen configuration'}</h1>
+      <p class="config-screen-help">${isRu()?'Вид сверху. Выберите схему, которая ближе всего к вашему помещению.':'Top view. Choose the plan closest to your room.'}</p>
     </div>
     <div class="configuration-choice-grid" id="startConfigurationQuest">
-      ${CONFIGS.map(config => `
+      ${CONFIGS.map(config=>`
         <button class="configuration-choice-card" type="button" data-start-config="${config.code}" aria-pressed="false">
           ${planMarkup(config)}
-          <strong class="config-card-title">${isRu() ? config.ru : config.en}</strong>
-          ${config.code === 'CUSTOM' ? `<small class="config-card-note">${isRu() ? 'Нестандартная форма — уточним дальше' : 'Non-standard layout — refine it later'}</small>` : ''}
+          <strong class="config-card-title">${isRu()?config.ru:config.en}</strong>
+          ${config.code==='CUSTOM'?`<small class="config-card-note">${isRu()?'Нестандартная форма — уточним дальше':'Non-standard layout — refine it later'}</small>`:''}
         </button>`).join('')}
     </div>
-    <section class="start-room-import-entry" aria-label="${isRu() ? 'Загрузка файла помещения' : 'Room file upload'}">
-      <button class="start-upload-file-button" id="startUploadFileButton" type="button">${isRu() ? 'Загрузить файл' : 'Upload file'}</button>
-      <input id="startRoomFileInput" type="file" accept=".pdf,image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" hidden>
-      <small>${isRu() ? 'PDF или фотография помещения' : 'PDF or room photo'}</small>
+    <p class="screen-five-error" id="configurationScreenFiveError" hidden></p>
+    <p class="config-auto-note">${isRu()?'После выбора конфигурации BIZET OS откроет первый 3D-вариант.':'After choosing a configuration BIZET OS opens the first 3D option.'}</p>`;
+  screen.querySelectorAll('[data-start-config]').forEach(card=>card.addEventListener('click',()=>saveConfiguration(card.dataset.startConfig)));
+  const custom=screen.querySelector('[data-start-config="CUSTOM"]');
+  if(custom){custom.disabled=true;custom.classList.add('pilot-disabled-choice');custom.title=isRu()?'Временно недоступно · дорабатывается':'Temporarily unavailable';}
+  syncConfigurationSelection();
+  window.scrollTo({top:0,behavior:'auto'});
+}
+
+function renderRoomSourceScreen(screen) {
+  screenFiveMode='SOURCE';
+  document.body.dataset.startKind='room_source';
+  screen.setAttribute('aria-label',isRu()?'Исходные данные помещения':'Room input source');
+  screen.innerHTML=`
+    <div class="screen-five-head">
+      <h1>${isRu()?'Как начнём работу с помещением?':'How should we start with the room?'}</h1>
+      <p class="config-screen-help">${isRu()?'Выберите источник исходных данных. Этот шаг используется до выбора конфигурации изделия.':'Choose the input source before selecting the product configuration.'}</p>
+    </div>
+    <div class="room-source-choice-grid">
+      <button class="room-source-card" id="startTemplateButton" type="button">
+        <span class="room-source-visual template"></span>
+        <span><strong>${isRu()?'Шаблон':'Template'}</strong><small>${isRu()?'Работаем с базовой геометрией и уточняем размеры вручную.':'Start from base geometry and refine dimensions.'}</small></span>
+      </button>
+      <button class="room-source-card" id="startUploadFileButton" type="button">
+        <span class="room-source-visual file"></span>
+        <span><strong>${isRu()?'Загрузить файл':'Upload file'}</strong><small>${isRu()?'PDF или фотография помещения.':'PDF or room photo.'}</small></span>
+      </button>
+      <button class="room-source-card" id="startScanButton" type="button">
+        <span class="room-source-visual scan"></span>
+        <span><strong>${isRu()?'Скан':'Scan'}</strong><small>${isRu()?'Сканирование помещения будет подключено отдельным слоем.':'Room scanning will be connected as a separate layer.'}</small></span>
+      </button>
+    </div>
+    <input id="startRoomFileInput" type="file" accept=".pdf,image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" hidden>
+    <div class="room-source-file-wrap">
       <div class="start-room-file-panel" id="startRoomFilePanel" hidden>
         <div class="start-room-file-preview" id="startRoomFilePreview"></div>
         <p class="start-room-file-meta" id="startRoomFileMeta"></p>
-        <label class="start-room-known-dimension"><span>${isRu() ? 'Один известный реальный размер, мм' : 'One known real dimension, mm'}</span><input id="startRoomKnownDimension" type="number" inputmode="numeric" min="300" step="1" placeholder="3000"></label>
-        <button class="start-room-scale-apply" id="startRoomScaleApply" type="button">${isRu() ? 'Применить масштаб' : 'Apply scale'}</button>
-        <button class="start-room-confirm" id="startRoomConfirm" type="button" hidden>${isRu() ? 'Подтвердить помещение' : 'Confirm room'}</button>
+        <label class="start-room-known-dimension"><span>${isRu()?'Один известный реальный размер, мм':'One known real dimension, mm'}</span><input id="startRoomKnownDimension" type="number" inputmode="numeric" min="300" step="1" placeholder="3000"></label>
+        <button class="start-room-scale-apply" id="startRoomScaleApply" type="button">${isRu()?'Применить масштаб':'Apply scale'}</button>
+        <button class="start-room-confirm" id="startRoomConfirm" type="button" hidden>${isRu()?'Подтвердить помещение':'Confirm room'}</button>
         <p class="start-room-file-status" id="startRoomFileStatus"></p>
       </div>
-    </section>
-    <p class="screen-five-error" id="configurationScreenFiveError" hidden></p>
-    <p class="config-auto-note">${isRu() ? 'После выбора конфигурации BIZET OS откроет первый 3D-вариант.' : 'After choosing a configuration BIZET OS opens the first 3D option.'}</p>`;
-  experience.appendChild(screen);
+    </div>
+    <p class="room-source-status" id="roomSourceStatus"></p>
+    <button class="primary-button room-source-next" id="startRoomSourceContinue" type="button" hidden><span>${isRu()?'Далее к конфигурации':'Continue to configuration'}</span><span class="button-arrow" aria-hidden="true">→</span></button>`;
 
-  screen.querySelectorAll('[data-start-config]').forEach(card => {
-    card.addEventListener('click', () => saveConfiguration(card.dataset.startConfig));
+  screen.querySelector('#startTemplateButton')?.addEventListener('click',async()=>{
+    try{await patchProject('scene.visual_settings.room_input_mode','TEMPLATE','Room input source: template')}catch(_){}
+    renderConfigurationScreen(screen);
   });
+  screen.querySelector('#startScanButton')?.addEventListener('click',()=>{
+    const status=screen.querySelector('#roomSourceStatus');
+    if(status)status.textContent=isRu()?'Скан — в стадии разработки.':'Scan — in development.';
+  });
+  screen.querySelector('#startRoomSourceContinue')?.addEventListener('click',()=>renderConfigurationScreen(screen));
   bindStartRoomImport(screen);
-  syncConfigurationSelection();
-  window.scrollTo({ top: 0, behavior: 'auto' });
+  window.scrollTo({top:0,behavior:'auto'});
 }
 
+function buildScreenFive() {
+  const summaryCard=document.getElementById('summaryCard');
+  const experience=document.getElementById('experience');
+  if(!summaryCard||summaryCard.hidden||!experience||screenFiveActive)return;
+  screenFiveActive=true;
+  summaryCard.hidden=true;
+  experience.classList.add('screen-five-active');
+  document.body.classList.add('config-screen-five-open');
+  document.getElementById('backButton').hidden=false;
+  const screen=document.createElement('section');
+  screen.id='configurationScreenFive';
+  screen.className='configuration-screen-five';
+  experience.appendChild(screen);
+  renderRoomSourceScreen(screen);
+}
 function destroyScreenFive() {
   screenFiveActive = false;
+  screenFiveMode = 'SOURCE';
   clearRoomImportPreview();
   document.getElementById('configurationScreenFive')?.remove();
   document.getElementById('experience')?.classList.remove('screen-five-active');
@@ -628,18 +715,23 @@ function watchForScreenFive() {
 }
 
 /* Let start.js own navigation. Capture only removes screen 5 so its regular Back handler can restore screen 4. */
-document.getElementById('backButton')?.addEventListener('click', () => {
-  if (screenFiveActive) destroyScreenFive();
+document.getElementById('backButton')?.addEventListener('click', (event) => {
+  if (!screenFiveActive) return;
+  if (screenFiveMode==='CONFIGURATION') {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const screen=document.getElementById('configurationScreenFive');
+    if(screen)renderRoomSourceScreen(screen);
+    return;
+  }
+  destroyScreenFive();
 }, true);
 
 document.getElementById('languageSelect')?.addEventListener('change', () => {
   if (!screenFiveActive) return;
-  destroyScreenFive();
-  const summary = document.getElementById('summaryCard');
-  if (summary) {
-    summary.hidden = false;
-    queueMicrotask(buildScreenFive);
-  }
+  const screen=document.getElementById('configurationScreenFive');
+  if(!screen)return;
+  if(screenFiveMode==='CONFIGURATION')renderConfigurationScreen(screen);else renderRoomSourceScreen(screen);
 });
 
 ensureConfigurationStyles();
