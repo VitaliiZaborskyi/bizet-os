@@ -255,9 +255,10 @@
     ctx.restore();
   }
 
-  function drawBlumHingeProxy(ctx,projector,module,centerZ){
-    const p=projector.point,x=module.x+18,y=module.y-12,cup=p([x+17,y,centerZ]);
-    // R10.3 visual rule: only the Ø35 concealed-hinge cup is shown in focus mode.
+  function drawBlumHingeProxy(ctx,projector,module,centerZ,facadeIndex=0,facadeCount=1,opening='LEFT'){
+    const p=projector.point,count=Math.max(1,facadeCount),fw=module.w/count,left=module.x+fw*facadeIndex,right=left+fw,y=module.y-12;
+    const cupX=opening==='RIGHT'?right-35:left+35,cup=p([cupX,y,centerZ]);
+    // Focus shows only the Ø35 concealed-hinge cup; each facade owns its real hinge side.
     ctx.save();ctx.beginPath();ctx.arc(cup[0],cup[1],7.5,0,Math.PI*2);
     ctx.fillStyle='rgba(162,166,168,.92)';ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle='#4f5457';ctx.stroke();
     ctx.beginPath();ctx.arc(cup[0],cup[1],3.2,0,Math.PI*2);ctx.strokeStyle='rgba(70,74,76,.72)';ctx.lineWidth=1;ctx.stroke();ctx.restore();
@@ -379,15 +380,27 @@
       [[x+ix,y+iy],[x+w-ix,y+iy],[x+ix,y+d-iy],[x+w-ix,y+d-iy]].forEach(([lx,ly])=>drawScilmLegProxy(ctx,projector,lx,ly,legZ,legH));
       module.hardware_leg_asset_status=legAsset?.geometry_status||'VERIFIED_DIMENSIONAL_PROXY';
     }
-    if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER'].includes(module.kind)){
+    if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER'].includes(module.kind)&&!(module.level==='upper'&&module.facade_orientation==='HORIZONTAL')){
       const rules=window.BizetR10Rules?.hingeVerticalMm||{};
       const hingeRule=module.kind==='SINK'?(rules.SINK_BASE||{top:150,bottom:100}):(rules.STANDARD||{top:100,bottom:100});
+      const count=Math.max(1,Number(module.facade_count)||1),opens=Array.isArray(module.facade_openings)?module.facade_openings:[];
       const bottomZ=z+Math.min(h-20,Math.max(20,Number(hingeRule.bottom)||100));
       const topZ=z+h-Math.min(h-20,Math.max(20,Number(hingeRule.top)||100));
       const hingeZ=[bottomZ,topZ].filter((value,index,array)=>index===0||Math.abs(value-array[0])>40);
-      hingeZ.forEach(centerZ=>drawBlumHingeProxy(ctx,projector,module,centerZ));
+      for(let i=0;i<count;i++){
+        const opening=opens[i]||(['LEFT','RIGHT'][i%2]);
+        hingeZ.forEach(centerZ=>drawBlumHingeProxy(ctx,projector,module,centerZ,i,count,opening));
+      }
       module.hardware_hinge_asset_status=hardware.BLUM_HINGE_STRAIGHT_PLATE?.geometry_status||'CAD_IDENTIFIED_EXTERNAL_PROXY';
       module.hinge_vertical_rule={top_mm:Number(hingeRule.top),bottom_mm:Number(hingeRule.bottom)};
+    }
+    if(module.tall&&!['TALL_OVEN','FRIDGE'].includes(module.kind)){
+      const count=Math.max(1,Math.min(3,Number(module.tall_facade_count||module.facade_count)||1)),opens=Array.isArray(module.facade_openings)?module.facade_openings:[],stack=module.tall_drawer_mode==='VISIBLE'?Math.max(0,Number(module.visible_drawer_stack_height_mm)||0):0;
+      const faceH=Math.max(120,(h-stack)/count);
+      for(let i=0;i<count;i++){
+        const low=z+stack+faceH*i,high=Math.min(z+h,low+faceH),opening=opens[i]||(['LEFT','RIGHT'][i%2]);
+        [low+Math.min(100,faceH*.22),high-Math.min(100,faceH*.22)].forEach(centerZ=>drawBlumHingeProxy(ctx,projector,module,centerZ,0,1,opening));
+      }
     }
     if(module.level==='upper'){
       const hangerW=32,hangerD=24,hangerH=38,hangerY=y+d-hangerD-t,hangerZ=z+h-hangerH-22;
