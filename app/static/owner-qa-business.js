@@ -234,7 +234,7 @@
       @media print{.page{min-height:auto}}
     </style></head><body><div class="page">
       <header><div class="logo-box"><img src="/static/bizet-os-zaborsky-document-logo.svg" alt="ZABORSKY BIZET OS"></div><div class="meta"><strong>${t('Коммерческое предложение','Commercial Proposal')}</strong><br>${esc(orderRef)}<br>${today}<br>${t('Производитель','Manufacturer')}: ${esc(d.p.name)}</div></header>
-      <div class="hero">${imageHtml}<div class="hero-label">${esc(visualLabel)}</div></div>
+      <div class="hero">${imageHtml}<div class="hero-label">${t('Изображение / схема','Image / scheme')} · ${esc(visualLabel)}</div></div>
       <div class="price-hero"><span>${t('Стоимость проекта','Project price')} · ${esc(d.p.name)}</span><strong>${price}</strong></div>
       <h1>${t('Список изделий','List of products')}</h1>
       <table>
