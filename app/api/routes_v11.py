@@ -9,7 +9,7 @@ import re
 from app.engine.application_no import next_order_no
 from app.engine.rules import DecisionEngine
 from app.project.legacy_adapter import LegacyAdapterError, project_state_to_legacy_input
-from app.project.models import ChangeCommand, MutationResult, ProjectState
+from app.project.models import ChangeCommand, MutationResult, ProjectState, StateSource
 from app.project.mutations import ProjectMutationService
 from app.project.repository import repository
 from app.quest.engine import QuestEngine
@@ -299,7 +299,7 @@ def confirm_room_import(project_id: str):
         measured = getattr(project.room.geometry, attr)
         if measured:
             measured.provenance.confirmed = True
-            measured.provenance.source = "USER_CONFIRMED"
+            measured.provenance.source = StateSource.USER_CONFIRMED
     state["status"] = "ROOM_MODEL_CONFIRMED"
     state["requires_user_confirmation"] = False
     state["message"] = "Imported Room Model confirmed by user."
