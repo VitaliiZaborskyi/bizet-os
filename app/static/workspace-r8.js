@@ -59,12 +59,12 @@
    if(!rt)return;
    history.push({...clone(rt.captureWorkspaceState()),elements:[...rt.getElements()]});
    if(history.length>20)history.shift();
-   $('undoButton').disabled=history.length===0;
+   const undoButton=$('undoButton');if(undoButton)undoButton.disabled=history.length===0;
  }
  async function undo(){
    const s=history.pop();if(!s)return;
    await rt.replaceState(s);saveCurrentVariantSlot();
-   $('undoButton').disabled=history.length===0;refreshPanel();updateReadiness();
+   const undoButton=$('undoButton');if(undoButton)undoButton.disabled=history.length===0;refreshPanel();updateReadiness();
  }
  function panelTitle(panel){return({room:['01 · ПОМЕЩЕНИЕ','Помещение'],appliances:['02 · ТЕХНИКА','Бытовая техника'],upper:['03 · ВЕРХНИЕ МОДУЛИ','Верхние модули'],communications:['04 · КОММУНИКАЦИИ','Коммуникации'],elements:['05 · ЭЛЕМЕНТЫ СТЕН','Элементы стен'],materials:['06 · МАТЕРИАЛЫ','Материалы']})[panel]}
  let activePanel=null;
@@ -231,7 +231,6 @@
    updateReadiness();refreshPanel();renderVariantDots();
  }
  $('randomVariant').onclick=()=>applyVariant((variantPos+1)%5);
- $('undoButton').onclick=undo;
  $('baseInfoButton').onclick=()=>{$('baseInfoPopover').hidden=false};$('baseInfoClose').onclick=()=>{$('baseInfoPopover').hidden=true};
  $('panelClose').onclick=()=>{$('editorPanel').hidden=true;activePanel=null;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>rt?.render?.())};
  document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.onclick=()=>selectPanel(b.dataset.panel));
