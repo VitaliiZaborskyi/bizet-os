@@ -53,17 +53,23 @@
 
   function ordinaryBase(module,startNo){
     const out=[],W=runW(module),H=round(module.h),D=depth(module),inner=W-BODY_T*2,partD=Math.max(100,D-1);
-    let s=1,n=startNo;
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Left',H,D));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Right',H,D));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Bottom',inner,partD));
-    const shelfCount=Math.max(1,Math.min(2,Number(module.shelf_count)||1)),shelfType=module.shelf_type==='FIXED'?'Жёсткая полка':'Регулируемая полка; полкодержатели';
-    for(let i=0;i<shelfCount;i++)out.push(detail(module,n++,s++,'ЛДСП 18 Carcas',shelfCount>1?`Shelf ${i+1}`:'Shelf',inner,partD,1,EDGE,2,2,shelfType));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail',inner,100));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail',inner,100));
-    out.push(detail(module,n++,s++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз под заднюю стенку','PILOT: размер HDF требует финальной заморозки'));
-    const f=facadePieces(module,Math.max(100,H-TOP_GAP));
-    f.forEach(x=>out.push(detail(module,n++,s++,'ЛДСП 18 Facade','Facade',x.h,x.w,x.count,EDGE,2,2,'Петли + чашки Ø35','Макс. цельный фасад 597 мм')));
+    let seq=1,n=startNo;
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Left',H,D));
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D));
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,partD));
+    const rawShelves=module.shelf_count===undefined?1:Number(module.shelf_count),shelfCount=Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:1));
+    const shelfType=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
+    for(let i=0;i<shelfCount;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',shelfCount>1?`Shelf ${i+1}`:'Shelf',inner,partD,1,EDGE,2,2,shelfType));
+    if(!(module.kind==='COOKTOP'&&module.oven_appliance_present)){
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Rail Front',inner,100));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Rail Back',inner,100));
+    }
+    (module.middle_side_boundaries||[]).forEach((boundary,i)=>{
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',`Middle Side ${i+1}`,H,partD,1,EDGE,2,2,'Вертикальная перегородка',`Граница фасадов ${boundary}`));
+    });
+    out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз под заднюю стенку','PILOT: размер HDF требует финальной заморозки'));
+    const openings=Array.isArray(module.facade_openings)?module.facade_openings.join('/'):'AUTO',faces=facadePieces(module,Math.max(100,H-TOP_GAP));
+    faces.forEach(x=>out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade',x.h,x.w,x.count,EDGE,2,2,'Петли + чашки Ø35',`Открывание: ${openings}`)));
     return out;
   }
   function sinkBase(module,startNo){
@@ -104,24 +110,30 @@
   }
   function upper(module,startNo,dryer=false,hood=false){
     const out=[],W=runW(module),H=round(module.h),D=depth(module),inner=W-BODY_T*2;
-    let n=startNo,s=1;
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Left',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Right',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
-    if(!dryer)out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
-    const sc=shelfCountForUpper(H);
-    for(let i=0;i<sc;i++)out.push(detail(module,n++,s++,'ЛДСП 18 Carcas',dryer?'Shelf Adjustable':'Shelf',inner,Math.max(100,D-21),1,EDGE,2,2,dryer?'Полкодержатели':'Жёсткая/регулируемая по правилу'));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21)));
-    out.push(detail(module,n++,s++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'В пазы боковин/дна, нахлёст на крышу; Г-вырезы 44×30 под навесы'));
-    if(dryer){
-      out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Light Rail',inner,60,1,EDGE,2,2,'Паз под заднюю стенку','Модуль с сушкой без дна для вентиляции'));
-    }
+    let n=startNo,seq=1;
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Left',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
+    if(!dryer)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
+    const defaultShelves=Math.min(2,shelfCountForUpper(H)),rawShelves=module.shelf_count===undefined?defaultShelves:Number(module.shelf_count),sc=Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
+    const shelfProcess=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
+    for(let i=0;i<sc;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',dryer?'Shelf Adjustable':`Shelf ${i+1}`,inner,Math.max(100,D-21),1,EDGE,2,2,dryer?'Полкодержатели':shelfProcess));
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21)));
+    out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'В пазы боковин/дна, нахлёст на крышу; Г-вырезы 44×30 под навесы'));
+    if(dryer)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Light Rail',inner,60,1,EDGE,2,2,'Паз под заднюю стенку','Модуль с сушкой — отдельное исключение'));
     if(hood){
-      out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Hood Front Wall',Math.max(100,W-70),100,1,EDGE,2,2,'Экран вытяжки'));
-      out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Duct Side Left',Math.max(100,H-180),180,1,EDGE,2,2,'Вырез вентканала 170×200'));
-      out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Duct Side Right',Math.max(100,H-180),180,1,EDGE,2,2,'Вырез вентканала 170×200'));
-      out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Duct Front Wall',Math.max(100,W-70),100,1,EDGE,2,2,'Закрывает вентканал'));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Hood Front Wall',Math.max(100,W-70),100,1,EDGE,2,2,'Экран вытяжки'));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Duct Side Left',Math.max(100,H-180),180,1,EDGE,2,2,'Вырез вентканала 170×200'));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Duct Side Right',Math.max(100,H-180),180,1,EDGE,2,2,'Вырез вентканала 170×200'));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Duct Front Wall',Math.max(100,W-70),100,1,EDGE,2,2,'Закрывает вентканал'));
     }
-    facadePieces(module,Math.max(100,H-GAP)).forEach(x=>out.push(detail(module,n++,s++,'ЛДСП 18 Facade','Facade',x.h,x.w,x.count,EDGE,2,2,'Петли + чашки Ø35','Макс. цельный фасад 597 мм')));
+    const count=Math.max(1,Math.min(3,Number(module.facade_count)||1));
+    if(module.facade_orientation==='HORIZONTAL'&&!dryer&&!hood){
+      const fh=Math.floor((H-GAP*(count-1))/count),process=module.lift_mechanism==='HINGE_PLUS_LIFT'?'Петли + подъёмный механизм':'Подъёмный механизм';
+      for(let i=0;i<count;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Facade',`Facade Lift ${i+1}`,fh,Math.max(100,W-GAP),1,EDGE,2,2,process,'Горизонтальная ориентация'));
+    }else{
+      (module.middle_side_boundaries||[]).forEach((boundary,i)=>out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',`Middle Side ${i+1}`,H,Math.max(100,D-21),1,EDGE,2,2,'Вертикальная перегородка',`Граница фасадов ${boundary}`)));
+      facadePieces(module,Math.max(100,H-GAP)).forEach(x=>out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade',x.h,x.w,x.count,EDGE,2,2,'Петли + чашки Ø35','Вертикальные фасады')));
+    }
     return out;
   }
   function tall(module,startNo,fridge=false,oven=false){
