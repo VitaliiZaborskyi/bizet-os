@@ -68,18 +68,47 @@
   function openCommerce(html){
     const dialog=commerceDialog();$('r10CommerceBody').innerHTML=html;if(!dialog.open)dialog.showModal();
   }
+  async function sendProposalEmail(recipient,d){
+    const id=projectId();if(!id)throw new Error('project_not_found');
+    const payload={
+      recipient,
+      price:money(d.clientPrice),
+      manufacturer:d.p.name,
+      configuration:configurationLabel(d.rt.getConfiguration()),
+      runs:runSummary(d),
+      features:proposalFeatures(d)
+    };
+    const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}/proposal/send`,{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+    });
+    const body=await r.json().catch(()=>({}));
+    if(!r.ok){
+      if(body.detail==='MAIL_PROVIDER_NOT_CONFIGURED')throw new Error(t('Почтовый сервис подготовлен, но ещё нужен API-ключ Resend и подтверждённый адрес отправителя.','Mail delivery is prepared, but a Resend API key and verified sender are still required.'));
+      throw new Error(typeof body.detail==='string'?body.detail:t('Не удалось отправить КП','Could not send proposal'));
+    }
+    return body;
+  }
   async function showThinkFlow(){
     const d=data();if(!d)return;
     const identity=await ensureOrderIdentity();
-    await patchProject('commerce.proposal_status','DRAFT_READY','R10.3: customer chose Think / proposal requested');
-    openCommerce(`<p class="r9-kicker">BIZET OS · ${esc(identityRef(identity))}</p><h2>${t('Коммерческое предложение готово','Commercial proposal is ready')}</h2><p class="r9-muted">${t('Введите e-mail или телефон. Локальная кнопка скачивания в клиентском сценарии не показывается.','Enter an e-mail or phone number. No local download button is shown in the customer flow.')}</p><label class="r10-commerce-field"><span>${t('E-mail или телефон','E-mail or phone')}</span><input id="r10ProposalContact" inputmode="email" autocomplete="email" placeholder="name@example.com / +380…"></label><button class="r10-commerce-primary" id="r10ProposalSend" type="button">${t('Отправить КП','Send proposal')}</button><p class="r10-commerce-status" id="r10ProposalStatus" hidden></p>`);
+    await patchProject('commerce.proposal_status','DRAFT_READY','R10.3.2: customer chose Think / proposal requested');
+    openCommerce(`<p class="r9-kicker">BIZET OS · ${esc(identityRef(identity))}</p><h2>${t('Получить коммерческое предложение','Get commercial proposal')}</h2><p class="r9-muted">${t('Введите e-mail — BIZET OS отправит КП на него. Телефон можно оставить как контакт, но отправка КП по телефону будет подключена отдельно.','Enter an e-mail and BIZET OS will send the proposal there. A phone number can be saved as a contact, but phone delivery will be connected separately.')}</p><label class="r10-commerce-field"><span>${t('E-mail или телефон','E-mail or phone')}</span><input id="r10ProposalContact" inputmode="email" autocomplete="email" placeholder="name@example.com / +380…"></label><button class="r10-commerce-primary" id="r10ProposalSend" type="button">${t('Отправить КП','Send proposal')}</button><p class="r10-commerce-status" id="r10ProposalStatus" hidden></p>`);
     $('r10ProposalSend').onclick=async()=>{
-      const contact=String($('r10ProposalContact').value||'').trim(),status=$('r10ProposalStatus');
+      const button=$('r10ProposalSend'),contact=String($('r10ProposalContact').value||'').trim(),status=$('r10ProposalStatus');
       const validMail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact),digits=contact.replace(/\D/g,'');
       if(!validMail&&digits.length<8){status.hidden=false;status.textContent=t('Введите корректный e-mail или телефон.','Enter a valid e-mail or phone number.');return}
-      await patchProject('commerce.contact',contact,'R10.3 proposal contact');
-      await patchProject('commerce.proposal_status','CONTACT_CAPTURED','R10.3 proposal contact captured');
-      status.hidden=false;status.textContent=t('КП подготовлено и контакт сохранён. Канал фактической e-mail/SMS отправки подключается отдельным провайдером.','Proposal prepared and contact saved. The actual e-mail/SMS delivery channel requires a separate provider.');
+      button.disabled=true;status.hidden=false;status.textContent=t('Отправляю…','Sending…');
+      try{
+        await patchProject('commerce.contact',contact,'R10.3.2 proposal contact');
+        if(validMail){
+          const sent=await sendProposalEmail(contact,d);
+          status.textContent=t(`КП отправлено на ${contact}. ID: ${sent.message_id||'—'}`,`Proposal sent to ${contact}. ID: ${sent.message_id||'—'}`);
+        }else{
+          await patchProject('commerce.proposal_status','CONTACT_CAPTURED','R10.3.2 phone contact captured; delivery deferred');
+          status.textContent=t('Телефон сохранён. Для фактической отправки КП используйте e-mail; SMS/WhatsApp подключим отдельным каналом.','Phone saved. Use e-mail for actual proposal delivery; SMS/WhatsApp will be connected separately.');
+        }
+      }catch(error){status.textContent=error.message}
+      finally{button.disabled=false}
     };
   }
   async function showBuyFlow(){
