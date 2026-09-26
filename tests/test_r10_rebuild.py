@@ -636,14 +636,15 @@ def test_r1031_configuration_screen_scrolls_and_file_import_accepts_pdf_and_phot
     assert "canonical_room_model" in handoff
 
 
-def test_r1036_module_focus_renders_against_final_layout_without_tap():
+def test_r1038_module_focus_enters_without_legacy_dialog_or_second_tap():
     model = read("model.js")
     block = model[model.index("function openModule"):model.index("async function applyModuleCustomization")]
     assert "enterModuleFocus(selected)" in block
     assert "renderScene(false)" in block
-    assert "dialog.show()" in block
+    assert "dialog.show()" not in block
+    assert "showModal" not in block
     assert "scheduleRenderAfterLayout('focus-entry')" in block
-    assert "focus-entry-second-frame" in block
+    assert "runFocusPaintBurst(activeModule.id)" in block
     assert "scrollIntoView" not in block
 
 def test_r1036_viewport_and_stage_resize_rerender_without_exiting_focus():
@@ -730,9 +731,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1037_fastapi_reports_current_version():
+def test_r1038_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.3.7"' in main
+    assert 'version="R10.3.8"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -821,11 +822,12 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
     assert "pointer" not in scheduler.lower()
 
 
-def test_r1037_workspace_cache_busts_renderer_assets():
+def test_r1038_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=167" in html
-    assert "/static/pilot-3d.js?v=167" in html
-    assert "/static/workspace-r8.css?v=167" in html
+    assert "/static/model.js?v=168" in html
+    assert "/static/pilot-3d.js?v=168" in html
+    assert "/static/workspace-r8.css?v=168" in html
+    assert "/static/model-r5.js?v=168" in html
 
 
 def test_r1037_focus_transition_forces_new_canvas_backing_store():
@@ -867,3 +869,38 @@ def test_r1037_webkit_canvas_has_dedicated_compositor_layer():
     css = read("workspace-r8.css")
     assert "-webkit-transform:translateZ(0)" in css
     assert "-webkit-backface-visibility:hidden" in css
+
+
+def test_r1038_has_dedicated_focus_canvas_surface():
+    html = read("workspace-r8.html")
+    css = read("workspace-r8.css")
+    model = read("model.js")
+    assert 'id="modelCanvas"' in html
+    assert 'id="focusCanvas"' in html
+    assert "r10-focus-canvas" in html
+    assert "body.r10-module-focus .r10-kitchen-canvas" in css
+    assert "body.r10-module-focus .r10-focus-canvas" in css
+    focus = model[model.index("function renderModuleFocus"):model.index("function renderScene")]
+    assert "drawKitchenScene($('focusCanvas')" in focus
+    normal = model[model.index("function renderNormalKitchen"):model.index("function renderModuleFocus")]
+    assert "drawKitchenScene($('modelCanvas')" in normal
+
+
+def test_r1038_only_active_canvas_owns_gestures():
+    model = read("model.js")
+    block = model[model.index("const normalCanvas=$('modelCanvas')"):model.index("$('focusVariantOptions')")]
+    assert "function activeCanvas()" in block
+    assert "surface!==activeCanvas()" in block
+    assert "bindCanvasSurface(normalCanvas)" in block
+    assert "bindCanvasSurface(focusCanvas)" in block
+    assert "surface===normalCanvas" in block
+    assert "window.setTimeout(()=>openModule(id),0)" in block
+
+
+def test_r1038_focus_canvas_has_same_touch_and_pinch_contract():
+    css = read("workspace-r8.css")
+    bridge = read("model-r5.js")
+    assert "#modelCanvas,#focusCanvas{touch-action:none" in css
+    assert "focusCanvas=document.getElementById('focusCanvas')" in bridge
+    assert "canvasSet=new Set([canvas,focusCanvas].filter(Boolean))" in bridge
+    assert "pinchSurface?.dispatchEvent(new WheelEvent('wheel'" in bridge
