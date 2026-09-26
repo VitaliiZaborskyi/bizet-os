@@ -73,7 +73,7 @@
    const I=rt.getInputs(),C=rt.getContext();
    if(panel==='room'){
      const room=rt.getRoom(),importState=rt.getVisual().room_import||{};
-     html='<section class="r8-section"><h3>Как задать помещение</h3><div class="r8-choice-row r10-room-source"><button data-action="room-source-manual">Ручной ввод</button><button data-action="room-source-scan">Скан</button><button data-action="room-source-file">Загрузить файл</button></div><input id="r10RoomFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg,image/*,application/pdf" hidden><p class="r10-room-import-status" id="r10RoomImportStatus">'+esc(importState.message||'Три входа приводятся к единой Room Model.')+'</p></section>';
+     html='<section class="r8-section"><h3>Как задать помещение</h3><div class="r8-choice-row r10-room-source"><button data-action="room-source-manual">Шаблон</button><button data-action="room-source-scan">Скан</button><button data-action="room-source-file">Загрузить файл</button></div><input id="r10RoomFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg,image/*,application/pdf" hidden><p class="r10-room-import-status" id="r10RoomImportStatus">'+esc(importState.message||'Три входа приводятся к единой Room Model.')+'</p></section>';
      html+='<section class="r8-section"><h3>Геометрия</h3><div class="r8-two">'+numberField('Длина основной стены, мм','__room_length',room.lengthMm,1000)+numberField('Глубина помещения, мм','__room_depth',room.depthMm,1000)+'</div>'+numberField('Высота помещения, мм','__room_height',room.heightMm,2000)+'</section>';
      html+='<section class="r8-section r10-file-calibration" '+(importState.source==='FILE'?'':'hidden')+'><h3>Калибровка файла</h3><p>Укажите один известный реальный размер. После анализа BIZET OS пересчитает Room Model.</p><label class="r8-field"><span>Известный размер, мм</span><input id="r10KnownDimension" type="number" inputmode="numeric" min="300" step="1" value="'+esc(importState.known_dimension_mm||room.lengthMm)+'"></label><button class="r8-save" data-action="calibrate-import">Применить масштаб</button>'+(importState.status==='ROOM_MODEL_PREVIEW_READY'?'<button class="r8-secondary" data-action="confirm-import">Подтвердить помещение</button>':'')+'</section>';
      html+='<section class="r8-section"><h3>Потолок</h3>'+field('Тип потолка','ceiling',[['STRETCH_A','Натяжной — подготовленное основание'],['STRETCH_B','Готовый натяжной'],['GYPSUM','Гипсокартон'],['OPEN_GAP','Открытый зазор']])+'</section>';
@@ -144,10 +144,10 @@
  function renderElements(){const n=$('elementList');if(!n)return;const els=rt.getElements();n.innerHTML=els.length?els.map((e,i)=>'<div class="r8-field"><span>'+(i+1)+'. '+esc(e.type)+' · стена '+esc(e.wall)+'</span><button class="r8-save" data-remove-element="'+i+'">Удалить</button></div>').join(''):'<p>Пока нет дополнительных элементов.</p>';n.querySelectorAll('[data-remove-element]').forEach(b=>b.onclick=async()=>{pushUndo();const a=[...rt.getElements()];a.splice(Number(b.dataset.removeElement),1);await rt.patchElements(a);renderElements();updateReadiness()})}
  async function runAction(a){
    if(a==='room-source-manual'){
-     await rt.patchVisual({room_import:{source:'MANUAL',status:'ACTIVE',target_model:'ROOM_MODEL',message:'Ручной ввод активен. Все размеры записываются в единую Room Model.'}});refreshPanel();return;
+     await rt.patchVisual({room_import:{source:'TEMPLATE',status:'ACTIVE',target_model:'ROOM_MODEL',message:'Шаблон активен. Размеры уточняются в параметрах помещения.'}});refreshPanel();return;
    }
    if(a==='room-source-scan'){
-     await rt.patchVisual({room_import:{source:'SCAN',status:'SCAN_CONNECTOR_REQUIRED',target_model:'ROOM_MODEL',message:'Скан помещения выбран. Коннектор сканирования подключается отдельным слоем; Room Model уже готова принять геометрию.'}});refreshPanel();return;
+     const status=$('r10RoomImportStatus');if(status)status.textContent='Скан — в стадии разработки.';return;
    }
    if(a==='room-source-file'){$('r10RoomFileInput')?.click();return}
    if(a==='calibrate-import'){
@@ -184,11 +184,7 @@
      pushUndo();await rt.patchElements([...rt.getElements(),el]);renderElements();updateReadiness();return;
    }
  }
- function updateReadiness(){
-   const I=rt.getInputs(),E=rt.getElements(),V=rt.getVisual();let score=24;
-   if(I.ceiling)score+=8;if(I.fridge_present)score+=8;if(I.sink_mount_type)score+=8;if(I.cooktop_type)score+=8;if(I.dishwasher_type)score+=6;if(I.hood_type)score+=6;if(I.oven_location)score+=6;if(I.appliances_confirmation_status==='USER_CONFIRMED')score+=10;if(I.communications_status==='USER_CONFIRMED')score+=8;if(E.length)score+=4;if(V.materials_confirmation_status)score+=3;
-   score=Math.min(100,score);$('readinessValue').textContent=score+'%';$('readinessBar').style.width=score+'%';
- }
+ function updateReadiness(){ /* R10.3.4: no visible project-readiness UI. */ }
  async function ensureTemplate(){
    const I=rt.getInputs(),patch={};
    const defaults={ceiling:'OPEN_GAP',fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600};
