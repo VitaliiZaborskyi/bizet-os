@@ -563,27 +563,29 @@ def test_r1031_functional_triangle_warning_is_completely_suppressed():
     assert "Эргономический контур холодильник–мойка–варочная" not in model
     assert "SINK_COOKTOP_HARD" in model
 
-def test_r1033_canvas_owns_touch_stream_vertical_scrolls_page_other_motion_rotates():
+def test_r1034_canvas_owns_3d_gestures_and_page_scroll_stays_outside_canvas():
     model = read("model.js")
     css = read("workspace-r8.css")
     assert "#modelCanvas{touch-action:none" in css
     start = model.rindex("const canvas=$('modelCanvas')")
     gesture = model[start:model.index("$('modelDimensionsToggle')", start)]
-    assert "Math.abs(dy)>Math.abs(dx)*1.25" in gesture
-    assert "drag.mode='SCROLL'" in gesture
+    assert "drag.mode='SCROLL'" not in gesture
+    assert "window.scrollTo" not in gesture
     assert "drag.mode='ROTATE'" in gesture
-    assert "window.scrollTo(0,Math.max(0,drag.scrollTop-dy))" in gesture
     assert "canvas.setPointerCapture" in gesture
     assert "event.preventDefault()" in gesture
+    assert "if(viewMode===VIEW_FOCUS)cam.pitch=clamp" in gesture
+    assert "else cam.pitch=drag.pitch" in gesture
     assert "pointerdown" in gesture and "pointermove" in gesture
 
-def test_r1031_workspace_labels_progress_and_randomizer_contract():
+def test_r1034_workspace_labels_remove_readiness_and_keep_randomizer_contract():
     html = read("workspace-r8.html")
     css = read("workspace-r8.css")
     assert "Настройки проекта" in html
     assert "Список модулей" in html
-    assert ".r8-progress{height:9px" in css
-    assert ".r8-progress,.r8-progress i{border-radius:999px}" in css
+    assert "Готовность проекта" not in html
+    assert 'id="readinessValue"' not in html
+    assert 'id="readinessBar"' not in html
     assert ".r8-random{background:#f3f1ec;color:#171716" in css
 
 def test_r1031_upper_handles_move_to_bottom_edge_and_focus_has_hangers_no_rail():
@@ -681,3 +683,49 @@ def test_r1032_think_flow_calls_real_proposal_send_endpoint():
     assert "sendProposalEmail(contact,d)" in think
     assert "КП отправлено" in think
     assert "MAIL_PROVIDER_NOT_CONFIGURED" in business
+
+
+def test_r1034_room_source_screen_precedes_kitchen_configuration():
+    handoff = read("start-room-handoff.js")
+    assert "function renderRoomSourceScreen" in handoff
+    assert "function renderConfigurationScreen" in handoff
+    source = handoff[handoff.index("function renderRoomSourceScreen"):handoff.index("function buildScreenFive")]
+    assert "Шаблон" in source
+    assert "Загрузить файл" in source
+    assert "Скан" in source
+    assert "Скан — в стадии разработки." in source
+    assert "startRoomFileInput" in source
+    assert "bindStartRoomImport(screen)" in source
+    build = handoff[handoff.index("function buildScreenFive"):handoff.index("function destroyScreenFive")]
+    assert "renderRoomSourceScreen(screen)" in build
+
+
+def test_r1034_workspace_room_source_uses_template_and_scan_is_wip():
+    js = read("workspace-r8.js")
+    assert 'data-action="room-source-manual">Шаблон</button>' in js
+    assert "source:'TEMPLATE'" in js
+    assert "Скан — в стадии разработки." in js
+    assert "SCAN_CONNECTOR_REQUIRED" not in js
+
+
+def test_r1034_background_personalization_has_six_bizet_presets():
+    shell = read("pilot-r8-shell.js")
+    html = read("workspace-r8.html")
+    for token in ["BIZET_BLUE","GRAPHITE","ARCTIC","AURORA","SAND","DEEP_NIGHT"]:
+        assert token in shell
+    assert "bizet_os_background" in shell
+    assert "data-bizet-background" in shell
+    assert "workspaceBackgroundHost" in html
+    assert 'id="workspaceThemeSelect"' in html
+
+
+def test_r1034_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
+    css = read("workspace-r8.css")
+    assert "height:clamp(300px,50svh,430px)" in css
+    assert "padding:8px 12px calc(84px + env(safe-area-inset-bottom))" in css
+    assert "overflow:hidden" not in css[css.index("/* R10.3.4: mobile workspace targets one-screen use"):]
+
+
+def test_r1034_fastapi_reports_current_version():
+    main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
+    assert 'version="R10.3.4"' in main
