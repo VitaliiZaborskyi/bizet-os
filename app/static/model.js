@@ -806,8 +806,7 @@
     window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'module-edit-save',module_id:id}}));
   }
   function cancelModuleDraft(){
-    moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;
-    enterNormalKitchenView();syncFocusControls();renderScene(false);
+    exitModuleFocus();
   }
   function applyFocusPreset(id){
     if(viewMode!==VIEW_FOCUS||!activeModule||!moduleDraft)return;
@@ -1082,7 +1081,8 @@
     cancelModuleDraft();
   });
   function exitModuleFocus(){
-    cancelModuleDraft();
+    moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;
+    enterNormalKitchenView();syncFocusControls();renderScene(false);
   }
   $('moduleClose').addEventListener('click',()=>{
     const dialog=$('moduleDialog');
