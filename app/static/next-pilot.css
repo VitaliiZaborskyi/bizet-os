@@ -200,3 +200,12 @@ body.communications-only .wall-workflow { margin-top:0 !important; }
   body[data-start-kind="visual_direction"] .choice-grid[data-count="3"] .card-content{padding:9px 13px!important}
   body[data-start-kind="visual_direction"] .choice-grid[data-count="3"] .card-title{font-size:18px!important}
 }
+
+/* R10.3.2 detected room geometry overlay + confirmation */
+.start-room-file-preview{position:relative}
+.start-room-analysis-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.start-room-analysis-overlay line{stroke:#2f7cff;stroke-width:4;vector-effect:non-scaling-stroke;opacity:.75}
+.start-room-analysis-overlay polygon{fill:rgba(47,124,255,.10);stroke:#2f7cff;stroke-width:5;vector-effect:non-scaling-stroke}
+.start-room-confirm{border:0;border-radius:999px;background:#171716;color:#fff;padding:12px 18px;font-weight:750;cursor:pointer;margin:10px 0 0 8px}
+.start-room-confirm[hidden]{display:none!important}
+@media(max-width:700px){.start-room-confirm{width:100%;margin:8px 0 0}}
