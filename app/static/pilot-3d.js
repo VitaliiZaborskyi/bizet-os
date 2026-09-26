@@ -289,16 +289,18 @@
     });
     const front=moduleFrontFace(facadeFaces,module);
 
-    // R10.4.0: ordinary lower carcasses always have two ribs — front and rear.
-    // Sink and lower-oven modules keep their own construction rules.
-    if(module.level!=='upper'&&!module.tall){
-      const railT=t,ordinaryOven=module.kind==='COOKTOP'&&module.oven_appliance_present;
-      if(module.kind==='SINK'){
-        panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
-        panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
-      }else if(!ordinaryOven){
-        panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
-        panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+    // Structural rails/ribs — R10.4.0: ordinary lower carcasses always have two, front and rear.
+    // Sink and lower-oven modules keep their own construction rules; ordinary upper modules have none.
+    if(module.level!=='upper'){
+      if(!module.tall){
+        const railT=t,ordinaryOven=module.kind==='COOKTOP'&&module.oven_appliance_present;
+        if(module.kind==='SINK'){
+          panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+          panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+        }else if(!ordinaryOven){
+          panel({x:x+t,y:y+26,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+          panel({x:x+t,y:y+d-70,z:z+h-railT*2,w:Math.max(20,w-2*t),d:45,h:railT},'rgba(175,180,180,.24)');
+        }
       }
     }
     if(module.kind==='COOKTOP'&&module.oven_appliance_present){
@@ -342,7 +344,7 @@
       panel({x:x+w-30,y:y+64,z:dz+25,w:10,d:Math.max(40,d-120),h:12},'rgba(65,70,74,.55)');
     }
 
-    // Drawer box height is a HARD rule: facade height minus exactly 50 mm.
+    // Phase 8 drawer internals: complete box + slides. HARD rule: box height = facade height minus exactly 50 mm.
     if(module.kind==='DRAWERS'){
       const count=Math.max(2,Math.min(5,Number(module.drawer_count)||2));
       const facadeH=Math.floor((h-5-3*(count-1))/count),boxH=Math.max(1,facadeH-50),innerD=Math.max(60,d-82);
