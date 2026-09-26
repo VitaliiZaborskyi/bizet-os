@@ -174,3 +174,6 @@ body.r10-module-focus #moduleStrip{display:none!important}
   .r8-stage{height:43svh;min-height:250px}
   body.r10-module-focus .r8-stage{height:54svh;min-height:300px}
 }
+
+/* R10.3.7 — keep the 2D canvas on its own WebKit compositor layer during focus repaint. */
+#modelCanvas{-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden}
