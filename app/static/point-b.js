@@ -217,16 +217,16 @@
   }
 
   function countHardware(modules,details){
-    const H={CONFIRMAT:0,MINIFIX:0,DOWEL:0,RAFIX:0,SCREW:0,HINGE:0,HINGE_CUP:0,LEG:0,LEG_CLIP:0,HANDLE:0,SHELF_SUPPORT:0,DRAWER_SLIDE:0,METAL_DRAWER:0,EURO_SCREW:0,HOLE:0,GROOVE_M:0,HANGER:0,HANGER_PLATE:0,WALL_DOWEL:0};
+    const H={CONFIRMAT:0,MINIFIX:0,DOWEL:0,RAFIX:0,SCREW:0,HINGE:0,HINGE_CUP:0,LEG:0,LEG_CLIP:0,HANDLE:0,SHELF_SUPPORT:0,DRAWER_SLIDE:0,METAL_DRAWER:0,EURO_SCREW:0,LIFT_MECH:0,HOLE:0,GROOVE_M:0,HANGER:0,HANGER_PLATE:0,WALL_DOWEL:0};
     modules.filter(m=>m.wall==='A').forEach(m=>{
       const D=depth(m),perSide=fastenersPerSide(D);
       if(m.level!=='upper'&&!m.tall&&!['DISHWASHER','FRIDGE','FILLER'].includes(m.kind)){
         let addedConfirmats=0;
         if(m.kind==='SINK')addedConfirmats=2*perSide+6;
         else if(m.kind==='DRAWERS')addedConfirmats=2*perSide+4;
+        else if(m.kind==='COOKTOP'&&m.oven_appliance_present)addedConfirmats=2*perSide+4;
         else addedConfirmats=4*perSide+4;
-        H.CONFIRMAT+=addedConfirmats;
-        H.HOLE+=addedConfirmats;
+        H.CONFIRMAT+=addedConfirmats;H.HOLE+=addedConfirmats;
         const legs=runW(m)>700?6:4;H.LEG+=legs;H.LEG_CLIP+=Math.ceil(legs/2);H.SCREW+=legs*4+Math.ceil(legs/2)*2;
       }
       if(m.level==='upper'){
@@ -237,24 +237,38 @@
       if(m.kind==='TALL_OVEN'){H.DRAWER_SLIDE+=1;H.EURO_SCREW+=6;H.SCREW+=4;H.HOLE+=12;H.MINIFIX+=4;H.DOWEL+=8;H.CONFIRMAT+=4;}
       if(m.kind==='DRAWERS'){
         const drawers=Math.max(2,Math.min(5,Number(m.drawer_count)||2));H.DRAWER_SLIDE+=drawers;H.EURO_SCREW+=drawers*6;H.SCREW+=drawers*4;H.HOLE+=drawers*12;
-        const facadeH=Math.floor((m.h-TOP_GAP-GAP)/2),tallDrawer=facadeH>=150;
-        H.MINIFIX+=drawers*(tallDrawer?8:4);H.DOWEL+=drawers*(4+4);H.CONFIRMAT+=drawers*4;
+        const facadeH=Math.floor((m.h-TOP_GAP-GAP*(drawers-1))/drawers),tallDrawer=facadeH>=150;
+        H.MINIFIX+=drawers*(tallDrawer?8:4);H.DOWEL+=drawers*8;H.CONFIRMAT+=drawers*4;
+      }
+      if(m.tall&&!['TALL_OVEN','FRIDGE'].includes(m.kind)&&m.tall_drawer_mode&&m.tall_drawer_mode!=='NONE'){
+        const drawers=Math.max(1,Math.min(3,Number(m.tall_drawer_count)||2));H.DRAWER_SLIDE+=drawers;H.EURO_SCREW+=drawers*6;H.SCREW+=drawers*4;H.HOLE+=drawers*12;H.MINIFIX+=drawers*8;H.DOWEL+=drawers*8;H.CONFIRMAT+=drawers*4;
       }
     });
     const facades=details.filter(d=>/Facade/i.test(d.name));
     facades.forEach(d=>{
-      const h=d.length,w=d.width,qty=d.qty;
-      const each=Math.max(h,w)>900?4:2;H.HINGE+=each*qty;H.HINGE_CUP+=each*qty;H.HANDLE+=qty;H.SCREW+=0;
+      const h=d.length,w=d.width,qty=d.qty,process=String(d.processing||''),name=String(d.name||'');
+      const drawerFront=/Drawer/i.test(name),dishwasher=/Dishwasher/i.test(name),lift=/Подъём/i.test(process);
+      if(lift){
+        H.LIFT_MECH+=qty;
+        if(/Петли/i.test(process)){H.HINGE+=2*qty;H.HINGE_CUP+=2*qty}
+      }else if(!drawerFront&&!dishwasher){
+        const each=Math.max(h,w)>900?4:2;H.HINGE+=each*qty;H.HINGE_CUP+=each*qty;
+      }
+      if(!dishwasher)H.HANDLE+=qty;
     });
-    const shelves=details.filter(d=>/Shelf/i.test(d.name)&&/регули/i.test((d.processing||'')+(d.note||'')));
-    H.SHELF_SUPPORT+=shelves.reduce((s,d)=>s+d.qty*4,0);
+    const adjustable=details.filter(d=>/Shelf/i.test(d.name)&&/регули/i.test((d.processing||'')+(d.note||'')));
+    H.SHELF_SUPPORT+=adjustable.reduce((sum,d)=>sum+d.qty*4,0);
+    const fixed=details.filter(d=>/Shelf/i.test(d.name)&&/Жёстк/i.test((d.processing||'')+(d.note||'')));
+    const fixedFasteners=fixed.reduce((sum,d)=>sum+d.qty*4,0);H.CONFIRMAT+=fixedFasteners;H.HOLE+=fixedFasteners;
+    const middleSides=details.filter(d=>/Middle Side/i.test(d.name)).reduce((sum,d)=>sum+d.qty,0);
+    H.CONFIRMAT+=middleSides*4;H.HOLE+=middleSides*4;
     H.HOLE+=H.HINGE_CUP+H.HANDLE*2;
     H.M4_HANDLE=H.HANDLE*2;
     return H;
   }
-
-  function buildBOM(modules,details){
-    const areas={CARCAS:0,FACADE:0,DRAWER:0,HDF:0};
+  function buildBOM(modules,details,options={}){
+    const includeWorktop=options.includeWorktop!==false,includePlinth=options.includePlinth!==false;
+    const areas={CARCAS:0,FACADE:0,DRAWER:0,HDF:0,PLINTH:0};
     details.forEach(d=>{
       const a=area(d.length,d.width,d.qty);
       if(/HDF/i.test(d.material))areas.HDF+=a;
@@ -262,7 +276,8 @@
       else if(/Drawer/i.test(d.material))areas.DRAWER+=a;
       else areas.CARCAS+=a;
     });
-    const panelArea=areas.CARCAS+areas.FACADE+areas.DRAWER;
+    if(includePlinth)areas.PLINTH=modules.filter(m=>m.level!=='upper'&&m.kind!=='FRIDGE'&&Number(m.z)>0).reduce((sum,m)=>sum+runW(m)*Math.max(0,Number(m.z)||0)/1e6,0);
+    const panelArea=areas.CARCAS+areas.FACADE+areas.DRAWER+areas.PLINTH;
     const cutM=panelArea*6;
     const edgeM=panelArea*6*1.2;
     const hw=countHardware(modules,details);
@@ -271,8 +286,8 @@
       const wall=m.wall||'A';(worktopGroups[wall]||(worktopGroups[wall]=[])).push(m);
     });
     const worktopPlans=Object.values(worktopGroups).map(group=>window.BizetR10Rules?.worktopRunPlan?.(group)||{segments:[],joints:[]});
-    const worktopSlabs=Math.max(1,worktopPlans.reduce((sum,plan)=>sum+Math.max(1,plan.segments.length),0));
-    const worktopJoints=worktopPlans.reduce((sum,plan)=>sum+plan.joints.length,0);
+    const worktopSlabs=includeWorktop?Math.max(1,worktopPlans.reduce((sum,plan)=>sum+Math.max(1,plan.segments.length),0)):0;
+    const worktopJoints=includeWorktop?worktopPlans.reduce((sum,plan)=>sum+plan.joints.length,0):0;
     const worktopJointMap=Object.fromEntries(Object.entries(worktopGroups).map(([wall,group])=>{
       const plan=window.BizetR10Rules?.worktopRunPlan?.(group)||{joints:[]};return[wall,plan.joints.map(v=>Math.round(v))];
     }));
@@ -282,8 +297,9 @@
     add('Материалы','ЛДСП 18 Drawer',areas.DRAWER,'м²',PRICES.CARCAS_M2);
     add('Материалы','ЛДСП 18 Facade',areas.FACADE,'м²',PRICES.FACADE_M2);
     add('Материалы','HDF 3 mm',areas.HDF,'м²',PRICES.HDF_M2);
+    if(areas.PLINTH>0)add('Материалы','Цоколь',areas.PLINTH,'м²',PRICES.CARCAS_M2,`Высота по проекту: ${Math.max(0,...modules.map(m=>Number(m.z)||0))} мм`);
     add('Материалы','PVC 22×0.8',edgeM,'п.м',PRICES.EDGE_MATERIAL_M,'Эмпирика: площадь плит × 6 + 20%');
-    add('Материалы','Столешница EGGER 4100×600×38',worktopSlabs,'шт',PRICES.WORKTOP_SLAB,`Максимум 4100 мм без стыка; стыков по текущим прогонам: ${worktopJoints}`);
+    if(includeWorktop)add('Материалы','Столешница EGGER 4100×600×38',worktopSlabs,'шт',PRICES.WORKTOP_SLAB,`Максимум 4100 мм без стыка; стыков по текущим прогонам: ${worktopJoints}`);
     add('Работы','Распил',cutM,'п.м',PRICES.CUT_M,'Площадь плит × 6');
     add('Работы','Кромкование',edgeM,'п.м',PRICES.EDGE_LABOR_M);
     add('Работы','Обычные отверстия',hw.HOLE,'шт',PRICES.HOLE);
@@ -301,6 +317,7 @@
     add('Крепёж','Саморез',hw.SCREW,'шт',PRICES.SCREW);
     add('Крепёж','Евровинт 6.3×11',hw.EURO_SCREW,'шт',PRICES.EURO_SCREW);
     add('Фурнитура','Направляющие скрытого монтажа BLUM',hw.DRAWER_SLIDE,'компл',PRICES.DRAWER_SLIDE);
+    if(hw.LIFT_MECH)add('Фурнитура','Подъёмный механизм верхнего фасада',hw.LIFT_MECH,'компл',PRICES.LIFT_MECH,'PRICE TBD — точная система будет заморожена в библиотеке фурнитуры');
     if(hw.HANGER)add('Фурнитура','Навес верхнего модуля',hw.HANGER,'шт',0,'PRICE TBD — количество учитывается');
     if(hw.HANGER_PLATE)add('Фурнитура','Монтажная пластина навеса',hw.HANGER_PLATE,'шт',0,'PRICE TBD — количество учитывается');
     if(hw.WALL_DOWEL)add('Крепёж','Дюбель 8×60 + саморез 5/6×50',hw.WALL_DOWEL,'компл',0,'PRICE TBD — количество учитывается');
