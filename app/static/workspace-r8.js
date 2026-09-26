@@ -99,6 +99,63 @@
    const undoButton=$('undoButton');if(undoButton)undoButton.disabled=history.length===0;refreshPanel();updateReadiness();
  }
  function panelTitle(panel){return({room:['01 · ПОМЕЩЕНИЕ','Помещение'],appliances:['02 · ТЕХНИКА','Бытовая техника'],upper:['03 · ВЕРХНИЕ МОДУЛИ','Верхние модули'],communications:['04 · КОММУНИКАЦИИ','Коммуникации'],elements:['05 · ЭЛЕМЕНТЫ СТЕН','Элементы стен'],materials:['06 · МАТЕРИАЛЫ','Материалы']})[panel]}
+ function materialState(target){
+   const V=rt.getVisual(),room=V.room_surface_materials||{},furniture=V.furniture_materials||{};
+   return target==='floor'||target==='walls'||target==='ceiling'?{...(room[target]||{})}:{...(furniture[target]||{})};
+ }
+ function materialLabel(target){
+   const lib=MATERIAL_LIBRARY[target],state=materialState(target);
+   if(!lib)return'Не выбрано';
+   if(state.preset==='CUSTOM')return state.custom_texture_name||'Своя текстура';
+   for(const type of Object.values(lib.types)){
+     const found=type.presets.find(p=>p[0]===state.preset);
+     if(found)return found[1];
+   }
+   return'Не выбрано';
+ }
+ function materialButton(target){
+   const lib=MATERIAL_LIBRARY[target];
+   return '<button type="button" data-material-target="'+target+'">'+esc(lib.title)+'<strong>'+esc(materialLabel(target))+'</strong></button>';
+ }
+ function renderMaterialPicker(){
+   if(!materialPickerDraft)return;
+   const lib=MATERIAL_LIBRARY[materialPickerDraft.target],typeKey=materialPickerDraft.type||Object.keys(lib.types)[0],type=lib.types[typeKey];
+   materialPickerDraft.type=typeKey;
+   $('surfaceMaterialTitle').textContent=lib.title;
+   $('surfaceMaterialType').innerHTML=Object.entries(lib.types).map(([key,v])=>'<option value="'+key+'" '+(key===typeKey?'selected':'')+'>'+esc(v.label)+'</option>').join('');
+   $('surfaceMaterialSwatches').innerHTML=type.presets.map(([id,label,color])=>'<button class="r104-material-swatch '+(materialPickerDraft.preset===id?'is-selected':'')+'" type="button" data-material-preset="'+id+'" style="--swatch:'+color+'"><strong>'+esc(label)+'</strong></button>').join('');
+   $('surfaceMaterialSwatches').querySelectorAll('[data-material-preset]').forEach(btn=>btn.onclick=()=>{
+     materialPickerDraft={...materialPickerDraft,preset:btn.dataset.materialPreset,custom_texture_data_url:'',custom_texture_name:''};
+     renderMaterialPicker();
+   });
+   const status=$('surfaceTextureStatus');
+   if(status)status.textContent=materialPickerDraft.custom_texture_name||'JPG / PNG / WEBP · до 1.5 MB';
+ }
+ function openMaterialPicker(target){
+   const lib=MATERIAL_LIBRARY[target];if(!lib)return;
+   const current=materialState(target),defaultType=Object.keys(lib.types)[0];
+   let type=current.type&&lib.types[current.type]?current.type:defaultType;
+   if(current.preset&&current.preset!=='CUSTOM'){
+     for(const [key,value] of Object.entries(lib.types))if(value.presets.some(p=>p[0]===current.preset))type=key;
+   }
+   materialPickerDraft={target,type,preset:current.preset||lib.types[type].presets[0][0],custom_texture_name:current.custom_texture_name||'',custom_texture_data_url:current.custom_texture_data_url||''};
+   renderMaterialPicker();
+   const dialog=$('surfaceMaterialDialog');if(dialog&&!dialog.open)dialog.showModal();
+ }
+ async function applyMaterialPicker(){
+   if(!materialPickerDraft)return;
+   const target=materialPickerDraft.target,V=rt.getVisual(),value={type:materialPickerDraft.type,preset:materialPickerDraft.preset,custom_texture_name:materialPickerDraft.custom_texture_name||'',custom_texture_data_url:materialPickerDraft.custom_texture_data_url||''};
+   pushUndo();
+   if(target==='floor'||target==='walls'||target==='ceiling'){
+     await rt.patchVisual({room_surface_materials:{...(V.room_surface_materials||{}),[target]:value}});
+   }else{
+     await rt.patchVisual({furniture_materials:{...(V.furniture_materials||{}),[target]:value}});
+   }
+   materialPickerDraft=null;$('surfaceMaterialDialog')?.close();refreshPanel();saveCurrentVariantSlot();
+ }
+ function bindMaterialTargets(){
+   document.querySelectorAll('[data-material-target]').forEach(btn=>btn.onclick=()=>openMaterialPicker(btn.dataset.materialTarget));
+ }
  let activePanel=null;
  function renderPanel(panel){
    activePanel=panel;const h=panelTitle(panel);$('panelKicker').textContent=h[0];$('panelTitle').textContent=h[1];let html='';
@@ -106,7 +163,8 @@
    if(panel==='room'){
      const room=rt.getRoom(),importState=rt.getVisual().room_import||{};
      html='<section class="r8-section"><h3>Как задать помещение</h3><div class="r8-choice-row r10-room-source"><button data-action="room-source-manual">Шаблон</button><button data-action="room-source-scan">Скан</button><button data-action="room-source-file">Загрузить файл</button></div><input id="r10RoomFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg,image/*,application/pdf" hidden><p class="r10-room-import-status" id="r10RoomImportStatus">'+esc(importState.message||'Три входа приводятся к единой Room Model.')+'</p></section>';
-     html+='<section class="r8-section"><h3>Геометрия</h3><div class="r8-two">'+numberField('Длина основной стены, мм','__room_length',room.lengthMm,1000)+numberField('Глубина помещения, мм','__room_depth',room.depthMm,1000)+'</div>'+numberField('Высота помещения, мм','__room_height',room.heightMm,2000)+'</section>';
+     html+='<section class="r8-section"><h3>Геометрия</h3><div class="r8-two">'+numberField('Длина основной стены, мм','__room_length',room.lengthMm,1000)+numberField('Глубина помещения, мм','__room_depth',room.depthMm,1000)+'</div>'+numberField('Высота помещения, мм','__room_height',room.heightMm,2000)+numberField('Высота цоколя, мм','plinth_height_mm',100,0)+'</section>';
+     html+='<section class="r8-section"><h3>Поверхности помещения</h3><p>Выберите тип и тестовый материал или загрузите свою текстуру.</p><div class="r104-surface-buttons">'+materialButton('floor')+materialButton('walls')+materialButton('ceiling')+'</div></section>';
      html+='<section class="r8-section r10-file-calibration" '+(importState.source==='FILE'?'':'hidden')+'><h3>Калибровка файла</h3><p>Укажите один известный реальный размер. После анализа BIZET OS пересчитает Room Model.</p><label class="r8-field"><span>Известный размер, мм</span><input id="r10KnownDimension" type="number" inputmode="numeric" min="300" step="1" value="'+esc(importState.known_dimension_mm||room.lengthMm)+'"></label><button class="r8-save" data-action="calibrate-import">Применить масштаб</button>'+(importState.status==='ROOM_MODEL_PREVIEW_READY'?'<button class="r8-secondary" data-action="confirm-import">Подтвердить помещение</button>':'')+'</section>';
      html+='<section class="r8-section"><h3>Потолок</h3>'+field('Тип потолка','ceiling',[['STRETCH_A','Натяжной — подготовленное основание'],['STRETCH_B','Готовый натяжной'],['GYPSUM','Гипсокартон'],['OPEN_GAP','Открытый зазор']])+'</section>';
    }
@@ -131,9 +189,11 @@
    }
    if(panel==='materials'){
      const dir=rt.getVisual().r8_palette||C.visual_direction||'LIGHT';
-     html='<section class="r8-section"><h3>Визуальное направление</h3><p>Выбрано на стартовом экране: <strong>'+esc(dir==='DARK'?'Тёмное':dir==='OTHER'?'Другое':'Светлое')+'</strong>.</p><div class="r8-choice-row"><button data-action="palette-light">Светлое</button><button data-action="palette-dark">Тёмное</button><button data-action="palette-other">Другое</button></div></section><section class="r8-section"><h3>Материалы и фурнитура</h3><p>В этом пилоте сохраняем направление и подтверждение. Каталоги конкретных декоров подключаются следующим слоем.</p><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
+     html='<section class="r8-section"><h3>Визуальное направление</h3><p>Выбрано на стартовом экране: <strong>'+esc(dir==='DARK'?'Тёмное':dir==='OTHER'?'Другое':'Светлое')+'</strong>.</p><div class="r8-choice-row"><button data-action="palette-light">Светлое</button><button data-action="palette-dark">Тёмное</button><button data-action="palette-other">Другое</button></div></section>';
+     html+='<section class="r8-section"><h3>Материалы мебели</h3><p>Тестовый набор для связки модель → спецификация → будущая визуализация.</p><div class="r104-surface-buttons">'+materialButton('facade')+materialButton('carcass')+materialButton('worktop')+'</div></section>';
+     html+='<section class="r8-section"><h3>Подтверждение</h3><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
    }
-   $('panelBody').innerHTML=html;bindInputs();
+   $('panelBody').innerHTML=html;bindInputs();bindMaterialTargets();
    if(panel==='room')bindRoomImport();
    if(panel==='elements')renderElements();
    $('editorPanel').hidden=false;
@@ -219,7 +279,7 @@
  function updateReadiness(){ /* R10.3.4: no visible project-readiness UI. */ }
  async function ensureTemplate(){
    const I=rt.getInputs(),patch={};
-   const defaults={ceiling:'OPEN_GAP',fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600};
+   const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600};
    Object.keys(defaults).forEach(k=>{if(I[k]===undefined||I[k]===null||I[k]==='')patch[k]=defaults[k]});if(Object.keys(patch).length)await rt.patchInputs(patch,'R8 base template');
  }
  function renderVariantDots(){
@@ -263,6 +323,24 @@
    updateReadiness();refreshPanel();renderVariantDots();
  }
  $('randomVariant').onclick=()=>applyVariant((variantPos+1)%5);
+ $('surfaceMaterialClose')?.addEventListener('click',()=>{materialPickerDraft=null;$('surfaceMaterialDialog')?.close()});
+ $('surfaceMaterialCancel')?.addEventListener('click',()=>{materialPickerDraft=null;$('surfaceMaterialDialog')?.close()});
+ $('surfaceMaterialApply')?.addEventListener('click',()=>applyMaterialPicker().catch(error=>alert(error.message)));
+ $('surfaceMaterialType')?.addEventListener('change',event=>{
+   if(!materialPickerDraft)return;
+   const type=event.target.value,lib=MATERIAL_LIBRARY[materialPickerDraft.target];
+   materialPickerDraft={...materialPickerDraft,type,preset:lib.types[type].presets[0][0],custom_texture_name:'',custom_texture_data_url:''};
+   renderMaterialPicker();
+ });
+ $('surfaceTextureInput')?.addEventListener('change',event=>{
+   const file=event.target.files?.[0];if(!file||!materialPickerDraft)return;
+   const status=$('surfaceTextureStatus');
+   if(file.size>1572864){if(status)status.textContent='Файл больше 1.5 MB — выберите меньший.';event.target.value='';return}
+   const reader=new FileReader();
+   reader.onload=()=>{materialPickerDraft={...materialPickerDraft,preset:'CUSTOM',custom_texture_name:file.name,custom_texture_data_url:String(reader.result||'')};renderMaterialPicker()};
+   reader.onerror=()=>{if(status)status.textContent='Не удалось прочитать текстуру.'};
+   reader.readAsDataURL(file);
+ });
  $('baseInfoButton').onclick=()=>{$('baseInfoPopover').hidden=false};$('baseInfoClose').onclick=()=>{$('baseInfoPopover').hidden=true};
  $('panelClose').onclick=()=>{$('editorPanel').hidden=true;activePanel=null;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>rt?.render?.())};
  document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.onclick=()=>selectPanel(b.dataset.panel));
