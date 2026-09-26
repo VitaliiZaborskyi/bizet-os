@@ -323,21 +323,17 @@
   }
 
   function drawWorktop(ctx,projector,group){
-    const MAX=4100,base=group.filter(m=>m.level!=='upper'&&!m.tall);if(!base.length)return;const c=colors(),p=projector.point;
+    const base=group.filter(m=>m.level!=='upper'&&!m.tall);if(!base.length)return;const c=colors(),p=projector.point;
+    const plan=window.BizetR10Rules?.worktopRunPlan?.(base)||{segments:[],joints:[]};
+    if(!plan.segments.length)return;
     if(base[0].wall==='A'){
-      const minX=Math.min(...base.map(m=>m.x)),maxX=Math.max(...base.map(m=>m.x+m.w)),minY=Math.min(...base.map(m=>m.y)),depth=Math.max(...base.map(m=>m.d)),z=Math.max(...base.map(m=>m.z+m.h)),span=maxX-minX;
-      for(let off=0;off<span;off+=MAX){
-        const len=Math.min(MAX,span-off);
-        drawBox(ctx,projector,{x:minX+off,y:minY-18,z,w:len,d:depth+36,h:26},{body:c.worktop,side:c.worktop,front:c.worktop,top:'#373737',stroke:'rgba(0,0,0,.25)'});
-        if(off>0){const j=minX+off;line(ctx,p([j,minY-18,z+27]),p([j,minY+depth+18,z+27]),'#e8e8e8',2.3)}
-      }
+      const minY=Math.min(...base.map(m=>m.y)),depth=Math.max(...base.map(m=>m.d)),z=Math.max(...base.map(m=>m.z+m.h));
+      plan.segments.forEach(seg=>drawBox(ctx,projector,{x:seg.start,y:minY-18,z,w:seg.length,d:depth+36,h:26},{body:c.worktop,side:c.worktop,front:c.worktop,top:'#373737',stroke:'rgba(0,0,0,.25)'}));
+      plan.joints.forEach(j=>line(ctx,p([j,minY-18,z+27]),p([j,minY+depth+18,z+27]),'#e8e8e8',2.3));
     }else{
-      const minY=Math.min(...base.map(m=>m.y)),maxY=Math.max(...base.map(m=>m.y+m.d)),x=Math.min(...base.map(m=>m.x))-18,w=Math.max(...base.map(m=>m.w))+36,z=Math.max(...base.map(m=>m.z+m.h)),span=maxY-minY;
-      for(let off=0;off<span;off+=MAX){
-        const len=Math.min(MAX,span-off);
-        drawBox(ctx,projector,{x,y:minY+off,z,w,d:len,h:26},{body:c.worktop,side:c.worktop,front:c.worktop,top:'#373737',stroke:'rgba(0,0,0,.25)'});
-        if(off>0){const j=minY+off;line(ctx,p([x,j,z+27]),p([x+w,j,z+27]),'#e8e8e8',2.3)}
-      }
+      const x=Math.min(...base.map(m=>m.x))-18,w=Math.max(...base.map(m=>m.w))+36,z=Math.max(...base.map(m=>m.z+m.h));
+      plan.segments.forEach(seg=>drawBox(ctx,projector,{x,y:seg.start,z,w,d:seg.length,h:26},{body:c.worktop,side:c.worktop,front:c.worktop,top:'#373737',stroke:'rgba(0,0,0,.25)'}));
+      plan.joints.forEach(j=>line(ctx,p([x,j,z+27]),p([x+w,j,z+27]),'#e8e8e8',2.3));
     }
   }
   function drawPlinth(ctx,projector,group){
