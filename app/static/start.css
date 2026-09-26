@@ -252,3 +252,119 @@ h1 { margin: 0; font-size: clamp(34px, 5vw, 64px); line-height: .98; letter-spac
   body[data-start-kind="visual_direction"] .footer{display:none!important}
 }
 .brand span{color:#2f7cff!important}
+
+
+/* R10.3.9 — one-screen selection grammar for all not-yet-approved Start choices.
+   Four equal choices + one compact OS-blue full-width action. */
+body[data-start-kind="product_type"] .choice-grid[data-count="5"],
+body[data-start-kind="complexity_category"] .choice-grid[data-count="5"]{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  max-width:1120px;
+  margin-inline:auto;
+}
+body[data-start-kind="product_type"] .choice-grid[data-count="5"] .choice-card:not(.r1039-wide-choice),
+body[data-start-kind="complexity_category"] .choice-grid[data-count="5"] .choice-card:not(.r1039-wide-choice){
+  min-height:clamp(180px,29vh,270px);
+}
+.choice-card.r1039-wide-choice{
+  grid-column:2 / span 2;
+  min-height:54px;
+  height:54px;
+  border-radius:16px;
+  background:#2f7cff;
+  box-shadow:0 5px 0 rgba(20,72,168,.30),0 10px 24px rgba(47,124,255,.18);
+}
+.choice-card.r1039-wide-choice::before,
+.choice-card.r1039-wide-choice::after{display:none}
+.choice-card.r1039-wide-choice .card-content{
+  position:static;
+  width:100%;
+  height:100%;
+  padding:0 18px;
+  display:grid;
+  place-items:center;
+  color:#fff;
+}
+.choice-card.r1039-wide-choice .card-title{
+  font-size:19px;
+  font-weight:760;
+  text-shadow:none;
+}
+.choice-grid[data-kind="complexity_category"] .choice-card.r1039-wide-choice .card-content{
+  position:static;
+  inset:auto;
+  padding:0 18px;
+}
+.choice-grid[data-kind="complexity_category"] .choice-card.r1039-wide-choice .card-title{
+  font-size:20px;
+  font-weight:760;
+  text-shadow:none;
+}
+.choice-card.r1039-wide-choice:active{
+  transform:translateY(4px);
+  box-shadow:0 1px 0 rgba(20,72,168,.30),0 5px 12px rgba(47,124,255,.18);
+}
+
+@media (max-width:700px) and (max-height:950px){
+  body[data-start-kind="product_type"],
+  body[data-start-kind="complexity_category"]{height:100dvh;overflow:hidden}
+  body[data-start-kind="product_type"] .app-shell,
+  body[data-start-kind="complexity_category"] .app-shell{min-height:100dvh;height:100dvh;overflow:hidden}
+  body[data-start-kind="product_type"] .topbar,
+  body[data-start-kind="complexity_category"] .topbar{height:58px;min-height:58px}
+  body[data-start-kind="product_type"] .experience,
+  body[data-start-kind="complexity_category"] .experience{
+    width:min(100% - 20px,620px);
+    height:calc(100dvh - 58px);
+    min-height:0;
+    padding:8px 0 10px;
+    margin:0 auto;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  body[data-start-kind="product_type"] .intro,
+  body[data-start-kind="complexity_category"] .intro{margin:0 auto 9px;flex:0 0 auto}
+  body[data-start-kind="product_type"] .step-meta,
+  body[data-start-kind="product_type"] .progress,
+  body[data-start-kind="complexity_category"] .step-meta,
+  body[data-start-kind="complexity_category"] .progress{display:none!important}
+  body[data-start-kind="product_type"] h1,
+  body[data-start-kind="complexity_category"] h1{font-size:clamp(27px,7.8vw,36px);line-height:.96}
+  body[data-start-kind="product_type"] .intro p,
+  body[data-start-kind="complexity_category"] .intro p{
+    font-size:12.5px;
+    line-height:1.22;
+    margin:7px auto 0;
+    max-width:350px;
+  }
+  body[data-start-kind="product_type"] .choice-grid[data-count="5"],
+  body[data-start-kind="complexity_category"] .choice-grid[data-count="5"]{
+    flex:1 1 auto;
+    min-height:0;
+    width:100%;
+    max-width:none;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:repeat(2,minmax(0,1fr)) 48px;
+    gap:8px;
+    align-content:stretch;
+  }
+  body[data-start-kind="product_type"] .choice-grid[data-count="5"] .choice-card:not(.r1039-wide-choice),
+  body[data-start-kind="complexity_category"] .choice-grid[data-count="5"] .choice-card:not(.r1039-wide-choice){
+    min-height:0;
+    height:100%;
+    border-radius:18px;
+  }
+  body[data-start-kind="product_type"] .choice-grid[data-count="5"] .r1039-wide-choice,
+  body[data-start-kind="complexity_category"] .choice-grid[data-count="5"] .r1039-wide-choice{
+    grid-column:1 / -1;
+    min-height:48px;
+    height:48px;
+    border-radius:15px;
+  }
+  body[data-start-kind="product_type"] .choice-grid[data-count="5"] .r1039-wide-choice .card-title,
+  body[data-start-kind="complexity_category"] .choice-grid[data-count="5"] .r1039-wide-choice .card-title{font-size:17px}
+  body[data-start-kind="product_type"] .footer,
+  body[data-start-kind="complexity_category"] .footer{display:none!important}
+}
