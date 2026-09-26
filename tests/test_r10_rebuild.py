@@ -721,16 +721,17 @@ def test_r1034_background_personalization_has_six_bizet_presets():
     assert 'id="workspaceThemeSelect"' in html
 
 
-def test_r1034_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
+def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     css = read("workspace-r8.css")
-    assert "height:clamp(300px,50svh,430px)" in css
-    assert "padding:8px 12px calc(84px + env(safe-area-inset-bottom))" in css
-    assert "overflow:hidden" not in css[css.index("/* R10.3.4: mobile workspace targets one-screen use"):]
+    assert "height:clamp(280px,47svh,400px)" in css
+    assert "padding:6px 12px calc(78px + env(safe-area-inset-bottom))" in css
+    mobile = css[css.index("/* R10.3.5 — tighter mobile workspace"):]
+    assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1034_fastapi_reports_current_version():
+def test_r1035_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.3.4"' in main
+    assert 'version="R10.3.5"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
