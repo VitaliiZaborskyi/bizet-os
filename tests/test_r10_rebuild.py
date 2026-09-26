@@ -465,7 +465,7 @@ def test_r103_focus_uses_18mm_rib_and_oven_shelf_below_appliance():
 
 def test_r103_room_acquisition_has_manual_scan_file_and_single_dimension_calibration():
     workspace = read("workspace-r8.js")
-    for token in ["Ручной ввод","Скан","Загрузить файл","r10RoomFileInput","classifyRoomFile","ROOM_MODEL","calibrate-import","Известная длина стены A"]:
+    for token in ["Ручной ввод","Скан","Загрузить файл","r10RoomFileInput","classifyRoomFile","ROOM_MODEL","calibrate-import","Известный размер"]:
         assert token in workspace
     assert ".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg" in workspace
     assert "known_dimension_mm" in workspace
