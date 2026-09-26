@@ -614,12 +614,15 @@ function renderConfigurationScreen(screen) {
       <p class="config-screen-help">${isRu()?'Вид сверху. Выберите схему, которая ближе всего к вашему помещению.':'Top view. Choose the plan closest to your room.'}</p>
     </div>
     <div class="configuration-choice-grid" id="startConfigurationQuest">
-      ${CONFIGS.map(config=>`
+      ${CONFIGS.filter(config=>config.code!=='CUSTOM').map(config=>`
         <button class="configuration-choice-card" type="button" data-start-config="${config.code}" aria-pressed="false">
           ${planMarkup(config)}
           <strong class="config-card-title">${isRu()?config.ru:config.en}</strong>
-          ${config.code==='CUSTOM'?`<small class="config-card-note">${isRu()?'Нестандартная форма — уточним дальше':'Non-standard layout — refine it later'}</small>`:''}
         </button>`).join('')}
+      <button class="configuration-choice-card configuration-custom-choice" type="button" data-start-config="CUSTOM" aria-pressed="false">
+        <span class="configuration-custom-pencil" aria-hidden="true">✎</span>
+        <strong class="config-card-title">${isRu()?'Своя конфигурация · скоро':'Custom configuration · soon'}</strong>
+      </button>
     </div>
     <p class="screen-five-error" id="configurationScreenFiveError" hidden></p>
     <p class="config-auto-note">${isRu()?'После выбора конфигурации BIZET OS откроет первый 3D-вариант.':'After choosing a configuration BIZET OS opens the first 3D option.'}</p>`;
