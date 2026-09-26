@@ -11,7 +11,7 @@ from app.api.routes_v11 import router as router_v11
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
 
-app = FastAPI(title="BIZET OS 1.1", version="R10.3.5")
+app = FastAPI(title="BIZET OS 1.1", version="R10.3.6")
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.include_router(router)
 app.include_router(router_v11)
