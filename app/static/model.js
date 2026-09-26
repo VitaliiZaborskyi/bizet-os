@@ -537,10 +537,14 @@
     o.value=openingOverrides()[activeModule.id]||activeModule.opening||'AUTO';
     pos.value=Number(offsets()[activeModule.id])||0;
     setValidation('');
-    renderScene(false);
     const dialog=$('moduleDialog');
     if(dialog.open)dialog.close();
     if(typeof dialog.show==='function')dialog.show();else dialog.showModal?.();
+    document.querySelector('.r8-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
+    requestAnimationFrame(()=>{
+      renderScene(false);
+      requestAnimationFrame(()=>renderScene(false));
+    });
   }
   async function applyModuleCustomization(){
     if(!activeModule)return;
@@ -630,7 +634,7 @@
     const dx=event.clientX-drag.x,dy=event.clientY-drag.y,dist=Math.hypot(dx,dy);
     if(dist<10)return;
     if(!drag.mode){
-      if(Math.abs(dy)>Math.abs(dx)*1.12){drag.mode='SCROLL';return}
+      if(Math.abs(dy)>Math.abs(dx)*1.9){drag.mode='SCROLL';return}
       drag.mode='ROTATE';dragMoved=true;canvas.setPointerCapture?.(event.pointerId);
     }
     if(drag.mode!=='ROTATE')return;
