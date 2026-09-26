@@ -296,18 +296,17 @@
   }
 
   function systemFillModules(wall,remaining){
-    const out=[];let rest=Math.max(0,Math.round(remaining)),i=1;
-    while(rest>LIMITS.STRAIGHT_MAX){
-      const width=Math.min(LIMITS.PREFERRED_FILL,rest);
-      out.push(baseModule(`system-fill-${wall}-${i++}`,'Модуль',width,'HINGED',wall,{anchor:false,pending:true,system:true}));
-      rest-=width;
-    }
-    if(rest>=LIMITS.MIN_STANDARD_MODULE){
-      out.push(baseModule(`system-fill-${wall}-${i++}`,'Модуль',rest,'HINGED',wall,{anchor:false,pending:true,system:true}));
-      rest=0;
-    }
-    if(rest>0){
-      out.push(baseModule(`system-filler-${wall}`,'Филлер',rest,'FILLER',wall,{anchor:false,pending:true,system:true,filler:true}));
+    const out=[];let rest=Math.max(0,Math.round(remaining)),i=1,guard=0;
+    while(rest>0&&guard++<12){
+      if(rest<LIMITS.MIN_STANDARD_MODULE){
+        const filler=baseModule(`system-filler-${wall}`,'Филлер',rest,'FILLER',wall,{anchor:false,pending:true,system:true,filler:true});
+        out.push(filler);break;
+      }
+      const requested=rest>LIMITS.STRAIGHT_MAX?Math.min(LIMITS.PREFERRED_FILL,rest):rest;
+      const module=baseModule(`system-fill-${wall}-${i++}`,'Модуль',requested,'HINGED',wall,{anchor:false,pending:true,system:true});
+      out.push(module);
+      const actual=Math.max(1,Math.round(runWidth(module)||requested));
+      rest=Math.max(0,rest-actual);
     }
     return out;
   }
