@@ -35,7 +35,7 @@ html[data-theme="dark"] .r8-module-grid input,html[data-theme="dark"] .r8-module
 }
 
 /* R10 phase 2: iPhone/Pointer camera gesture owns the 3D canvas. */
-#modelCanvas{touch-action:none;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+#modelCanvas,#focusCanvas{touch-action:none;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
 
 /* R10 contrast: light pill surfaces always use dark ink. */
 .r8-pill,.r8-arrow{color:#171716}
