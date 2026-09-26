@@ -138,24 +138,38 @@
   }
   function tall(module,startNo,fridge=false,oven=false){
     const out=[],W=runW(module),H=round(module.h),D=depth(module),inner=W-BODY_T*2;
-    let n=startNo,s=1;
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Left',H,D));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Right',H,D));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,fridge?'Круглый вырез Ø150 для вентиляции':'Паз 20'));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21)));
-    const shelves=fridge?1:oven?Math.min(4,Math.max(3,shelfCountForTall(H))):shelfCountForTall(H);
-    for(let i=0;i<shelves;i++)out.push(detail(module,n++,s++,'ЛДСП 18 Carcas',`Shelf ${i+1}`,inner,Math.max(100,D-21),1,EDGE,2,2,oven?'Положение зависит от техники':'Шаг ориентир 350–400 мм'));
-    if(!fridge)out.push(detail(module,n++,s++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз 20'));
+    let n=startNo,seq=1;
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Left',H,D));
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D));
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,fridge?'Круглый вырез Ø150 для вентиляции':'Паз 20'));
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21)));
+    const defaultShelves=fridge?1:oven?Math.min(4,Math.max(3,shelfCountForTall(H))):Math.min(3,shelfCountForTall(H));
+    const rawShelves=(!fridge&&!oven&&module.shelf_count!==undefined)?Number(module.shelf_count):defaultShelves,shelves=Math.max(0,Math.min(oven?4:3,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
+    const shelfProcess=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
+    for(let i=0;i<shelves;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',`Shelf ${i+1}`,inner,Math.max(100,D-21),1,EDGE,2,2,oven?'Положение зависит от техники':shelfProcess));
+    if(!fridge)out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз 20'));
     if(oven){
+      // R10.4.0: appliance tall cabinet remains on the frozen pre-library logic.
       const drawerFacadeH=360;
-      out.push(detail(module,n++,s++,'ЛДСП 18 Facade','Facade Drawer',drawerFacadeH,Math.max(100,W-GAP),1,EDGE,2,2,'Ручка','Нижний выдвижной ящик под духовкой'));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade Drawer',drawerFacadeH,Math.max(100,W-GAP),1,EDGE,2,2,'Ручка','Нижний выдвижной ящик под духовкой'));
       const drawer=drawerParts(module,1,drawerFacadeH,n);out.push(...drawer);n+=drawer.length;
       const upperH=Math.max(300,H-drawerFacadeH-600-GAP*2);
-      out.push(detail(module,n++,s++,'ЛДСП 18 Facade','Facade Upper',upperH,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35','Над зоной духовки'));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade Upper',upperH,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35','Над зоной духовки'));
+    }else if(fridge){
+      const faceCount=module.content==='FRIDGE_FREEZER'?2:1,fh=Math.floor((H-GAP*(faceCount-1))/faceCount);
+      for(let i=0;i<faceCount;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Facade',`Facade ${i+1}`,fh,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35'));
     }else{
-      const faceCount=fridge?(module.content==='FRIDGE_FREEZER'?2:1):Math.max(1,Math.ceil(H/900));
-      const fh=Math.floor((H-GAP*(faceCount-1))/faceCount);
-      for(let i=0;i<faceCount;i++)out.push(detail(module,n++,s++,'ЛДСП 18 Facade',`Facade ${i+1}`,fh,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35'));
+      const mode=module.tall_drawer_mode||'NONE',drawerCount=mode==='NONE'?0:Math.max(1,Math.min(3,Number(module.tall_drawer_count)||2));
+      const maxVisible=862,visibleStack=mode==='VISIBLE'?Math.min(maxVisible,Math.max(180,Number(module.visible_drawer_stack_height_mm)||Math.min(maxVisible,Math.round(H*.38)))):0;
+      if(mode!=='NONE'){
+        const internalStack=mode==='VISIBLE'?visibleStack:Math.min(maxVisible,Math.max(300,Math.round(H*.38))),drawerFacadeH=Math.floor((internalStack-GAP*(drawerCount-1))/drawerCount);
+        for(let i=0;i<drawerCount;i++){
+          if(mode==='VISIBLE')out.push(detail(module,n++,seq++,'ЛДСП 18 Facade',`Facade Drawer ${i+1}`,drawerFacadeH,Math.max(100,W-GAP),1,EDGE,2,2,'Ручка','Видимый нижний ящик пенала'));
+          const drawer=drawerParts(module,i+1,drawerFacadeH,n);out.push(...drawer);n+=drawer.length;
+        }
+      }
+      const faceCount=Math.max(1,Math.min(3,Number(module.tall_facade_count||module.facade_count)||1)),hingedZone=Math.max(200,H-visibleStack),fh=Math.floor((hingedZone-GAP*(faceCount-1))/faceCount),opens=Array.isArray(module.facade_openings)?module.facade_openings:[];
+      for(let i=0;i<faceCount;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Facade',`Facade Tall ${i+1}`,fh,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35',`Открывание: ${opens[i]||(['LEFT','RIGHT'][i%2])}`));
     }
     return out;
   }
@@ -170,8 +184,15 @@
     return[detail(module,startNo,1,'ЛДСП 18 Facade','Facade Dishwasher',Math.max(100,module.h+module.z-TOP_GAP),Math.max(100,W-GAP),1,EDGE,2,2,'Крепление к фасаду ПММ')];
   }
   function fillerDetail(module,startNo){
-    const W=Math.max(20,runW(module)),H=Math.max(100,round(module.h));
-    return[detail(module,startNo,1,'ЛДСП 18 Carcas','Filler Panel',H,W,1,EDGE,2,2,'','PILOT: конструкция/привязка филлера требует финального freeze')];
+    const W=Math.max(20,runW(module)),H=Math.max(100,round(module.h)),material=module.filler_material==='FACADE'?'ЛДСП 18 Facade':'ЛДСП 18 Carcas';
+    if(module.filler_shape==='L_SHAPE'){
+      const returnW=Math.max(60,Math.min(120,depth(module)));
+      return[
+        detail(module,startNo,1,material,'Filler Front',H,W,1,EDGE,2,2,'Г-образный филлер','Видимый торец'),
+        detail(module,startNo+1,2,material,'Filler Return',H,returnW,1,EDGE,2,2,'Г-образный филлер','Возврат в глубину')
+      ];
+    }
+    return[detail(module,startNo,1,material,'Filler Flat',H,W,1,EDGE,2,2,'Плашмя','Видимый торец')];
   }
 
   function detailsFor(modules){
