@@ -235,12 +235,14 @@
     const hw=countHardware(modules,details);
     const worktopGroups={};
     modules.filter(m=>m.level!=='upper'&&!m.tall&&m.kind!=='FRIDGE').forEach(m=>{
-      const wall=m.wall||'A',start=wall==='A'?Number(m.x)||0:Number(m.y)||0,end=start+runW(m);
-      if(!worktopGroups[wall])worktopGroups[wall]={min:start,max:end};else{worktopGroups[wall].min=Math.min(worktopGroups[wall].min,start);worktopGroups[wall].max=Math.max(worktopGroups[wall].max,end)}
+      const wall=m.wall||'A';(worktopGroups[wall]||(worktopGroups[wall]=[])).push(m);
     });
-    const worktopRuns=Object.values(worktopGroups).map(g=>Math.max(0,g.max-g.min));
-    const worktopSlabs=Math.max(1,worktopRuns.reduce((sum,len)=>sum+Math.ceil(len/PRICES.WORKTOP_LENGTH_MM),0));
-    const worktopJoints=worktopRuns.reduce((sum,len)=>sum+Math.max(0,Math.ceil(len/PRICES.WORKTOP_LENGTH_MM)-1),0);
+    const worktopPlans=Object.values(worktopGroups).map(group=>window.BizetR10Rules?.worktopRunPlan?.(group)||{segments:[],joints:[]});
+    const worktopSlabs=Math.max(1,worktopPlans.reduce((sum,plan)=>sum+Math.max(1,plan.segments.length),0));
+    const worktopJoints=worktopPlans.reduce((sum,plan)=>sum+plan.joints.length,0);
+    const worktopJointMap=Object.fromEntries(Object.entries(worktopGroups).map(([wall,group])=>{
+      const plan=window.BizetR10Rules?.worktopRunPlan?.(group)||{joints:[]};return[wall,plan.joints.map(v=>Math.round(v))];
+    }));
     const rows=[];
     const add=(group,item,qty,unit,rate,note='')=>rows.push({group,item,qty,unit,rate,total:qty*rate,note});
     add('Материалы','ЛДСП 18 Carcas',areas.CARCAS,'м²',PRICES.CARCAS_M2);
@@ -273,7 +275,7 @@
     add('Работы','Упаковка',panelArea,'м²',PRICES.PACKING_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     add('Работы','Установка',panelArea,'м²',PRICES.INSTALL_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     const cost=rows.reduce((s,r)=>s+r.total,0),client=cost*2;
-    return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,worktopJoints,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
+    return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,worktopJoints,worktopJointMap,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
   }
 
   function moduleDrawing(modules,room,orderRef=''){
