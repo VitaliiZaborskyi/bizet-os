@@ -973,7 +973,7 @@ def test_r1040_drawer_box_height_is_facade_minus_exactly_50_mm_in_bom_and_focus_
     renderer = read("pilot-3d.js")
     assert "drawerH=Math.max(1,round(facadeH-50))" in pointb
     assert "boxH=Math.max(1,facadeH-50)" in renderer
-    assert "Drawer box height is a HARD rule" in renderer
+    assert "HARD rule: box height = facade height minus exactly 50 mm." in renderer
 
 
 def test_r1040_middle_side_follows_internal_hinge_boundaries():
