@@ -537,14 +537,15 @@
     o.value=openingOverrides()[activeModule.id]||activeModule.opening||'AUTO';
     pos.value=Number(offsets()[activeModule.id])||0;
     setValidation('');
+
+    // R10.3.3: focus is a model state, not a side-effect of viewport scrolling.
+    // Draw it immediately, then open controls and reflow-safe redraw twice.
+    renderScene(false);
     const dialog=$('moduleDialog');
     if(dialog.open)dialog.close();
     if(typeof dialog.show==='function')dialog.show();else dialog.showModal?.();
-    document.querySelector('.r8-stage')?.scrollIntoView({behavior:'smooth',block:'center'});
-    requestAnimationFrame(()=>{
-      renderScene(false);
-      requestAnimationFrame(()=>renderScene(false));
-    });
+    requestAnimationFrame(()=>renderScene(false));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>renderScene(false)));
   }
   async function applyModuleCustomization(){
     if(!activeModule)return;
@@ -624,32 +625,59 @@
   window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();else exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>renderScene(false)};
 
   const canvas=$('modelCanvas');
-  canvas.addEventListener('pointerdown',event=>{
+  const pageScrollTop=()=>Math.max(0,Number(window.scrollY||document.scrollingElement?.scrollTop||0));
+  function beginCanvasGesture(event){
+    if(event.pointerType==='touch'&&event.isPrimary===false)return;
     const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
-    drag={id:event.pointerId,x:event.clientX,y:event.clientY,yaw:cam.yaw,pitch:cam.pitch,mode:null};
+    drag={
+      id:event.pointerId,
+      pointerType:event.pointerType||'mouse',
+      x:event.clientX,y:event.clientY,
+      yaw:cam.yaw,pitch:cam.pitch,
+      scrollTop:pageScrollTop(),
+      mode:null
+    };
     dragMoved=false;
-  });
-  canvas.addEventListener('pointermove',event=>{
+    try{canvas.setPointerCapture?.(event.pointerId)}catch(_){}
+  }
+  function moveCanvasGesture(event){
     if(!drag||drag.id!==event.pointerId)return;
     const dx=event.clientX-drag.x,dy=event.clientY-drag.y,dist=Math.hypot(dx,dy);
-    if(dist<6)return;
+    if(dist<5)return;
+
     if(!drag.mode){
-      if(Math.abs(dy)>Math.abs(dx)*2.2){drag.mode='SCROLL';return}
-      drag.mode='ROTATE';dragMoved=true;canvas.setPointerCapture?.(event.pointerId);
+      if(drag.pointerType==='touch'&&Math.abs(dy)>Math.abs(dx)*1.25)drag.mode='SCROLL';
+      else drag.mode='ROTATE';
+      dragMoved=true;
     }
-    if(drag.mode!=='ROTATE')return;
+
+    if(drag.mode==='SCROLL'){
+      // touch-action:none keeps Safari from cancelling the stream; we reproduce natural vertical page motion.
+      if(event.cancelable)event.preventDefault();
+      window.scrollTo(0,Math.max(0,drag.scrollTop-dy));
+      return;
+    }
+
+    if(event.cancelable)event.preventDefault();
     const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
-    cam.yaw=drag.yaw-dx*.008;cam.pitch=clamp(drag.pitch+dy*.0045,.08,.85);renderScene(false);
-  });
-  function endPointer(event){
+    cam.yaw=drag.yaw-dx*.0095;
+    cam.pitch=clamp(drag.pitch+dy*.005,.08,.85);
+    renderScene(false);
+  }
+  function endCanvasGesture(event){
     if(!drag||drag.id!==event.pointerId)return;
-    const mode=drag.mode,wasMoved=dragMoved;drag=null;
+    const mode=drag.mode,wasMoved=dragMoved;
+    drag=null;
     try{canvas.releasePointerCapture?.(event.pointerId)}catch(_){}
-    if(mode!=='ROTATE'&&!wasMoved&&scene&&viewMode===VIEW_NORMAL){
-      const rect=canvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);if(id)openModule(id);
+    if(!wasMoved&&!mode&&scene&&viewMode===VIEW_NORMAL){
+      const rect=canvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);
+      if(id)openModule(id);
     }
   }
-  canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',()=>{drag=null});
+  canvas.addEventListener('pointerdown',beginCanvasGesture,{passive:false});
+  canvas.addEventListener('pointermove',moveCanvasGesture,{passive:false});
+  canvas.addEventListener('pointerup',endCanvasGesture,{passive:false});
+  canvas.addEventListener('pointercancel',event=>{if(drag?.id===event.pointerId)drag=null});
   canvas.addEventListener('wheel',event=>{event.preventDefault();const cam=viewMode===VIEW_FOCUS?focusCamera:camera;cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);renderScene(false)},{passive:false});
 
   $('modelDimensionsToggle').addEventListener('click',()=>{
@@ -681,7 +709,13 @@
   $('moduleApply')?.addEventListener('click',()=>applyModuleCustomization().catch(error=>setValidation(error.message)));
   $('moduleReset')?.addEventListener('click',()=>resetModuleCustomization().catch(error=>setValidation(error.message)));
   $('materialsButton').addEventListener('click',()=>location.assign(`/materials?project=${encodeURIComponent(projectId)}`));$('backButton').addEventListener('click',()=>history.back());
-  window.addEventListener('resize',()=>{if(viewMode===VIEW_FOCUS){$('moduleDialog')?.close?.();enterNormalKitchenView()}requestAnimationFrame(()=>renderScene(false))});
+  let resizeFrame=0;
+  function redrawForViewportChange(){
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame=requestAnimationFrame(()=>renderScene(false));
+  }
+  window.addEventListener('resize',redrawForViewportChange);
+  window.visualViewport?.addEventListener('resize',redrawForViewportChange);
   window.addEventListener('bizet:themechange',()=>requestAnimationFrame(()=>renderScene(false)));
   window.addEventListener('bizet:resume',()=>resumeFromSleep());
 
