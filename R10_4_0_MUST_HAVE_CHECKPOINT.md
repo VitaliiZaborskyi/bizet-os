@@ -83,3 +83,25 @@ Owner QA targets:
 - order reference display expands the year to four digits so 26.09 cannot be misread as a day/month date.
 
 The historical iPhone focus-paint bug remains OPEN until direct owner QA confirms reliable first-tap entry.
+
+## R10.4.2 package — 2026-09-27
+
+Owner QA closed the historical iPhone isolation bug after R10.4.1: first-tap module isolation is now accepted as working well. Do not regress this lifecycle.
+
+R10.4.2 contracts:
+- oven width is a hard select: 600 or 900 mm only;
+- two-finger movement pans the 3D view while pinch zoom and one-finger rotation remain available;
+- focus exit is `Back / Назад`;
+- complexity choice V is labelled `Custom configuration / Своя конфигурация`;
+- display currency choices are UAH, EUR, USD and AUD; conversion is display-only and sourced from the official NBU rate endpoint;
+- Project Settings 01–06 and Material Picker use one centralized RU/EN dictionary;
+- refrigerators are hard-pinned to the edge of a run and may never sit between ordinary base modules;
+- hinged cabinets default to vertical handles, drawers to horizontal handles; nearest handle edge keeps a minimum 40 mm facade clearance;
+- Project Settings includes a new General section for handles, plinth, display currency and demo document tools;
+- Save module commits the edit, recalculates, and returns to the full-kitchen view;
+- BOM TEST is visible for owner/demo and downloadable as CSV;
+- client approval drawings are a separate three-page pilot document: plan + axonometry, main elevation, typical sections; title block is BIZET by Zaborsky and explicitly FOR APPROVAL — NOT FOR PRODUCTION;
+- main secondary action is `Скачать предложение / OFFER`; OFFER lets the client select commercial proposal, approval drawings, or both;
+- visualization logic exposes a geometry-locked VisualizationPayload and master prompt; no external photoreal render provider is falsely claimed as connected;
+- e-mail delivery uses the existing Resend path, PDF attachments, and reply-to cdbbizet@gmail.com when configured; secrets stay in Render environment only;
+- WhatsApp demo channel opens +380974587676 with a prefilled order reference; automatic document delivery requires WhatsApp Business API and is not simulated.
