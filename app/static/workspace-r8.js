@@ -108,6 +108,15 @@
      const light=theme.querySelector('option[value="light"]'),dark=theme.querySelector('option[value="dark"]');
      if(light)light.textContent=tr('Светлая','Light');if(dark)dark.textContent=tr('Тёмная','Dark');
    }
+   const projectState=document.querySelector('.r8-project-state>span');if(projectState)projectState.textContent=tr('Базовый вариант','Base variant');
+   const baseInfo=$('baseInfoButton');if(baseInfo)baseInfo.setAttribute('aria-label',tr('О базовом варианте','About base variant'));
+   const panelClose=$('panelClose');if(panelClose)panelClose.setAttribute('aria-label',tr('Свернуть','Collapse'));
+   const basePopover=$('baseInfoPopover');
+   if(basePopover){
+     const strong=basePopover.querySelector('strong'),p=basePopover.querySelector('p');
+     if(strong)strong.textContent=tr('Базовый вариант','Base variant');
+     if(p)p.textContent=tr('Сформирован автоматически по выбранной конфигурации, размерам помещения и уже известным системе данным. Уточняйте параметры — модель будет перестраиваться.','Generated from the selected configuration, room dimensions and current project data. Adjust parameters and the model will rebuild.');
+   }
    const materialClose=$('surfaceMaterialClose');if(materialClose)materialClose.setAttribute('aria-label',tr('Закрыть','Close'));
    const materialTypeLabel=$('surfaceMaterialType')?.closest('label')?.querySelector('span');if(materialTypeLabel)materialTypeLabel.textContent=tr('Тип','Type');
    const customTexture=$('surfaceTextureInput')?.closest('label')?.querySelector('span');if(customTexture)customTexture.textContent=tr('Своя текстура','Custom texture');
@@ -420,6 +429,19 @@
    updateReadiness();refreshPanel();renderVariantDots();
  }
  $('randomVariant').onclick=()=>applyVariant((variantPos+1)%5);
+ window.addEventListener('bizet:projectsettingchange',event=>{
+   const detail=event.detail||{};
+   if(detail.key==='display_currency')propagateLockedValue('display_currency',detail.value);
+ });
+ window.addEventListener('bizet:languagechange',()=>{
+   localizeWorkspaceChrome();
+   if(activePanel)renderPanel(activePanel);
+   const materialDialog=$('surfaceMaterialDialog');
+   if(materialDialog?.open&&materialPickerDraft)renderMaterialPicker();
+   renderVariantDots();updateReadiness();
+   rt?.render?.();
+   window.BizetPointB?.refresh?.();window.BizetOwnerBusiness?.refresh?.();
+ });
  $('surfaceMaterialClose')?.addEventListener('click',()=>{materialPickerDraft=null;$('surfaceMaterialDialog')?.close()});
  $('surfaceMaterialCancel')?.addEventListener('click',()=>{materialPickerDraft=null;$('surfaceMaterialDialog')?.close()});
  $('surfaceMaterialApply')?.addEventListener('click',()=>applyMaterialPicker().catch(error=>alert(error.message)));
