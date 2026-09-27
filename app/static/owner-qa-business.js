@@ -112,7 +112,9 @@ ${JSON.stringify(payload)}`;
       features:proposalFeatures(d),
       include_proposal:includeProposal,
       include_approval_drawings:includeApproval,
-      visualization_data_url:proposalSnapshot(),
+      visualization_data_url:proposalVisualization(d).src||proposalSnapshot(),
+      visualization_prompt:visualizationMasterPrompt(d),
+      visualization_payload:visualizationPayload(d),
       approval_svg_pages:includeApproval?(d.pb.approvalSheets?.(d.modules,d.rt.getRoom(),identityRef())||[]):[]
     };
     const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}/proposal/send`,{
@@ -137,7 +139,9 @@ ${JSON.stringify(payload)}`;
       features:proposalFeatures(d),
       include_proposal:kind==='proposal',
       include_approval_drawings:kind==='approval',
-      visualization_data_url:proposalSnapshot(),
+      visualization_data_url:proposalVisualization(d).src||proposalSnapshot(),
+      visualization_prompt:visualizationMasterPrompt(d),
+      visualization_payload:visualizationPayload(d),
       approval_svg_pages:kind==='approval'?(d.pb.approvalSheets?.(d.modules,d.rt.getRoom(),identityRef())||[]):[]
     };
     const response=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}/offer/document/${encodeURIComponent(kind)}`,{
@@ -154,30 +158,29 @@ ${JSON.stringify(payload)}`;
 
   async function showThinkFlow(){
     const d=data();if(!d)return;
-    const identity=await ensureOrderIdentity(),ref=identityRef(identity),prompt=visualizationMasterPrompt(d);
-    await patchProject('commerce.proposal_status','DRAFT_READY','R10.4.3 OFFER opened');
+    const identity=await ensureOrderIdentity(),ref=identityRef(identity);
+    await patchProject('commerce.proposal_status','DRAFT_READY','R10.4.4 OFFER opened');
     openCommerce(`
       <p class="r9-kicker">BIZET OS · ${esc(ref)}</p>
       <h2>${t('Скачать предложение','OFFER')}</h2>
       <p class="r9-muted">${t('Выберите пакет для клиента. КП и чертежи для согласования формируются из текущей модели.','Choose the client package. The proposal and approval drawings are generated from the current model.')}</p>
       <div class="r104-offer-docs">
-        <label><input id="r104OfferProposal" type="checkbox" checked><span><strong>${t('Коммерческое предложение','Commercial proposal')}</strong><small>${t('Цена, комплектация и визуализация','Price, specification and visualization')}</small></span></label>
+        <label><input id="r104OfferProposal" type="checkbox" checked><span><strong>${t('Коммерческое предложение','Commercial proposal')}</strong><small>${t('Цена, комплектация и визуализация проекта','Price, specification and project visualization')}</small></span></label>
         <label><input id="r104OfferApproval" type="checkbox" checked><span><strong>${t('Чертежи для согласования','Approval drawings')}</strong><small>${t('План · фасад · характерные сечения','Plan · elevation · typical sections')}</small></span></label>
       </div>
       <label class="r10-commerce-field"><span>E-mail</span><input id="r10ProposalEmail" type="email" autocomplete="email" placeholder="name@example.com"></label>
       <label class="r10-commerce-field"><span>${t('Телефон / WhatsApp','Phone / WhatsApp')}</span><input id="r10ProposalPhone" type="tel" autocomplete="tel" placeholder="+380…"></label>
-      <details class="r104-visualization-pilot"><summary>${t('Визуализация · PILOT PROMPT','Visualization · PILOT PROMPT')}</summary><p>${t('Промт блокирует геометрию и передаёт материалы текущего проекта. Внешний render-provider подключается отдельным ключом.','The prompt locks geometry and passes the current project materials. An external render provider requires its own connection.')}</p><button type="button" id="r104CopyVisualPrompt">${t('Скопировать промт','Copy prompt')}</button></details>
+
       <div class="r104-offer-actions"><button class="r10-commerce-primary" id="r104OfferDownload" type="button">${t('Скачать','Download')}</button><button class="r10-commerce-primary" id="r104OfferSend" type="button">${t('Отправить','Send')}</button></div>
       <button class="r10-commerce-secondary" id="r104OfferWhatsApp" type="button">WhatsApp · +380 97 458 7676</button>
       <p class="r10-commerce-status" id="r10ProposalStatus" hidden></p>`);
-    $('r104CopyVisualPrompt').onclick=async()=>{try{await navigator.clipboard.writeText(prompt);$('r10ProposalStatus').hidden=false;$('r10ProposalStatus').textContent=t('Промт визуализации скопирован.','Visualization prompt copied.')}catch(_){$('r10ProposalStatus').hidden=false;$('r10ProposalStatus').textContent=prompt}};
     const selections=()=>({proposal:$('r104OfferProposal').checked,approval:$('r104OfferApproval').checked});
     const contact=()=>({email:String($('r10ProposalEmail').value||'').trim(),phone:String($('r10ProposalPhone').value||'').trim()});
     $('r104OfferDownload').onclick=()=>{
       const s=selections(),ct=contact(),status=$('r10ProposalStatus');
       if(!s.proposal&&!s.approval){status.hidden=false;status.textContent=t('Выберите хотя бы один документ.','Select at least one document.');return}
       if(!ct.email&&!ct.phone){status.hidden=false;status.textContent=t('Введите e-mail или телефон.','Enter an e-mail or phone number.');return}
-      patchProject('commerce.contact',ct.email||ct.phone,'R10.4.2 OFFER contact').catch(()=>{});
+      patchProject('commerce.contact',ct.email||ct.phone,'R10.4.4 OFFER contact').catch(()=>{});
       (async()=>{
         try{
           if(s.proposal)await downloadOfferDocument('proposal',d);
@@ -192,7 +195,7 @@ ${JSON.stringify(payload)}`;
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ct.email)){status.hidden=false;status.textContent=t('Для отправки документов укажите корректный e-mail.','Enter a valid e-mail to send the documents.');return}
       button.disabled=true;status.hidden=false;status.textContent=t('Формирую PDF и отправляю…','Building PDFs and sending…');
       try{
-        await patchProject('commerce.contact',ct.email,'R10.4.2 OFFER email');
+        await patchProject('commerce.contact',ct.email,'R10.4.4 OFFER email');
         const sent=await sendProposalEmail(ct.email,d,{includeProposal:s.proposal,includeApproval:s.approval});
         status.textContent=t(`Документы отправлены на ${ct.email}. ID: ${sent.message_id||'—'}`,`Documents sent to ${ct.email}. ID: ${sent.message_id||'—'}`);
       }catch(error){status.textContent=error.message}finally{button.disabled=false}
