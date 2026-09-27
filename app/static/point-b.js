@@ -423,6 +423,114 @@
     </svg>`;
   }
 
+  function approvalStamp(pageNo,title,orderRef=''){
+    const stampX=760,stampY=700,stampW=340,stampH=72;
+    return `
+      <g class="stamp">
+        <rect x="${stampX}" y="${stampY}" width="${stampW}" height="${stampH}" fill="#fff" stroke="#111" stroke-width="1.2"/>
+        <line x1="${stampX}" y1="${stampY+25}" x2="${stampX+stampW}" y2="${stampY+25}" stroke="#111"/>
+        <line x1="${stampX+210}" y1="${stampY}" x2="${stampX+210}" y2="${stampY+stampH}" stroke="#111"/>
+        <text x="${stampX+10}" y="${stampY+17}" font-size="12" font-weight="800">BIZET by Zaborsky</text>
+        <text x="${stampX+10}" y="${stampY+42}" font-size="10">${esc(title)}</text>
+        <text x="${stampX+10}" y="${stampY+58}" font-size="9">${esc(orderRef||'PROJECT')} · Rev A</text>
+        <text x="${stampX+220}" y="${stampY+18}" font-size="9">FOR APPROVAL</text>
+        <text x="${stampX+220}" y="${stampY+34}" font-size="8">NOT FOR PRODUCTION</text>
+        <text x="${stampX+220}" y="${stampY+50}" font-size="8">Scale: NTS</text>
+        <text x="${stampX+220}" y="${stampY+65}" font-size="8">Page ${pageNo}/3</text>
+      </g>`;
+  }
+
+  function approvalPlanSheet(modules,room,orderRef=''){
+    const W=1120,H=790,pad=70,roomW=Math.max(1000,Number(room.lengthMm)||6000),roomD=Math.max(1000,Number(room.depthMm)||4200);
+    const scale=Math.min((W*0.64-pad*2)/roomW,(H-180)/roomD),ox=pad,oy=80;
+    const wallRect=`<rect x="${ox}" y="${oy}" width="${roomW*scale}" height="${roomD*scale}" fill="none" stroke="#111" stroke-width="3"/>`;
+    const moduleRects=modules.filter(m=>m.level!=='upper').map(m=>{
+      const x=ox+(Number(m.x)||0)*scale,y=oy+(roomD-(Number(m.y)||0)-(Number(m.d)||0))*scale,w=Math.max(2,(Number(m.w)||0)*scale),d=Math.max(2,(Number(m.d)||0)*scale);
+      return `<g><rect x="${x}" y="${y}" width="${w}" height="${d}" fill="none" stroke="#111" stroke-width="1.4"/><text x="${x+w/2}" y="${y+d/2+4}" text-anchor="middle" font-size="9">${m.number}</text></g>`;
+    }).join('');
+    const dims=`
+      <line x1="${ox}" y1="${oy-18}" x2="${ox+roomW*scale}" y2="${oy-18}" stroke="#d71920"/><text x="${ox+roomW*scale/2}" y="${oy-25}" class="dim" text-anchor="middle">${round(roomW)}</text>
+      <line x1="${ox-18}" y1="${oy}" x2="${ox-18}" y2="${oy+roomD*scale}" stroke="#d71920"/><text x="${ox-28}" y="${oy+roomD*scale/2}" class="dim" transform="rotate(-90 ${ox-28} ${oy+roomD*scale/2})" text-anchor="middle">${round(roomD)}</text>`;
+    const isoX=785,isoY=125;
+    const run=modules.filter(m=>m.wall==='A'&&m.level!=='upper').sort((a,b)=>(a.x||0)-(b.x||0));
+    const axo=run.map((m,i)=>{
+      const x=isoX+i*32,y=isoY+70-i*2,h=Math.min(110,Math.max(45,(Number(m.h)||700)*.08));
+      return `<path d="M${x} ${y} l26 -10 l0 ${h} l-26 10 z M${x+26} ${y-10} l12 8 l0 ${h} l-12 -8" fill="none" stroke="#111" stroke-width="1"/>`;
+    }).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <style>text{font-family:"Century Gothic",Arial,sans-serif;fill:#111}.dim{fill:#d71920;font-size:12px;font-weight:700}</style>
+      <rect x="8" y="8" width="1104" height="774" fill="#fff" stroke="#777"/>
+      <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · APPROVAL DRAWING · PLAN</text>
+      ${wallRect}${moduleRects}${dims}
+      <text x="${isoX}" y="${isoY-20}" font-size="12" font-weight="700">AXONOMETRY</text>${axo}
+      <text x="${isoX}" y="${isoY+215}" font-size="9">Client approval geometry · module numbering follows BIZET OS.</text>
+      ${approvalStamp(1,'PLAN + AXONOMETRY',orderRef)}
+    </svg>`;
+  }
+
+  function approvalElevationSheet(modules,room,orderRef=''){
+    const W=1120,H=790,wallA=modules.filter(m=>m.wall==='A').sort((a,b)=>(a.x||0)-(b.x||0));
+    const roomW=Math.max(1000,Number(room.lengthMm)||6000),maxH=Math.max(2400,Number(room.heightMm)||2800),scale=Math.min(900/roomW,500/maxH),ox=70,baseY=610;
+    const parts=wallA.map(m=>{
+      const x=ox+(Number(m.x)||0)*scale,w=Math.max(2,(Number(m.w)||0)*scale),z=(Number(m.z)||0),h=Math.max(2,(Number(m.h)||0)*scale),y=baseY-(z+Number(m.h||0))*scale;
+      let splits='';
+      const faces=Math.max(1,Number(m.facade_count)||1);
+      for(let i=1;i<faces;i++)splits+=`<line x1="${x+w*i/faces}" y1="${y}" x2="${x+w*i/faces}" y2="${y+h}" stroke="#666" stroke-dasharray="4 3"/>`;
+      return `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#111" stroke-width="1.6"/>${splits}<text x="${x+w/2}" y="${y+h/2}" text-anchor="middle" font-size="9">M${m.number}</text><text x="${x+w/2}" y="${baseY+25}" text-anchor="middle" class="dim">${round(runW(m))}</text></g>`;
+    }).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <style>text{font-family:"Century Gothic",Arial,sans-serif;fill:#111}.dim{fill:#d71920;font-size:10px;font-weight:700}</style>
+      <rect x="8" y="8" width="1104" height="774" fill="#fff" stroke="#777"/>
+      <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · APPROVAL DRAWING · ELEVATION A</text>
+      <line x1="${ox}" y1="${baseY}" x2="${ox+roomW*scale}" y2="${baseY}" stroke="#111" stroke-width="2"/>${parts}
+      <line x1="${ox}" y1="${baseY+48}" x2="${ox+roomW*scale}" y2="${baseY+48}" stroke="#d71920"/>
+      <text x="${ox+roomW*scale/2}" y="${baseY+44}" class="dim" text-anchor="middle">${round(roomW)}</text>
+      <line x1="${ox-28}" y1="${baseY}" x2="${ox-28}" y2="${baseY-maxH*scale}" stroke="#d71920"/>
+      <text x="${ox-38}" y="${baseY-maxH*scale/2}" class="dim" text-anchor="middle" transform="rotate(-90 ${ox-38} ${baseY-maxH*scale/2})">${round(maxH)}</text>
+      ${approvalStamp(2,'MAIN ELEVATION',orderRef)}
+    </svg>`;
+  }
+
+  function approvalSectionSheet(modules,room,orderRef=''){
+    const W=1120,H=790,preferred=['SINK','DRAWERS','HINGED','COOKTOP','TALL_OVEN','FRIDGE'],picked=[];
+    preferred.forEach(kind=>{const m=modules.find(x=>x.kind===kind);if(m&&!picked.includes(m))picked.push(m)});
+    modules.filter(m=>m.level!=='upper').forEach(m=>{if(picked.length<6&&!picked.includes(m))picked.push(m)});
+    const boxes=picked.slice(0,6).map((m,i)=>{
+      const col=i%3,row=Math.floor(i/3),x=80+col*335,y=95+row*285,dep=Math.max(100,depth(m)),mh=Math.max(300,Number(m.h)||700),scale=Math.min(210/dep,190/mh),w=dep*scale,h=mh*scale;
+      let internals='';
+      const shelves=Math.max(0,Number(m.shelf_count)||0);
+      for(let s=1;s<=shelves;s++){const yy=y+h-h*s/(shelves+1);internals+=`<line x1="${x}" y1="${yy}" x2="${x+w}" y2="${yy}" stroke="#555"/>`}
+      if(m.kind==='DRAWERS'){const count=Math.max(2,Number(m.drawer_count)||2);for(let d=1;d<count;d++){const yy=y+h*d/count;internals+=`<line x1="${x}" y1="${yy}" x2="${x+w}" y2="${yy}" stroke="#555" stroke-dasharray="4 3"/>`}}
+      return `<g><text x="${x}" y="${y-18}" font-size="12" font-weight="700">${String.fromCharCode(65+i)}-${String.fromCharCode(65+i)} · M${m.number} · ${esc(m.label||m.kind)}</text><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#111" stroke-width="2"/>${internals}<text x="${x+w/2}" y="${y+h+22}" class="dim" text-anchor="middle">D ${round(dep)} · H ${round(mh)}</text></g>`;
+    }).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <style>text{font-family:"Century Gothic",Arial,sans-serif;fill:#111}.dim{fill:#d71920;font-size:10px;font-weight:700}</style>
+      <rect x="8" y="8" width="1104" height="774" fill="#fff" stroke="#777"/>
+      <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · APPROVAL DRAWING · TYPICAL SECTIONS</text>
+      ${boxes}
+      ${approvalStamp(3,'TYPICAL SECTIONS',orderRef)}
+    </svg>`;
+  }
+
+  function approvalSheets(modules,room,orderRef=''){
+    return[
+      approvalPlanSheet(modules,room,orderRef),
+      approvalElevationSheet(modules,room,orderRef),
+      approvalSectionSheet(modules,room,orderRef)
+    ];
+  }
+
+  function approvalDrawingHtml(data=current()){
+    if(!data)return'';
+    const sheets=approvalSheets(data.modules,data.room,data.orderRef);
+    return `<!doctype html><html><head><meta charset="utf-8"><title>BIZET Approval Drawings</title><style>@page{size:A4 landscape;margin:5mm}body{margin:0;background:#ddd;font-family:Arial,sans-serif}.sheet{background:#fff;margin:0 auto 8mm;page-break-after:always}.sheet svg{display:block;width:100%;height:auto}@media print{body{background:#fff}.sheet{margin:0;page-break-after:always}}</style></head><body>${sheets.map(svg=>`<div class="sheet">${svg}</div>`).join('')}</body></html>`;
+  }
+  function openApprovalDrawings(){
+    const html=approvalDrawingHtml();if(!html)return;
+    const w=window.open('','_blank');if(!w)return;
+    w.document.open();w.document.write(html+'<script>window.onload=()=>setTimeout(()=>window.print(),220)<\/script>');w.document.close();
+  }
+
   function csv(rows,headers,map){
     const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
     return '\ufeff'+[headers.map(q).join(';'),...rows.map(r=>map(r).map(q).join(';'))].join('\n');
@@ -500,7 +608,7 @@
     window.addEventListener('bizet:modelready',refresh);window.addEventListener('bizet:resume',()=>setTimeout(refresh,250));window.addEventListener('bizet:modelchange',()=>setTimeout(refresh,80));window.addEventListener('bizet:fxready',refresh);
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,350)},true);
   }
-  window.BizetPointB={version:VERSION,prices:PRICES,detailsFor,buildBOM,modulePrice,moduleDrawing,communicationsDrawing,productionModuleSheet,formatMoney,displayCurrency,convertMoney,getFx:()=>({rates:{...FX_RATES},meta:{...FX_META}}),showBOMTest:()=>showReport('price'),refresh};
+  window.BizetPointB={version:VERSION,prices:PRICES,detailsFor,buildBOM,modulePrice,moduleDrawing,communicationsDrawing,productionModuleSheet,approvalSheets,approvalDrawingHtml,openApprovalDrawings,formatMoney,displayCurrency,convertMoney,getFx:()=>({rates:{...FX_RATES},meta:{...FX_META}}),showBOMTest:()=>showReport('price'),refresh};
   window.BizetPointBOriginalDocs=()=>showReport('docs');
   boot();
 })();
