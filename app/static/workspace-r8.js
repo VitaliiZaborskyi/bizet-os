@@ -1,5 +1,6 @@
 (()=> {
  const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ const LANG_KEY='bizet_os_language',uiLang=()=>String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ru').toLowerCase().startsWith('en')?'en':'ru',tr=(ru,en)=>uiLang()==='en'?en:ru;
  let rt=null,history=[],locks=new Set(JSON.parse(localStorage.getItem('bizet_r8_locks')||'[]'));
  const projectId=new URLSearchParams(location.search).get('project')||sessionStorage.getItem('bizet_os_project_id')||localStorage.getItem('bizet_os_project_id')||'pilot';
  const VARIANT_KEY='bizet_r8_variant_slots_'+projectId,VARIANT_POS_KEY='bizet_r8_variant_pos_'+projectId;
@@ -48,6 +49,30 @@
  const persistVariants=()=>{if(variantSlots.length===5){localStorage.setItem(VARIANT_KEY,JSON.stringify(variantSlots));localStorage.setItem(VARIANT_POS_KEY,String(variantPos))}};
 
  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+ function localizeWorkspaceChrome(){
+   const en=uiLang()==='en';document.documentElement.lang=en?'en':'ru';
+   const nav={
+     room:['Помещение','Room'],appliances:['Техника','Appliances'],upper:['Верхние модули','Wall cabinets'],
+     communications:['Коммуникации','Utilities'],elements:['Элементы стен','Wall elements'],materials:['Материалы','Materials']
+   };
+   document.querySelectorAll('#workspaceTools [data-panel]').forEach(btn=>{
+     const pair=nav[btn.dataset.panel];if(!pair)return;
+     const n=btn.querySelector('span')?.textContent||'';btn.innerHTML='<span>'+esc(n)+'</span>'+esc(en?pair[1]:pair[0]);
+   });
+   const toolsLabel=document.querySelector('.r8-tools-label');if(toolsLabel)toolsLabel.textContent=tr('Настройки проекта','Project settings');
+   const stripLabel=document.querySelector('.r8-module-strip-label');if(stripLabel)stripLabel.textContent=tr('Список модулей','Module list');
+   const random=$('randomVariant');if(random)random.textContent=tr('Другой вариант','Another variant');
+   const focusHead=document.querySelector('.r10-focus-variants-head');if(focusHead)focusHead.textContent=tr('Варианты модуля','Module variants');
+   const settingsTitle=document.querySelector('.settings-title');if(settingsTitle)settingsTitle.textContent=tr('Настройки','Settings');
+   const themeLabel=document.querySelector('.settings-field>span');if(themeLabel)themeLabel.textContent=tr('Тема','Theme');
+   const theme=$('workspaceThemeSelect');if(theme){
+     const light=theme.querySelector('option[value="light"]'),dark=theme.querySelector('option[value="dark"]');
+     if(light)light.textContent=tr('Светлая','Light');if(dark)dark.textContent=tr('Тёмная','Dark');
+   }
+   const materialClose=$('surfaceMaterialClose');if(materialClose)materialClose.setAttribute('aria-label',tr('Закрыть','Close'));
+   if($('surfaceMaterialCancel'))$('surfaceMaterialCancel').textContent=tr('Отмена','Cancel');
+   if($('surfaceMaterialApply'))$('surfaceMaterialApply').textContent=tr('Применить','Apply');
+ }
  function option(value,label){return '<option value="'+esc(value)+'">'+esc(label)+'</option>'}
  function field(label,key,choices){const current=rt.getInputs()[key];return '<label class="r8-field"><span>'+label+'</span><select data-input="'+key+'">'+choices.map(x=>option(x[0],x[1])).join('')+'</select></label>'}
  function numberField(label,key,def,min){const current=Number(rt.getInputs()[key]??def);return '<label class="r8-field"><span>'+label+'</span><input type="number" min="'+(min||0)+'" step="1" value="'+current+'" data-number="'+key+'"></label>'}
@@ -98,7 +123,16 @@
    await rt.replaceState(s);saveCurrentVariantSlot();
    const undoButton=$('undoButton');if(undoButton)undoButton.disabled=history.length===0;refreshPanel();updateReadiness();
  }
- function panelTitle(panel){return({room:['01 · ПОМЕЩЕНИЕ','Помещение'],appliances:['02 · ТЕХНИКА','Бытовая техника'],upper:['03 · ВЕРХНИЕ МОДУЛИ','Верхние модули'],communications:['04 · КОММУНИКАЦИИ','Коммуникации'],elements:['05 · ЭЛЕМЕНТЫ СТЕН','Элементы стен'],materials:['06 · МАТЕРИАЛЫ','Материалы']})[panel]}
+ function panelTitle(panel){
+   const map={
+     room:[tr('01 · ПОМЕЩЕНИЕ','01 · ROOM'),tr('Помещение','Room')],
+     appliances:[tr('02 · ТЕХНИКА','02 · APPLIANCES'),tr('Бытовая техника','Appliances')],
+     upper:[tr('03 · ВЕРХНИЕ МОДУЛИ','03 · WALL CABINETS'),tr('Верхние модули','Wall cabinets')],
+     communications:[tr('04 · КОММУНИКАЦИИ','04 · UTILITIES'),tr('Коммуникации','Utilities')],
+     elements:[tr('05 · ЭЛЕМЕНТЫ СТЕН','05 · WALL ELEMENTS'),tr('Элементы стен','Wall elements')],
+     materials:[tr('06 · МАТЕРИАЛЫ','06 · MATERIALS'),tr('Материалы','Materials')]
+   };return map[panel]
+ }
  function materialState(target){
    const V=rt.getVisual(),room=V.room_surface_materials||{},furniture=V.furniture_materials||{};
    return target==='floor'||target==='walls'||target==='ceiling'?{...(room[target]||{})}:{...(furniture[target]||{})};
@@ -344,6 +378,6 @@
  $('baseInfoButton').onclick=()=>{$('baseInfoPopover').hidden=false};$('baseInfoClose').onclick=()=>{$('baseInfoPopover').hidden=true};
  $('panelClose').onclick=()=>{$('editorPanel').hidden=true;activePanel=null;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>rt?.render?.())};
  document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.onclick=()=>selectPanel(b.dataset.panel));
- async function ready(){for(let i=0;i<100;i++){if(window.BizetModelRuntime?.ready){rt=window.BizetModelRuntime;break}await sleep(80)}if(!rt)return;await ensureTemplate();await initVariantSlots();updateReadiness();activePanel=null;$('editorPanel').hidden=true;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>{rt.render();requestAnimationFrame(()=>rt.render())})}
+ async function ready(){localizeWorkspaceChrome();for(let i=0;i<100;i++){if(window.BizetModelRuntime?.ready){rt=window.BizetModelRuntime;break}await sleep(80)}if(!rt)return;await ensureTemplate();await initVariantSlots();updateReadiness();activePanel=null;$('editorPanel').hidden=true;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>{rt.render();requestAnimationFrame(()=>rt.render())})}
  ready();
 })();
