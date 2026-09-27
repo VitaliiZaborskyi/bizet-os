@@ -323,7 +323,16 @@
       else if(/Drawer/i.test(d.material))areas.DRAWER+=a;
       else areas.CARCAS+=a;
     });
-    if(includePlinth)areas.PLINTH=modules.filter(m=>m.level!=='upper'&&m.kind!=='FRIDGE'&&Number(m.z)>0).reduce((sum,m)=>sum+runW(m)*Math.max(0,Number(m.z)||0)/1e6,0);
+    const plinthGroups={};
+    modules.filter(m=>m.level!=='upper'&&!m.freestanding&&Number(m.z)>0).forEach(m=>{
+      const wall=m.wall||'A';(plinthGroups[wall]||(plinthGroups[wall]=[])).push(m);
+    });
+    const plinthPlans=includePlinth?Object.values(plinthGroups).map(group=>window.BizetR10Rules?.plinthRunPlan?.(group)||{span:0,segments:[],joints:[]}):[];
+    const plinthHeight=Math.max(0,...modules.filter(m=>m.level!=='upper'&&!m.freestanding).map(m=>Number(m.z)||0));
+    if(includePlinth)areas.PLINTH=plinthPlans.reduce((sum,plan)=>sum+(Number(plan.span)||0)*plinthHeight/1e6,0);
+    const plinthPieces=includePlinth?plinthPlans.reduce((sum,plan)=>sum+(plan.segments?.length||0),0):0;
+    const plinthConnectors=includePlinth?Math.max(0,plinthPieces-1):0;
+    const plinthJointMap=Object.fromEntries(Object.entries(plinthGroups).map(([wall,group])=>[wall,(window.BizetR10Rules?.plinthRunPlan?.(group)?.joints||[]).map(v=>Math.round(v))]));
     const panelArea=areas.CARCAS+areas.FACADE+areas.DRAWER+areas.PLINTH;
     const cutM=panelArea*6;
     const edgeM=panelArea*6*1.2;
@@ -344,7 +353,8 @@
     add('Материалы','ЛДСП 18 Drawer',areas.DRAWER,'м²',PRICES.CARCAS_M2);
     add('Материалы','ЛДСП 18 Facade',areas.FACADE,'м²',PRICES.FACADE_M2);
     add('Материалы','HDF 3 mm',areas.HDF,'м²',PRICES.HDF_M2);
-    if(areas.PLINTH>0)add('Материалы','Цоколь',areas.PLINTH,'м²',PRICES.CARCAS_M2,`Высота по проекту: ${Math.max(0,...modules.map(m=>Number(m.z)||0))} мм`);
+    if(areas.PLINTH>0)add('Материалы','Цоколь',areas.PLINTH,'м²',PRICES.CARCAS_M2,`Высота по проекту: ${plinthHeight} мм · ниток/деталей: ${plinthPieces}; проходит под встроенным холодильником`);
+    if(plinthConnectors>0)add('Фурнитура','Соединитель цоколя универсальный',plinthConnectors,'шт',PRICES.PLINTH_CONNECTOR,'Один тип для прямого и углового стыка; 1 шт на стык');
     add('Материалы','PVC 22×0.8',edgeM,'п.м',PRICES.EDGE_MATERIAL_M,'Эмпирика: площадь плит × 6 + 20%');
     if(includeWorktop)add('Материалы','Столешница EGGER 4100×600×38',worktopSlabs,'шт',PRICES.WORKTOP_SLAB,`Максимум 4100 мм без стыка; стыков по текущим прогонам: ${worktopJoints}`);
     add('Работы','Распил',cutM,'п.м',PRICES.CUT_M,'Площадь плит × 6');
@@ -373,7 +383,7 @@
     add('Работы','Упаковка',panelArea,'м²',PRICES.PACKING_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     add('Работы','Установка',panelArea,'м²',PRICES.INSTALL_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     const cost=rows.reduce((s,r)=>s+r.total,0),client=cost*2;
-    return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,worktopJoints,worktopJointMap,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
+    return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,worktopJoints,worktopJointMap,plinthPieces,plinthConnectors,plinthJointMap,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
   }
 
   function moduleDrawing(modules,room,orderRef=''){
