@@ -555,7 +555,7 @@
   function ensureUI(){
     if($('pointBFinalActions'))return;
     const host=document.createElement('div');host.id='pointBFinalActions';host.className='r8-final-actions';
-    host.innerHTML='<div class="r8-final-price"><span>Итоговая стоимость</span><strong id="pointBPrice">—</strong></div><button id="pointBPriceButton" type="button">Сохранить проект</button><button id="pointBDocsButton" type="button">Купить</button>';
+    host.innerHTML='<div class="r8-final-price"><span>Итоговая стоимость</span><strong id="pointBPrice">—</strong></div><button id="pointBPriceButton" type="button">Скачать предложение</button><button id="pointBDocsButton" type="button">Купить</button>';
     const anchor=$('moduleStrip')||$('modelStatus');anchor.insertAdjacentElement('afterend',host);
     const dialog=document.createElement('dialog');dialog.id='pointBDialog';dialog.className='r8-pointb-dialog';
     dialog.innerHTML='<div class="r8-pointb-card"><button id="pointBClose" class="r8-pointb-close" type="button">×</button><div id="pointBReport"></div></div>';
@@ -587,11 +587,13 @@
     const data=current();if(!data)return;
     const {bom,details,kitchenSvg,commSvg,productionSvg,orderRef}=data;
     const warning=bom.unpriced.length?'<p class="r8-pointb-warning">Предварительная цена: '+bom.unpriced.length+' позиции учтены по количеству, но ещё без тарифа.</p>':'';
-    let html=`<p class="r8-pointb-kicker">BIZET OS · ${VERSION}${orderRef?' · '+esc(orderRef):''}</p><h2>${mode==='price'?'Итоговая стоимость':'Комплект документов'}</h2><div class="r8-price-grid"><div><span>Себестоимость</span><strong>${money(bom.cost)}</strong></div><div><span>BIZET Furniture · COST × 2</span><strong>${money(bom.client)}</strong></div></div>${warning}`;
+    let html=`<p class="r8-pointb-kicker">BIZET OS · ${VERSION}${orderRef?' · '+esc(orderRef):''}</p><h2>${mode==='bom'?'BOM · TEST':mode==='price'?'Итоговая стоимость':'Комплект документов'}</h2><div class="r8-price-grid"><div><span>Себестоимость</span><strong>${money(bom.cost)}</strong></div><div><span>BIZET Furniture · COST × 2</span><strong>${money(bom.client)}</strong></div></div>${warning}`;
     if(mode==='price')html+=bomTable(bom);
+    else if(mode==='bom')html+=`<div class="r8-doc-actions"><button id="dlBomTest">BOM CSV</button></div>${bomTable(bom)}`;
     else html+=`<div class="r8-doc-actions"><button id="dlProduction">Производственный лист SVG</button><button id="dlDetail">Деталировка CSV</button><button id="dlBom">BOM CSV</button><button id="dlKitchen">Схема кухни SVG</button><button id="dlComm">Коммуникации SVG</button><button id="printPointB">Печать / PDF</button></div><h3>1. Production Drawing Engine · пилотный лист модуля</h3><div class="r8-drawing">${productionSvg}</div><h3>2. Схема кухни · стена A</h3><div class="r8-drawing">${kitchenSvg}</div><h3>3. Коммуникации · стена A</h3><div class="r8-drawing">${commSvg}</div><h3>4. Деталировка · 13 столбцов</h3>${detailTable(details)}<h3>5. BOM</h3>${bomTable(bom)}`;
     $('pointBReport').innerHTML=html;
     $('pointBDialog').showModal();
+    if(mode==='bom')$('dlBomTest').onclick=()=>downloadBOM(bom);
     if(mode==='docs'){
       $('dlProduction').onclick=()=>downloadSvg('BIZET_Production_Module_Pilot.svg',productionSvg);$('dlDetail').onclick=()=>downloadDetail(details);$('dlBom').onclick=()=>downloadBOM(bom);
       $('dlKitchen').onclick=()=>downloadSvg('BIZET_Wall_A_Kitchen.svg',kitchenSvg);$('dlComm').onclick=()=>downloadSvg('BIZET_Wall_A_Communications.svg',commSvg);
@@ -608,7 +610,7 @@
     window.addEventListener('bizet:modelready',refresh);window.addEventListener('bizet:resume',()=>setTimeout(refresh,250));window.addEventListener('bizet:modelchange',()=>setTimeout(refresh,80));window.addEventListener('bizet:fxready',refresh);
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,350)},true);
   }
-  window.BizetPointB={version:VERSION,prices:PRICES,detailsFor,buildBOM,modulePrice,moduleDrawing,communicationsDrawing,productionModuleSheet,approvalSheets,approvalDrawingHtml,openApprovalDrawings,formatMoney,displayCurrency,convertMoney,getFx:()=>({rates:{...FX_RATES},meta:{...FX_META}}),showBOMTest:()=>showReport('price'),refresh};
+  window.BizetPointB={version:VERSION,prices:PRICES,detailsFor,buildBOM,modulePrice,moduleDrawing,communicationsDrawing,productionModuleSheet,approvalSheets,approvalDrawingHtml,openApprovalDrawings,formatMoney,displayCurrency,convertMoney,getFx:()=>({rates:{...FX_RATES},meta:{...FX_META}}),showBOMTest:()=>showReport('bom'),refresh};
   window.BizetPointBOriginalDocs=()=>showReport('docs');
   boot();
 })();
