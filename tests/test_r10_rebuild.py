@@ -115,7 +115,8 @@ def test_r10_phase6_renderer_consumes_hinge_rules_not_ratio_guessing():
 def test_r101_oven_mapping_is_visible_and_never_duplicates_lower_oven():
     model = read("model.js")
     renderer = read("pilot-3d.js")
-    assert "oven_appliance_present:inputs.oven_location==='LOWER'" in model
+    assert "const lowerOven=inputs.oven_location==='LOWER'" in model
+    assert "oven_appliance_present:lowerOven" in model
     assert "if(inputs.oven_location==='TALL')" in model
     assert "mandatory_lower_drawer:true" in model
     assert "lower_drawer_count:1" in model
