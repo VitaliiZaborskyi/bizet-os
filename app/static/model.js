@@ -623,15 +623,30 @@
   }
 
   function renderStrip(){
-    $('moduleStrip').innerHTML=modules.map(m=>`<button class="module-strip-button${m.system||m.pending?' is-system':''}" type="button" data-module="${m.id}"><strong>${m.number}</strong><span>${m.label}</span></button>`).join('');
+    $('moduleStrip').innerHTML=modules.map(m=>`<button class="module-strip-button${m.system||m.pending?' is-system':''}" type="button" data-module="${m.id}"><strong>${m.number}</strong><span>${moduleDisplayName(m)}</span></button>`).join('');
     $('moduleStrip').querySelectorAll('[data-module]').forEach(btn=>btn.addEventListener('click',()=>openModule(btn.dataset.module)));
   }
+  function focusModuleOrder(){return [...modules].sort((a,b)=>(Number(a.number)||0)-(Number(b.number)||0))}
+  function renderFocusModuleMenu(){
+    const menu=$('focusModuleMenu');if(!menu)return;
+    const ordered=focusModuleOrder();
+    menu.innerHTML=ordered.map(m=>`<button type="button" role="option" class="${activeModule?.id===m.id?'is-active':''}" data-focus-module="${m.id}" aria-selected="${activeModule?.id===m.id?'true':'false'}"><strong>${m.number}</strong><span>${moduleDisplayName(m)}</span></button>`).join('');
+    const index=ordered.findIndex(m=>m.id===activeModule?.id);
+    const prev=$('focusPrevModule'),next=$('focusNextModule');
+    if(prev){prev.disabled=index<=0;prev.title=tr('Предыдущий модуль','Previous module')}
+    if(next){next.disabled=index<0||index>=ordered.length-1;next.title=tr('Следующий модуль','Next module')}
+  }
+  function switchFocusModule(delta){
+    if(viewMode!==VIEW_FOCUS||!activeModule)return;
+    const ordered=focusModuleOrder(),index=ordered.findIndex(m=>m.id===activeModule.id),target=ordered[index+delta];
+    if(target)openModule(target.id);
+  }
   const FOCUS_PRESETS=[
-    {id:'DRAWERS_2',type:'DRAWERS',drawer_count:2,label:'2 ящика',thumb:'drawers-2'},
-    {id:'DRAWERS_3',type:'DRAWERS',drawer_count:3,label:'3 ящика',thumb:'drawers-3'},
-    {id:'DRAWERS_4',type:'DRAWERS',drawer_count:4,label:'4 ящика',thumb:'drawers-4'},
-    {id:'DRAWERS_5',type:'DRAWERS',drawer_count:5,label:'5 ящиков',thumb:'drawers-5'},
-    {id:'HINGED_2',type:'HINGED_2',label:'2 распашных',thumb:'hinged-2'}
+    {id:'DRAWERS_2',type:'DRAWERS',drawer_count:2,labelRu:'2 ящика',labelEn:'2 drawers',thumb:'drawers-2'},
+    {id:'DRAWERS_3',type:'DRAWERS',drawer_count:3,labelRu:'3 ящика',labelEn:'3 drawers',thumb:'drawers-3'},
+    {id:'DRAWERS_4',type:'DRAWERS',drawer_count:4,labelRu:'4 ящика',labelEn:'4 drawers',thumb:'drawers-4'},
+    {id:'DRAWERS_5',type:'DRAWERS',drawer_count:5,labelRu:'5 ящиков',labelEn:'5 drawers',thumb:'drawers-5'},
+    {id:'HINGED_2',type:'HINGED_2',labelRu:'2 распашных',labelEn:'2 doors',thumb:'hinged-2'}
   ];
   function currentFocusPreset(module){
     const edit=module?.id?moduleEditFor(module.id):{};
@@ -648,7 +663,7 @@
     if(!module){host.innerHTML='';if(status)status.hidden=true;return}
     const compatible=module.level!=='upper'&&!module.tall&&['HINGED','DRAWERS'].includes(module.kind);
     const selected=currentFocusPreset(module);
-    host.innerHTML=FOCUS_PRESETS.map(p=>`<button class="r10-focus-variant-card${selected===p.id?' is-selected':''}" type="button" data-focus-preset="${p.id}" ${compatible?'':'disabled'}><span class="r10-module-thumb ${p.thumb}" aria-hidden="true"></span><strong>${p.label}</strong></button>`).join('');
+    host.innerHTML=FOCUS_PRESETS.map(p=>`<button class="r10-focus-variant-card${selected===p.id?' is-selected':''}" type="button" data-focus-preset="${p.id}" ${compatible?'':'disabled'}><span class="r10-module-thumb ${p.thumb}" aria-hidden="true"></span><strong>${tr(p.labelRu,p.labelEn)}</strong></button>`).join('');
     if(status){
       status.hidden=compatible;
       status.textContent=compatible?'':'Для этого типа модуля варианты конфигурации задаются его собственными параметрами.';
