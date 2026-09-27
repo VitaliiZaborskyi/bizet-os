@@ -1123,6 +1123,7 @@
     surface.addEventListener('wheel',event=>{
       if(surface!==activeCanvas())return;
       event.preventDefault();
+      if(drag&&drag.surface===surface){dragMoved=true;drag.mode='ZOOM'}
       const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
       cam.distanceScale=clamp(cam.distanceScale+(event.deltaY>0?.08:-.08),.58,1.75);
       renderScene(false);
@@ -1133,6 +1134,7 @@
   document.addEventListener('bizet:canvaspan',event=>{
     const detail=event.detail||{},surfaceId=String(detail.surfaceId||'');
     if(surfaceId&&surfaceId!==activeCanvas()?.id)return;
+    if(drag){dragMoved=true;drag.mode='PAN'}
     const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
     cam.screenXOffset=clamp((Number(cam.screenXOffset)||0)+(Number(detail.dx)||0),-420,420);
     cam.screenYOffset=clamp((Number(cam.screenYOffset)||0)+(Number(detail.dy)||0),-420,420);
