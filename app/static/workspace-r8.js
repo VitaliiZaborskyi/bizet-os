@@ -91,7 +91,7 @@
    const en=uiLang()==='en';document.documentElement.lang=en?'en':'ru';
    const nav={
      room:['Помещение','Room'],appliances:['Техника','Appliances'],upper:['Верхние модули','Wall cabinets'],
-     communications:['Коммуникации','Utilities'],elements:['Элементы стен','Wall elements'],materials:['Материалы','Materials']
+     communications:['Коммуникации','Utilities'],elements:['Элементы стен','Wall elements'],materials:['Материалы','Materials'],general:['Общие','General']
    };
    document.querySelectorAll('#workspaceTools [data-panel]').forEach(btn=>{
      const pair=nav[btn.dataset.panel];if(!pair)return;
@@ -111,9 +111,9 @@
    if($('surfaceMaterialCancel'))$('surfaceMaterialCancel').textContent=tr('Отмена','Cancel');
    if($('surfaceMaterialApply'))$('surfaceMaterialApply').textContent=tr('Применить','Apply');
  }
- function option(value,label){return '<option value="'+esc(value)+'">'+esc(label)+'</option>'}
- function field(label,key,choices){const current=rt.getInputs()[key];return '<label class="r8-field"><span>'+label+'</span><select data-input="'+key+'">'+choices.map(x=>option(x[0],x[1])).join('')+'</select></label>'}
- function numberField(label,key,def,min){const current=Number(rt.getInputs()[key]??def);return '<label class="r8-field"><span>'+label+'</span><input type="number" min="'+(min||0)+'" step="1" value="'+current+'" data-number="'+key+'"></label>'}
+ function option(value,label){return '<option value="'+esc(value)+'">'+esc(ui(label))+'</option>'}
+ function field(label,key,choices){const current=rt.getInputs()[key];return '<label class="r8-field"><span>'+esc(ui(label))+'</span><select data-input="'+key+'">'+choices.map(x=>option(x[0],x[1])).join('')+'</select></label>'}
+ function numberField(label,key,def,min){const current=Number(rt.getInputs()[key]??def);return '<label class="r8-field"><span>'+esc(ui(label))+'</span><input type="number" min="'+(min||0)+'" step="1" value="'+current+'" data-number="'+key+'"></label>'}
  function propagateLockedValue(key,value){
    if(variantSlots.length!==5)return;
    variantSlots.forEach(slot=>{slot.inputs={...(slot.inputs||{}),[key]:value}});
@@ -168,7 +168,8 @@
      upper:[tr('03 · ВЕРХНИЕ МОДУЛИ','03 · WALL CABINETS'),tr('Верхние модули','Wall cabinets')],
      communications:[tr('04 · КОММУНИКАЦИИ','04 · UTILITIES'),tr('Коммуникации','Utilities')],
      elements:[tr('05 · ЭЛЕМЕНТЫ СТЕН','05 · WALL ELEMENTS'),tr('Элементы стен','Wall elements')],
-     materials:[tr('06 · МАТЕРИАЛЫ','06 · MATERIALS'),tr('Материалы','Materials')]
+     materials:[tr('06 · МАТЕРИАЛЫ','06 · MATERIALS'),tr('Материалы','Materials')],
+     general:[tr('07 · ОБЩИЕ','07 · GENERAL'),tr('Общие настройки','General settings')]
    };return map[panel]
  }
  function materialState(target){
@@ -177,31 +178,31 @@
  }
  function materialLabel(target){
    const lib=MATERIAL_LIBRARY[target],state=materialState(target);
-   if(!lib)return'Не выбрано';
-   if(state.preset==='CUSTOM')return state.custom_texture_name||'Своя текстура';
+   if(!lib)return ui('Не выбрано');
+   if(state.preset==='CUSTOM')return state.custom_texture_name||ui('Своя текстура');
    for(const type of Object.values(lib.types)){
      const found=type.presets.find(p=>p[0]===state.preset);
-     if(found)return found[1];
+     if(found)return ui(found[1]);
    }
-   return'Не выбрано';
+   return ui('Не выбрано');
  }
  function materialButton(target){
    const lib=MATERIAL_LIBRARY[target];
-   return '<button type="button" data-material-target="'+target+'">'+esc(lib.title)+'<strong>'+esc(materialLabel(target))+'</strong></button>';
+   return '<button type="button" data-material-target="'+target+'">'+esc(ui(lib.title))+'<strong>'+esc(materialLabel(target))+'</strong></button>';
  }
  function renderMaterialPicker(){
    if(!materialPickerDraft)return;
    const lib=MATERIAL_LIBRARY[materialPickerDraft.target],typeKey=materialPickerDraft.type||Object.keys(lib.types)[0],type=lib.types[typeKey];
    materialPickerDraft.type=typeKey;
-   $('surfaceMaterialTitle').textContent=lib.title;
-   $('surfaceMaterialType').innerHTML=Object.entries(lib.types).map(([key,v])=>'<option value="'+key+'" '+(key===typeKey?'selected':'')+'>'+esc(v.label)+'</option>').join('');
-   $('surfaceMaterialSwatches').innerHTML=type.presets.map(([id,label,color])=>'<button class="r104-material-swatch '+(materialPickerDraft.preset===id?'is-selected':'')+'" type="button" data-material-preset="'+id+'" style="--swatch:'+color+'"><strong>'+esc(label)+'</strong></button>').join('');
+   $('surfaceMaterialTitle').textContent=ui(lib.title);
+   $('surfaceMaterialType').innerHTML=Object.entries(lib.types).map(([key,v])=>'<option value="'+key+'" '+(key===typeKey?'selected':'')+'>'+esc(ui(v.label))+'</option>').join('');
+   $('surfaceMaterialSwatches').innerHTML=type.presets.map(([id,label,color])=>'<button class="r104-material-swatch '+(materialPickerDraft.preset===id?'is-selected':'')+'" type="button" data-material-preset="'+id+'" style="--swatch:'+color+'"><strong>'+esc(ui(label))+'</strong></button>').join('');
    $('surfaceMaterialSwatches').querySelectorAll('[data-material-preset]').forEach(btn=>btn.onclick=()=>{
      materialPickerDraft={...materialPickerDraft,preset:btn.dataset.materialPreset,custom_texture_data_url:'',custom_texture_name:''};
      renderMaterialPicker();
    });
    const status=$('surfaceTextureStatus');
-   if(status)status.textContent=materialPickerDraft.custom_texture_name||'JPG / PNG / WEBP · до 1.5 MB';
+   if(status)status.textContent=materialPickerDraft.custom_texture_name||tr('JPG / PNG / WEBP · до 1.5 MB','JPG / PNG / WEBP · up to 1.5 MB');
  }
  function openMaterialPicker(target){
    const lib=MATERIAL_LIBRARY[target];if(!lib)return;
@@ -227,6 +228,16 @@
  }
  function bindMaterialTargets(){
    document.querySelectorAll('[data-material-target]').forEach(btn=>btn.onclick=()=>openMaterialPicker(btn.dataset.materialTarget));
+ }
+ function localizePanelBody(){
+   if(uiLang()!=='en')return;
+   const root=$('panelBody');if(!root)return;
+   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+   const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+   nodes.forEach(node=>{
+     const raw=node.nodeValue||'',trim=raw.trim();if(!trim)return;
+     const translated=PROJECT_I18N[trim];if(translated)node.nodeValue=raw.replace(trim,translated);
+   });
  }
  let activePanel=null;
  function renderPanel(panel){
@@ -265,7 +276,7 @@
      html+='<section class="r8-section"><h3>Материалы мебели</h3><p>Тестовый набор для связки модель → спецификация → будущая визуализация.</p><div class="r104-surface-buttons">'+materialButton('facade')+materialButton('carcass')+materialButton('worktop')+'</div></section>';
      html+='<section class="r8-section"><h3>Подтверждение</h3><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
    }
-   $('panelBody').innerHTML=html;bindInputs();bindMaterialTargets();
+   $('panelBody').innerHTML=html;localizePanelBody();bindInputs();bindMaterialTargets();
    if(panel==='room')bindRoomImport();
    if(panel==='elements')renderElements();
    $('editorPanel').hidden=false;
