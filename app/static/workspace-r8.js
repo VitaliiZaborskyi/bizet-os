@@ -35,7 +35,7 @@
    'Ручки и цоколь':'Handles and plinth','Распашные модули':'Hinged cabinets','Ящики':'Drawers','Вертикальные ручки':'Vertical handles','Горизонтальные ручки':'Horizontal handles',
    'Валюта отображения':'Display currency','Документы · тест':'Documents · test','Открыть BOM · TEST':'Open BOM · TEST','Чертежи для согласования · TEST':'Approval drawings · TEST',
    'Плитка':'Tile','Паркет':'Parquet','Ламинат':'Laminate','Микроцемент':'Microcement','Краска':'Paint','Штукатурка':'Plaster','Панели':'Panels','Натяжной':'Stretch ceiling','Плитный материал':'Board material','Древесный':'Wood finish','ЛДСП':'Laminated board','Камень':'Stone','Дерево':'Wood',
-   'Песочная':'Sand','Светлый камень':'Light stone','Серая':'Grey','Дуб натуральный':'Natural oak','Дуб дымчатый':'Smoked oak','Ясень светлый':'Light ash','Дуб':'Oak','Серо-бежевый':'Greige','Тёмный':'Dark',
+   'Песочная':'Sand','Светлый камень':'Light stone','Серая':'Grey','Тёплая':'Warm','Ясень':'Ash','Серый камень':'Grey stone','Дуб натуральный':'Natural oak','Дуб дымчатый':'Smoked oak','Ясень светлый':'Light ash','Дуб':'Oak','Серо-бежевый':'Greige','Тёмный':'Dark',
    'Тёплый':'Warm','Серый':'Grey','Светлый':'Light','Тёплый белый':'Warm white','Песочный':'Sand','Грейдж':'Greige','Графит':'Graphite','Белая':'White','Орех':'Walnut','Светлая':'Light','Матовый':'Matte','Сатин':'Satin','Белый':'White','Светло-серый':'Light grey','Айвори':'Ivory','Шалфей':'Sage','Чёрный':'Black'
  };
  const ui=value=>uiLang()==='en'?(PROJECT_I18N[String(value)]||String(value)):String(value);
@@ -108,6 +108,8 @@
      if(light)light.textContent=tr('Светлая','Light');if(dark)dark.textContent=tr('Тёмная','Dark');
    }
    const materialClose=$('surfaceMaterialClose');if(materialClose)materialClose.setAttribute('aria-label',tr('Закрыть','Close'));
+   const materialTypeLabel=$('surfaceMaterialType')?.closest('label')?.querySelector('span');if(materialTypeLabel)materialTypeLabel.textContent=tr('Тип','Type');
+   const customTexture=$('surfaceTextureInput')?.closest('label')?.querySelector('span');if(customTexture)customTexture.textContent=tr('Своя текстура','Custom texture');
    if($('surfaceMaterialCancel'))$('surfaceMaterialCancel').textContent=tr('Отмена','Cancel');
    if($('surfaceMaterialApply'))$('surfaceMaterialApply').textContent=tr('Применить','Apply');
  }
