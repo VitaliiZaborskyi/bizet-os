@@ -191,7 +191,7 @@
       module.facade_count=module.tall_facade_count;module.facade_count_user=true;
       module.tall_drawer_mode=edit.tall_drawer_mode||'NONE';
       module.tall_drawer_count=module.tall_drawer_mode==='NONE'?0:clamp(Math.round(Number(edit.tall_drawer_count)||2),1,3);
-      module.visible_drawer_stack_height_mm=module.tall_drawer_mode==='VISIBLE'?visibleTallDrawerLimit():0;
+      module.visible_drawer_stack_height_mm=module.tall_drawer_mode==='VISIBLE'?clamp(Math.round(Number(edit.visible_drawer_stack_height_mm)||visibleTallDrawerLimit()),1,visibleTallDrawerLimit()):0;
       module.facade_openings=normalizeOpenings(module.facade_count,edit.facade_openings);
       module.middle_side_boundaries=middleSideBoundaries(module.facade_count,module.facade_openings);
     }
