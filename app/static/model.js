@@ -1,13 +1,17 @@
 (() => {
-  const PROJECT_KEY='bizet_os_project_id',CONFIG_KEY='bizet_pilot_configuration';
+  const PROJECT_KEY='bizet_os_project_id',CONFIG_KEY='bizet_pilot_configuration',LANG_KEY='bizet_os_language',NUMBERS_KEY='bizet_os_show_module_numbers';
   const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
+  const uiLang=()=>String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ru').toLowerCase().startsWith('en')?'en':'ru';
+  const tr=(ru,en)=>uiLang()==='en'?en:ru;
   const projectId=params.get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
   if(projectId){sessionStorage.setItem(PROJECT_KEY,projectId);localStorage.setItem(PROJECT_KEY,projectId)}
   const VIEW_NORMAL='NORMAL_KITCHEN_VIEW',VIEW_FOCUS='MODULE_FOCUS_MODE';
   let project=null,visual={},inputs={},activeModule=null,modules=[],scene=null,drag=null,dragMoved=false;
   let moduleDraft=null,moduleDraftBase=null,moduleDraftBasePrice=0;
   let viewMode=VIEW_NORMAL,focusCamera={yaw:-.36,pitch:.34,distanceScale:.72},focusDimensionsVisible=true,normalDimensionsVisible=true;
-  let layoutWarnings=[],preparedViewMode=null,stageResizeFrame=0,lastStageSize='',focusCanvasResetFrames=0,focusPaintToken=0;
+  let layoutWarnings=[],preparedViewMode=null,stageResizeFrame=0,lastStageSize='',focusCanvasResetFrames=0,focusPaintToken=0,focusTransitionToken=0;
+  let showModuleNumbers=localStorage.getItem(NUMBERS_KEY)!=='0';
+  const focusDraftCache=new Map();
   const LIMITS=window.BizetR10Rules?.moduleLimitsMm||{STRAIGHT_MAX:900,CORNER_MAX:1250,PREFERRED_FILL:600,HINGED_FACADE_MAX:597,MIN_STANDARD_MODULE:300};
   const ERGO=window.BizetR10Rules?.ergonomicsMm||{SINK_COOKTOP_HARD_MIN:500,SINK_COOKTOP_PREFERRED:900,SINK_OVEN_SAME_WALL_MIN:1000,TRIANGLE_LEG_MIN:1200,TRIANGLE_LEG_MAX:2700,TRIANGLE_SUM_MAX:7900};
   const CORNER=window.BizetR10Rules?.cornerRules||{ZONE_DEPTH:600,MAX_CORNER_MODULE:1250,ALLOWED_KINDS:['SINK','CORNER']};
@@ -19,6 +23,25 @@
   function plinthHeight(){return clamp(Math.round(Number(inputs.plinth_height_mm??DEFAULT_PLINTH_H)||DEFAULT_PLINTH_H),0,300)}
   function lowerBodyHeight(){return Math.max(300,LOWER_TOTAL_H-plinthHeight()-WORKTOP_H)}
   function visibleTallDrawerLimit(){return LOWER_TOTAL_H-WORKTOP_H}
+  function moduleDisplayName(m){
+    if(!m)return tr('Модуль','Module');
+    if(uiLang()!=='en')return m.label||'Модуль';
+    if(m.kind==='FRIDGE')return m.freestanding?'Freestanding refrigerator':'Refrigerator';
+    if(m.kind==='DISHWASHER')return m.freestanding?'Freestanding dishwasher':'Dishwasher';
+    if(m.kind==='SINK')return 'Sink base cabinet';
+    if(m.kind==='DRAWERS')return `Drawer base cabinet · ${Math.max(2,Math.min(5,Number(m.drawer_count)||2))} drawers`;
+    if(m.kind==='HINGED')return Number(m.facade_count)>1?`Base cabinet · ${m.facade_count} doors`:'Base cabinet';
+    if(m.kind==='COOKTOP')return m.oven_appliance_present?'Cooktop + oven base cabinet':'Cooktop base cabinet';
+    if(m.kind==='TALL_OVEN')return 'Tall oven cabinet';
+    if(m.kind==='CORNER')return 'Corner cabinet';
+    if(m.kind==='FILLER')return 'Filler';
+    if(m.kind==='UPPER_HOOD')return 'Hood wall cabinet';
+    if(m.kind==='UPPER_DRYER'||m.kind==='DISH_DRYING')return 'Dish-drying wall cabinet';
+    if(m.kind==='UPPER_TOP')return 'Mezzanine cabinet';
+    if(m.kind==='UPPER')return m.opening==='LIFT'?'Lift wall cabinet':'Wall cabinet';
+    if(m.tall)return 'Tall cabinet';
+    return 'Base cabinet';
+  }
 
   async function request(url,options={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});if(!r.ok){let p={};try{p=await r.json()}catch(_){};throw new Error(typeof p.detail==='string'?p.detail:'Не удалось загрузить модель.')}return r.json()}
   async function saveVisual(next,reason){visual=next;const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path:'scene.visual_settings',value:visual,reason})});project=result.project||result;visual={...(project.scene?.visual_settings||visual)};inputs={...(visual.guided_inputs||inputs)}}
