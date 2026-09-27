@@ -289,3 +289,83 @@ html[data-theme="dark"] .r104-edit-field select{background:#282825;color:#f4f2ed
 @media(max-width:820px){
   .r8-variant-controls{bottom:9px;transform:translateX(-50%) scale(.94);transform-origin:center bottom}
 }
+
+
+/* R10.4.1 — stable focus UX, module navigation and number visibility. */
+.r104-number-toggle{
+  min-width:42px!important;
+  font-size:18px!important;
+  font-weight:850!important;
+  line-height:1!important;
+}
+.r104-number-toggle[aria-pressed="false"]{opacity:.46}
+
+.r104-focus-module-nav{
+  position:absolute;top:10px;right:10px;z-index:15;
+  display:grid;grid-template-columns:34px minmax(110px,auto) 34px;gap:5px;align-items:center;
+  max-width:min(72%,420px)
+}
+.r104-focus-module-nav[hidden]{display:none!important}
+.r104-focus-module-nav .r10-focus-module-label{
+  position:static!important;top:auto!important;right:auto!important;z-index:auto!important;
+  max-width:none!important;width:100%;min-width:0;margin:0;
+  border:0;cursor:pointer;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.r104-focus-step{
+  width:34px;height:34px;padding:0;border:0;border-radius:12px;
+  background:rgba(20,20,20,.82);color:#fff;font-size:24px;line-height:1;
+  box-shadow:0 7px 24px rgba(0,0,0,.16);backdrop-filter:blur(12px);cursor:pointer
+}
+.r104-focus-step:disabled{opacity:.34}
+.r104-focus-module-menu{
+  position:absolute;right:0;top:42px;width:min(310px,78vw);max-height:min(48vh,360px);
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  padding:6px;border:1px solid rgba(0,0,0,.10);border-radius:16px;
+  background:rgba(250,249,246,.97);box-shadow:0 18px 54px rgba(0,0,0,.22);backdrop-filter:blur(14px)
+}
+.r104-focus-module-menu[hidden]{display:none!important}
+.r104-focus-module-menu button{
+  width:100%;display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:center;
+  border:0;border-radius:11px;background:transparent;color:#171716;padding:7px 9px;text-align:left;cursor:pointer
+}
+.r104-focus-module-menu button:hover,.r104-focus-module-menu button.is-active{background:#eceae4}
+.r104-focus-module-menu button strong{
+  display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#171716;color:#fff;font-size:12px
+}
+.r104-focus-module-menu button span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:720}
+
+html[data-theme="dark"] .r104-focus-module-menu{background:rgba(35,35,32,.98);border-color:rgba(255,255,255,.12)}
+html[data-theme="dark"] .r104-focus-module-menu button{color:#f4f2ed}
+html[data-theme="dark"] .r104-focus-module-menu button:hover,
+html[data-theme="dark"] .r104-focus-module-menu button.is-active{background:#454540}
+
+@media(max-width:820px){
+  body.r10-module-focus{
+    height:100dvh;max-height:100dvh;overflow:hidden!important;overscroll-behavior:none
+  }
+  body.r10-module-focus .r8-shell{
+    height:100dvh;min-height:0;overflow:hidden!important
+  }
+  body.r10-module-focus .r8-main{
+    height:calc(100dvh - 72px);min-height:0;overflow:hidden!important
+  }
+  body.r10-module-focus .r8-canvas-column{
+    height:100%;min-height:0;overflow:hidden!important;
+    display:flex;flex-direction:column;
+    padding:6px 12px calc(8px + env(safe-area-inset-bottom))!important
+  }
+  body.r10-module-focus .r8-stage{
+    flex:0 0 clamp(290px,43dvh,370px);
+    height:auto!important;min-height:0!important
+  }
+  body.r10-module-focus .r104-module-editor{
+    flex:1 1 auto;min-height:0;max-height:none;
+    overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    margin-bottom:0
+  }
+  .r104-focus-module-nav{top:9px;right:9px;max-width:72%;grid-template-columns:31px minmax(92px,1fr) 31px;gap:4px}
+  .r104-focus-step{width:31px;height:31px;border-radius:11px;font-size:21px}
+  .r104-focus-module-nav .r10-focus-module-label{font-size:11px;padding:8px 9px!important}
+  .r104-focus-module-menu{top:38px;width:min(300px,84vw);max-height:42dvh}
+}
