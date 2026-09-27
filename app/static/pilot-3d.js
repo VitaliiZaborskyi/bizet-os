@@ -157,7 +157,16 @@
   function moduleFrontFace(faces,module){return module.wall==='B'?faces.right:module.wall==='C'?faces.left:faces.frontYMin}
   function drawBox(ctx,projector,box,style={}){
     const c=colors(),faces=boxFaces(projector,box),body=style.body||c.module,side=style.side||c.moduleSide,front=style.front||c.moduleFront,top=style.top||c.moduleTop,stroke=style.stroke||c.line;
-    polygon(ctx,faces.backYMax,body,stroke,1);polygon(ctx,faces.left,side,stroke,1);polygon(ctx,faces.right,side,stroke,1);polygon(ctx,faces.top,top,stroke,1);polygon(ctx,faces.frontYMin,front,stroke,1.1);return faces;
+    const avgDepth=face=>face.reduce((sum,p)=>sum+(Number(p?.[2])||0),0)/(face.length||1);
+    const drawList=[
+      {face:faces.backYMax,fill:body,width:1,priority:0},
+      {face:faces.left,fill:side,width:1,priority:1},
+      {face:faces.right,fill:side,width:1,priority:1},
+      {face:faces.top,fill:top,width:1,priority:2},
+      {face:faces.frontYMin,fill:front,width:1.1,priority:3}
+    ].sort((a,b)=>avgDepth(b.face)-avgDepth(a.face)||a.priority-b.priority);
+    drawList.forEach(item=>polygon(ctx,item.face,item.fill,stroke,item.width));
+    return faces;
   }
 
   function faceCenter(face){const pts=validPoints(face);return[pts.reduce((s,p)=>s+p[0],0)/pts.length,pts.reduce((s,p)=>s+p[1],0)/pts.length]}
@@ -185,22 +194,25 @@
       const count=Math.max(1,Number(module.facade_count)||1),horizontal=module.level==='upper'&&module.facade_orientation==='HORIZONTAL';
       if(horizontal){for(let i=1;i<count;i++)hline(i/count)}
       else{for(let i=1;i<count;i++)vline(i/count)}
-      const orient=module.handle_orientation||'HORIZONTAL',offset=Math.max(18,Number(module.handle_offset_mm)||50),opens=Array.isArray(module.facade_openings)?module.facade_openings:[];
+      const orient=module.handle_orientation||'HORIZONTAL',offset=Math.max(40,Number(module.handle_offset_mm)||50),opens=Array.isArray(module.facade_openings)?module.facade_openings:[];
       for(let i=0;i<count;i++){
         if(horizontal){
           const low=module.z+module.h*i/count,high=module.z+module.h*(i+1)/count;
-          handle(module.x+module.w*.5,low+Math.min(offset,(high-low)*.35),'HORIZONTAL',Math.min(180,module.w*.42));
+          handle(module.x+module.w*.5,low+Math.max(40,Math.min(offset,(high-low)*.35)),'HORIZONTAL',Math.min(180,Math.max(40,module.w-80)));
           continue;
         }
         const left=module.x+module.w*i/count,right=module.x+module.w*(i+1)/count,cx=(left+right)/2,opening=opens[i]||((module.opening||'').includes('RIGHT')?'RIGHT':'LEFT');
         if(orient==='VERTICAL'){
           const onRight=opening==='LEFT',x=onRight?right-offset:left+offset;
-          const hz=module.level==='upper'?module.z+Math.min(140,module.h*.26):module.z+module.h*.72;
-          handle(x,hz,'VERTICAL',Math.min(150,module.h*.22));
+          const len=Math.min(150,module.h*.22),half=len/2;
+          const target=module.level==='upper'?module.z+Math.min(140,module.h*.26):module.z+module.h*.72;
+          const hz=Math.max(module.z+40+half,Math.min(module.z+module.h-40-half,target));
+          handle(x,hz,'VERTICAL',len);
         }else{
-          const x=opening==='LEFT'?right-offset:left+offset;
-          const hz=module.level==='upper'?module.z+offset:module.z+module.h-offset;
-          handle(x,hz,'HORIZONTAL',Math.min(110,(right-left)*.42));
+          const len=Math.min(110,(right-left)*.42),edgeGap=40+len/2;
+          const x=opening==='LEFT'?right-edgeGap:left+edgeGap;
+          const hz=module.level==='upper'?module.z+40:module.z+module.h-40;
+          handle(x,hz,'HORIZONTAL',len);
         }
       }
     }
@@ -247,21 +259,19 @@
   }
 
   function drawScilmLegProxy(ctx,projector,x,y,z,height){
-    const p=projector.point,base=p([x,y,z+4]),top=p([x,y,z+height-6]);
-    ctx.save();
-    ctx.lineCap='round';ctx.strokeStyle='rgba(45,48,50,.94)';ctx.lineWidth=8;
-    ctx.beginPath();ctx.moveTo(base[0],base[1]);ctx.lineTo(top[0],top[1]);ctx.stroke();
-    [base,top].forEach((q,i)=>{ctx.beginPath();ctx.arc(q[0],q[1],i?6.5:9.5,0,Math.PI*2);ctx.fillStyle=i?'#666b6e':'#2b2e30';ctx.fill();ctx.strokeStyle='rgba(5,5,5,.48)';ctx.lineWidth=1;ctx.stroke()});
-    ctx.restore();
+    const size=22,stem=8,footH=6,style={body:'#333638',side:'#26292b',front:'#414548',top:'#5a5e61',stroke:'rgba(0,0,0,.42)'};
+    drawBox(ctx,projector,{x:x-size/2,y:y-size/2,z,w:size,d:size,h:footH},style);
+    drawBox(ctx,projector,{x:x-stem/2,y:y-stem/2,z:z+footH,w:stem,d:stem,h:Math.max(18,height-footH-4)},style);
   }
 
   function drawBlumHingeProxy(ctx,projector,module,centerZ,facadeIndex=0,facadeCount=1,opening='LEFT'){
     const p=projector.point,count=Math.max(1,facadeCount),fw=module.w/count,left=module.x+fw*facadeIndex,right=left+fw,y=module.y-12;
-    const cupX=opening==='RIGHT'?right-35:left+35,cup=p([cupX,y,centerZ]);
-    // Focus shows only the Ø35 concealed-hinge cup; each facade owns its real hinge side.
-    ctx.save();ctx.beginPath();ctx.arc(cup[0],cup[1],7.5,0,Math.PI*2);
-    ctx.fillStyle='rgba(162,166,168,.92)';ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle='#4f5457';ctx.stroke();
-    ctx.beginPath();ctx.arc(cup[0],cup[1],3.2,0,Math.PI*2);ctx.strokeStyle='rgba(70,74,76,.72)';ctx.lineWidth=1;ctx.stroke();ctx.restore();
+    const cupX=opening==='RIGHT'?right-35:left+35,cup=p([cupX,y,centerZ]),edge=p([cupX+17.5,y,centerZ]);
+    const radius=Math.max(1.6,Math.min(9,Math.hypot(edge[0]-cup[0],edge[1]-cup[1])));
+    // Ø35 is projected from model space so the cup scales together with the cabinet.
+    ctx.save();ctx.beginPath();ctx.arc(cup[0],cup[1],radius,0,Math.PI*2);
+    ctx.fillStyle='rgba(162,166,168,.92)';ctx.fill();ctx.lineWidth=Math.max(.7,Math.min(1.4,radius*.18));ctx.strokeStyle='#4f5457';ctx.stroke();
+    ctx.beginPath();ctx.arc(cup[0],cup[1],Math.max(.7,radius*.42),0,Math.PI*2);ctx.strokeStyle='rgba(70,74,76,.72)';ctx.lineWidth=Math.max(.6,radius*.12);ctx.stroke();ctx.restore();
   }
 
   function drawFocusedModuleDimensions(ctx,projector,module,c){
@@ -589,11 +599,19 @@
         const faces=drawBox(ctx,projector,module,style);front=moduleFrontFace(faces,module);
         drawModuleDetails(ctx,projector,module,c);
       }
-      drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front});
+      if(options.showNumbers!==false)drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front,center:faceCenter(front)});
     };
     lower.forEach(drawModule);activeWalls.forEach(wall=>drawWorktop(ctx,projector,lower.filter(m=>m.wall===wall)));lower.forEach(m=>drawTopAppliance(ctx,projector,m));upper.forEach(drawModule);if(options.showModuleDimensions===true)drawModuleRunDimensions(ctx,projector,lower,c);
     flushCanvas(ctx,forceCanvasReset);
-    return{camera:{yaw:projector.yaw,pitch:projector.pitch,distanceScale:projector.distanceScale},hitAreas:hits,hitTest(x,y){for(let i=hits.length-1;i>=0;i--)if(pointInPolygon(x,y,hits[i].points))return hits[i].id;return null}};
+    return{camera:{yaw:projector.yaw,pitch:projector.pitch,distanceScale:projector.distanceScale},hitAreas:hits,hitTest(x,y){
+      const candidates=hits.filter(hit=>pointInPolygon(x,y,hit.points));
+      if(!candidates.length)return null;
+      candidates.sort((a,b)=>{
+        const ac=a.center||faceCenter(a.points),bc=b.center||faceCenter(b.points);
+        return Math.hypot(ac[0]-x,ac[1]-y)-Math.hypot(bc[0]-x,bc[1]-y);
+      });
+      return candidates[0].id;
+    }};
   }
 
   window.BizetPilot3D={drawRoomScene,drawKitchenScene,pointInPolygon,cameraDefaults};
