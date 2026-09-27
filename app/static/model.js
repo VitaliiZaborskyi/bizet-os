@@ -99,7 +99,7 @@
     const kitchenVariants=document.querySelector('.r8-variant-controls');
     if(normalCanvas)normalCanvas.setAttribute('aria-hidden',String(inFocus));
     if(focusCanvas)focusCanvas.setAttribute('aria-hidden',String(!inFocus));
-    if(back){back.hidden=!inFocus;back.textContent=tr('← Вся кухня','← Full kitchen')}
+    if(back){back.hidden=!inFocus;back.textContent=tr('← Назад','← Back')}
     if(kitchenVariants)kitchenVariants.hidden=inFocus;
     if(nav)nav.hidden=!inFocus||!activeModule;
     if(label&&inFocus&&activeModule)label.textContent=`${activeModule.number} · ${moduleDisplayName(activeModule)}`;
@@ -244,8 +244,8 @@
     return applyModuleEdit(module,false);
   }
 
-  let camera={yaw:0,pitch:.33,distanceScale:1};
-  function resetCamera(){camera=window.BizetPilot3D?.cameraDefaults?.(configuration())||{yaw:0,pitch:.33,distanceScale:1}}
+  let camera={yaw:0,pitch:.33,distanceScale:1,screenXOffset:0,screenYOffset:0};
+  function resetCamera(){camera={...(window.BizetPilot3D?.cameraDefaults?.(configuration())||{yaw:0,pitch:.33,distanceScale:1}),screenXOffset:0,screenYOffset:0}}
 
   function enterNormalKitchenView(){
     viewMode=VIEW_NORMAL;activeModule=null;moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;drag=null;focusCanvasResetFrames=0;focusPaintToken++;focusTransitionToken++;
@@ -254,7 +254,7 @@
   }
   function enterModuleFocus(module){
     if(!module)return false;
-    activeModule=module;viewMode=VIEW_FOCUS;focusCamera={yaw:-.36,pitch:.34,distanceScale:.72};
+    activeModule=module;viewMode=VIEW_FOCUS;focusCamera={yaw:-.36,pitch:.34,distanceScale:.72,screenXOffset:0,screenYOffset:0};
     focusCanvasResetFrames=1;focusPaintToken++;focusTransitionToken++;
     return true;
   }
@@ -274,7 +274,9 @@
     module.module_run_limit_mm=maxRunFor(module);
     module.facade_width_limit_mm=LIMITS.HINGED_FACADE_MAX;
     module.handle_type=module.handle_type||'STANDARD';
-    module.handle_orientation=module.handle_orientation||(kind==='DRAWERS'?'HORIZONTAL':'HORIZONTAL');
+    const hingedHandle=String(inputs.hinged_handle_orientation||'VERTICAL').toUpperCase();
+    const drawerHandle=String(inputs.drawer_handle_orientation||'HORIZONTAL').toUpperCase();
+    module.handle_orientation=module.handle_orientation||(kind==='DRAWERS'?drawerHandle:hingedHandle);
     module.handle_offset_mm=Number(module.handle_offset_mm)||50;
     if(isOvenModule(module))module.corner_forbidden=true;
     if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER','TALL_OVEN'].includes(kind))module.facade_count=hingedFacadeCountFor(module);
@@ -302,12 +304,13 @@
       const sidePanel=free?18:0,clearance=free?freestandingGap(applianceWidth):0;
       list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2+clearance*2,'DISHWASHER',wall,{freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel,appliance_clearance_mm:clearance}));
     }
-    const cooktopWall=resolvedCooktopWall();
-    list.push(baseModule('cooktop',inputs.oven_location==='LOWER'?'Варочная + духовка':'Варочная панель',Number(inputs.cooktop_width_mm)||600,'COOKTOP',cooktopWall,{widthStatus:inputs.cooktop_width_mm==='CUSTOM'?'PILOT_VISUAL_PLACEHOLDER':'USER_SELECTED',oven_appliance_present:inputs.oven_location==='LOWER',corner_forbidden:inputs.oven_location==='LOWER'}));
+    const cooktopWall=resolvedCooktopWall(),ovenWidth=[600,900].includes(Number(inputs.oven_width_mm))?Number(inputs.oven_width_mm):600;
+    list.push(baseModule('cooktop',inputs.oven_location==='LOWER'?'Варочная + духовка':'Варочная панель',inputs.oven_location==='LOWER'?ovenWidth:(Number(inputs.cooktop_width_mm)||600),'COOKTOP',cooktopWall,{widthStatus:'USER_SELECTED',oven_appliance_present:inputs.oven_location==='LOWER',oven_width_mm:ovenWidth,corner_forbidden:inputs.oven_location==='LOWER'}));
     if(inputs.oven_location==='TALL'){
       const wall=resolvedOvenWall();
       const tallHeight=Math.max(900,Math.min(roomValues().heightMm-140,2100));
-      list.push(baseModule('oven','Пенал с духовкой',600,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'PILOT_VISUAL_PLACEHOLDER',oven_appliance_present:true,mandatory_lower_drawer:true,lower_drawer_count:1,corner_forbidden:true,lower_drawer_structure:{components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true},microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
+      const ovenWidth=[600,900].includes(Number(inputs.oven_width_mm))?Number(inputs.oven_width_mm):600;
+      list.push(baseModule('oven','Пенал с духовкой',ovenWidth,'TALL_OVEN',wall,{tall:true,h:tallHeight,widthStatus:'USER_SELECTED',oven_width_mm:ovenWidth,oven_appliance_present:true,mandatory_lower_drawer:true,lower_drawer_count:1,corner_forbidden:true,lower_drawer_structure:{components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true},microwave_present:inputs.microwave_present,microwave_type:inputs.microwave_type,coffee_present:inputs.coffee_present,coffee_type:inputs.coffee_type,coffee_support:inputs.coffee_support,coffee_compartment:inputs.coffee_compartment,coffee_front_opening:inputs.coffee_front_opening}));
     }
     return list;
   }
@@ -439,6 +442,14 @@
     });
     return ordered;
   }
+  function enforceFridgeEdgeInvariant(ordered,edge){
+    const fridges=ordered.filter(m=>m.kind==='FRIDGE');
+    if(!fridges.length)return ordered;
+    const rest=ordered.filter(m=>m.kind!=='FRIDGE');
+    // HARD: refrigerators never sit between ordinary base modules. Keep the refrigerator block at the run edge.
+    return edge==='END'?rest.concat(fridges):fridges.concat(rest);
+  }
+
   function centerCompositionAnchor(ordered,wall,bounds){
     if(!COMPOSITION.centerPrimaryApplianceOnLongRun||inputs.communications_status==='USER_CONFIRMED')return ordered;
     const anchorIndex=ordered.findIndex(m=>m.kind==='TALL_OVEN')>=0?ordered.findIndex(m=>m.kind==='TALL_OVEN'):ordered.findIndex(m=>m.kind==='COOKTOP');
@@ -519,6 +530,7 @@
     ordered=promoteDrawerCadence(ordered);
     ordered=ensureCornerZones(ordered,wall);
     ordered=centerCompositionAnchor(ordered,wall,bounds);
+    ordered=enforceFridgeEdgeInvariant(ordered,edge);
     let cursor=bounds.start;
     return ordered.map(m=>{
       const runSize=Math.min(m.w,maxRunFor(m)),offset=Number(offsetOverrides()[m.id])||0;
@@ -707,6 +719,7 @@
   function validateModuleDraft(draft,module){
     if(!draft||!module)return tr('Модуль не выбран.','No module selected.');
     const kind=moduleEditorKind(module),run=Math.round(Number(draft.run_mm)||0);
+    if(isOvenModule(module)&&![600,900].includes(run))return tr('Духовка: только 600 или 900 мм.','Oven: 600 or 900 mm only.');
     if(widthLocked(module))return'';
     if(kind==='FILLER'){
       if(run<20||run>900)return tr('Филлер: ширина 20–900 мм.','Filler width: 20–900 mm.');
@@ -762,8 +775,11 @@
     if(title)title.textContent=`${module.number}. ${moduleDisplayName(module)}`;
     if(priceLabel)priceLabel.textContent=tr('Цена модуля','Module price');
     if(kicker)kicker.textContent=tr('ПРАВКА МОДУЛЯ','EDIT MODULE');
-    let html=editField(tr('Ширина, мм','Width, mm'),'run_mm',d.run_mm);
-    if(locked)html=html.replace('data-module-edit="run_mm"','data-module-edit="run_mm" disabled');
+    const ovenOnly=isOvenModule(module);
+    let html=ovenOnly
+      ?editField(tr('Ширина духовки, мм','Oven width, mm'),'run_mm',d.run_mm,'select',[[600,'600'],[900,'900']])
+      :editField(tr('Ширина, мм','Width, mm'),'run_mm',d.run_mm);
+    if(locked&&!ovenOnly)html=html.replace('data-module-edit="run_mm"','data-module-edit="run_mm" disabled');
     if(kind==='LOWER'){
       html+=editField(tr('Конфигурация','Configuration'),'configuration',d.configuration,'select',[['HINGED',tr('Распашной','Hinged')],['DRAWERS',tr('Ящики','Drawers')]]);
       if(d.configuration==='DRAWERS'){
@@ -845,7 +861,7 @@
     const error=validateModuleDraft(moduleDraft,moduleDraftBase||activeModule);if(error){const rule=$('moduleEditRule');rule.hidden=false;rule.textContent=error;return}
     const id=activeModule.id,overrides=moduleEditOverrides(),payload={...moduleDraft};delete payload.id;
     overrides[id]=payload;
-    await saveVisual({...visual,module_edit_overrides:overrides,module_direct_edit_status:'R10.4.1_MODULE_SAVED'},`R10.4.1 module edit ${id}`);
+    await saveVisual({...visual,module_edit_overrides:overrides,module_direct_edit_status:'R10.4.2_MODULE_SAVED'},`R10.4.2 module edit ${id}`);
     moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;
     enterNormalKitchenView();renderScene(false);
     window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'module-edit-save',module_id:id}}));
@@ -865,12 +881,21 @@
     const keepId=activeModule.id;renderScene(false);activeModule=modules.find(m=>m.id===keepId)||activeModule;renderModuleEditor(activeModule);
   }
 
+  function kitchenCameraTarget(list){
+    if(!Array.isArray(list)||!list.length)return null;
+    const minX=Math.min(...list.map(m=>Number(m.x)||0)),maxX=Math.max(...list.map(m=>(Number(m.x)||0)+(Number(m.w)||0)));
+    const minY=Math.min(...list.map(m=>Number(m.y)||0)),maxY=Math.max(...list.map(m=>(Number(m.y)||0)+(Number(m.d)||0)));
+    const minZ=Math.min(...list.map(m=>Number(m.z)||0)),maxZ=Math.max(...list.map(m=>(Number(m.z)||0)+(Number(m.h)||0)));
+    return{x:(minX+maxX)/2,y:(minY+maxY)/2,z:(minZ+maxZ)/2};
+  }
+
   function renderNormalKitchen(engineOk=false){
     viewMode=VIEW_NORMAL;
     prepareRenderLayout();
+    const target=kitchenCameraTarget(modules);
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),
-      modules,camera:{...camera,screenYOffset:window.innerWidth<=820?-38:0},showDimensions:normalDimensionsVisible,showModuleDimensions:false,showNumbers:showModuleNumbers,
+      modules,camera:{...camera,screenXOffset:Number(camera.screenXOffset)||0,screenYOffset:(Number(camera.screenYOffset)||0)+(window.innerWidth<=820?-38:0),targetX:target?.x,targetY:target?.y,targetZ:target?.z},showDimensions:normalDimensionsVisible,showModuleDimensions:false,showNumbers:showModuleNumbers,
       architecturalElements:project?.room?.architectural_elements||[]
     });
     syncConstraintBanner();renderFocusVariantRibbon(null);
@@ -889,11 +914,11 @@
     if(forceCanvasReset)focusCanvasResetFrames--;
     scene=window.BizetPilot3D.drawKitchenScene($('focusCanvas'),{
       room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
-      camera:focusCamera,showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,showNumbers:false,architecturalElements:[],focusMode:true,
+      camera:{...focusCamera,screenXOffset:Number(focusCamera.screenXOffset)||0,screenYOffset:Number(focusCamera.screenYOffset)||0,targetX:clone.x+clone.w/2,targetY:clone.y+clone.d/2,targetZ:clone.z+clone.h/2},showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,showNumbers:false,architecturalElements:[],focusMode:true,
       forceCanvasReset
     });
     syncConstraintBanner();renderFocusVariantRibbon(activeModule);
-    $('modelStatus').textContent='Режим модуля · «Вся кухня» вернёт общий вид.';
+    $('modelStatus').textContent=tr('Режим модуля · «Назад» вернёт общий вид.','Module mode · Back returns to the full kitchen.');
   }
   function renderScene(engineOk=false){
     setFurniturePalette();
@@ -1103,6 +1128,14 @@
   }
   bindCanvasSurface(normalCanvas);
   bindCanvasSurface(focusCanvas);
+  document.addEventListener('bizet:canvaspan',event=>{
+    const detail=event.detail||{},surface=detail.surface;
+    if(surface!==activeCanvas())return;
+    const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
+    cam.screenXOffset=clamp((Number(cam.screenXOffset)||0)+(Number(detail.dx)||0),-420,420);
+    cam.screenYOffset=clamp((Number(cam.screenYOffset)||0)+(Number(detail.dy)||0),-420,420);
+    renderScene(false);
+  });
 
   $('focusVariantOptions')?.addEventListener('click',event=>{
     const btn=event.target.closest('[data-focus-preset]');if(!btn||btn.disabled)return;
