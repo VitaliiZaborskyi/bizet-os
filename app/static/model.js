@@ -1129,8 +1129,8 @@
   bindCanvasSurface(normalCanvas);
   bindCanvasSurface(focusCanvas);
   document.addEventListener('bizet:canvaspan',event=>{
-    const detail=event.detail||{},surface=detail.surface;
-    if(surface!==activeCanvas())return;
+    const detail=event.detail||{},surfaceId=String(detail.surfaceId||'');
+    if(surfaceId&&surfaceId!==activeCanvas()?.id)return;
     const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
     cam.screenXOffset=clamp((Number(cam.screenXOffset)||0)+(Number(detail.dx)||0),-420,420);
     cam.screenYOffset=clamp((Number(cam.screenYOffset)||0)+(Number(detail.dy)||0),-420,420);
