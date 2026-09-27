@@ -94,22 +94,26 @@
   function syncFocusControls(){
     const inFocus=viewMode===VIEW_FOCUS;
     document.body.classList.toggle('r10-module-focus',inFocus);
-    const back=$('focusBackButton'),dims=$('modelDimensionsToggle'),label=$('focusModuleLabel'),ribbon=$('focusVariantRibbon'),editor=$('moduleEditPanel');
+    const back=$('focusBackButton'),dims=$('modelDimensionsToggle'),label=$('focusModuleLabel'),nav=$('focusModuleNav'),ribbon=$('focusVariantRibbon'),editor=$('moduleEditPanel'),numbers=$('moduleNumbersToggle');
     const normalCanvas=$('modelCanvas'),focusCanvas=$('focusCanvas');
     const kitchenVariants=document.querySelector('.r8-variant-controls');
     if(normalCanvas)normalCanvas.setAttribute('aria-hidden',String(inFocus));
     if(focusCanvas)focusCanvas.setAttribute('aria-hidden',String(!inFocus));
-    if(back)back.hidden=!inFocus;
+    if(back){back.hidden=!inFocus;back.textContent=tr('← Вся кухня','← Full kitchen')}
     if(kitchenVariants)kitchenVariants.hidden=inFocus;
-    if(label){
-      label.hidden=!inFocus||!activeModule;
-      if(inFocus&&activeModule)label.textContent=`${activeModule.number} · ${activeModule.label}`;
-    }
+    if(nav)nav.hidden=!inFocus||!activeModule;
+    if(label&&inFocus&&activeModule)label.textContent=`${activeModule.number} · ${moduleDisplayName(activeModule)}`;
     if(ribbon)ribbon.hidden=!inFocus;
     if(editor)editor.hidden=!inFocus||!activeModule;
+    if(numbers){
+      numbers.hidden=inFocus;
+      numbers.setAttribute('aria-pressed',String(showModuleNumbers));
+      numbers.setAttribute('aria-label',showModuleNumbers?tr('Скрыть номера модулей','Hide module numbers'):tr('Показать номера модулей','Show module numbers'));
+      numbers.title=numbers.getAttribute('aria-label');
+    }
     if(dims){
       const on=inFocus?focusDimensionsVisible:normalDimensionsVisible;
-      dims.hidden=false;dims.textContent='📏';dims.setAttribute('aria-label',on?'Скрыть размеры':'Показать размеры');dims.title=on?'Скрыть размеры':'Показать размеры';dims.setAttribute('aria-pressed',String(on));
+      dims.hidden=false;dims.textContent='📏';dims.setAttribute('aria-label',on?tr('Скрыть размеры','Hide dimensions'):tr('Показать размеры','Show dimensions'));dims.title=dims.getAttribute('aria-label');dims.setAttribute('aria-pressed',String(on));
     }
   }
   function prepareRenderLayout(){
@@ -244,12 +248,14 @@
   function resetCamera(){camera=window.BizetPilot3D?.cameraDefaults?.(configuration())||{yaw:0,pitch:.33,distanceScale:1}}
 
   function enterNormalKitchenView(){
-    viewMode=VIEW_NORMAL;activeModule=null;moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;drag=null;focusCanvasResetFrames=0;focusPaintToken++;
+    viewMode=VIEW_NORMAL;activeModule=null;moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;drag=null;focusCanvasResetFrames=0;focusPaintToken++;focusTransitionToken++;
+    focusDraftCache.clear();
+    const menu=$('focusModuleMenu'),label=$('focusModuleLabel');if(menu)menu.hidden=true;if(label)label.setAttribute('aria-expanded','false');
   }
   function enterModuleFocus(module){
     if(!module)return false;
     activeModule=module;viewMode=VIEW_FOCUS;focusCamera={yaw:-.36,pitch:.34,distanceScale:.72};
-    focusCanvasResetFrames=8;focusPaintToken++;
+    focusCanvasResetFrames=1;focusPaintToken++;focusTransitionToken++;
     return true;
   }
 
