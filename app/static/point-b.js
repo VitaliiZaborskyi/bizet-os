@@ -71,6 +71,17 @@
   function fastenersPerSide(d){if(d<=550)return 2;if(d<1000)return 3;return 4+Math.floor((d-1000)/400)}
   function shelfCountForUpper(h){if(h<=750)return 1;if(h<=1100)return 2;return Math.max(2,Math.ceil(h/400)-1)}
   function shelfCountForTall(h){return Math.max(1,Math.floor(h/380)-1)}
+  function shelfCompartments(module,inner){
+    const count=Math.max(1,Number(module.facade_count)||1),boundaries=Array.isArray(module.middle_side_boundaries)?module.middle_side_boundaries.filter(v=>v>0&&v<count):[];
+    if(!boundaries.length)return[{index:1,width:Math.max(80,inner)}];
+    const cuts=[0,...boundaries,count],out=[];
+    for(let i=0;i<cuts.length-1;i++){
+      const fraction=(cuts[i+1]-cuts[i])/count;
+      const edgeAllowance=(i>0?BODY_T/2:0)+(i<cuts.length-2?BODY_T/2:0);
+      out.push({index:i+1,width:Math.max(80,Math.round(inner*fraction-edgeAllowance))});
+    }
+    return out;
+  }
 
   function ordinaryBase(module,startNo){
     const out=[],W=runW(module),H=round(module.h),D=depth(module),inner=W-BODY_T*2,partD=Math.max(100,D-1);
@@ -82,7 +93,14 @@
     const rawShelves=module.shelf_count===undefined?1:Number(module.shelf_count),shelfCount=Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:1));
     const shelfType=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
     if(!lowerOven){
-      for(let i=0;i<shelfCount;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',shelfCount>1?'Shelf '+(i+1):'Shelf',inner,partD,1,EDGE,2,2,shelfType));
+      const compartments=shelfCompartments(module,inner);
+      for(let i=0;i<shelfCount;i++){
+        compartments.forEach(comp=>out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',
+          compartments.length>1?`Shelf ${i+1} · Compartment ${comp.index}`:(shelfCount>1?'Shelf '+(i+1):'Shelf'),
+          comp.width,partD,1,EDGE,2,2,shelfType,
+          compartments.length>1?'Полка отдельная в своём отделении; не проходит через перегородку':''
+        )));
+      }
     }else if(Number(module.oven_support_shelf_offset_from_top_mm)===600){
       out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Oven Support Shelf',inner,partD,1,EDGE,2,2,'Опорная полка духовки','CATEGORY I · без Gola · верхняя плоскость полки = верх корпуса − 600 мм; столешница не участвует в отсчёте'));
     }
@@ -104,6 +122,7 @@
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Left',H,D));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Right',H,D));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Bottom',inner,partD));
+    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Sink Shelf',inner,Math.max(100,D-80),1,EDGE,2,2,'Регулируемая полка; полкодержатели','Сервисный вырез сзади под коммуникации мойки'));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail Front',inner,100,1,EDGE,2,2,'Вертикально; плоскость параллельна фасаду','Передняя кромка ребра вровень с передней кромкой боковин'));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail Back Lower',inner,100,1,EDGE,2,2,'Вертикально; плоскость параллельна фасаду','Задняя кромка вровень с задней кромкой боковин; верх ребра на 150 мм ниже верха корпуса'));
     facadePieces(module,Math.max(100,H-TOP_GAP)).forEach(x=>out.push(detail(module,n++,s++,'ЛДСП 18 Facade','Facade',x.h,x.w,x.count,EDGE,2,2,'Петли + чашки Ø35','Без задней стенки')));
@@ -139,17 +158,27 @@
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Left',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
     if(!dryer)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
-    const defaultShelves=Math.min(2,shelfCountForUpper(H)),rawShelves=module.shelf_count===undefined?defaultShelves:Number(module.shelf_count),sc=Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
+    const defaultShelves=Math.min(2,shelfCountForUpper(H)),rawShelves=module.shelf_count===undefined?defaultShelves:Number(module.shelf_count),sc=hood?0:Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
     const shelfProcess=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
-    for(let i=0;i<sc;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',dryer?'Shelf Adjustable':`Shelf ${i+1}`,inner,Math.max(100,D-21),1,EDGE,2,2,dryer?'Полкодержатели':shelfProcess));
-    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21)));
+    const compartments=shelfCompartments(module,inner);
+    for(let i=0;i<sc;i++){
+      compartments.forEach(comp=>out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',
+        compartments.length>1?`Shelf ${i+1} · Compartment ${comp.index}`:(dryer?'Shelf Adjustable':`Shelf ${i+1}`),
+        comp.width,Math.max(100,D-21),1,EDGE,2,2,dryer?'Полкодержатели':shelfProcess,
+        compartments.length>1?'Полка отдельная в своём отделении; не проходит через перегородку':''
+      )));
+    }
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21),1,EDGE,2,2,hood?'Вырез Ø150 под вентканал':'',hood?'Ось трубы по центру модуля; центр трубы 110 мм от задней стенки':''));
     out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'В пазы боковин/дна, нахлёст на крышу; Г-вырезы 44×30 под навесы'));
     if(dryer)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Light Rail',inner,60,1,EDGE,2,2,'Паз под заднюю стенку','Модуль с сушкой — отдельное исключение'));
     if(hood){
-      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Hood Front Wall',Math.max(100,W-70),100,1,EDGE,2,2,'Экран вытяжки'));
-      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Duct Side Left',Math.max(100,H-180),180,1,EDGE,2,2,'Вырез вентканала 170×200'));
-      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Duct Side Right',Math.max(100,H-180),180,1,EDGE,2,2,'Вырез вентканала 170×200'));
-      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Duct Front Wall',Math.max(100,W-70),100,1,EDGE,2,2,'Закрывает вентканал'));
+      const shelfD=Math.max(100,D-21),ductH=Math.max(100,Math.floor((H-180-BODY_T*2)/2)),ductDepth=190;
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Hood Shelf Lower',inner,shelfD,1,EDGE,2,2,'Вырез Ø150 под вентканал','Полка сразу над встроенной вытяжкой; ось трубы по центру модуля, 110 мм от задней стенки'));
+      ['Left','Right'].forEach(side=>out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',`Duct U1 ${side}`,ductH,ductDepth,1,EDGE,2,2,'U-образная зашивка вентканала','Труба Ø150')));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Duct U1 Front',Math.max(100,ductDepth),ductH,1,EDGE,2,2,'U-образная зашивка вентканала','Передняя деталь короба'));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Hood Shelf Upper',inner,shelfD,1,EDGE,2,2,'Вырез Ø150 под вентканал','Ось трубы по центру модуля, 110 мм от задней стенки'));
+      ['Left','Right'].forEach(side=>out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',`Duct U2 ${side}`,ductH,ductDepth,1,EDGE,2,2,'U-образная зашивка вентканала','Труба Ø150')));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Duct U2 Front',Math.max(100,ductDepth),ductH,1,EDGE,2,2,'U-образная зашивка вентканала','Передняя деталь короба'));
     }
     const count=Math.max(1,Math.min(3,Number(module.facade_count)||1));
     if(module.facade_orientation==='HORIZONTAL'&&!dryer&&!hood){
@@ -242,6 +271,22 @@
     });
     return out;
   }
+  function endPanelDetails(module,startNo){
+    if(!module.end_panel_side)return[];
+    const material=module.end_panel_material==='FACADE'?'ЛДСП 18 Facade':'ЛДСП 18 Carcas',H=Math.max(100,round(module.h)),D=Math.max(100,depth(module));
+    const sides=module.end_panel_side==='BOTH'?['Left','Right']:[module.end_panel_side==='LEFT'?'Left':'Right'];
+    const out=[];let n=startNo,seq=900;
+    sides.forEach(side=>{
+      if(module.end_panel_shape==='L_SHAPE'){
+        out.push(detail(module,n++,seq++,material,`End Filler ${side} Face`,H,40,1,EDGE,2,2,'Г-образный филлер 40 мм','В габарите модуля; не опускается в пол'));
+        out.push(detail(module,n++,seq++,material,`End Filler ${side} Return`,H,40,1,EDGE,2,2,'Г-образный филлер 40 мм','Возврат L-shape; видимый торец'));
+      }else{
+        out.push(detail(module,n++,seq++,material,`End Panel ${side}`,H,D,1,EDGE,2,2,'Торцевая панель 18 мм','В габарите модуля; не опускается в пол; видимый торец'));
+      }
+    });
+    return out;
+  }
+
   function detailsFor(modules){
     const all=[];let no=1;
     modules.filter(m=>m.wall==='A').forEach(m=>{
@@ -258,7 +303,8 @@
       else if(m.tall)rows=tall(m,no,false,false);
       else if(m.kind==='FRIDGE'&&m.freestanding)rows=[];
       else rows=ordinaryBase(m,no);
-      all.push(...rows);no+=rows.length;
+      const endRows=endPanelDetails(m,no+rows.length);
+      all.push(...rows,...endRows);no+=rows.length+endRows.length;
     });
     return all.map((r,i)=>({...r,no:i+1}));
   }
@@ -277,7 +323,8 @@
         const legs=runW(m)>700?6:4;H.LEG+=legs;H.LEG_CLIP+=Math.ceil(legs/2);H.SCREW+=legs*4+Math.ceil(legs/2)*2;
       }
       if(m.level==='upper'){
-        H.HANGER+=2;H.HANGER_PLATE+=2;H.SCREW+=4;H.WALL_DOWEL+=4;
+        const hangerSets=(m.kind!=='UPPER_TOP'&&Number(m.h)>900)?2:1;
+        H.HANGER+=2*hangerSets;H.HANGER_PLATE+=2*hangerSets;H.SCREW+=4*hangerSets;H.WALL_DOWEL+=4*hangerSets;
         const grooved=details.filter(d=>d.code.startsWith(m.number+'.')&&/Паз/i.test(d.processing||''));
         H.GROOVE_M+=grooved.reduce((sum,d)=>sum+(d.length*d.qty/1000),0);
       }
@@ -341,11 +388,14 @@
     modules.filter(m=>m.level!=='upper'&&!m.tall&&m.kind!=='FRIDGE').forEach(m=>{
       const wall=m.wall||'A';(worktopGroups[wall]||(worktopGroups[wall]=[])).push(m);
     });
-    const worktopPlans=Object.values(worktopGroups).map(group=>window.BizetR10Rules?.worktopRunPlan?.(group)||{segments:[],joints:[]});
+    const rt=window.BizetModelRuntime,category=String(rt?.getContext?.().complexity_category||'I').toUpperCase(),worktopType=String(rt?.getVisual?.().furniture_materials?.worktop?.type||'WOOD').toUpperCase();
+    const avoidSinkJoint=['I','II'].includes(category)&&worktopType!=='STONE';
+    const worktopPlans=Object.values(worktopGroups).map(group=>window.BizetR10Rules?.worktopRunPlan?.(group,{avoidSinkJoint})||{segments:[],joints:[],blockedBySink:false});
     const worktopSlabs=includeWorktop?Math.max(1,worktopPlans.reduce((sum,plan)=>sum+Math.max(1,plan.segments.length),0)):0;
     const worktopJoints=includeWorktop?worktopPlans.reduce((sum,plan)=>sum+plan.joints.length,0):0;
+    const worktopBlockedBySink=worktopPlans.some(plan=>plan.blockedBySink);
     const worktopJointMap=Object.fromEntries(Object.entries(worktopGroups).map(([wall,group])=>{
-      const plan=window.BizetR10Rules?.worktopRunPlan?.(group)||{joints:[]};return[wall,plan.joints.map(v=>Math.round(v))];
+      const plan=window.BizetR10Rules?.worktopRunPlan?.(group,{avoidSinkJoint})||{joints:[]};return[wall,plan.joints.map(v=>Math.round(v))];
     }));
     const rows=[];
     const add=(group,item,qty,unit,rate,note='')=>rows.push({group,item,qty,unit,rate,total:qty*rate,note});
@@ -356,7 +406,8 @@
     if(areas.PLINTH>0)add('Материалы','Цоколь',areas.PLINTH,'м²',PRICES.CARCAS_M2,`Высота по проекту: ${plinthHeight} мм · ниток/деталей: ${plinthPieces}; проходит под встроенным холодильником`);
     if(plinthConnectors>0)add('Фурнитура','Соединитель цоколя универсальный',plinthConnectors,'шт',PRICES.PLINTH_CONNECTOR,'Один тип для прямого и углового стыка; 1 шт на стык');
     add('Материалы','PVC 22×0.8',edgeM,'п.м',PRICES.EDGE_MATERIAL_M,'Эмпирика: площадь плит × 6 + 20%');
-    if(includeWorktop)add('Материалы','Столешница EGGER 4100×600×38',worktopSlabs,'шт',PRICES.WORKTOP_SLAB,`Максимум 4100 мм без стыка; стыков по текущим прогонам: ${worktopJoints}`);
+    if(includeWorktop)add('Материалы','Столешница EGGER 4100×600×38',worktopSlabs,'шт',PRICES.WORKTOP_SLAB,`Максимум 4100 мм без стыка; стыков: ${worktopJoints}; ${avoidSinkJoint?'стык у мойки запрещён для Category I/II ДСП':'материал/категория допускает стандартное правило'}`);
+    if(worktopBlockedBySink)add('Проверка','HARD · стык столешницы у мойки недопустим',1,'проект',0,'Текущая компоновка не даёт допустимой границы ≤4100 мм без стыка у мойки — требуется перестроить ряд');
     add('Работы','Распил',cutM,'п.м',PRICES.CUT_M,'Площадь плит × 6');
     add('Работы','Кромкование',edgeM,'п.м',PRICES.EDGE_LABOR_M);
     add('Работы','Обычные отверстия',hw.HOLE,'шт',PRICES.HOLE);
@@ -383,7 +434,7 @@
     add('Работы','Упаковка',panelArea,'м²',PRICES.PACKING_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     add('Работы','Установка',panelArea,'м²',PRICES.INSTALL_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     const cost=rows.reduce((s,r)=>s+r.total,0),client=cost*2;
-    return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,worktopJoints,worktopJointMap,plinthPieces,plinthConnectors,plinthJointMap,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
+    return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,worktopJoints,worktopJointMap,worktopBlockedBySink,plinthPieces,plinthConnectors,plinthJointMap,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
   }
 
   function moduleDrawing(modules,room,orderRef=''){
