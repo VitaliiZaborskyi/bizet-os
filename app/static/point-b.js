@@ -166,7 +166,7 @@
     let n=startNo,seq=1;
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Left',H,D));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D));
-    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,fridge?'Круглый вырез Ø150 для вентиляции':'Паз 20'));
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,fridge?'Круглый вырез Ø250 для вентиляции':'Паз 20',fridge?'Вырез по умолчанию в дне встроенного холодильного модуля':''));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21)));
     const defaultShelves=fridge?1:oven?Math.min(4,Math.max(3,shelfCountForTall(H))):Math.min(3,shelfCountForTall(H));
     const rawShelves=(!fridge&&!oven&&module.shelf_count!==undefined)?Number(module.shelf_count):defaultShelves,shelves=Math.max(0,Math.min(oven?4:3,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
@@ -181,8 +181,14 @@
       const upperH=Math.max(300,H-drawerFacadeH-600-GAP*2);
       out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade Upper',upperH,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35','Над зоной духовки'));
     }else if(fridge){
-      const faceCount=module.content==='FRIDGE_FREEZER'?2:1,fh=Math.floor((H-GAP*(faceCount-1))/faceCount);
-      for(let i=0;i<faceCount;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Facade',`Facade ${i+1}`,fh,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35'));
+      const lowerH=Math.max(0,Math.min(H-GAP-100,Math.round(Number(module.lower_facade_height_mm)||0)));
+      if(lowerH>0){
+        const upperH=Math.max(100,H-GAP-lowerH);
+        out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade Lower',lowerH,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35','Нижний фасад не выше фасада соседнего нижнего модуля'));
+        out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade Upper',upperH,Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35'));
+      }else{
+        out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade',Math.max(100,H-GAP),Math.max(100,W-GAP),1,EDGE,2,2,'Петли + чашки Ø35'));
+      }
     }else{
       const mode=module.tall_drawer_mode||'NONE',drawerCount=mode==='NONE'?0:Math.max(1,Math.min(3,Number(module.tall_drawer_count)||2));
       const maxVisible=862,visibleStack=mode==='VISIBLE'?Math.min(maxVisible,Math.max(180,Number(module.visible_drawer_stack_height_mm)||Math.min(maxVisible,Math.round(H*.38)))):0;
