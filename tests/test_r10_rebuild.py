@@ -1178,3 +1178,155 @@ def test_r1041_workspace_chrome_translation_is_centralized():
     assert "Another variant" in workspace
     assert "const tr=(ru,en)" in model
     assert "displayModuleName:moduleDisplayName" in model
+
+def test_r1042_complexity_fifth_choice_is_named_custom_configuration():
+    start = read('start.js')
+    assert "{ value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
+    assert "V: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
+
+
+def test_r1042_room_source_flow_has_no_continue_to_configuration_copy():
+    combined = '\n'.join([read('workspace-r8.js'), read('room-r8.js'), read('room-v2.js'), read('room-latest.js')])
+    assert 'Continue to configuration' not in combined
+    assert 'Продолжить к конфигурации' not in combined
+
+
+def test_r1042_oven_width_is_hard_600_or_900_in_project_and_focus_editor():
+    workspace = read('workspace-r8.js')
+    model = read('model.js')
+    assert "field('Ширина духовки','oven_width_mm',[[600,'600 мм'],[900,'900 мм']])" in workspace
+    assert "oven_width_mm:600" in workspace
+    editor = model[model.index('function renderModuleEditor'):model.index('function readModuleEditor')]
+    assert 'Ширина духовки, мм' in editor
+    assert "[[600,'600'],[900,'900']]" in editor
+    validator = model[model.index('function validateModuleDraft'):model.index('function editField')]
+    assert '![600,900].includes(run)' in validator
+
+
+def test_r1042_two_finger_pan_keeps_pinch_zoom_and_centers_camera_on_kitchen():
+    bridge = read('model-r5.js')
+    model = read('model.js')
+    renderer = read('pilot-3d.js')
+    assert 'bizet:canvaspan' in bridge
+    assert 'center=()' in bridge
+    assert "WheelEvent('wheel'" in bridge
+    assert "document.addEventListener('bizet:canvaspan'" in model
+    assert "drag.mode='PAN'" in model and "drag.mode='ZOOM'" in model
+    assert 'function kitchenCameraTarget' in model
+    assert 'targetX:target?.x' in model and 'targetY:target?.y' in model and 'targetZ:target?.z' in model
+    projector = renderer[renderer.index('function createProjector'):renderer.index('function colors')]
+    assert 'cameraOverride.targetX' in projector
+    assert 'screenXOffset' in projector
+
+
+def test_r1042_currency_selector_uses_nbu_rates_and_propagates_to_prices():
+    html = read('workspace-r8.html')
+    workspace = read('workspace-r8.js')
+    model = read('model.js')
+    pointb = read('point-b.js')
+    routes = (ROOT / 'app' / 'api' / 'routes_v11.py').read_text(encoding='utf-8')
+    assert 'id="moduleCurrencySelect"' in html
+    for code in ['UAH','EUR','USD','AUD']:
+        assert f'value="{code}"' in html
+    assert "display_currency:'UAH'" in workspace
+    assert 'moduleCurrencySelect' in model
+    assert '/api/v1.1/fx-rates' in pointb
+    assert 'formatMoney' in pointb and 'convertMoney' in pointb
+    assert '@router.get("/fx-rates")' in routes
+    assert 'bank.gov.ua/NBUStatService' in routes
+
+
+def test_r1042_project_settings_have_general_section_and_central_translation():
+    html = read('workspace-r8.html')
+    workspace = read('workspace-r8.js')
+    assert '<button data-panel="general" type="button"><span>07</span>Общие</button>' in html
+    assert 'const PROJECT_I18N=' in workspace
+    for token in ['How to define the room','Room surfaces','Additional appliance settings','Integrated hood type','Required utility points','Wall elements','Furniture materials','Handles and plinth','Custom texture']:
+        assert token in workspace
+    assert 'function localizePanelBody' in workspace
+
+
+def test_r1042_refrigerator_is_hard_pinned_to_run_edge():
+    model = read('model.js')
+    block = model[model.index('function enforceFridgeEdgeInvariant'):model.index('function centerCompositionAnchor')]
+    assert "m.kind==='FRIDGE'" in block
+    assert "edge==='END'?rest.concat(fridges):fridges.concat(rest)" in block
+    arrange = model[model.index('function arrangeWall'):model.index('function buildModules')]
+    assert 'ordered=enforceFridgeEdgeInvariant(ordered,edge)' in arrange
+    assert arrange.index('ordered=enforceFridgeEdgeInvariant(ordered,edge)') > arrange.index('ordered=centerCompositionAnchor')
+
+
+def test_r1042_global_handle_defaults_are_vertical_hinged_horizontal_drawers():
+    model = read('model.js')
+    workspace = read('workspace-r8.js')
+    base = model[model.index('function baseModule'):model.index('function collectedLower')]
+    assert "inputs.hinged_handle_orientation||'VERTICAL'" in base
+    assert "inputs.drawer_handle_orientation||'HORIZONTAL'" in base
+    assert "kind==='DRAWERS'?drawerHandle:hingedHandle" in base
+    assert "hinged_handle_orientation:'VERTICAL'" in workspace
+    assert "drawer_handle_orientation:'HORIZONTAL'" in workspace
+
+
+def test_r1042_save_module_returns_to_full_kitchen_after_commit():
+    model = read('model.js')
+    block = model[model.index('async function saveModuleDraft'):model.index('function cancelModuleDraft')]
+    assert 'await saveVisual' in block
+    assert 'enterNormalKitchenView();renderScene(false)' in block
+    assert 'bizet:modelchange' in block
+
+
+def test_r1042_bom_test_is_visible_and_downloadable():
+    workspace = read('workspace-r8.js')
+    pointb = read('point-b.js')
+    assert 'data-action="bom-test"' in workspace
+    assert 'showBOMTest' in pointb
+    assert 'BOM · TEST' in pointb
+    assert 'id="dlBomTest"' in pointb
+    assert 'downloadBOM(bom)' in pointb
+
+
+def test_r1042_approval_drawings_are_three_page_client_documents():
+    pointb = read('point-b.js')
+    for name in ['approvalPlanSheet','approvalElevationSheet','approvalSectionSheet','approvalSheets','approvalDrawingHtml','openApprovalDrawings']:
+        assert f'function {name}' in pointb
+    for token in ['BIZET by Zaborsky','FOR APPROVAL','NOT FOR PRODUCTION','PLAN + AXONOMETRY','MAIN ELEVATION','TYPICAL SECTIONS']:
+        assert token in pointb
+    assert 'Page ' in pointb and '/3' in pointb
+
+
+def test_r1042_pdf_builders_emit_real_pdf_bytes():
+    from app.services.documents import build_approval_pdf, build_proposal_pdf
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect x="1" y="1" width="98" height="98" fill="none" stroke="black"/></svg>'
+    approval = build_approval_pdf([svg, svg, svg])
+    proposal = build_proposal_pdf('UA-ODS-TEST', {'price':'100 UAH','manufacturer':'BIZET','configuration':'Linear','features':['18 mm carcass']})
+    assert approval.startswith(b'%PDF')
+    assert proposal.startswith(b'%PDF')
+
+
+def test_r1042_offer_email_supports_selected_pdf_attachments_and_reply_to():
+    routes = (ROOT / 'app' / 'api' / 'routes_v11.py').read_text(encoding='utf-8')
+    mail = (ROOT / 'app' / 'services' / 'mail.py').read_text(encoding='utf-8')
+    business = read('owner-qa-business.js')
+    assert 'include_proposal: bool = True' in routes
+    assert 'include_approval_drawings: bool = False' in routes
+    assert 'build_proposal_pdf' in routes and 'build_approval_pdf' in routes
+    assert 'cdbbizet@gmail.com' in routes
+    assert 'attachments=attachments' in routes
+    assert 'payload["attachments"]' in mail
+    assert 'payload["reply_to"]' in mail
+    assert 'approval_svg_pages' in business
+
+
+def test_r1042_offer_exposes_geometry_locked_visualization_prompt_and_whatsapp():
+    business = read('owner-qa-business.js')
+    assert 'BIZET_VISUALIZATION_PAYLOAD_V1' in business
+    assert 'STRICT GEOMETRY LOCK' in business
+    assert 'Do not redesign, add, remove, widen, narrow or relocate any module.' in business
+    assert 'visualizationMasterPrompt' in business
+    assert 'wa.me/380974587676' in business
+
+
+def test_r1042_checkpoint_closes_historical_isolation_bug_without_regressing_focus():
+    checkpoint = (ROOT / 'R10_4_0_MUST_HAVE_CHECKPOINT.md').read_text(encoding='utf-8')
+    assert 'Owner QA closed the historical iPhone isolation bug after R10.4.1' in checkpoint
+    assert 'Do not regress this lifecycle' in checkpoint
