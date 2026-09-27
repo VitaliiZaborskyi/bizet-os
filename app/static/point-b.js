@@ -22,7 +22,7 @@
   };
   const formatMoney=(n,code=displayCurrency())=>{
     const value=convertMoney(n,code);
-    if(value===null)return new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Math.round(Number(n)||0))+' UAH';
+    if(value===null)return '— '+code;
     return new Intl.NumberFormat(code==='UAH'?'uk-UA':'en-US',{style:'currency',currency:code,maximumFractionDigits:0}).format(value);
   };
   const money=n=>formatMoney(n);
