@@ -168,13 +168,15 @@ def test_model_is_rotatable_numbered_perspective_and_uses_only_active_walls():
 def test_model_uses_existing_pilot_module_references_and_upper_gap():
     model_js = read_static('model.js')
     renderer = read_static('pilot-3d.js')
-    assert 'LOWER_DEPTH=560' in model_js
-    assert 'LOWER_TOTAL_H=900' in model_js
+    assert 'DEFAULT_LOWER_DEPTH=560' in model_js
+    assert 'DEFAULT_LOWER_TOTAL_H=900' in model_js
     assert 'CUTLERY_W=400' in model_js
-    assert 'UPPER_DEPTH=320' in model_js
+    assert 'DEFAULT_UPPER_DEPTH=320' in model_js
     assert 'UPPER_HOOD_DEPTH=350' in model_js
-    assert 'UPPER_MAX_H=1000' in model_js
-    assert "Math.max(550,Number(inputs.upper_gap_mm)||600)" in model_js
+    assert 'DEFAULT_UPPER_H=1000' in model_js
+    assert "Math.max(300,Number(inputs.upper_gap_mm)||600)" in model_js
+    assert "function lowerTotalHeight()" in model_js
+    assert "function upperConfiguredHeight()" in model_js
     assert "Number(inputs.hood_width_mm)||600" in model_js
     assert "'SINK'" in model_js
     assert "'DRAWERS'" in model_js
