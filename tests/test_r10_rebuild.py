@@ -756,9 +756,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1042_fastapi_reports_current_version():
+def test_r1043_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.4.2"' in main
+    assert 'version="R10.4.3"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -847,14 +847,14 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
     assert "pointer" not in scheduler.lower()
 
 
-def test_r1042_workspace_cache_busts_renderer_assets():
+def test_r1043_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=172" in html
-    assert "/static/pilot-3d.js?v=172" in html
-    assert "/static/workspace-r8.css?v=172" in html
-    assert "/static/model-r5.js?v=172" in html
-    assert "/static/workspace-r8.js?v=172" in html
-    assert "/static/point-b.js?v=172" in html
+    assert "/static/model.js?v=173" in html
+    assert "/static/pilot-3d.js?v=173" in html
+    assert "/static/workspace-r8.css?v=173" in html
+    assert "/static/model-r5.js?v=173" in html
+    assert "/static/workspace-r8.js?v=173" in html
+    assert "/static/point-b.js?v=173" in html
 
 
 def test_r1037_focus_transition_forces_new_canvas_backing_store():
@@ -959,7 +959,7 @@ def test_r1040_isolation_has_integrated_draft_editor_and_explicit_save():
     assert "function renderModuleEditor" in model
     assert "function saveModuleDraft" in model
     assert "module_edit_overrides" in model
-    assert "R10.4.2_MODULE_SAVED" in model
+    assert "R10.4.3_MODULE_SAVED" in model
 
 
 def test_r1040_hinged_and_drawer_width_rules_are_hard_in_editor():
