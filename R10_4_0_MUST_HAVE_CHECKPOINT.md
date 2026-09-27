@@ -120,3 +120,20 @@ R10.4.2 contracts:
 - Sink base uses exactly two vertical rails parallel to the facade: front rail flush with front side-panel edges; rear rail flush with rear edges and its top is 150 mm below the cabinet top.
 - Approval drawings stay at pilot quality in R10.4.3; no drawing-polish scope is added.
 - The R10.4.1 first-tap iPhone isolation lifecycle remains accepted CLOSED and is a no-regression contract.
+
+
+## R10.4.4 owner polish + hard rules — 2026-09-27
+
+- Currency selector lives only in the main commercial/price area, left of the final price; it is removed from 3D controls and module isolation.
+- iPhone module-edit numeric/select fields use >=16 px text and Save blurs the active field before returning to the full kitchen to prevent Safari focus zoom from sticking.
+- Custom configuration remains a blue special choice and now explicitly reports that the feature is in development instead of acting like a broken button.
+- Category I/II board worktops: a joint may not sit on either module boundary touching the sink. The planner selects the nearest earlier valid module boundary <=4100 mm; if no valid boundary exists, the configuration is flagged HARD for reconfiguration.
+- Plinth remains max 4100 mm per piece, joints are visible in 3D, and the universal plinth connector remains one per joint.
+- Straight WALL_CENTER kitchens receive default end panels at both wall ends. Panels stay within each module's own height (never run to the floor). Composite/tall + mezzanine constructions receive separate panels per module layer. Isolation exposes Flat End Panel or L-shaped 40 mm filler and Carcass/Facade material.
+- Sink base includes one shelf plus the previously frozen two vertical facade-parallel rails; the shelf carries a rear service clearance for plumbing.
+- Hinged 3-door configuration is available only at exactly 900 mm. Below 900 the third-door option is disabled and any invalid draft is forced back to two doors. Hinge directions determine middle-side boundaries; all-left/all-right three-door layouts create two middle sides. Shelves are split by those middle sides into separate compartment shelves in 3D and BOM.
+- Built-in hood construction: appliance shown physically; duct Ø150 mm, pipe axis centered horizontally and 110 mm from the rear wall; lower shelf immediately above hood, second shelf above, two three-sided U-shaped duct claddings, and Ø150 cut-outs in both shelves and cabinet top. 900 mm hood keeps the same centerline and only widens symmetrically.
+- Single-row upper cabinet height >900 mm (not mezzanine UPPER_TOP) receives a second left/right hanger set in 3D and BOM/hardware count.
+- Visualization master prompt is system-internal only. OFFER no longer shows/copies it. The current dynamic prompt and VisualizationPayload are passed internally with OFFER payload; if an external render URL exists it is used in the proposal, otherwise the engineering preview remains the fallback until the 10.5 render provider is connected.
+- R10.4.3 approval drawings remain prototype quality; no drawing-polish scope is added here.
+- R10.4.1 first-tap isolation behavior remains a no-regression contract.
