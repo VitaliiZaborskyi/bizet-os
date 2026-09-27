@@ -86,7 +86,7 @@ const STEPS = [
       { value: 'II', title: { ru: 'II', en: 'II' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(1.08) saturate(.76) contrast(.94)', fallback: 'linear-gradient(145deg,#d8d0c7,#8c7e70)' },
       { value: 'III', title: { ru: 'III', en: 'III' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(1.00) saturate(.94) contrast(1.00)', fallback: 'linear-gradient(145deg,#c9c1b8,#6e6359)' },
       { value: 'IV', title: { ru: 'IV', en: 'IV' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(.92) saturate(1.05) contrast(1.08)', fallback: 'linear-gradient(145deg,#c6bdae,#65594d)' },
-      { value: 'V', title: { ru: 'V', en: 'V' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(.83) saturate(1.16) contrast(1.16)', fallback: 'linear-gradient(145deg,#b9afa3,#4d4540)' },
+      { value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(.83) saturate(1.16) contrast(1.16)', fallback: 'linear-gradient(145deg,#b9afa3,#4d4540)' },
     ],
   },
   {
@@ -153,7 +153,7 @@ const LABELS = {
     KITCHEN: { ru: 'Кухня', en: 'Kitchen' }, WARDROBE: { ru: 'Гардеробная', en: 'Wardrobe' }, CABINET: { ru: 'Корпусное изделие', en: 'Cabinet' },
     LIVING_ROOM: { ru: 'Гостиная', en: 'Living room' }, OTHER: { ru: 'Другое', en: 'Other' }
   },
-  complexity_category: { I: { ru: 'Категория I', en: 'Category I' }, II: { ru: 'Категория II', en: 'Category II' }, III: { ru: 'Категория III', en: 'Category III' }, IV: { ru: 'Категория IV', en: 'Category IV' }, V: { ru: 'Категория V', en: 'Category V' } },
+  complexity_category: { I: { ru: 'Категория I', en: 'Category I' }, II: { ru: 'Категория II', en: 'Category II' }, III: { ru: 'Категория III', en: 'Category III' }, IV: { ru: 'Категория IV', en: 'Category IV' }, V: { ru: 'Своя конфигурация', en: 'Custom configuration' } },
   visual_direction: { LIGHT: { ru: 'Светлое', en: 'Light' }, DARK: { ru: 'Тёмное', en: 'Dark' }, OTHER: { ru: 'Другое', en: 'Other' } },
 };
 
