@@ -127,6 +127,8 @@ class SendProposalRequest(BaseModel):
     include_proposal: bool = True
     include_approval_drawings: bool = False
     visualization_data_url: str = ""
+    visualization_prompt: str = ""
+    visualization_payload: dict[str, object] = Field(default_factory=dict)
     approval_svg_pages: list[str] = Field(default_factory=list)
 
 
