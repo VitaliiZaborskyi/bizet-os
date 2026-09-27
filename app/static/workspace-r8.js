@@ -23,7 +23,7 @@
    'Обычная полка':'Fixed shelf','Выдвижная полка с фиксатором':'Locking pull-out shelf','Отделение кофемашины':'Coffee machine compartment','Открытое':'Open','Закрытое':'Closed',
    'Открывание фасада':'Facade opening','Петли слева':'Left-hinged','Петли справа':'Right-hinged','Вертикально вверх':'Lift-up',
    'Техника настроена?':'Appliances ready?','Примените выбранные параметры — BIZET OS перестроит модель с учётом техники.':'Apply the selected parameters and BIZET OS will rebuild the model with the appliances included.','Применить':'Apply',
-   'Компоновка':'Layout','От столешницы до верха, мм':'Countertop-to-wall-cabinet clearance, mm','Один ряд':'Single row','Антресоль':'Mezzanine','Распашной':'Hinged','Подъёмный':'Lift-up',
+   'Компоновка':'Layout','От столешницы до низа верхних модулей, мм':'Countertop-to-wall-cabinet clearance, mm','Один ряд':'Single row','Антресоль':'Mezzanine','Распашной':'Hinged','Подъёмный':'Lift-up',
    'Система ожидает':'Required utility points','Канализация · вода · питание варочной · вытяжка · холодильник · духовка · розетки.':'Drainage · water · cooktop power · hood · refrigerator · oven · outlets.',
    'Статус координат':'Coordinates status','Уточнить позже':'Specify later','Проверено':'Confirmed',
    'Добавить элемент стены':'Add wall element','Окно':'Window','Дверь':'Door','Радиатор':'Radiator','Подшторник / карниз':'Curtain recess / track','Ниша':'Niche','Колонна':'Column','Выступ':'Projection','Балка':'Beam','Другое':'Other',
@@ -255,14 +255,14 @@
      html='<section class="r8-section"><h3>Холодильник</h3>'+field('Наличие','fridge_present',[['YES','Да'],['NO','Нет']])+field('Сторона','fridge_side',[['LEFT','Слева'],['RIGHT','Справа']])+field('Тип','fridge_type',[['BUILT_IN','Встраиваемый'],['FREESTANDING','Отдельностоящий']])+field('Ширина','fridge_width_mm',[[600,'600 мм'],[900,'900 мм'],[1200,'1200 мм']])+'</section>';
      html+='<section class="r8-section"><h3>Мойка</h3>'+field('Сторона','sink_side',[['LEFT','Слева'],['RIGHT','Справа']])+field('Монтаж','sink_mount_type',[['TOP_MOUNT','Накладная'],['FLUSH','Вровень'],['UNDERMOUNT','Под столешницей']])+field('Чаш','sink_bowl_count',[[1,'1'],[2,'2']])+field('Измельчитель','sink_disposer',[['NO','Нет'],['YES','Да']])+field('Фильтры','sink_filters',[['NO','Нет'],['YES','Да']])+'</section>';
      html+='<section class="r8-section"><h3>Варочная / ПММ</h3>'+field('Варочная','cooktop_type',[['INDUCTION','Индукционная'],['ELECTRIC','Электрическая'],['GAS','Газовая'],['COMBINED','Комбинированная']])+field('Ширина варочной','cooktop_width_mm',[[600,'600 мм'],[300,'300 мм']])+field('Посудомоечная машина','dishwasher_type',[['NO','Нет'],['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']])+field('Ширина ПММ','dishwasher_width_mm',[[450,'450 мм'],[600,'600 мм']])+'</section>';
-     html+='<section class="r8-section"><h3>Вытяжка / духовка</h3>'+field('Вытяжка','hood_type',[['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']])+field('Ширина вытяжки','hood_width_mm',[[500,'500 мм'],[600,'600 мм'],[800,'800 мм'],[900,'900 мм'],[1000,'1000 мм']])+field('Духовка','oven_location',[['LOWER','В нижнем модуле'],['TALL','В пенале']])+field('Микроволновка','microwave_present',[['NO','Нет'],['YES','Да']])+field('Кофемашина','coffee_present',[['NO','Нет'],['YES','Да']])+'</section>';
+     html+='<section class="r8-section"><h3>Вытяжка / духовка</h3>'+field('Вытяжка','hood_type',[['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']])+field('Ширина вытяжки','hood_width_mm',[[500,'500 мм'],[600,'600 мм'],[800,'800 мм'],[900,'900 мм'],[1000,'1000 мм']])+field('Духовка','oven_location',[['LOWER','В нижнем модуле'],['TALL','В пенале']])+field('Ширина духовки','oven_width_mm',[[600,'600 мм'],[900,'900 мм']])+field('Микроволновка','microwave_present',[['NO','Нет'],['YES','Да']])+field('Кофемашина','coffee_present',[['NO','Нет'],['YES','Да']])+'</section>';
      const walls=rt.getConfiguration()==='L_LEFT'?[['A','Стена A'],['B','Стена B']]:rt.getConfiguration()==='L_RIGHT'?[['A','Стена A'],['C','Стена C']]:rt.getConfiguration()==='U_SHAPE'?[['A','Стена A'],['B','Стена B'],['C','Стена C']]:[['A','Стена A']];
      html+='<section class="r8-section"><h3>Дополнительные настройки техники</h3>'+field('Наполнение холодильника','fridge_content',[['FRIDGE_ONLY','Только холодильник'],['FREEZER_ONLY','Только морозильник'],['FRIDGE_FREEZER','Холодильник + морозильник']])+field('Положение мойки','sink_placement',[['AT_CORNER','От угла'],['OFFSET','Со смещением'],['LINEAR_PENDING','На прямом участке']])+numberField('Смещение мойки от угла, мм','sink_offset_mm',300,0)+field('Стена варочной панели','cooktop_wall',[['AUTO','Авто'],...walls])+field('Стена ПММ','dishwasher_wall',walls)+field('Тип встраиваемой вытяжки','hood_integrated_subtype',[['FULL','Полновстраиваемая'],['TELESCOPIC','Телескопическая']])+field('Стена духового шкафа','oven_wall',[['AUTO','Авто'],...walls])+'</section>';
      html+='<section class="r8-section"><h3>СВЧ / кофемашина</h3>'+field('Тип СВЧ','microwave_type',[['BUILT_IN','Встраиваемая 600×450'],['FREESTANDING','Отдельностоящая']])+field('Тип кофемашины','coffee_type',[['BUILT_IN','Встраиваемая 600×450'],['FREESTANDING','Отдельностоящая']])+field('Опора кофемашины','coffee_support',[['FIXED_SHELF','Обычная полка'],['PULLOUT_LOCKING','Выдвижная полка с фиксатором']])+field('Отделение кофемашины','coffee_compartment',[['OPEN','Открытое'],['CLOSED','Закрытое']])+field('Открывание фасада','coffee_front_opening',[['HINGED_LEFT','Петли слева'],['HINGED_RIGHT','Петли справа'],['LIFT_UP_HL','Вертикально вверх']])+'</section>';
      html+='<section class="r8-section r8-apply-section"><h3>Техника настроена?</h3><p>Примените выбранные параметры — BIZET OS перестроит модель с учётом техники.</p><button class="r8-save" data-action="apply-appliances">Применить</button></section>';
    }
    if(panel==='upper'){
-     html='<section class="r8-section"><h3>Компоновка</h3>'+field('От столешницы до верха, мм','upper_gap_mm',[[550,'550'],[600,'600'],[650,'650'],[700,'700']])+'<div class="r8-choice-row"><button data-action="upper-standard">Один ряд</button><button data-action="upper-antresol">Антресоль</button><button data-action="upper-hinged">Распашной</button><button data-action="upper-lift">Подъёмный</button></div></section>';
+     html='<section class="r8-section"><h3>Компоновка</h3>'+field('От столешницы до низа верхних модулей, мм','upper_gap_mm',[[550,'550'],[600,'600'],[650,'650'],[700,'700']])+'<div class="r8-choice-row"><button data-action="upper-standard">Один ряд</button><button data-action="upper-antresol">Антресоль</button><button data-action="upper-hinged">Распашной</button><button data-action="upper-lift">Подъёмный</button></div></section>';
    }
    if(panel==='communications'){
      html='<section class="r8-section"><h3>Система ожидает</h3><p>Канализация · вода · питание варочной · вытяжка · холодильник · духовка · розетки.</p>'+field('Статус координат','communications_status',[['PENDING_COORDINATE_DETAIL','Уточнить позже'],['USER_CONFIRMED','Проверено']])+'</section>';
@@ -275,6 +275,15 @@
      html='<section class="r8-section"><h3>Визуальное направление</h3><p>Выбрано на стартовом экране: <strong>'+esc(dir==='DARK'?'Тёмное':dir==='OTHER'?'Другое':'Светлое')+'</strong>.</p><div class="r8-choice-row"><button data-action="palette-light">Светлое</button><button data-action="palette-dark">Тёмное</button><button data-action="palette-other">Другое</button></div></section>';
      html+='<section class="r8-section"><h3>Материалы мебели</h3><p>Тестовый набор для связки модель → спецификация → будущая визуализация.</p><div class="r104-surface-buttons">'+materialButton('facade')+materialButton('carcass')+materialButton('worktop')+'</div></section>';
      html+='<section class="r8-section"><h3>Подтверждение</h3><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
+   }
+   if(panel==='general'){
+     html='<section class="r8-section"><h3>Ручки и цоколь</h3><div class="r104-general-grid">'
+       +field('Распашные модули','hinged_handle_orientation',[['VERTICAL','Вертикальные ручки'],['HORIZONTAL','Горизонтальные ручки']])
+       +field('Ящики','drawer_handle_orientation',[['HORIZONTAL','Горизонтальные ручки'],['VERTICAL','Вертикальные ручки']])
+       +numberField('Высота цоколя, мм','plinth_height_mm',100,0)
+       +field('Валюта отображения','display_currency',[['UAH','UAH'],['EUR','EUR'],['USD','USD'],['AUD','AUD']])
+       +'</div></section>';
+     html+='<section class="r8-section"><h3>Документы · тест</h3><div class="r104-test-actions"><button class="r8-secondary" data-action="bom-test">Открыть BOM · TEST</button><button class="r8-secondary" data-action="approval-test">Чертежи для согласования · TEST</button></div></section>';
    }
    $('panelBody').innerHTML=html;localizePanelBody();bindInputs();bindMaterialTargets();
    if(panel==='room')bindRoomImport();
@@ -300,13 +309,13 @@
      const file=input.files?.[0];if(!file)return;
      const kind=classifyRoomFile(file);
      if(!['PDF','RASTER_IMAGE'].includes(kind)){await rt.patchVisual({room_import:{source:'FILE',file_name:file.name,file_type:kind,status:'UNSUPPORTED',target_model:'ROOM_MODEL',message:'В R10.3.2 геометрию анализируем из PDF или фото.'}});refreshPanel();return}
-     const status=$('r10RoomImportStatus');if(status)status.textContent='Анализирую геометрию…';
+     const status=$('r10RoomImportStatus');if(status)status.textContent=tr('Анализирую геометрию…','Analyzing geometry…');
      try{
        const form=new FormData();form.append('file',file,file.name);
        const body=await roomImportApi('analyze',{method:'POST',body:form});
        await rt.patchVisual({room_import:body.room_import});
        refreshPanel();
-     }catch(error){if(status)status.textContent='Ошибка анализа: '+error.message}
+     }catch(error){if(status)status.textContent=tr('Ошибка анализа: ','Analysis error: ')+error.message}
    };
  }
  function selectPanel(panel){
@@ -322,23 +331,23 @@
      await rt.patchVisual({room_import:{source:'TEMPLATE',status:'ACTIVE',target_model:'ROOM_MODEL',message:'Шаблон активен. Размеры уточняются в параметрах помещения.'}});refreshPanel();return;
    }
    if(a==='room-source-scan'){
-     const status=$('r10RoomImportStatus');if(status)status.textContent='Скан — в стадии разработки.';return;
+     const status=$('r10RoomImportStatus');if(status)status.textContent=tr('Скан — в стадии разработки.','Scan is in development.');return;
    }
    if(a==='room-source-file'){$('r10RoomFileInput')?.click();return}
    if(a==='calibrate-import'){
      const known=Math.round(Number($('r10KnownDimension')?.value)||0);
-     if(known<300){$('r10RoomImportStatus').textContent='Укажите реальный размер не меньше 300 мм.';return}
+     if(known<300){$('r10RoomImportStatus').textContent=tr('Укажите реальный размер не меньше 300 мм.','Enter a real dimension of at least 300 mm.');return}
      pushUndo();
      try{
        const body=await roomImportApi('calibrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({known_dimension_mm:known})});
        rt=window.BizetModelRuntime;await rt.resume?.();refreshPanel();updateReadiness();
        const size=body.room_import?.canonical_room_model?.bounding_size_mm||{};
        $('r10RoomImportStatus').textContent=`Room Model применена: ${size.length||'—'} × ${size.depth||'—'} мм. Подтвердите помещение.`;
-     }catch(error){$('r10RoomImportStatus').textContent='Калибровка не применена: '+error.message}
+     }catch(error){$('r10RoomImportStatus').textContent=tr('Калибровка не применена: ','Calibration was not applied: ')+error.message}
      return;
    }
    if(a==='confirm-import'){
-     try{await roomImportApi('confirm',{method:'POST'});await rt.resume?.();refreshPanel();updateReadiness()}catch(error){$('r10RoomImportStatus').textContent='Не удалось подтвердить: '+error.message}
+     try{await roomImportApi('confirm',{method:'POST'});await rt.resume?.();refreshPanel();updateReadiness()}catch(error){$('r10RoomImportStatus').textContent=tr('Не удалось подтвердить: ','Could not confirm: ')+error.message}
      return;
    }
    if(a==='apply-appliances'){
@@ -354,6 +363,8 @@
    if(a==='upper-lift')return commitVariant({upper_opening:'LIFT'});
    if(a.startsWith('palette-')){const dir=a.split('-')[1].toUpperCase();pushUndo();await rt.setPalette(dir);updateReadiness();return}
    if(a==='confirm-materials'){pushUndo();await rt.patchVisual({materials_confirmation_status:'PILOT_CONFIRMED_DEFAULTS'});updateReadiness();return}
+   if(a==='bom-test'){window.BizetPointB?.showBOMTest?.();return}
+   if(a==='approval-test'){window.BizetPointB?.openApprovalDrawings?.();return}
    if(a==='add-element'){
      const q=s=>document.querySelector(s),el={type:q('[data-input="__element_type"]').value,wall:q('[data-input="__element_wall"]').value,width_mm:Number(q('[data-number="__element_width"]').value)||900,height_mm:Number(q('[data-number="__element_height"]').value)||1200,depth_mm:Number(q('[data-number="__element_depth"]').value)||0,x_mm:Number(q('[data-number="__element_x"]').value)||0,z_mm:Number(q('[data-number="__element_z"]').value)||0};
      pushUndo();await rt.patchElements([...rt.getElements(),el]);renderElements();updateReadiness();return;
@@ -362,12 +373,12 @@
  function updateReadiness(){ /* R10.3.4: no visible project-readiness UI. */ }
  async function ensureTemplate(){
    const I=rt.getInputs(),patch={};
-   const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600};
+   const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,hinged_handle_orientation:'VERTICAL',drawer_handle_orientation:'HORIZONTAL',display_currency:'UAH',oven_width_mm:600,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600};
    Object.keys(defaults).forEach(k=>{if(I[k]===undefined||I[k]===null||I[k]==='')patch[k]=defaults[k]});if(Object.keys(patch).length)await rt.patchInputs(patch,'R8 base template');
  }
  function renderVariantDots(){
    const host=$('variantDots');if(!host)return;
-   host.innerHTML=VARIANT_TEMPLATES.map((_,i)=>'<button class="r8-variant-dot'+(i===variantPos?' is-active':'')+'" type="button" data-variant-slot="'+i+'" aria-label="Вариант '+(i+1)+'" aria-pressed="'+(i===variantPos?'true':'false')+'"></button>').join('');
+   host.innerHTML=VARIANT_TEMPLATES.map((_,i)=>'<button class="r8-variant-dot'+(i===variantPos?' is-active':'')+'" type="button" data-variant-slot="'+i+'" aria-label="'+tr('Вариант ','Variant ')+(i+1)+'" aria-pressed="'+(i===variantPos?'true':'false')+'"></button>').join('');
    host.querySelectorAll('[data-variant-slot]').forEach(btn=>btn.onclick=()=>applyVariant(Number(btn.dataset.variantSlot)));
  }
  function saveCurrentVariantSlot(){
@@ -418,10 +429,10 @@
  $('surfaceTextureInput')?.addEventListener('change',event=>{
    const file=event.target.files?.[0];if(!file||!materialPickerDraft)return;
    const status=$('surfaceTextureStatus');
-   if(file.size>1572864){if(status)status.textContent='Файл больше 1.5 MB — выберите меньший.';event.target.value='';return}
+   if(file.size>1572864){if(status)status.textContent=tr('Файл больше 1.5 MB — выберите меньший.','File is larger than 1.5 MB — choose a smaller file.');event.target.value='';return}
    const reader=new FileReader();
    reader.onload=()=>{materialPickerDraft={...materialPickerDraft,preset:'CUSTOM',custom_texture_name:file.name,custom_texture_data_url:String(reader.result||'')};renderMaterialPicker()};
-   reader.onerror=()=>{if(status)status.textContent='Не удалось прочитать текстуру.'};
+   reader.onerror=()=>{if(status)status.textContent=tr('Не удалось прочитать текстуру.','Could not read the texture.')};
    reader.readAsDataURL(file);
  });
  $('baseInfoButton').onclick=()=>{$('baseInfoPopover').hidden=false};$('baseInfoClose').onclick=()=>{$('baseInfoPopover').hidden=true};
