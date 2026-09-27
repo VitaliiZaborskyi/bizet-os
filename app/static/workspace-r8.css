@@ -427,3 +427,26 @@ html[data-theme="dark"] .r104-project-currency select{color:#f4f2ed}
   .coordinate-box input{font-size:16px!important}
 }
 .r104-module-editor-head{grid-template-columns:minmax(0,1fr) auto!important}
+
+
+/* R10.4.5 — focus controls live in the lower-left safe area; module navigation owns the top-right. */
+body.r10-module-focus .r8-stage-top{
+  top:auto!important;
+  left:12px!important;
+  right:auto!important;
+  bottom:12px!important;
+  z-index:16;
+  align-items:center;
+}
+body.r10-module-focus #constraintButton{display:none!important}
+body.r10-module-focus .r10-focus-back,
+body.r10-module-focus .r10-dimensions-icon{
+  box-shadow:0 7px 24px rgba(0,0,0,.14)
+}
+@media(max-width:820px){
+  body.r10-module-focus .r8-stage-top{
+    left:10px!important;
+    bottom:10px!important;
+    gap:6px;
+  }
+}
