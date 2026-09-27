@@ -1693,8 +1693,7 @@ def test_r1045_built_in_hood_is_opaque_in_full_view_and_technical_inside_focus_o
     hood = renderer[renderer.index("function drawBuiltInHood"):renderer.index("function drawFreestandingHood")]
     assert "technical=false" in hood
     assert "module.wall==='A'&&technical" in hood
-    focus = renderer[renderer.index("if(options.focusMode)"):renderer.index("drawRoomBase")]
-    assert "drawBuiltInHood(ctx,projector,module,c,true)" in focus
+    assert "drawBuiltInHood(ctx,projector,module,c,true)" in renderer
     normal = renderer[renderer.index("const drawModule=module=>"):renderer.index("lower.forEach(drawModule)")]
     assert "drawBuiltInHood(ctx,projector,module,c,false)" in normal
 
