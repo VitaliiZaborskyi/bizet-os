@@ -651,9 +651,6 @@
     $('pointBPriceButton').onclick=()=>showReport('price');
     $('pointBDocsButton').onclick=()=>showReport('docs');
     $('projectCurrencySelect').value=displayCurrency();
-    $('projectCurrencySelect').onchange=event=>{
-      window.BizetModelRuntime?.setDisplayCurrency?.(event.target.value,'R10.4.4 global currency').catch?.(error=>console.error(error));
-    };
   }
   function modulePrice(module){
     if(!module)return{cost:0,client:0,bom:null,details:[]};
