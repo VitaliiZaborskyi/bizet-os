@@ -1344,3 +1344,154 @@ def test_r1042_offer_download_uses_real_pdf_endpoint():
     assert '@router.post("/projects/{project_id}/offer/document/{document_kind}")' in routes
     assert 'media_type="application/pdf"' in routes
     assert 'Content-Disposition' in routes
+
+
+def test_r1043_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v():
+    index = read("index.html")
+    start = read("start.js")
+    for asset in ["start.css?v=173", "start.js?v=173", "start-room-handoff.js?v=173"]:
+        assert asset in index
+    assert "{ value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
+    assert "title: { ru: 'V', en: 'V' }" not in start
+    assert "Категория V" not in start and "Category V" not in start
+
+
+def test_r1043_room_source_has_no_continue_button_and_confirm_advances_directly():
+    handoff = read("start-room-handoff.js")
+    assert "startRoomSourceContinue" not in handoff
+    assert "Continue to configuration" not in handoff
+    assert "Далее к конфигурации" not in handoff
+    confirm = handoff[handoff.index("confirm.onclick=async()=>"):handoff.index("function syncConfigurationSelection")]
+    assert "renderConfigurationScreen(screen)" in confirm
+
+
+def test_r1043_currency_is_visible_globally_and_survives_saved_variant_apply():
+    html = read("workspace-r8.html")
+    model = read("model.js")
+    workspace = read("workspace-r8.js")
+    assert 'id="projectCurrencySelect"' in html
+    assert 'id="moduleCurrencySelect"' in html
+    assert "async function setDisplayCurrency" in model
+    assert "projectCurrencySelect" in model
+    apply = model[model.index("async function applyWorkspaceState"):model.index("function snapshot")]
+    assert "globalCurrency" in apply
+    assert "display_currency:globalCurrency" in apply
+    assert "bizet:projectsettingchange" in model
+    assert "propagateLockedValue('display_currency',detail.value)" in workspace
+
+
+def test_r1043_offer_prints_explicit_currency_code_and_uses_factual_copy():
+    business = read("owner-qa-business.js")
+    routes = (ROOT / "app" / "api" / "routes_v11.py").read_text(encoding="utf-8")
+    docs = (ROOT / "app" / "services" / "documents.py").read_text(encoding="utf-8")
+    assert "const currencyCode=" in business
+    assert "const offerMoney=n=>money(n)+' '+currencyCode()" in business
+    assert "currency:currencyCode()" in business
+    assert 'currency: str = "UAH"' in routes
+    assert 'currency = str(payload.get("currency") or "UAH").upper()' in docs
+    assert "Generated from the current saved BIZET OS project configuration" in docs
+    assert "Final engineering and production validation is required" not in docs
+    assert "Фасады — согласно текущей конфигурации проекта" in business
+    assert "состав и стоимость соответствуют текущей сохранённой конфигурации" in business
+
+
+def test_r1043_built_in_fridge_has_capped_lower_facade_250_vent_and_sheet_limits():
+    model = read("model.js")
+    pointb = read("point-b.js")
+    lower = model[model.index("function collectedLower"):model.index("function wallSpan")]
+    assert "kitchenTopZ()-plinthHeight()" in lower
+    assert "fridge_bottom_vent_diameter_mm:freeFridge?0:250" in lower
+    assert "max_part_length_mm:2780" in lower and "max_part_width_mm:2060" in lower
+    rules = model[model.index("function applyFridgeConstructionRules"):model.index("function buildLower")]
+    assert "neighbor_lower_facade_height_mm" in rules
+    assert "Math.min(Math.max(100,Math.round((Number(fridge.h)||0)*.34)),neighborFacadeH)" in rules
+    assert "Круглый вырез Ø250" in pointb
+    assert "function splitOversizeFridgeRows" in pointb
+    assert "MAX_L=2780,MAX_W=2060" in pointb
+
+
+def test_r1043_plinth_segments_like_worktop_includes_builtins_and_prices_connectors():
+    rules = read("r10-domain-rules.js")
+    pointb = read("point-b.js")
+    renderer = read("pilot-3d.js")
+    assert "const PLINTH_RULES" in rules
+    assert "MAX_UNSPLICED_MM:4100" in rules
+    assert "function plinthRunPlan" in rules
+    assert "ONE_UNIVERSAL_CONNECTOR_PER_JOINT_STRAIGHT_OR_CORNER" in rules
+    assert "PLINTH_CONNECTOR:50" in pointb
+    assert "Соединитель цоколя универсальный" in pointb
+    assert "plinthConnectors" in pointb
+    assert "m.level!=='upper'&&!m.freestanding&&Number(m.z)>0" in pointb
+    plinth = renderer[renderer.index("function drawPlinth"):renderer.index("function drawTopAppliance")]
+    assert "plinthRunPlan" in plinth
+    assert "!m.freestanding&&Number(m.z)>0" in plinth
+    assert "plan.segments.forEach" in plinth
+
+
+def test_r1043_hood_visuals_distinguish_built_in_from_freestanding_and_bom_matches():
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    pointb = read("point-b.js")
+    assert "hood_type:inputs.hood_type" in model
+    assert "function drawBuiltInHood" in renderer
+    assert "function drawFreestandingHood" in renderer
+    assert "module.kind==='UPPER_HOOD'&&module.hood_type==='BUILT_IN'" in renderer
+    assert "module.kind==='UPPER_HOOD'&&module.hood_type==='FREESTANDING'" in renderer
+    assert "m.kind==='UPPER_HOOD')rows=m.hood_type==='FREESTANDING'?[]:upper" in pointb
+
+
+def test_r1043_live_language_switch_rerenders_workspace_isolation_materials_and_offer():
+    html = read("workspace-r8.html")
+    workspace = read("workspace-r8.js")
+    model = read("model.js")
+    business = read("owner-qa-business.js")
+    assert "<span>Валюта</span>" in html
+    editor = model[model.index("function renderModuleEditor"):model.index("function readModuleEditor")]
+    assert "currencyLabel.textContent=tr('Валюта','Currency')" in editor
+    assert "window.addEventListener('bizet:languagechange'" in workspace
+    assert "if(activePanel)renderPanel(activePanel)" in workspace
+    assert "materialPickerDraft)renderMaterialPicker()" in workspace
+    assert "window.addEventListener('bizet:languagechange'" in model
+    assert "localizeModelChrome()" in model
+    assert "window.addEventListener('bizet:languagechange'" in business
+    assert "showThinkFlow().then" in business
+
+
+def test_r1043_lower_oven_category_i_no_gola_support_shelf_is_body_top_minus_600():
+    model = read("model.js")
+    pointb = read("point-b.js")
+    renderer = read("pilot-3d.js")
+    assert "function categoryOneNoGola" in model
+    assert "category==='I'" in model
+    assert "oven_support_shelf_offset_from_top_mm:ovenShelf" in model
+    assert "ovenShelf=lowerOven&&categoryOneNoGola()?600:null" in model
+    ordinary = pointb[pointb.index("function ordinaryBase"):pointb.index("function sinkBase")]
+    assert "const lowerOven=module.kind==='COOKTOP'&&module.oven_appliance_present" in ordinary
+    assert "Number(module.oven_support_shelf_offset_from_top_mm)===600" in ordinary
+    assert "Oven Support Shelf" in ordinary
+    assert "верх корпуса − 600 мм" in ordinary
+    focus = renderer[renderer.index("function drawTechnicalFocus"):renderer.index("// Phase 8 drawer internals")]
+    assert "const frozenShelf=Number(module.oven_support_shelf_offset_from_top_mm)===600" in focus
+    assert "const shelfTop=frozenShelf?z+h-600:z+70" in focus
+    assert "!(module.kind==='COOKTOP'&&module.oven_appliance_present)" in focus
+
+
+def test_r1043_sink_uses_exactly_two_vertical_facade_parallel_ribs_with_rear_top_minus_150():
+    pointb = read("point-b.js")
+    renderer = read("pilot-3d.js")
+    sink = pointb[pointb.index("function sinkBase"):pointb.index("function drawerParts")]
+    assert sink.count("'Rail Front'") == 1
+    assert sink.count("'Rail Back Lower'") == 1
+    assert "Rail Additional" not in sink
+    assert "плоскость параллельна фасаду" in sink
+    assert "верх ребра на 150 мм ниже верха корпуса" in sink
+    focus = renderer[renderer.index("if(module.kind==='SINK')"):renderer.index("}else if(!ordinaryOven)")]
+    assert "y:y,z:z+h-railH" in focus
+    assert "y:y+d-railT,z:z+h-150-railH" in focus
+
+
+def test_r1043_checkpoint_keeps_first_tap_isolation_closed_and_freezes_qa_pack():
+    checkpoint = (ROOT / "R10_4_0_MUST_HAVE_CHECKPOINT.md").read_text(encoding="utf-8")
+    assert "R10.4.3 owner QA corrections" in checkpoint
+    assert "first-tap iPhone isolation lifecycle remains accepted CLOSED" in checkpoint
+    assert "600 mm below the top of the cabinet body" in checkpoint
