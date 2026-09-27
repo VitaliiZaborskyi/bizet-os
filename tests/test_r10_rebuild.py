@@ -704,13 +704,13 @@ def test_r1032_import_flow_has_detected_geometry_overlay_and_confirmation():
     assert "Подтвердить помещение" in handoff
     assert ".start-room-analysis-overlay" in css
 
-def test_r1032_think_flow_calls_real_proposal_send_endpoint():
+def test_r1042_offer_flow_calls_real_proposal_send_endpoint():
     business = read("owner-qa-business.js")
     assert "async function sendProposalEmail" in business
     assert "/proposal/send" in business
-    think = business[business.index("async function showThinkFlow"):business.index("async function showBuyFlow")]
-    assert "sendProposalEmail(contact,d)" in think
-    assert "КП отправлено" in think
+    offer = business[business.index("async function showThinkFlow"):business.index("async function showBuyFlow")]
+    assert "sendProposalEmail(ct.email,d" in offer
+    assert "Документы отправлены" in offer
     assert "MAIL_PROVIDER_NOT_CONFIGURED" in business
 
 
