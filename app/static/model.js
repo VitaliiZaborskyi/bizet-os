@@ -18,21 +18,25 @@
   const COMPOSITION=window.BizetR10Rules?.compositionRules||{centerPrimaryApplianceOnLongRun:true,skipWhenCommunicationsConfirmed:true};
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
-  const LOWER_DEPTH=560,DEFAULT_PLINTH_H=100,WORKTOP_H=38,LOWER_TOTAL_H=900;
-  const UPPER_DEPTH=320,UPPER_HOOD_DEPTH=350,UPPER_MAX_H=1000,CUTLERY_W=400;
+  const DEFAULT_LOWER_DEPTH=560,DEFAULT_PLINTH_H=100,WORKTOP_H=38,DEFAULT_LOWER_TOTAL_H=900;
+  const DEFAULT_UPPER_DEPTH=320,UPPER_HOOD_DEPTH=350,DEFAULT_UPPER_H=1000,CUTLERY_W=400;
   function plinthHeight(){return clamp(Math.round(Number(inputs.plinth_height_mm??DEFAULT_PLINTH_H)||DEFAULT_PLINTH_H),0,300)}
-  function lowerBodyHeight(){return Math.max(300,LOWER_TOTAL_H-plinthHeight()-WORKTOP_H)}
+  function lowerTotalHeight(){return clamp(Math.round(Number(inputs.lower_total_height_mm??DEFAULT_LOWER_TOTAL_H)||DEFAULT_LOWER_TOTAL_H),650,1200)}
+  function lowerDepth(){return clamp(Math.round(Number(inputs.lower_depth_mm??DEFAULT_LOWER_DEPTH)||DEFAULT_LOWER_DEPTH),300,800)}
+  function upperDepth(){return clamp(Math.round(Number(inputs.upper_depth_mm??DEFAULT_UPPER_DEPTH)||DEFAULT_UPPER_DEPTH),200,650)}
+  function upperConfiguredHeight(){return clamp(Math.round(Number(inputs.upper_height_mm??DEFAULT_UPPER_H)||DEFAULT_UPPER_H),220,1500)}
+  function lowerBodyHeight(){return Math.max(300,lowerTotalHeight()-plinthHeight()-WORKTOP_H)}
   function kitchenTopZ(){
-    const room=roomValues(),gap=Math.max(550,Number(inputs.upper_gap_mm)||600),upperBottom=LOWER_TOTAL_H+gap;
-    const upperH=Math.min(UPPER_MAX_H,room.heightMm-upperBottom-50);
-    return upperH>=220?upperBottom+upperH:Math.min(room.heightMm-50,LOWER_TOTAL_H);
+    const room=roomValues(),gap=Math.max(300,Number(inputs.upper_gap_mm)||600),upperBottom=lowerTotalHeight()+gap;
+    const upperH=Math.min(upperConfiguredHeight(),room.heightMm-upperBottom-50);
+    return upperH>=220?upperBottom+upperH:Math.min(room.heightMm-50,lowerTotalHeight());
   }
   function categoryOneNoGola(){
     const category=String(project?.context?.complexity_category||'I').toUpperCase();
     const gola=String(inputs.gola_system||inputs.handle_system||'NO').toUpperCase();
     return category==='I'&&!['YES','TRUE','GOLA'].includes(gola);
   }
-  function visibleTallDrawerLimit(){return LOWER_TOTAL_H-WORKTOP_H}
+  function visibleTallDrawerLimit(){return lowerTotalHeight()-WORKTOP_H}
   function moduleDisplayName(m){
     if(!m)return tr('Модуль','Module');
     if(uiLang()!=='en')return m.label||'Модуль';
@@ -282,7 +286,7 @@
     return autoWall(requested,sink,cook);
   }
   function baseModule(id,label,width,kind,wall='A',extra={}){
-    const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:LOWER_DEPTH,h:lowerBodyHeight(),z:plinthHeight(),level:'lower',anchor:true,...extra};
+    const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:lowerDepth(),h:lowerBodyHeight(),z:plinthHeight(),level:'lower',anchor:true,...extra};
     if(kind==='DRAWERS')module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
     module.module_run_limit_mm=maxRunFor(module);
     module.facade_width_limit_mm=LIMITS.HINGED_FACADE_MAX;
@@ -606,16 +610,16 @@
   }
 
   function upperFromLower(lower){
-    const room=roomValues(),gap=Math.max(550,Number(inputs.upper_gap_mm)||600),bottom=LOWER_TOTAL_H+gap,height=Math.min(UPPER_MAX_H,room.heightMm-bottom-50);if(height<220)return[];
-    const result=[],hoodWidth=Number(inputs.hood_width_mm)||600,hoodDepth=inputs.hood_type==='BUILT_IN'?UPPER_HOOD_DEPTH:UPPER_DEPTH;
+    const room=roomValues(),gap=Math.max(300,Number(inputs.upper_gap_mm)||600),bottom=lowerTotalHeight()+gap,height=Math.min(upperConfiguredHeight(),room.heightMm-bottom-50);if(height<220)return[];
+    const uDepth=upperDepth(),result=[],hoodWidth=Number(inputs.hood_width_mm)||600,hoodDepth=inputs.hood_type==='BUILT_IN'?Math.max(UPPER_HOOD_DEPTH,uDepth):uDepth;
     lower.filter(m=>!m.tall&&m.level==='lower'&&m.kind!=='FILLER').forEach(m=>{
       if(m.kind==='COOKTOP'){
         if(m.wall==='A'){const center=m.x+m.w/2,x=clamp(center-hoodWidth/2,0,room.lengthMm-hoodWidth);result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y:room.depthMm-hoodDepth,z:bottom,w:hoodWidth,d:hoodDepth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth})}
         else{const center=m.y+m.d/2,y=clamp(center-hoodWidth/2,0,room.depthMm-hoodWidth),x=m.wall==='B'?0:room.lengthMm-hoodDepth;result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y,z:bottom,w:hoodDepth,d:hoodWidth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth})}
         return;
       }
-      if(m.wall==='A')result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:'A',x:m.x,y:room.depthMm-UPPER_DEPTH,z:bottom,w:m.w,d:UPPER_DEPTH,h:height,level:'upper',anchor:false,system:true,pending:m.pending});
-      else result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:m.wall,x:m.wall==='B'?0:room.lengthMm-UPPER_DEPTH,y:m.y,z:bottom,w:UPPER_DEPTH,d:m.d,h:height,level:'upper',anchor:false,system:true,pending:m.pending});
+      if(m.wall==='A')result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:'A',x:m.x,y:room.depthMm-uDepth,z:bottom,w:m.w,d:uDepth,h:height,level:'upper',anchor:false,system:true,pending:m.pending});
+      else result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:m.wall,x:m.wall==='B'?0:room.lengthMm-uDepth,y:m.y,z:bottom,w:uDepth,d:m.d,h:height,level:'upper',anchor:false,system:true,pending:m.pending});
     });
     const variant=variantState();
     result.forEach(m=>{if(m.kind==='UPPER'){m.label=variant.upper_opening==='LIFT'?'Верхний · подъёмный':'Верхний · распашной'}});
@@ -690,7 +694,7 @@
     layoutWarnings=[];
     const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(applyEndPanelRules(lower.concat(upper)));
     evaluateErgonomics(all);
-    const standardPackageH=LOWER_TOTAL_H+Math.max(550,Number(inputs.upper_gap_mm)||600)+750;
+    const standardPackageH=lowerTotalHeight()+Math.max(300,Number(inputs.upper_gap_mm)||600)+upperConfiguredHeight();
     if(room.heightMm<standardPackageH&&upper.length){
       pushWarning('ROOM_HEIGHT_ADAPTED',`Высота помещения ${Math.round(room.heightMm)} мм ниже стандартной схемы. Верхние/высокие модули адаптированы по высоте; производителю нужна проверка, возможна корректировка стоимости.`);
     }
@@ -942,7 +946,7 @@
     const error=validateModuleDraft(moduleDraft,moduleDraftBase||activeModule);if(error){const rule=$('moduleEditRule');rule.hidden=false;rule.textContent=error;return}
     const id=activeModule.id,overrides=moduleEditOverrides(),payload={...moduleDraft};delete payload.id;
     overrides[id]=payload;
-    await saveVisual({...visual,module_edit_overrides:overrides,module_direct_edit_status:'R10.4.4_MODULE_SAVED'},`R10.4.4 module edit ${id}`);
+    await saveVisual({...visual,module_edit_overrides:overrides,module_direct_edit_status:'R10.4.5_MODULE_SAVED'},`R10.4.5 module edit ${id}`);
     moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;
     enterNormalKitchenView();renderScene(false);
     window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'module-edit-save',module_id:id}}));
