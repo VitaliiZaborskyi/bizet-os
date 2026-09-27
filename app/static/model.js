@@ -22,6 +22,16 @@
   const UPPER_DEPTH=320,UPPER_HOOD_DEPTH=350,UPPER_MAX_H=1000,CUTLERY_W=400;
   function plinthHeight(){return clamp(Math.round(Number(inputs.plinth_height_mm??DEFAULT_PLINTH_H)||DEFAULT_PLINTH_H),0,300)}
   function lowerBodyHeight(){return Math.max(300,LOWER_TOTAL_H-plinthHeight()-WORKTOP_H)}
+  function kitchenTopZ(){
+    const room=roomValues(),gap=Math.max(550,Number(inputs.upper_gap_mm)||600),upperBottom=LOWER_TOTAL_H+gap;
+    const upperH=Math.min(UPPER_MAX_H,room.heightMm-upperBottom-50);
+    return upperH>=220?upperBottom+upperH:Math.min(room.heightMm-50,LOWER_TOTAL_H);
+  }
+  function categoryOneNoGola(){
+    const category=String(project?.context?.complexity_category||'I').toUpperCase();
+    const gola=String(inputs.gola_system||inputs.handle_system||'NO').toUpperCase();
+    return category==='I'&&!['YES','TRUE','GOLA'].includes(gola);
+  }
   function visibleTallDrawerLimit(){return LOWER_TOTAL_H-WORKTOP_H}
   function moduleDisplayName(m){
     if(!m)return tr('Модуль','Module');
@@ -286,9 +296,10 @@
   function collectedLower(){
     const list=[],walls=activeWalls(),fWall=fridgeWall();
     if(inputs.fridge_present==='YES'){
-      const width=Number(inputs.fridge_width_mm)||600,tallHeight=Math.max(1500,Math.min(roomValues().heightMm-140,2100));
-      const freeFridge=inputs.fridge_type==='FREESTANDING',clearance=freeFridge?freestandingGap(width):0,runWidth=freeFridge?width+clearance*2:width;
-      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:plinthHeight(),content:freeFridge?'FRIDGE_FREEZER':(inputs.fridge_content||'PENDING'),freestanding:freeFridge,appliance_width_mm:width,appliance_clearance_mm:clearance,freezer_bottom:true};
+      const width=Number(inputs.fridge_width_mm)||600,freeFridge=inputs.fridge_type==='FREESTANDING';
+      const tallHeight=freeFridge?Math.max(1500,Math.min(roomValues().heightMm-140,2100)):Math.max(900,kitchenTopZ()-plinthHeight());
+      const clearance=freeFridge?freestandingGap(width):0,runWidth=freeFridge?width+clearance*2:width;
+      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:plinthHeight(),content:freeFridge?'FRIDGE_FREEZER':(inputs.fridge_content||'PENDING'),freestanding:freeFridge,appliance_width_mm:width,appliance_clearance_mm:clearance,freezer_bottom:true,fridge_bottom_vent_diameter_mm:freeFridge?0:250,max_part_length_mm:2780,max_part_width_mm:2060};
       if(inputs.fridge_type==='BUILT_IN'&&width===1200){
         list.push(baseModule('fridge-left','Холодильник L',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_left_unit||'PENDING'}));
         list.push(baseModule('fridge-right','Холодильник R',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_right_unit||'PENDING'}));
@@ -305,7 +316,8 @@
       list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2+clearance*2,'DISHWASHER',wall,{freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel,appliance_clearance_mm:clearance}));
     }
     const cooktopWall=resolvedCooktopWall(),ovenWidth=[600,900].includes(Number(inputs.oven_width_mm))?Number(inputs.oven_width_mm):600;
-    list.push(baseModule('cooktop',inputs.oven_location==='LOWER'?'Варочная + духовка':'Варочная панель',inputs.oven_location==='LOWER'?ovenWidth:(Number(inputs.cooktop_width_mm)||600),'COOKTOP',cooktopWall,{widthStatus:'USER_SELECTED',oven_appliance_present:inputs.oven_location==='LOWER',oven_width_mm:ovenWidth,corner_forbidden:inputs.oven_location==='LOWER'}));
+    const lowerOven=inputs.oven_location==='LOWER',ovenShelf=lowerOven&&categoryOneNoGola()?600:null;
+    list.push(baseModule('cooktop',lowerOven?'Варочная + духовка':'Варочная панель',lowerOven?ovenWidth:(Number(inputs.cooktop_width_mm)||600),'COOKTOP',cooktopWall,{widthStatus:'USER_SELECTED',oven_appliance_present:lowerOven,oven_width_mm:ovenWidth,corner_forbidden:lowerOven,oven_support_shelf_offset_from_top_mm:ovenShelf,oven_support_shelf_rule:ovenShelf===600?'CATEGORY_I_NO_GOLA_BODY_TOP_MINUS_600':'DEFERRED_GOLA_OR_OTHER_CATEGORY'}));
     if(inputs.oven_location==='TALL'){
       const wall=resolvedOvenWall();
       const tallHeight=Math.max(900,Math.min(roomValues().heightMm-140,2100));
@@ -566,7 +578,29 @@
     }).filter(Boolean);
   }
 
-  function buildLower(){const room=roomValues(),raw=collectedLower(),walls=activeWalls(),grouped={A:[],B:[],C:[]};raw.forEach(m=>(grouped[m.wall]||grouped.A).push(m));return walls.flatMap(w=>arrangeWall(w,grouped[w],room))}
+  function applyFridgeConstructionRules(list){
+    const out=list.map(m=>({...m}));
+    out.filter(m=>m.kind==='FRIDGE'&&!m.freestanding).forEach(fridge=>{
+      fridge.fridge_bottom_vent_diameter_mm=250;
+      fridge.max_part_length_mm=2780;fridge.max_part_width_mm=2060;
+      const candidates=out.filter(m=>m.wall===fridge.wall&&m.id!==fridge.id&&m.level!=='upper'&&!m.tall&&!['FILLER','FRIDGE'].includes(m.kind));
+      if(!candidates.length)return;
+      const pos=m=>m.wall==='A'?(Number(m.x)||0)+(Number(m.w)||0)/2:(Number(m.y)||0)+(Number(m.d)||0)/2;
+      const fp=pos(fridge),neighbor=[...candidates].sort((a,b)=>Math.abs(pos(a)-fp)-Math.abs(pos(b)-fp))[0];
+      const hasLowerFacade=fridge.content&&!['FRIDGE_ONLY','FREEZER_ONLY'].includes(fridge.content);
+      if(hasLowerFacade){
+        const neighborFacadeH=Math.max(100,Math.round((Number(neighbor.h)||lowerBodyHeight())-5));
+        fridge.neighbor_lower_facade_height_mm=neighborFacadeH;
+        fridge.lower_facade_height_mm=Math.min(Math.max(100,Math.round((Number(fridge.h)||0)*.34)),neighborFacadeH);
+      }else fridge.lower_facade_height_mm=0;
+    });
+    return out;
+  }
+  function buildLower(){
+    const room=roomValues(),raw=collectedLower(),walls=activeWalls(),grouped={A:[],B:[],C:[]};
+    raw.forEach(m=>(grouped[m.wall]||grouped.A).push(m));
+    return applyFridgeConstructionRules(walls.flatMap(w=>arrangeWall(w,grouped[w],room)));
+  }
 
   function upperFromLower(lower){
     const room=roomValues(),gap=Math.max(550,Number(inputs.upper_gap_mm)||600),bottom=LOWER_TOTAL_H+gap,height=Math.min(UPPER_MAX_H,room.heightMm-bottom-50);if(height<220)return[];
@@ -783,7 +817,11 @@
     if(priceLabel)priceLabel.textContent=tr('Цена модуля','Module price');
     if(kicker)kicker.textContent=tr('ПРАВКА МОДУЛЯ','EDIT MODULE');
     const currency=$('moduleCurrencySelect');
-    if(currency){currency.value=String(inputs.display_currency||'UAH').toUpperCase();currency.setAttribute('aria-label',tr('Валюта отображения','Display currency'));}
+    if(currency){
+      currency.value=String(inputs.display_currency||'UAH').toUpperCase();
+      currency.setAttribute('aria-label',tr('Валюта отображения','Display currency'));
+      const currencyLabel=currency.closest('label')?.querySelector('span');if(currencyLabel)currencyLabel.textContent=tr('Валюта','Currency');
+    }
     const ovenOnly=isOvenModule(module);
     let html=ovenOnly
       ?editField(tr('Ширина духовки, мм','Oven width, mm'),'run_mm',d.run_mm,'select',[[600,'600'],[900,'900']])
@@ -1027,8 +1065,26 @@
     enterNormalKitchenView();$('moduleDialog').close?.();renderScene(false);
   }
 
+  function syncCurrencyControls(){
+    const code=String(inputs.display_currency||'UAH').toUpperCase();
+    const main=$('projectCurrencySelect'),module=$('moduleCurrencySelect');
+    if(main)main.value=code;if(module)module.value=code;
+    const control=$('projectCurrencyControl');
+    if(control)control.setAttribute('aria-label',tr('Валюта отображения','Display currency'));
+    if(main)main.setAttribute('aria-label',tr('Валюта отображения','Display currency'));
+  }
+  async function setDisplayCurrency(code,reason='R10.4.3 display currency'){
+    const nextCode=['UAH','EUR','USD','AUD'].includes(String(code).toUpperCase())?String(code).toUpperCase():'UAH';
+    inputs={...inputs,display_currency:nextCode};
+    await saveVisual({...visual,guided_inputs:inputs,r8_workspace:true},reason);
+    syncCurrencyControls();
+    window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'currency',currency:nextCode}}));
+    window.dispatchEvent(new CustomEvent('bizet:projectsettingchange',{detail:{key:'display_currency',value:nextCode}}));
+    refreshModuleDraftPrice();renderScene(false);
+    return snapshot();
+  }
   async function patchInputs(patch,reason='R8 workspace'){
-    inputs={...inputs,...patch};await saveVisual({...visual,guided_inputs:inputs,r8_workspace:true},reason);renderScene(false);
+    inputs={...inputs,...patch};await saveVisual({...visual,guided_inputs:inputs,r8_workspace:true},reason);syncCurrencyControls();renderScene(false);
     window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'inputs',patch}}));return snapshot();
   }
   async function patchVariant(patch){await saveVisual({...visual,r8_variant:{...(visual.r8_variant||{}),...patch}},'R8 variant');renderScene(false);window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'variant'}}));return snapshot()}
@@ -1047,15 +1103,15 @@
   }}
   async function applyWorkspaceState(state,reason='R8 saved variant'){
     enterNormalKitchenView();
-    const next={...visual};
-    if(state.inputs)next.guided_inputs={...state.inputs};
+    const next={...visual},globalCurrency=String(inputs.display_currency||visual.guided_inputs?.display_currency||'UAH').toUpperCase();
+    if(state.inputs)next.guided_inputs={...state.inputs,display_currency:globalCurrency};
     if(state.variant)next.r8_variant={...state.variant};
     if(state.module_offsets_mm)next.module_offsets_mm={...state.module_offsets_mm};
     if(state.module_size_overrides)next.module_size_overrides={...state.module_size_overrides};
     if(state.module_opening_overrides)next.module_opening_overrides={...state.module_opening_overrides};
     if(state.module_variant_overrides)next.module_variant_overrides={...state.module_variant_overrides};
     if(state.module_edit_overrides)next.module_edit_overrides={...state.module_edit_overrides};
-    await saveVisual(next,reason);renderScene(false);return snapshot();
+    await saveVisual(next,reason);syncCurrencyControls();renderScene(false);return snapshot();
   }
   function snapshot(){return{...captureWorkspaceState(),visual:{...visual},elements:[...(project?.room?.architectural_elements||[])],context:{...(project?.context||{})},room:roomValues(),modules:[...modules]}}
   async function replaceState(state){await applyWorkspaceState(state,'R8 restore state');if(state.elements)await patchElements(state.elements);return snapshot()}
@@ -1073,7 +1129,7 @@
     }
     resumeFromSleep.busy=false;
   }
-  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],displayModuleName:moduleDisplayName,patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>scheduleRenderAfterLayout('runtime-render')};
+  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],displayModuleName:moduleDisplayName,setDisplayCurrency,patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>scheduleRenderAfterLayout('runtime-render')};
 
   const normalCanvas=$('modelCanvas'),focusCanvas=$('focusCanvas');
   function activeCanvas(){return viewMode===VIEW_FOCUS?focusCanvas:normalCanvas}
@@ -1153,13 +1209,8 @@
     try{applyFocusPreset(btn.dataset.focusPreset)}catch(error){const status=$('focusVariantStatus');if(status){status.hidden=false;status.textContent=error.message}}
   });
 
-  $('moduleCurrencySelect')?.addEventListener('change',async event=>{
-    const code=String(event.target.value||'UAH').toUpperCase();
-    inputs={...inputs,display_currency:code};
-    await saveVisual({...visual,guided_inputs:inputs,r8_workspace:true},'R10.4.2 display currency');
-    window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'currency',currency:code}}));
-    refreshModuleDraftPrice();
-  });
+  $('moduleCurrencySelect')?.addEventListener('change',event=>setDisplayCurrency(event.target.value,'R10.4.3 isolation currency').catch(error=>console.error(error)));
+  $('projectCurrencySelect')?.addEventListener('change',event=>setDisplayCurrency(event.target.value,'R10.4.3 global currency').catch(error=>console.error(error)));
   window.addEventListener('bizet:fxready',()=>refreshModuleDraftPrice());
 
   $('moduleNumbersToggle')?.addEventListener('click',()=>{
@@ -1220,12 +1271,34 @@
     scheduleRenderAfterLayout('stage-resize');
   }):null;
   stageResizeObserver?.observe($('modelStage'));
+  function localizeModelChrome(){
+    document.documentElement.lang=uiLang();
+    document.title=tr('BIZET OS — Рабочая модель','BIZET OS — Workspace');
+    const back=$('backButton');if(back)back.setAttribute('aria-label',tr('Назад','Back'));
+    const state=document.querySelector('.r8-project-state>span');if(state)state.textContent=tr('Базовый вариант','Base variant');
+    const info=$('baseInfoButton');if(info)info.setAttribute('aria-label',tr('О базовом варианте','About base variant'));
+    const stageCanvas=$('modelCanvas');if(stageCanvas)stageCanvas.setAttribute('aria-label',tr('Интерактивная модель кухни','Interactive kitchen model'));
+    const focusCanvas=$('focusCanvas');if(focusCanvas)focusCanvas.setAttribute('aria-label',tr('Изолированный модуль','Isolated module'));
+    const prev=$('focusPrevModule'),next=$('focusNextModule');
+    if(prev)prev.setAttribute('aria-label',tr('Предыдущий модуль','Previous module'));if(next)next.setAttribute('aria-label',tr('Следующий модуль','Next module'));
+    const currencyLabel=$('moduleCurrencySelect')?.closest('label')?.querySelector('span');if(currencyLabel)currencyLabel.textContent=tr('Валюта','Currency');
+    const modulePanel=$('moduleEditPanel');if(modulePanel)modulePanel.setAttribute('aria-label',tr('Правка модуля','Edit module'));
+    const oldKicker=document.querySelector('.r8-module-kicker');if(oldKicker)oldKicker.textContent=tr('НАСТРОЙКА МОДУЛЯ','MODULE CUSTOMIZATION');
+    const oldTitle=$('moduleTitle');if(oldTitle&&oldTitle.textContent.trim()==='Модуль')oldTitle.textContent=tr('Модуль','Module');
+    syncCurrencyControls();syncFocusControls();renderStrip();
+    if(activeModule){renderModuleEditor(activeModule);renderFocusModuleMenu();renderFocusVariantRibbon(activeModule)}
+  }
+  window.addEventListener('bizet:languagechange',()=>{
+    localizeModelChrome();
+    requestAnimationFrame(()=>renderScene(false));
+    window.BizetPointB?.refresh?.();window.BizetOwnerBusiness?.refresh?.();
+  });
   window.addEventListener('bizet:themechange',()=>requestAnimationFrame(()=>renderScene(false)));
   window.addEventListener('bizet:resume',()=>resumeFromSleep());
 
   (async()=>{
     if(!projectId){$('modelStatus').textContent='Проект не найден';return}let engineOk=false;
     try{const recalc=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}/recalculate`,{method:'POST'});project=recalc.project;engineOk=!!recalc.legacy_engine_candidate_count}catch(_){project=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`)}
-    visual={...(project.scene?.visual_settings||{})};inputs={...(visual.guided_inputs||{})};setFurniturePalette();resetCamera();renderScene(engineOk);window.BizetModelRuntime.ready=true;window.dispatchEvent(new CustomEvent('bizet:modelready'));
+    visual={...(project.scene?.visual_settings||{})};inputs={...(visual.guided_inputs||{})};setFurniturePalette();syncCurrencyControls();localizeModelChrome();resetCamera();renderScene(engineOk);window.BizetModelRuntime.ready=true;window.dispatchEvent(new CustomEvent('bizet:modelready'));
   })().catch(error=>{$('modelStatus').textContent=error.message});
 })();
