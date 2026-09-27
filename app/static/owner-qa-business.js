@@ -122,6 +122,32 @@ ${JSON.stringify(payload)}`;
     }
     return body;
   }
+  async function downloadOfferDocument(kind,d){
+    const id=projectId();if(!id)throw new Error('project_not_found');
+    const payload={
+      recipient:'',
+      price:money(d.clientPrice),
+      manufacturer:d.p.name,
+      configuration:configurationLabel(d.rt.getConfiguration()),
+      runs:runSummary(d),
+      features:proposalFeatures(d),
+      include_proposal:kind==='proposal',
+      include_approval_drawings:kind==='approval',
+      visualization_data_url:proposalSnapshot(),
+      approval_svg_pages:kind==='approval'?(d.pb.approvalSheets?.(d.modules,d.rt.getRoom(),identityRef())||[]):[]
+    };
+    const response=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}/offer/document/${encodeURIComponent(kind)}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+    });
+    if(!response.ok){
+      const body=await response.json().catch(()=>({}));
+      throw new Error(typeof body.detail==='string'?body.detail:t('Не удалось сформировать PDF','Could not build PDF'));
+    }
+    const blob=await response.blob(),disposition=response.headers.get('Content-Disposition')||'';
+    const match=disposition.match(/filename="([^"]+)"/i),name=match?.[1]||(kind==='proposal'?'BIZET_OFFER.pdf':'BIZET_APPROVAL.pdf');
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
+  }
+
   async function showThinkFlow(){
     const d=data();if(!d)return;
     const identity=await ensureOrderIdentity(),ref=identityRef(identity),prompt=visualizationMasterPrompt(d);
@@ -148,8 +174,13 @@ ${JSON.stringify(payload)}`;
       if(!s.proposal&&!s.approval){status.hidden=false;status.textContent=t('Выберите хотя бы один документ.','Select at least one document.');return}
       if(!ct.email&&!ct.phone){status.hidden=false;status.textContent=t('Введите e-mail или телефон.','Enter an e-mail or phone number.');return}
       patchProject('commerce.contact',ct.email||ct.phone,'R10.4.2 OFFER contact').catch(()=>{});
-      if(s.proposal)printProposal().catch(error=>{status.hidden=false;status.textContent=error.message});
-      if(s.approval)d.pb.openApprovalDrawings?.();
+      (async()=>{
+        try{
+          if(s.proposal)await downloadOfferDocument('proposal',d);
+          if(s.approval)await downloadOfferDocument('approval',d);
+          status.hidden=false;status.textContent=t('Документы готовы к загрузке.','Documents are ready for download.');
+        }catch(error){status.hidden=false;status.textContent=error.message}
+      })();
     };
     $('r104OfferSend').onclick=async()=>{
       const button=$('r104OfferSend'),s=selections(),ct=contact(),status=$('r10ProposalStatus');
