@@ -40,8 +40,13 @@
     const yaw=Number.isFinite(cameraOverride.yaw)?cameraOverride.yaw:defaults.yaw;
     const pitch=clamp(Number.isFinite(cameraOverride.pitch)?cameraOverride.pitch:defaults.pitch,4*DEG,55*DEG);
     const distanceScale=clamp(Number(cameraOverride.distanceScale)||1,.58,1.75);
+    const screenXOffset=Number(cameraOverride.screenXOffset)||0;
     const screenYOffset=Number(cameraOverride.screenYOffset)||0;
-    const target=[L*.5,D*.58,H*.43];
+    const target=[
+      Number.isFinite(Number(cameraOverride.targetX))?Number(cameraOverride.targetX):L*.5,
+      Number.isFinite(Number(cameraOverride.targetY))?Number(cameraOverride.targetY):D*.58,
+      Number.isFinite(Number(cameraOverride.targetZ))?Number(cameraOverride.targetZ):H*.43
+    ];
     const baseDistance=Math.max(L,D)*1.42+H*.48;
     const distance=baseDistance*distanceScale;
     const cp=Math.cos(pitch);
@@ -53,9 +58,9 @@
     function point(world){
       const rel=sub(world,position);const x=dot(rel,right),y=dot(rel,up),z=dot(rel,forward);
       const zz=Math.max(80,z);
-      return[width/2+focal*x/zz,height*.51+screenYOffset-focal*y/zz,zz];
+      return[width/2+screenXOffset+focal*x/zz,height*.51+screenYOffset-focal*y/zz,zz];
     }
-    return{L,D,H,point,position,yaw,pitch,distanceScale,screenYOffset};
+    return{L,D,H,point,position,yaw,pitch,distanceScale,screenXOffset,screenYOffset,target};
   }
 
   function colors(){
