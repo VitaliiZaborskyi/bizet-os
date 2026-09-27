@@ -25,3 +25,18 @@
   .r8-final-price strong{font-size:21px}
   .r8-final-actions>button{padding:9px 8px;font-size:12px}
 }
+
+
+/* R10.4.4 — currency belongs with the commercial price, not the 3D canvas. */
+.r104-price-line{display:flex;align-items:center;gap:12px;min-width:0}
+.r104-price-currency{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.r104-price-currency span{font-size:10px;color:var(--r8-muted);letter-spacing:.04em}
+.r104-price-currency select{height:34px;border:1px solid var(--r8-line);border-radius:10px;background:var(--r8-bg);color:var(--r8-ink);padding:0 8px;font-weight:800;font-size:12px}
+@media(max-width:820px){
+  .r8-final-actions{grid-template-columns:1fr 1fr}
+  .r104-price-line{grid-column:1/-1;justify-content:space-between;gap:10px;min-height:34px}
+  .r8-final-price{grid-column:auto!important;flex:1 1 auto;justify-content:flex-end}
+  .r104-price-currency{margin-left:2px}
+  .r104-price-currency span{display:none}
+  .r104-price-currency select{height:32px;font-size:12px}
+}
