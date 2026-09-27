@@ -325,7 +325,7 @@
    $('editorPanel').scrollTop=0;
  }
  function refreshPanel(){if(activePanel)renderPanel(activePanel)}
- function renderElements(){const n=$('elementList');if(!n)return;const els=rt.getElements();n.innerHTML=els.length?els.map((e,i)=>'<div class="r8-field"><span>'+(i+1)+'. '+esc(e.type)+' · стена '+esc(e.wall)+'</span><button class="r8-save" data-remove-element="'+i+'">Удалить</button></div>').join(''):'<p>Пока нет дополнительных элементов.</p>';n.querySelectorAll('[data-remove-element]').forEach(b=>b.onclick=async()=>{pushUndo();const a=[...rt.getElements()];a.splice(Number(b.dataset.removeElement),1);await rt.patchElements(a);renderElements();updateReadiness()})}
+ function renderElements(){const n=$('elementList');if(!n)return;const els=rt.getElements();n.innerHTML=els.length?els.map((e,i)=>'<div class="r8-field"><span>'+(i+1)+'. '+esc(e.type)+' · '+tr('стена','wall')+' '+esc(e.wall)+'</span><button class="r8-save" data-remove-element="'+i+'">'+tr('Удалить','Remove')+'</button></div>').join(''):'<p>'+tr('Пока нет дополнительных элементов.','No additional elements yet.')+'</p>';n.querySelectorAll('[data-remove-element]').forEach(b=>b.onclick=async()=>{pushUndo();const a=[...rt.getElements()];a.splice(Number(b.dataset.removeElement),1);await rt.patchElements(a);renderElements();updateReadiness()})}
  async function runAction(a){
    if(a==='room-source-manual'){
      await rt.patchVisual({room_import:{source:'TEMPLATE',status:'ACTIVE',target_model:'ROOM_MODEL',message:'Шаблон активен. Размеры уточняются в параметрах помещения.'}});refreshPanel();return;
@@ -342,7 +342,7 @@
        const body=await roomImportApi('calibrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({known_dimension_mm:known})});
        rt=window.BizetModelRuntime;await rt.resume?.();refreshPanel();updateReadiness();
        const size=body.room_import?.canonical_room_model?.bounding_size_mm||{};
-       $('r10RoomImportStatus').textContent=`Room Model применена: ${size.length||'—'} × ${size.depth||'—'} мм. Подтвердите помещение.`;
+       $('r10RoomImportStatus').textContent=tr(`Room Model применена: ${size.length||'—'} × ${size.depth||'—'} мм. Подтвердите помещение.`,`Room Model applied: ${size.length||'—'} × ${size.depth||'—'} mm. Confirm the room.`);
      }catch(error){$('r10RoomImportStatus').textContent=tr('Калибровка не применена: ','Calibration was not applied: ')+error.message}
      return;
    }
