@@ -126,6 +126,7 @@ const STATIC_COPY = {
     feedbackPlaceholder: 'Ваше сообщение', feedbackSubmit: 'Сохранить для пилота', feedbackSaved: 'Сообщение сохранено в этом браузере для текущего пилота.',
     tutorialTitle: 'Как пользоваться системой', tutorialCopy: 'Здесь будет запускаться видеоинструкция. Видео подключим после утверждения сценария.',
     roomDetailsPending: 'Следующий экран — детали помещения. Его подключим в следующем слое BIZET OS.',
+    customDevelopment: 'Мы работаем над этой функцией. Своя конфигурация пока в стадии разработки.',
     changeSelection: 'Изменить', saveError: 'Не удалось сохранить выбор', loadErrorTitle: 'Не удалось открыть проект', loadErrorSubtitle: 'Проверьте подключение к BIZET OS и повторите попытку.'
   },
   en: {
@@ -137,6 +138,7 @@ const STATIC_COPY = {
     feedbackPlaceholder: 'Your message', feedbackSubmit: 'Save for pilot', feedbackSaved: 'The message has been saved in this browser for the current pilot.',
     tutorialTitle: 'How to use the system', tutorialCopy: 'The video guide will launch here. We will connect the video after the script is approved.',
     roomDetailsPending: 'The next screen is room details. It will be connected in the next BIZET OS layer.',
+    customDevelopment: 'We are working on this feature. Custom configuration is currently in development.',
     changeSelection: 'Change', saveError: 'Could not save the selection', loadErrorTitle: 'Could not open the project', loadErrorSubtitle: 'Check the BIZET OS connection and try again.'
   }
 };
@@ -283,6 +285,10 @@ function renderStep() {
 
 async function choose(value) {
   if (busy) return;
+  if (STEPS[currentStep]?.field==='complexity_category'&&value==='V'){
+    showToast(copy('customDevelopment'));
+    return;
+  }
   busy = true;
   showError('');
   const step = STEPS[currentStep];
