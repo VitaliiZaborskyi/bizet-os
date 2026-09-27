@@ -1,5 +1,5 @@
 (()=> {
-  const VERSION='R10.4.3-POINT-B-2026-09-27';
+  const VERSION='R10.4.4-POINT-B-2026-09-27';
   const PRICES={
     CARCAS_M2:776,FACADE_M2:1200,HDF_M2:120,
     CUT_M:20,EDGE_LABOR_M:30,EDGE_MATERIAL_M:30,
@@ -591,7 +591,7 @@
   function ensureUI(){
     if($('pointBFinalActions'))return;
     const host=document.createElement('div');host.id='pointBFinalActions';host.className='r8-final-actions';
-    host.innerHTML='<div class="r8-final-price"><span>Итоговая стоимость</span><strong id="pointBPrice">—</strong></div><button id="pointBPriceButton" type="button">Скачать предложение</button><button id="pointBDocsButton" type="button">Купить</button>';
+    host.innerHTML='<div class="r104-price-line"><label class="r104-price-currency"><span>Валюта</span><select id="projectCurrencySelect" aria-label="Валюта отображения"><option value="UAH">UAH</option><option value="EUR">EUR</option><option value="USD">USD</option><option value="AUD">AUD</option></select></label><div class="r8-final-price"><span>Итоговая стоимость</span><strong id="pointBPrice">—</strong></div></div><button id="pointBPriceButton" type="button">Скачать предложение</button><button id="pointBDocsButton" type="button">Купить</button>';
     const anchor=$('moduleStrip')||$('modelStatus');anchor.insertAdjacentElement('afterend',host);
     const dialog=document.createElement('dialog');dialog.id='pointBDialog';dialog.className='r8-pointb-dialog';
     dialog.innerHTML='<div class="r8-pointb-card"><button id="pointBClose" class="r8-pointb-close" type="button">×</button><div id="pointBReport"></div></div>';
@@ -599,6 +599,10 @@
     $('pointBClose').onclick=()=>dialog.close();
     $('pointBPriceButton').onclick=()=>showReport('price');
     $('pointBDocsButton').onclick=()=>showReport('docs');
+    $('projectCurrencySelect').value=displayCurrency();
+    $('projectCurrencySelect').onchange=event=>{
+      window.BizetModelRuntime?.setDisplayCurrency?.(event.target.value,'R10.4.4 global currency').catch?.(error=>console.error(error));
+    };
   }
   function modulePrice(module){
     if(!module)return{cost:0,client:0,bom:null,details:[]};
@@ -639,6 +643,10 @@
   function refresh(){
     ensureUI();const data=current();if(!data)return;
     $('pointBPrice').textContent=money(data.bom.client);
+    const currency=$('projectCurrencySelect');if(currency)currency.value=displayCurrency();
+    const label=$('projectCurrencySelect')?.closest('label')?.querySelector('span');
+    if(label)label.textContent=document.documentElement.lang==='en'?'Currency':'Валюта';
+    if(currency)currency.setAttribute('aria-label',document.documentElement.lang==='en'?'Display currency':'Валюта отображения');
   }
   function boot(){
     ensureUI();loadFxRates().then(()=>refresh());
