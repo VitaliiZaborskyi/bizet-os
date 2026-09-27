@@ -16,7 +16,13 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const t=(ru,en)=>lang()==='en'?en:ru;
   const projectId=()=>new URLSearchParams(location.search).get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
-  const identityRef=(identity=identityCache)=>{if(!identity)return'';return `${identity.order_no||identity.session_id||''} /${identity.order_stage||'A'}`};
+  const identityRef=(identity=identityCache)=>{
+    if(!identity)return'';
+    let ref=String(identity.order_no||identity.session_id||'');
+    const match=ref.match(/^([A-Z]{2,3})-([A-Z]{2,3})-(\d{2})\.(\d{2})\.(\d{3})$/);
+    if(match)ref=`${match[1]}-${match[2]}-20${match[3]}.${match[4]}.${match[5]}`;
+    return `${ref} /${identity.order_stage||'A'}`;
+  };
   function updateIdentityBadge(identity=identityCache){const el=$('orderIdentityBadge');if(!el||!identity)return;el.textContent=identityRef(identity);el.hidden=false}
   async function loadIdentity(){const id=projectId();if(!id)return null;try{const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}`,{cache:'no-store'});if(!r.ok)return null;const p=await r.json();identityCache=p.identity||null;updateIdentityBadge();return identityCache}catch(_){return null}}
   async function ensureOrderIdentity(){const id=projectId();if(!id)return null;if(identityCache?.order_no){updateIdentityBadge();return identityCache}const country=(localStorage.getItem(COUNTRY_KEY)||'UA').toUpperCase(),city=(localStorage.getItem(CITY_KEY)||'ODS').toUpperCase();const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}/activate-order`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({country_code:country,city_code:city})});if(!r.ok)throw new Error(t('Не удалось присвоить номер заказа','Could not assign order number'));const p=await r.json();identityCache=p.identity||null;updateIdentityBadge();return identityCache}
@@ -91,8 +97,8 @@
   async function showThinkFlow(){
     const d=data();if(!d)return;
     const identity=await ensureOrderIdentity();
-    await patchProject('commerce.proposal_status','DRAFT_READY','R10.3.2: customer chose Think / proposal requested');
-    openCommerce(`<p class="r9-kicker">BIZET OS · ${esc(identityRef(identity))}</p><h2>${t('Получить коммерческое предложение','Get commercial proposal')}</h2><p class="r9-muted">${t('Введите e-mail — BIZET OS отправит КП на него. Телефон можно оставить как контакт, но отправка КП по телефону будет подключена отдельно.','Enter an e-mail and BIZET OS will send the proposal there. A phone number can be saved as a contact, but phone delivery will be connected separately.')}</p><label class="r10-commerce-field"><span>${t('E-mail или телефон','E-mail or phone')}</span><input id="r10ProposalContact" inputmode="email" autocomplete="email" placeholder="name@example.com / +380…"></label><button class="r10-commerce-primary" id="r10ProposalSend" type="button">${t('Отправить КП','Send proposal')}</button><p class="r10-commerce-status" id="r10ProposalStatus" hidden></p>`);
+    await patchProject('commerce.proposal_status','DRAFT_READY','R10.4.1: customer saved project / proposal requested');
+    openCommerce(`<p class="r9-kicker">BIZET OS · ${esc(identityRef(identity))}</p><h2>${t('Сохранить проект','Save project')}</h2><p class="r9-muted">${t('Введите e-mail — BIZET OS сохранит контакт и отправит коммерческое предложение. Телефон можно оставить как контакт; отправка по телефону подключается отдельно.','Enter an e-mail — BIZET OS will save the contact and send the commercial proposal. A phone number can be saved as a contact; phone delivery is connected separately.')}</p><label class="r10-commerce-field"><span>${t('E-mail или телефон','E-mail or phone')}</span><input id="r10ProposalContact" inputmode="email" autocomplete="email" placeholder="name@example.com / +380…"></label><button class="r10-commerce-primary" id="r10ProposalSend" type="button">${t('Сохранить и отправить','Save and send')}</button><p class="r10-commerce-status" id="r10ProposalStatus" hidden></p>`);
     $('r10ProposalSend').onclick=async()=>{
       const button=$('r10ProposalSend'),contact=String($('r10ProposalContact').value||'').trim(),status=$('r10ProposalStatus');
       const validMail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact),digits=contact.replace(/\D/g,'');
@@ -262,7 +268,7 @@
     ensureUI();loadIdentity();const d=data();if(!d)return;
     $('pointBPrice').textContent=money(d.clientPrice);
     const label=$('pointBFinalActions')?.querySelector('.r8-final-price span');if(label)label.textContent=t('Итоговая стоимость','Final price');
-    $('pointBPriceButton').textContent=t('Подумаю','Think');
+    $('pointBPriceButton').textContent=t('Сохранить проект','Save project');
     $('pointBDocsButton').textContent=t('Купить','Buy');
     $('pointBPriceButton').onclick=()=>showThinkFlow().catch(error=>alert(error.message));
     $('pointBDocsButton').onclick=()=>showBuyFlow().catch(error=>alert(error.message));
