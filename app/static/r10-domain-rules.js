@@ -46,8 +46,10 @@
   });
   const WORKTOP_RULES=Object.freeze({
     MAX_UNSPLICED_MM:4100,
-    JOINT_POLICY:'NEAREST_MODULE_BOUNDARY_NOT_EXCEEDING_MAX',
-    classification:'HARD_CATEGORY_I'
+    JOINT_POLICY:'NEAREST_ALLOWED_MODULE_BOUNDARY_NOT_EXCEEDING_MAX',
+    SINK_ADJACENT_JOINT_FORBIDDEN_CATEGORIES:Object.freeze(['I','II']),
+    SINK_ZONE_POLICY:'NO_JOINT_ON_EITHER_BOUNDARY_TOUCHING_SINK_FOR_BOARD_WORKTOPS',
+    classification:'HARD_CATEGORY_I_II_BOARD_WORKTOP'
   });
   const PLINTH_RULES=Object.freeze({
     MAX_UNSPLICED_MM:4100,
@@ -74,25 +76,37 @@
     return{wall,start,end,span,boundaries,joints,segments};
   }
 
-  function worktopRunPlan(group=[]){
+  function worktopRunPlan(group=[],options={}){
     const base=group.filter(m=>m&&m.level!=='upper'&&!m.tall);
-    if(!base.length)return{start:0,end:0,span:0,joints:[],segments:[]};
+    if(!base.length)return{start:0,end:0,span:0,joints:[],segments:[],forbiddenBoundaries:[]};
     const wall=base[0].wall||'A',startOf=m=>wall==='A'?Number(m.x)||0:Number(m.y)||0,sizeOf=m=>wall==='A'?Number(m.w)||0:Number(m.d)||0;
     const ordered=[...base].sort((a,b)=>startOf(a)-startOf(b));
     const start=Math.min(...ordered.map(startOf)),end=Math.max(...ordered.map(m=>startOf(m)+sizeOf(m))),span=Math.max(0,end-start);
-    const boundaries=[...new Set(ordered.slice(0,-1).map(m=>Math.round(startOf(m)+sizeOf(m))))].filter(v=>v>start+.5&&v<end-.5).sort((a,b)=>a-b);
+    const descriptors=ordered.slice(0,-1).map((left,i)=>({
+      value:Math.round(startOf(left)+sizeOf(left)),
+      left,
+      right:ordered[i+1]
+    })).filter(x=>x.value>start+.5&&x.value<end-.5);
+    const avoidSinkJoint=options.avoidSinkJoint===true;
+    const forbiddenBoundaries=avoidSinkJoint?descriptors.filter(x=>x.left?.kind==='SINK'||x.right?.kind==='SINK').map(x=>x.value):[];
+    const forbiddenSet=new Set(forbiddenBoundaries);
+    const boundaries=[...new Set(descriptors.map(x=>x.value))].sort((a,b)=>a-b);
+    const allowedBoundaries=boundaries.filter(v=>!forbiddenSet.has(v));
     const joints=[],MAX=WORKTOP_RULES.MAX_UNSPLICED_MM;
-    let cursor=start,guard=0;
+    let cursor=start,guard=0,blockedBySink=false;
     while(end-cursor>MAX+.5&&guard++<100){
       const target=cursor+MAX;
-      const eligible=boundaries.filter(v=>v>cursor+.5&&v<=target+.5);
-      if(!eligible.length)break;
+      const eligible=allowedBoundaries.filter(v=>v>cursor+.5&&v<=target+.5);
+      if(!eligible.length){
+        blockedBySink=avoidSinkJoint&&boundaries.some(v=>v>cursor+.5&&v<=target+.5&&forbiddenSet.has(v));
+        break;
+      }
       const joint=eligible[eligible.length-1];
       joints.push(joint);cursor=joint;
     }
     const cuts=[start,...joints,end],segments=[];
     for(let i=0;i<cuts.length-1;i++)segments.push({start:cuts[i],end:cuts[i+1],length:cuts[i+1]-cuts[i]});
-    return{wall,start,end,span,boundaries,joints,segments};
+    return{wall,start,end,span,boundaries,allowedBoundaries,forbiddenBoundaries,joints,segments,blockedBySink};
   }
   window.BizetR10Rules=Object.freeze({
     hingeVerticalMm:HINGE_VERTICAL_MM,
