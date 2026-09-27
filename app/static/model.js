@@ -184,7 +184,8 @@
       module.kind='HINGED';module.label='Распашной';module.drawer_count=undefined;
     }
     if(Number(edit.facade_count)>0){
-      module.facade_count=clamp(Math.round(Number(edit.facade_count)),1,3);module.facade_count_user=true;
+      const requested=clamp(Math.round(Number(edit.facade_count)),1,3),effectiveRun=Math.round(runDimension(module));
+      module.facade_count=requested===3&&effectiveRun!==900?2:requested;module.facade_count_user=true;
     }
     if(edit.facade_orientation)module.facade_orientation=edit.facade_orientation;
     if(edit.facade_orientation==='HORIZONTAL'){module.opening='LIFT';module.lift_mechanism=edit.lift_mechanism||'LIFT_ONLY'}
@@ -209,6 +210,8 @@
       module.filler_shape=edit.filler_shape||module.filler_shape||'FLAT';
       module.filler_material=edit.filler_material||module.filler_material||'CARCASS';
     }
+    if(edit.end_panel_shape)module.end_panel_shape=edit.end_panel_shape;
+    if(edit.end_panel_material)module.end_panel_material=edit.end_panel_material;
     module.module_edit_status=moduleDraft?.id===module.id?'DRAFT_PREVIEW':'SAVED';
     return module;
   }
@@ -659,9 +662,33 @@
     }
   }
 
+  function applyEndPanelRules(list){
+    if(configuration()!=='WALL_CENTER')return list;
+    const out=list.map(m=>({...m})),groups=new Map();
+    out.filter(m=>m.wall==='A'&&m.kind!=='FILLER').forEach(m=>{
+      const key=`${m.level||'lower'}:${Math.round(Number(m.z)||0)}:${Math.round(Number(m.h)||0)}`;
+      if(!groups.has(key))groups.set(key,[]);groups.get(key).push(m);
+    });
+    groups.forEach(group=>{
+      group.sort((a,b)=>(Number(a.x)||0)-(Number(b.x)||0));
+      const first=group[0],last=group[group.length-1];
+      const mark=(m,side)=>{
+        if(!m)return;
+        const shape=m.end_panel_shape||'FLAT',material=m.end_panel_material||'CARCASS';
+        m.end_panel_side=m.end_panel_side&&m.end_panel_side!==side?'BOTH':side;
+        m.end_panel_shape=shape;m.end_panel_material=material;
+        m.end_panel_height_mm=Math.round(Number(m.h)||0);
+        m.end_panel_floor_extension=false;
+        m.end_panel_width_mm=shape==='L_SHAPE'?40:18;
+      };
+      mark(first,'LEFT');mark(last,'RIGHT');
+    });
+    return out;
+  }
+
   function buildModules(){
     layoutWarnings=[];
-    const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(lower.concat(upper));
+    const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(applyEndPanelRules(lower.concat(upper)));
     evaluateErgonomics(all);
     const standardPackageH=LOWER_TOTAL_H+Math.max(550,Number(inputs.upper_gap_mm)||600)+750;
     if(room.heightMm<standardPackageH&&upper.length){
@@ -754,7 +781,9 @@
       tall_drawer_count:clamp(Math.round(Number(module.tall_drawer_count)||2),1,3),
       visible_drawer_stack_height_mm:Math.min(visibleTallDrawerLimit(),Math.max(250,Number(module.visible_drawer_stack_height_mm)||lowerBodyHeight())),
       filler_shape:module.filler_shape||'FLAT',
-      filler_material:module.filler_material||'CARCASS'
+      filler_material:module.filler_material||'CARCASS',
+      end_panel_shape:module.end_panel_shape||'FLAT',
+      end_panel_material:module.end_panel_material||'CARCASS'
     };
   }
   function validateModuleDraft(draft,module){
@@ -801,7 +830,7 @@
     return'';
   }
   function editField(label,key,value,type='number',options=[]){
-    if(type==='select')return`<label class="r104-edit-field"><span>${label}</span><select data-module-edit="${key}">${options.map(([v,l])=>`<option value="${v}" ${String(v)===String(value)?'selected':''}>${l}</option>`).join('')}</select></label>`;
+    if(type==='select')return`<label class="r104-edit-field"><span>${label}</span><select data-module-edit="${key}">${options.map(([v,l,disabled])=>`<option value="${v}" ${String(v)===String(value)?'selected':''} ${disabled?'disabled':''}>${l}</option>`).join('')}</select></label>`;
     return`<label class="r104-edit-field"><span>${label}</span><input data-module-edit="${key}" type="number" inputmode="numeric" step="10" value="${Math.round(Number(value)||0)}"></label>`;
   }
   function facadeOpeningFields(count,values){
@@ -816,12 +845,6 @@
     if(title)title.textContent=`${module.number}. ${moduleDisplayName(module)}`;
     if(priceLabel)priceLabel.textContent=tr('Цена модуля','Module price');
     if(kicker)kicker.textContent=tr('ПРАВКА МОДУЛЯ','EDIT MODULE');
-    const currency=$('moduleCurrencySelect');
-    if(currency){
-      currency.value=String(inputs.display_currency||'UAH').toUpperCase();
-      currency.setAttribute('aria-label',tr('Валюта отображения','Display currency'));
-      const currencyLabel=currency.closest('label')?.querySelector('span');if(currencyLabel)currencyLabel.textContent=tr('Валюта','Currency');
-    }
     const ovenOnly=isOvenModule(module);
     let html=ovenOnly
       ?editField(tr('Ширина духовки, мм','Oven width, mm'),'run_mm',d.run_mm,'select',[[600,'600'],[900,'900']])
@@ -834,13 +857,13 @@
         const facadeH=Math.floor((Math.max(300,module.h)-5-3*(Number(d.drawer_count)-1))/Number(d.drawer_count));
         html+=`<div class="r104-module-info">${tr('Фасад','Facade')} ≈ ${facadeH} mm · ${tr('высота короба строго','box height exactly')} ${facadeH-50} mm.</div>`;
       }else{
-        html+=editField(tr('Фасадов','Doors'),'facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
+        html+=editField(tr('Фасадов','Doors'),'facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3',Number(d.run_mm)!==900]]);
         html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
         html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);html+=facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
       }
     }else if(kind==='UPPER'){
       html+=editField(tr('Ориентация фасада','Facade orientation'),'facade_orientation',d.facade_orientation,'select',[['VERTICAL',tr('Вертикальная','Vertical')],['HORIZONTAL',tr('Горизонтальная','Horizontal')]]);
-      html+=editField(tr('Фасадов','Doors'),'facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
+      html+=editField(tr('Фасадов','Doors'),'facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3',Number(d.run_mm)!==900]]);
       html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
       html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);
       if(d.facade_orientation==='HORIZONTAL'){
@@ -860,6 +883,11 @@
       html+=editField(tr('Материал','Material'),'filler_material',d.filler_material,'select',[['CARCASS',tr('Материал корпуса','Carcass material')],['FACADE',tr('Материал фасада','Facade material')]]);
     }else{
       html+=`<div class="r104-module-info">${tr('Для специализированного модуля сейчас меняется только разрешённая ширина. Пеналы с техникой, вытяжка и сушка остаются по библиотечной логике.','For this specialized module only the permitted width is editable for now. Appliance tall cabinets, hood and dish dryer remain library-driven.')}</div>`;
+    }
+    if(module.end_panel_side){
+      html+=`<div class="r104-module-info">${tr('Торцевая панель','End panel')} · ${module.end_panel_side==='BOTH'?tr('с двух сторон','both sides'):module.end_panel_side==='LEFT'?tr('слева','left'):tr('справа','right')}</div>`;
+      html+=editField(tr('Торец у стены','Wall end'),'end_panel_shape',d.end_panel_shape,'select',[['FLAT',tr('Торцевая панель','End panel')],['L_SHAPE',tr('Г-образный филлер 40 мм','L-shaped filler 40 mm')]]);
+      html+=editField(tr('Материал торца','End material'),'end_panel_material',d.end_panel_material,'select',[['CARCASS',tr('Материал корпуса','Carcass material')],['FACADE',tr('Материал фасада','Facade material')]]);
     }
     body.innerHTML=html;
     const save=$('moduleEditSave'),cancel=$('moduleEditCancel');
@@ -886,6 +914,11 @@
       const count=Number(next.tall_facade_count||next.facade_count)||1;
       next.facade_openings=Array.from({length:count},(_,i)=>openingMap[i]||next.facade_openings?.[i]||(['LEFT','RIGHT'][i%2]));
     }
+    if(Number(next.run_mm)!==900&&Number(next.facade_count)===3){
+      next.facade_count=2;next.facade_openings=normalizeOpenings(2,next.facade_openings);
+      const select=$('moduleEditBody')?.querySelector('[data-module-edit="facade_count"]');if(select)select.value='2';
+    }
+    const three=$('moduleEditBody')?.querySelector('[data-module-edit="facade_count"] option[value="3"]');if(three)three.disabled=Number(next.run_mm)!==900;
     moduleDraft=next;
     const error=validateModuleDraft(moduleDraft,moduleDraftBase||activeModule),rule=$('moduleEditRule');
     if(rule){rule.hidden=!error;rule.textContent=error}$('moduleEditSave').disabled=!!error;
@@ -905,10 +938,11 @@
   }
   async function saveModuleDraft(){
     if(!activeModule||!moduleDraft)return;
+    if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
     const error=validateModuleDraft(moduleDraft,moduleDraftBase||activeModule);if(error){const rule=$('moduleEditRule');rule.hidden=false;rule.textContent=error;return}
     const id=activeModule.id,overrides=moduleEditOverrides(),payload={...moduleDraft};delete payload.id;
     overrides[id]=payload;
-    await saveVisual({...visual,module_edit_overrides:overrides,module_direct_edit_status:'R10.4.3_MODULE_SAVED'},`R10.4.3 module edit ${id}`);
+    await saveVisual({...visual,module_edit_overrides:overrides,module_direct_edit_status:'R10.4.4_MODULE_SAVED'},`R10.4.4 module edit ${id}`);
     moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;
     enterNormalKitchenView();renderScene(false);
     window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'module-edit-save',module_id:id}}));
@@ -1067,8 +1101,8 @@
 
   function syncCurrencyControls(){
     const code=String(inputs.display_currency||'UAH').toUpperCase();
-    const main=$('projectCurrencySelect'),module=$('moduleCurrencySelect');
-    if(main)main.value=code;if(module)module.value=code;
+    const main=$('projectCurrencySelect');
+    if(main)main.value=code;
     const control=$('projectCurrencyControl');
     if(control)control.setAttribute('aria-label',tr('Валюта отображения','Display currency'));
     if(main)main.setAttribute('aria-label',tr('Валюта отображения','Display currency'));
@@ -1209,8 +1243,9 @@
     try{applyFocusPreset(btn.dataset.focusPreset)}catch(error){const status=$('focusVariantStatus');if(status){status.hidden=false;status.textContent=error.message}}
   });
 
-  $('moduleCurrencySelect')?.addEventListener('change',event=>setDisplayCurrency(event.target.value,'R10.4.3 isolation currency').catch(error=>console.error(error)));
-  $('projectCurrencySelect')?.addEventListener('change',event=>setDisplayCurrency(event.target.value,'R10.4.3 global currency').catch(error=>console.error(error)));
+  document.addEventListener('change',event=>{
+    if(event.target?.id==='projectCurrencySelect')setDisplayCurrency(event.target.value,'R10.4.4 global currency').catch(error=>console.error(error));
+  });
   window.addEventListener('bizet:fxready',()=>refreshModuleDraftPrice());
 
   $('moduleNumbersToggle')?.addEventListener('click',()=>{
@@ -1281,7 +1316,6 @@
     const focusCanvas=$('focusCanvas');if(focusCanvas)focusCanvas.setAttribute('aria-label',tr('Изолированный модуль','Isolated module'));
     const prev=$('focusPrevModule'),next=$('focusNextModule');
     if(prev)prev.setAttribute('aria-label',tr('Предыдущий модуль','Previous module'));if(next)next.setAttribute('aria-label',tr('Следующий модуль','Next module'));
-    const currencyLabel=$('moduleCurrencySelect')?.closest('label')?.querySelector('span');if(currencyLabel)currencyLabel.textContent=tr('Валюта','Currency');
     const modulePanel=$('moduleEditPanel');if(modulePanel)modulePanel.setAttribute('aria-label',tr('Правка модуля','Edit module'));
     const oldKicker=document.querySelector('.r8-module-kicker');if(oldKicker)oldKicker.textContent=tr('НАСТРОЙКА МОДУЛЯ','MODULE CUSTOMIZATION');
     const oldTitle=$('moduleTitle');if(oldTitle&&oldTitle.textContent.trim()==='Модуль')oldTitle.textContent=tr('Модуль','Module');
