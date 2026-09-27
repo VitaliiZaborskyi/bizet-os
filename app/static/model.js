@@ -1039,7 +1039,7 @@
     }
     resumeFromSleep.busy=false;
   }
-  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>scheduleRenderAfterLayout('runtime-render')};
+  window.BizetModelRuntime={ready:false,getViewMode:()=>viewMode,getActiveModule:()=>activeModule?{...activeModule}:null,exitFocus:()=>{if($('moduleDialog')?.open)$('moduleDialog').close();exitModuleFocus()},getInputs:()=>({...inputs}),getVisual:()=>({...visual}),getVariant:()=>({...visual.r8_variant}),getElements:()=>[...(project?.room?.architectural_elements||[])],getContext:()=>({...project?.context}),getRoom:roomValues,getConfiguration:configuration,getModules:()=>[...modules],displayModuleName:moduleDisplayName,patchInputs,patchVariant,patchVisual,patchElements,patchRoom,setPalette,replaceState,captureWorkspaceState,applyWorkspaceState,resume:resumeFromSleep,render:()=>scheduleRenderAfterLayout('runtime-render')};
 
   const normalCanvas=$('modelCanvas'),focusCanvas=$('focusCanvas');
   function activeCanvas(){return viewMode===VIEW_FOCUS?focusCanvas:normalCanvas}
