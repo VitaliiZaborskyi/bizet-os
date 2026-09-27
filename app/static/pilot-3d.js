@@ -611,10 +611,15 @@
     if(options.focusMode){
       ctx.fillStyle=c.bg;ctx.fillRect(0,0,width,height);
       modules.forEach(module=>{
-        const front=drawTechnicalFocus(ctx,projector,module,c);
-        drawModuleDetails(ctx,projector,module,c);
-        if(module.kind==='UPPER_HOOD'&&module.hood_type==='BUILT_IN')drawBuiltInHood(ctx,projector,module,c);
-        drawTopAppliance(ctx,projector,module);
+        let front;
+        if(module.kind==='UPPER_HOOD'&&module.hood_type==='FREESTANDING'){
+          front=drawFreestandingHood(ctx,projector,module,c);
+        }else{
+          front=drawTechnicalFocus(ctx,projector,module,c);
+          drawModuleDetails(ctx,projector,module,c);
+          if(module.kind==='UPPER_HOOD'&&module.hood_type==='BUILT_IN')drawBuiltInHood(ctx,projector,module,c);
+          drawTopAppliance(ctx,projector,module);
+        }
         if(options.showModuleDimensions)drawFocusedModuleDimensions(ctx,projector,module,c);
         // No navigation number in MODULE_FOCUS_MODE; numbering belongs to the full-kitchen view.
         hits.push({id:module.id,points:front});
