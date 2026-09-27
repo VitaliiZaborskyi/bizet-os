@@ -13,6 +13,8 @@
   const role=()=>localStorage.getItem(ROLE_KEY)||'CUSTOMER';
   const producer=()=>PRODUCERS.find(p=>p.id===(localStorage.getItem(PRODUCER_KEY)||'BIZET_FURNITURE'))||PRODUCERS[0];
   const money=n=>window.BizetPointB?.formatMoney?.(n)||new Intl.NumberFormat(lang()==='en'?'en-US':'ru-RU',{maximumFractionDigits:0}).format(Math.round(Number(n)||0))+' UAH';
+  const currencyCode=()=>String(window.BizetPointB?.displayCurrency?.()||window.BizetModelRuntime?.getInputs?.().display_currency||'UAH').toUpperCase();
+  const offerMoney=n=>money(n)+' '+currencyCode();
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const t=(ru,en)=>lang()==='en'?en:ru;
   const projectId=()=>new URLSearchParams(location.search).get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
@@ -102,7 +104,8 @@ ${JSON.stringify(payload)}`;
     const includeProposal=options.includeProposal!==false,includeApproval=options.includeApproval===true;
     const payload={
       recipient,
-      price:money(d.clientPrice),
+      price:offerMoney(d.clientPrice),
+      currency:currencyCode(),
       manufacturer:d.p.name,
       configuration:configurationLabel(d.rt.getConfiguration()),
       runs:runSummary(d),
@@ -126,7 +129,8 @@ ${JSON.stringify(payload)}`;
     const id=projectId();if(!id)throw new Error('project_not_found');
     const payload={
       recipient:'',
-      price:money(d.clientPrice),
+      price:offerMoney(d.clientPrice),
+      currency:currencyCode(),
       manufacturer:d.p.name,
       configuration:configurationLabel(d.rt.getConfiguration()),
       runs:runSummary(d),
@@ -151,7 +155,7 @@ ${JSON.stringify(payload)}`;
   async function showThinkFlow(){
     const d=data();if(!d)return;
     const identity=await ensureOrderIdentity(),ref=identityRef(identity),prompt=visualizationMasterPrompt(d);
-    await patchProject('commerce.proposal_status','DRAFT_READY','R10.4.2 OFFER opened');
+    await patchProject('commerce.proposal_status','DRAFT_READY','R10.4.3 OFFER opened');
     openCommerce(`
       <p class="r9-kicker">BIZET OS · ${esc(ref)}</p>
       <h2>${t('Скачать предложение','OFFER')}</h2>
@@ -267,7 +271,7 @@ ${JSON.stringify(payload)}`;
     const drawers=d.modules.some(m=>m.kind==='DRAWERS'),uppers=d.modules.some(m=>m.level==='upper'),handles=d.bom.rows.some(r=>/ручк|handle/i.test(String(r.item||'')));
     const lines=[
       t('Корпус — ЛДСП 18 мм','Carcass — 18 mm laminated board'),
-      t('Фасады — по текущей комплектации Category I','Fronts — current Category I specification'),
+      t('Фасады — согласно текущей конфигурации проекта','Fronts — according to the current project configuration'),
       t('Столешница — 38 мм','Worktop — 38 mm'),
       drawers?t('Выдвижные ящики — по текущей конфигурации','Drawers — according to current configuration'):null,
       uppers?t('Верхние модули — по текущей 3D-компоновке','Upper cabinets — according to current 3D layout'):null,
@@ -296,7 +300,7 @@ ${JSON.stringify(payload)}`;
     const featureHtml=features.map(x=>`<div class="feature">- ${esc(x)}</div>`).join('');
     const imageHtml=visualization.src?`<img class="kitchen-shot" src="${visualization.src}" alt="Kitchen visualization">`:`<div class="image-placeholder">${t('3D модель кухни','Kitchen 3D model')}</div>`;
     const visualLabel=visualization.kind==='RENDER'?t('Визуализация проекта','Project visualization'):t('Инженерная 3D-модель · фотореалистичный рендер подключается отдельным визуализатором','Engineering 3D model · photoreal render uses a separate visualizer');
-    const unit=t('компл.','set'),price=money(d.clientPrice);
+    const unit=t('компл.','set'),price=offerMoney(d.clientPrice);
     const html=`<!doctype html><html><head><meta charset="utf-8"><title>BIZET Commercial Proposal</title><style>
       @page{size:A4;margin:8mm}
       *{box-sizing:border-box}html,body{margin:0;padding:0;color:#171717;background:#fff}
@@ -338,8 +342,8 @@ ${JSON.stringify(payload)}`;
         </tbody>
       </table>
       <div class="notes">
-        <p><strong>${t('Примечание:','Note:')}</strong> ${t('предложение сформировано по текущей конфигурации BIZET OS и является предварительным до окончательной инженерной и производственной проверки.','this proposal is generated from the current BIZET OS configuration and remains preliminary until final engineering and manufacturing validation.')}</p>
-        <p>${t('Детальная разбивка по модулям, деталям, фурнитуре и крепежу вынесена в отдельную спецификацию.','The module, part, hardware and fastener breakdown is provided in a separate specification.')}</p>
+        <p><strong>${t('Примечание:','Note:')}</strong> ${t('состав и стоимость соответствуют текущей сохранённой конфигурации BIZET OS на дату формирования.','the contents and price reflect the current saved BIZET OS configuration on the date of issue.')}</p>
+        <p>${t('Чертежи для согласования и производственная документация формируются отдельными документами.','Approval drawings and manufacturing documentation are generated as separate documents.')}</p>
       </div>
       <div class="footer"><span>BIZET OS · ${t('проектирование и комплектация мебели','furniture design and specification')}</span><span>${esc(d.p.name)}</span></div>
     </div><script>window.onload=()=>setTimeout(()=>window.print(),260)</script></body></html>`;
