@@ -1,5 +1,5 @@
 (()=> {
-  const VERSION='R10.4.1-POINT-B-2026-09-27';
+  const VERSION='R10.4.2-POINT-B-2026-09-27';
   const PRICES={
     CARCAS_M2:776,FACADE_M2:1200,HDF_M2:120,
     CUT_M:20,EDGE_LABOR_M:30,EDGE_MATERIAL_M:30,
@@ -13,7 +13,28 @@
   const GAP=3,TOP_GAP=5,BODY_T=18,EDGE='PVC 22×0.8';
   const $=id=>document.getElementById(id);
   const fmt=n=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(Number(n)||0);
-  const money=n=>fmt(n)+' грн';
+  let FX_RATES={UAH:1},FX_META={provider:'NBU',as_of:null};
+  const displayCurrency=()=>String(window.BizetModelRuntime?.getInputs?.().display_currency||'UAH').toUpperCase();
+  const convertMoney=(n,code=displayCurrency())=>{
+    const rate=Number(FX_RATES[code]);
+    if(code==='UAH')return Number(n)||0;
+    return Number.isFinite(rate)&&rate>0?(Number(n)||0)*rate:null;
+  };
+  const formatMoney=(n,code=displayCurrency())=>{
+    const value=convertMoney(n,code);
+    if(value===null)return new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(Math.round(Number(n)||0))+' UAH';
+    return new Intl.NumberFormat(code==='UAH'?'uk-UA':'en-US',{style:'currency',currency:code,maximumFractionDigits:0}).format(value);
+  };
+  const money=n=>formatMoney(n);
+  async function loadFxRates(){
+    try{
+      const response=await fetch('/api/v1.1/fx-rates',{cache:'no-store'});
+      if(!response.ok)return;
+      const body=await response.json();
+      FX_RATES={UAH:1,...(body.rates||{})};FX_META={provider:body.provider||'NBU',as_of:body.as_of||null};
+      window.dispatchEvent(new CustomEvent('bizet:fxready',{detail:{rates:{...FX_RATES},meta:{...FX_META}}}));
+    }catch(_){}
+  }
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const round=n=>Math.round(Number(n)||0);
   const area=(l,w,q=1)=>Math.max(0,l)*Math.max(0,w)*q/1e6;
@@ -413,7 +434,14 @@
     const headers=['№','Материал','Уникальный код','Наименование детали','Длина','Ширина','Количество','Ед. изм.','Наименование кромки','Кромка по длинной стороне','Кромка по короткой стороне','Дополнительные обработки','Примечание'];
     download('BIZET_Detailing_PointB.csv','text/csv;charset=utf-8',csv(details,headers,d=>[d.no,d.material,d.code,d.name,d.length,d.width,d.qty,d.unit,d.edge,d.edge_long,d.edge_short,d.processing,d.note]));
   }
-  function downloadBOM(bom){download('BIZET_BOM_PointB.csv','text/csv;charset=utf-8',csv(bom.rows,['Группа','Позиция','Количество','Ед.','Цена','Сумма','Примечание'],r=>[r.group,r.item,fmt(r.qty),r.unit,fmt(r.rate),fmt(r.total),r.note]))}
+  function downloadBOM(bom){
+    const code=displayCurrency();
+    download('BIZET_BOM_PointB.csv','text/csv;charset=utf-8',csv(
+      bom.rows,
+      ['Группа','Позиция','Количество','Ед.','Валюта','Цена','Сумма','Примечание'],
+      r=>[r.group,r.item,fmt(r.qty),r.unit,code,convertMoney(r.rate,code)??r.rate,convertMoney(r.total,code)??r.total,r.note]
+    ))
+  }
   function downloadSvg(name,svg){download(name,'image/svg+xml;charset=utf-8',svg)}
 
   function ensureUI(){
@@ -467,12 +495,12 @@
     $('pointBPrice').textContent=money(data.bom.client);
   }
   function boot(){
-    ensureUI();
+    ensureUI();loadFxRates().then(()=>refresh());
     let n=0;const timer=setInterval(()=>{n++;if(window.BizetModelRuntime?.ready){clearInterval(timer);refresh()}else if(n>120)clearInterval(timer)},100);
-    window.addEventListener('bizet:modelready',refresh);window.addEventListener('bizet:resume',()=>setTimeout(refresh,250));window.addEventListener('bizet:modelchange',()=>setTimeout(refresh,80));
+    window.addEventListener('bizet:modelready',refresh);window.addEventListener('bizet:resume',()=>setTimeout(refresh,250));window.addEventListener('bizet:modelchange',()=>setTimeout(refresh,80));window.addEventListener('bizet:fxready',refresh);
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,350)},true);
   }
-  window.BizetPointB={version:VERSION,prices:PRICES,detailsFor,buildBOM,modulePrice,moduleDrawing,communicationsDrawing,productionModuleSheet,refresh};
+  window.BizetPointB={version:VERSION,prices:PRICES,detailsFor,buildBOM,modulePrice,moduleDrawing,communicationsDrawing,productionModuleSheet,formatMoney,displayCurrency,convertMoney,getFx:()=>({rates:{...FX_RATES},meta:{...FX_META}}),showBOMTest:()=>showReport('price'),refresh};
   window.BizetPointBOriginalDocs=()=>showReport('docs');
   boot();
 })();
