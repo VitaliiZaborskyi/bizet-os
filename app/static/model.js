@@ -675,7 +675,7 @@
       return Number(quote?.client??quote?.price??quote)||0;
     }catch(_){return 0}
   }
-  function money(value){return new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0}).format(Math.round(Number(value)||0))+' грн'}
+  function money(value){return new Intl.NumberFormat(uiLang()==='en'?'en-US':'ru-RU',{maximumFractionDigits:0}).format(Math.round(Number(value)||0))+(uiLang()==='en'?' UAH':' грн')}
   function moduleEditorKind(module){
     if(!module)return'SPECIAL';
     if(module.kind==='FILLER')return'FILLER';
@@ -869,7 +869,7 @@
     prepareRenderLayout();
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),
-      modules,camera:{...camera,screenYOffset:window.innerWidth<=820?-38:0},showDimensions:normalDimensionsVisible,showModuleDimensions:false,
+      modules,camera:{...camera,screenYOffset:window.innerWidth<=820?-38:0},showDimensions:normalDimensionsVisible,showModuleDimensions:false,showNumbers:showModuleNumbers,
       architecturalElements:project?.room?.architectural_elements||[]
     });
     syncConstraintBanner();renderFocusVariantRibbon(null);
@@ -888,7 +888,7 @@
     if(forceCanvasReset)focusCanvasResetFrames--;
     scene=window.BizetPilot3D.drawKitchenScene($('focusCanvas'),{
       room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
-      camera:focusCamera,showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,architecturalElements:[],focusMode:true,
+      camera:focusCamera,showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,showNumbers:false,architecturalElements:[],focusMode:true,
       forceCanvasReset
     });
     syncConstraintBanner();renderFocusVariantRibbon(activeModule);
@@ -915,47 +915,49 @@
     if(m.pending)return'Остаточное пространство. Этот модуль пока формируется системным алгоритмом.';
     return'Локальная настройка модуля. После применения BIZET OS перестраивает зависимую модель.';
   }
-  function runFocusPaintBurst(moduleId){
-    const token=focusPaintToken;
-    let frames=0;
-    const paint=()=>{
-      if(token!==focusPaintToken||viewMode!==VIEW_FOCUS||activeModule?.id!==moduleId)return;
-      renderScene(false);
-      frames++;
-      if(frames<6)requestAnimationFrame(paint);
-    };
-    requestAnimationFrame(paint);
-    [70,160,280].forEach(delay=>window.setTimeout(()=>{
-      if(token===focusPaintToken&&viewMode===VIEW_FOCUS&&activeModule?.id===moduleId)renderScene(false);
-    },delay));
+  function commitFocusTransition(moduleId){
+    const token=focusTransitionToken;
+    requestAnimationFrame(()=>{
+      if(token!==focusTransitionToken||viewMode!==VIEW_FOCUS||activeModule?.id!==moduleId)return;
+      try{
+        renderScene(false);
+        renderModuleEditor(activeModule);
+        renderFocusModuleMenu();
+      }catch(error){
+        const rule=$('moduleEditRule');
+        if(rule){rule.hidden=false;rule.textContent=tr('Не удалось подготовить редактор модуля. Повторите выбор.','Could not prepare the module editor. Please select the module again.')}
+        console.error(error);
+      }
+    });
   }
+
   function setValidation(message=''){
     const el=$('moduleValidation');if(!el)return;el.textContent=message;el.hidden=!message;
   }
   function openModule(id){
-    const selected=modules.find(m=>m.id===id)||null;if(!enterModuleFocus(selected))return;
+    const selected=modules.find(m=>m.id===id)||null;if(!selected)return;
+    if(viewMode===VIEW_FOCUS&&activeModule?.id&&moduleDraft)focusDraftCache.set(activeModule.id,{...moduleDraft,facade_openings:[...(moduleDraft.facade_openings||[])]});
+    if(!enterModuleFocus(selected))return;
     moduleDraftBase={...selected,facade_openings:Array.isArray(selected.facade_openings)?[...selected.facade_openings]:selected.facade_openings};
-    moduleDraft=draftFromModule(selected);
+    const cached=focusDraftCache.get(selected.id);
+    moduleDraft=cached?{...cached,facade_openings:[...(cached.facade_openings||[])]}:draftFromModule(selected);
     moduleDraftBasePrice=modulePriceOf(selected);
-    $('moduleTitle').textContent=`${activeModule.number}. ${activeModule.label}`;
-    $('moduleCopy').textContent=detailText(activeModule);
-    const w=$('moduleWidth'),h=$('moduleHeight'),d=$('moduleDepth'),o=$('moduleOpening'),pos=$('moduleOffsetInput');
-    w.value=Math.round(runDimension(activeModule));h.value=Math.round(activeModule.h);d.value=Math.round(depthDimension(activeModule));
-    w.disabled=widthLocked(activeModule)||!!activeModule.pending;
-    w.title=w.disabled?'Ширина определяется техникой или системным остатком в текущем пилоте.':'';
-    o.value=openingOverrides()[activeModule.id]||activeModule.opening||'AUTO';
-    pos.value=Number(offsets()[activeModule.id])||0;
+    const title=$('moduleTitle'),copy=$('moduleCopy'),w=$('moduleWidth'),h=$('moduleHeight'),d=$('moduleDepth'),o=$('moduleOpening'),pos=$('moduleOffsetInput');
+    if(title)title.textContent=`${activeModule.number}. ${moduleDisplayName(activeModule)}`;
+    if(copy)copy.textContent=detailText(activeModule);
+    if(w){w.value=Math.round(runDimension(activeModule));w.disabled=widthLocked(activeModule)||!!activeModule.pending;w.title=w.disabled?tr('Ширина определяется техникой или системным остатком.','Width is fixed by the appliance or system remainder.'):''}
+    if(h)h.value=Math.round(activeModule.h);
+    if(d)d.value=Math.round(depthDimension(activeModule));
+    if(o)o.value=openingOverrides()[activeModule.id]||activeModule.opening||'AUTO';
+    if(pos)pos.value=Number(offsets()[activeModule.id])||0;
     setValidation('');
-
-    // R10.3.8: isolation owns a dedicated canvas. Do not open the legacy dialog during the transition.
-    const dialog=$('moduleDialog');
-    if(dialog.open)dialog.close();
-    renderScene(false);
-    renderModuleEditor(activeModule);
-    scheduleRenderAfterLayout('focus-entry');
-    requestAnimationFrame(()=>scheduleRenderAfterLayout('focus-entry-second-frame'));
-    runFocusPaintBurst(activeModule.id);
+    const dialog=$('moduleDialog');if(dialog?.open)dialog.close();
+    syncFocusControls();
+    renderModuleEditor(selected);
+    renderFocusModuleMenu();
+    commitFocusTransition(selected.id);
   }
+
   async function applyModuleCustomization(){
     if(!activeModule)return;
     const w=Math.round(Number($('moduleWidth').value)),h=Math.round(Number($('moduleHeight').value)),d=Math.round(Number($('moduleDepth').value)),off=Math.round(Number($('moduleOffsetInput').value)||0);
@@ -1058,8 +1060,8 @@
   }
   function moveCanvasGesture(event){
     if(!drag||drag.id!==event.pointerId||drag.surface!==event.currentTarget)return;
-    const dx=event.clientX-drag.x,dy=event.clientY-drag.y,dist=Math.hypot(dx,dy);
-    if(dist<5)return;
+    const dx=event.clientX-drag.x,dy=event.clientY-drag.y,dist=Math.hypot(dx,dy),threshold=drag.pointerType==='touch'?14:5;
+    if(dist<threshold)return;
 
     if(!drag.mode){
       drag.mode='ROTATE';
@@ -1081,7 +1083,7 @@
     try{surface.releasePointerCapture?.(event.pointerId)}catch(_){}
     if(!wasMoved&&!mode&&scene&&viewMode===VIEW_NORMAL&&surface===normalCanvas){
       const rect=normalCanvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);
-      if(id)window.setTimeout(()=>openModule(id),0);
+      if(id)requestAnimationFrame(()=>openModule(id));
     }
   }
   function bindCanvasSurface(surface){
@@ -1104,6 +1106,20 @@
   $('focusVariantOptions')?.addEventListener('click',event=>{
     const btn=event.target.closest('[data-focus-preset]');if(!btn||btn.disabled)return;
     try{applyFocusPreset(btn.dataset.focusPreset)}catch(error){const status=$('focusVariantStatus');if(status){status.hidden=false;status.textContent=error.message}}
+  });
+
+  $('moduleNumbersToggle')?.addEventListener('click',()=>{
+    showModuleNumbers=!showModuleNumbers;localStorage.setItem(NUMBERS_KEY,showModuleNumbers?'1':'0');syncFocusControls();renderScene(false);
+  });
+  $('focusPrevModule')?.addEventListener('click',()=>switchFocusModule(-1));
+  $('focusNextModule')?.addEventListener('click',()=>switchFocusModule(1));
+  $('focusModuleLabel')?.addEventListener('click',()=>{
+    const menu=$('focusModuleMenu'),label=$('focusModuleLabel');if(!menu||!label)return;
+    const open=menu.hidden;menu.hidden=!open;label.setAttribute('aria-expanded',String(open));if(open)renderFocusModuleMenu();
+  });
+  $('focusModuleMenu')?.addEventListener('click',event=>{
+    const btn=event.target.closest('[data-focus-module]');if(!btn)return;
+    $('focusModuleMenu').hidden=true;$('focusModuleLabel').setAttribute('aria-expanded','false');openModule(btn.dataset.focusModule);
   });
 
   $('modelDimensionsToggle').addEventListener('click',()=>{
