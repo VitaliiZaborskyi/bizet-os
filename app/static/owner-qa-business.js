@@ -12,7 +12,7 @@
   const lang=()=>String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ru').toLowerCase().startsWith('en')?'en':'ru';
   const role=()=>localStorage.getItem(ROLE_KEY)||'CUSTOMER';
   const producer=()=>PRODUCERS.find(p=>p.id===(localStorage.getItem(PRODUCER_KEY)||'BIZET_FURNITURE'))||PRODUCERS[0];
-  const money=n=>new Intl.NumberFormat(lang()==='en'?'en-US':'ru-RU',{maximumFractionDigits:0}).format(Math.round(Number(n)||0))+' грн';
+  const money=n=>window.BizetPointB?.formatMoney?.(n)||new Intl.NumberFormat(lang()==='en'?'en-US':'ru-RU',{maximumFractionDigits:0}).format(Math.round(Number(n)||0))+' UAH';
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const t=(ru,en)=>lang()==='en'?en:ru;
   const projectId=()=>new URLSearchParams(location.search).get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
@@ -75,47 +75,96 @@
   function openCommerce(html){
     const dialog=commerceDialog();$('r10CommerceBody').innerHTML=html;if(!dialog.open)dialog.showModal();
   }
-  async function sendProposalEmail(recipient,d){
+  function visualizationPayload(d){
+    const visual=d.rt.getVisual?.()||{},inputs=d.rt.getInputs?.()||{},room=d.rt.getRoom?.()||{};
+    return{
+      schema:'BIZET_VISUALIZATION_PAYLOAD_V1',
+      geometry:{configuration:d.rt.getConfiguration(),room,modules:d.modules.map(m=>({id:m.id,no:m.number,kind:m.kind,wall:m.wall,x:m.x,y:m.y,z:m.z,w:m.w,d:m.d,h:m.h,facade_count:m.facade_count,drawer_count:m.drawer_count}))},
+      materials:{room:visual.room_surface_materials||{},furniture:visual.furniture_materials||{},palette:visual.r8_palette||''},
+      appliances:d.modules.filter(m=>['FRIDGE','DISHWASHER','COOKTOP','TALL_OVEN','UPPER_HOOD'].includes(m.kind)).map(m=>({kind:m.kind,wall:m.wall,x:m.x,y:m.y,w:m.w,d:m.d,h:m.h})),
+      camera:{view:'current_engineering_view'},
+      display_currency:inputs.display_currency||'UAH'
+    };
+  }
+  function visualizationMasterPrompt(d){
+    const payload=visualizationPayload(d);
+    return `Create a premium photorealistic kitchen visualization from the supplied BIZET OS engineering scene.
+STRICT GEOMETRY LOCK: preserve the exact room proportions, cabinet count, cabinet widths/heights/depths, appliance positions, worktop geometry, wall positions and camera composition. Do not redesign, add, remove, widen, narrow or relocate any module.
+Use the supplied facade, carcass, worktop, floor, wall and ceiling materials faithfully. Preserve openings and visible appliance types.
+Lighting: realistic high-end interior photography, natural soft daylight plus plausible practical lighting, physically believable reflections and shadows, no fantasy styling.
+The render is for a commercial proposal, so the final image must look finished and aspirational while remaining geometrically identical to the engineering model.
+No people, no text, no labels, no watermarks, no extra decor that hides furniture geometry.
+BIZET_VISUALIZATION_PAYLOAD:
+${JSON.stringify(payload)}`;
+  }
+  async function sendProposalEmail(recipient,d,options={}){
     const id=projectId();if(!id)throw new Error('project_not_found');
+    const includeProposal=options.includeProposal!==false,includeApproval=options.includeApproval===true;
     const payload={
       recipient,
       price:money(d.clientPrice),
       manufacturer:d.p.name,
       configuration:configurationLabel(d.rt.getConfiguration()),
       runs:runSummary(d),
-      features:proposalFeatures(d)
+      features:proposalFeatures(d),
+      include_proposal:includeProposal,
+      include_approval_drawings:includeApproval,
+      visualization_data_url:proposalSnapshot(),
+      approval_svg_pages:includeApproval?(d.pb.approvalSheets?.(d.modules,d.rt.getRoom(),identityRef())||[]):[]
     };
     const r=await fetch(`/api/v1.1/projects/${encodeURIComponent(id)}/proposal/send`,{
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
     });
     const body=await r.json().catch(()=>({}));
     if(!r.ok){
-      if(body.detail==='MAIL_PROVIDER_NOT_CONFIGURED')throw new Error(t('Почтовый сервис подготовлен, но ещё нужен API-ключ Resend и подтверждённый адрес отправителя.','Mail delivery is prepared, but a Resend API key and verified sender are still required.'));
-      throw new Error(typeof body.detail==='string'?body.detail:t('Не удалось отправить КП','Could not send proposal'));
+      if(body.detail==='MAIL_PROVIDER_NOT_CONFIGURED')throw new Error(t('Почтовый маршрут готов, но на Render ещё нужны RESEND_API_KEY и подтверждённый RESEND_FROM. Ответы клиента будут направляться на cdbbizet@gmail.com.','Mail delivery is ready, but Render still needs RESEND_API_KEY and a verified RESEND_FROM. Client replies are routed to cdbbizet@gmail.com.'));
+      throw new Error(typeof body.detail==='string'?body.detail:t('Не удалось отправить OFFER','Could not send OFFER'));
     }
     return body;
   }
   async function showThinkFlow(){
     const d=data();if(!d)return;
-    const identity=await ensureOrderIdentity();
-    await patchProject('commerce.proposal_status','DRAFT_READY','R10.4.1: customer saved project / proposal requested');
-    openCommerce(`<p class="r9-kicker">BIZET OS · ${esc(identityRef(identity))}</p><h2>${t('Сохранить проект','Save project')}</h2><p class="r9-muted">${t('Введите e-mail — BIZET OS сохранит контакт и отправит коммерческое предложение. Телефон можно оставить как контакт; отправка по телефону подключается отдельно.','Enter an e-mail — BIZET OS will save the contact and send the commercial proposal. A phone number can be saved as a contact; phone delivery is connected separately.')}</p><label class="r10-commerce-field"><span>${t('E-mail или телефон','E-mail or phone')}</span><input id="r10ProposalContact" inputmode="email" autocomplete="email" placeholder="name@example.com / +380…"></label><button class="r10-commerce-primary" id="r10ProposalSend" type="button">${t('Сохранить и отправить','Save and send')}</button><p class="r10-commerce-status" id="r10ProposalStatus" hidden></p>`);
-    $('r10ProposalSend').onclick=async()=>{
-      const button=$('r10ProposalSend'),contact=String($('r10ProposalContact').value||'').trim(),status=$('r10ProposalStatus');
-      const validMail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact),digits=contact.replace(/\D/g,'');
-      if(!validMail&&digits.length<8){status.hidden=false;status.textContent=t('Введите корректный e-mail или телефон.','Enter a valid e-mail or phone number.');return}
-      button.disabled=true;status.hidden=false;status.textContent=t('Отправляю…','Sending…');
+    const identity=await ensureOrderIdentity(),ref=identityRef(identity),prompt=visualizationMasterPrompt(d);
+    await patchProject('commerce.proposal_status','DRAFT_READY','R10.4.2 OFFER opened');
+    openCommerce(`
+      <p class="r9-kicker">BIZET OS · ${esc(ref)}</p>
+      <h2>${t('Скачать предложение','OFFER')}</h2>
+      <p class="r9-muted">${t('Выберите пакет для клиента. КП и чертежи для согласования формируются из текущей модели.','Choose the client package. The proposal and approval drawings are generated from the current model.')}</p>
+      <div class="r104-offer-docs">
+        <label><input id="r104OfferProposal" type="checkbox" checked><span><strong>${t('Коммерческое предложение','Commercial proposal')}</strong><small>${t('Цена, комплектация и визуализация','Price, specification and visualization')}</small></span></label>
+        <label><input id="r104OfferApproval" type="checkbox" checked><span><strong>${t('Чертежи для согласования','Approval drawings')}</strong><small>${t('План · фасад · характерные сечения','Plan · elevation · typical sections')}</small></span></label>
+      </div>
+      <label class="r10-commerce-field"><span>E-mail</span><input id="r10ProposalEmail" type="email" autocomplete="email" placeholder="name@example.com"></label>
+      <label class="r10-commerce-field"><span>${t('Телефон / WhatsApp','Phone / WhatsApp')}</span><input id="r10ProposalPhone" type="tel" autocomplete="tel" placeholder="+380…"></label>
+      <details class="r104-visualization-pilot"><summary>${t('Визуализация · PILOT PROMPT','Visualization · PILOT PROMPT')}</summary><p>${t('Промт блокирует геометрию и передаёт материалы текущего проекта. Внешний render-provider подключается отдельным ключом.','The prompt locks geometry and passes the current project materials. An external render provider requires its own connection.')}</p><button type="button" id="r104CopyVisualPrompt">${t('Скопировать промт','Copy prompt')}</button></details>
+      <div class="r104-offer-actions"><button class="r10-commerce-primary" id="r104OfferDownload" type="button">${t('Скачать','Download')}</button><button class="r10-commerce-primary" id="r104OfferSend" type="button">${t('Отправить','Send')}</button></div>
+      <button class="r10-commerce-secondary" id="r104OfferWhatsApp" type="button">WhatsApp · +380 97 458 7676</button>
+      <p class="r10-commerce-status" id="r10ProposalStatus" hidden></p>`);
+    $('r104CopyVisualPrompt').onclick=async()=>{try{await navigator.clipboard.writeText(prompt);$('r10ProposalStatus').hidden=false;$('r10ProposalStatus').textContent=t('Промт визуализации скопирован.','Visualization prompt copied.')}catch(_){$('r10ProposalStatus').hidden=false;$('r10ProposalStatus').textContent=prompt}};
+    const selections=()=>({proposal:$('r104OfferProposal').checked,approval:$('r104OfferApproval').checked});
+    const contact=()=>({email:String($('r10ProposalEmail').value||'').trim(),phone:String($('r10ProposalPhone').value||'').trim()});
+    $('r104OfferDownload').onclick=()=>{
+      const s=selections(),ct=contact(),status=$('r10ProposalStatus');
+      if(!s.proposal&&!s.approval){status.hidden=false;status.textContent=t('Выберите хотя бы один документ.','Select at least one document.');return}
+      if(!ct.email&&!ct.phone){status.hidden=false;status.textContent=t('Введите e-mail или телефон.','Enter an e-mail or phone number.');return}
+      patchProject('commerce.contact',ct.email||ct.phone,'R10.4.2 OFFER contact').catch(()=>{});
+      if(s.proposal)printProposal().catch(error=>{status.hidden=false;status.textContent=error.message});
+      if(s.approval)d.pb.openApprovalDrawings?.();
+    };
+    $('r104OfferSend').onclick=async()=>{
+      const button=$('r104OfferSend'),s=selections(),ct=contact(),status=$('r10ProposalStatus');
+      if(!s.proposal&&!s.approval){status.hidden=false;status.textContent=t('Выберите хотя бы один документ.','Select at least one document.');return}
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ct.email)){status.hidden=false;status.textContent=t('Для отправки документов укажите корректный e-mail.','Enter a valid e-mail to send the documents.');return}
+      button.disabled=true;status.hidden=false;status.textContent=t('Формирую PDF и отправляю…','Building PDFs and sending…');
       try{
-        await patchProject('commerce.contact',contact,'R10.3.2 proposal contact');
-        if(validMail){
-          const sent=await sendProposalEmail(contact,d);
-          status.textContent=t(`КП отправлено на ${contact}. ID: ${sent.message_id||'—'}`,`Proposal sent to ${contact}. ID: ${sent.message_id||'—'}`);
-        }else{
-          await patchProject('commerce.proposal_status','CONTACT_CAPTURED','R10.3.2 phone contact captured; delivery deferred');
-          status.textContent=t('Телефон сохранён. Для фактической отправки КП используйте e-mail; SMS/WhatsApp подключим отдельным каналом.','Phone saved. Use e-mail for actual proposal delivery; SMS/WhatsApp will be connected separately.');
-        }
-      }catch(error){status.textContent=error.message}
-      finally{button.disabled=false}
+        await patchProject('commerce.contact',ct.email,'R10.4.2 OFFER email');
+        const sent=await sendProposalEmail(ct.email,d,{includeProposal:s.proposal,includeApproval:s.approval});
+        status.textContent=t(`Документы отправлены на ${ct.email}. ID: ${sent.message_id||'—'}`,`Documents sent to ${ct.email}. ID: ${sent.message_id||'—'}`);
+      }catch(error){status.textContent=error.message}finally{button.disabled=false}
+    };
+    $('r104OfferWhatsApp').onclick=()=>{
+      const ct=contact(),text=encodeURIComponent(`BIZET OS · ${ref}\nOFFER prepared${ct.phone?' · client '+ct.phone:''}`);
+      window.open(`https://wa.me/380974587676?text=${text}`,'_blank','noopener,noreferrer');
     };
   }
   async function showBuyFlow(){
@@ -269,7 +318,7 @@
     ensureUI();loadIdentity();const d=data();if(!d)return;
     $('pointBPrice').textContent=money(d.clientPrice);
     const label=$('pointBFinalActions')?.querySelector('.r8-final-price span');if(label)label.textContent=t('Итоговая стоимость','Final price');
-    $('pointBPriceButton').textContent=t('Сохранить проект','Save project');
+    $('pointBPriceButton').textContent=t('Скачать предложение','OFFER');
     $('pointBDocsButton').textContent=t('Купить','Buy');
     $('pointBPriceButton').onclick=()=>showThinkFlow().catch(error=>alert(error.message));
     $('pointBDocsButton').onclick=()=>showBuyFlow().catch(error=>alert(error.message));
