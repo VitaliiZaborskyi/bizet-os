@@ -962,6 +962,12 @@
     const keepId=activeModule.id;renderScene(false);activeModule=modules.find(m=>m.id===keepId)||activeModule;renderModuleEditor(activeModule);
   }
 
+  function worktopAvoidSinkJoint(){
+    const category=String(project?.context?.complexity_category||'I').toUpperCase();
+    const worktopType=String(visual.furniture_materials?.worktop?.type||'WOOD').toUpperCase();
+    return ['I','II'].includes(category)&&worktopType!=='STONE';
+  }
+
   function kitchenCameraTarget(list){
     if(!Array.isArray(list)||!list.length)return null;
     const minX=Math.min(...list.map(m=>Number(m.x)||0)),maxX=Math.max(...list.map(m=>(Number(m.x)||0)+(Number(m.w)||0)));
@@ -977,7 +983,7 @@
     scene=window.BizetPilot3D.drawKitchenScene($('modelCanvas'),{
       room:roomValues(),configuration:configuration(),activeWalls:activeWalls(),
       modules,camera:{...camera,screenXOffset:Number(camera.screenXOffset)||0,screenYOffset:(Number(camera.screenYOffset)||0)+(window.innerWidth<=820?-38:0),targetX:target?.x,targetY:target?.y,targetZ:target?.z},showDimensions:normalDimensionsVisible,showModuleDimensions:false,showNumbers:showModuleNumbers,
-      architecturalElements:project?.room?.architectural_elements||[]
+      architecturalElements:project?.room?.architectural_elements||[],worktopAvoidSinkJoint:worktopAvoidSinkJoint()
     });
     syncConstraintBanner();renderFocusVariantRibbon(null);
     $('modelStatus').textContent=engineOk?'Module Engine доступен · полная кухня активна.':'3D-пилот · полная кухня активна.';
