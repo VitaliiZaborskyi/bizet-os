@@ -226,6 +226,22 @@
     return[detail(module,startNo,1,material,'Filler Flat',H,W,1,EDGE,2,2,'Плашмя','Видимый торец')];
   }
 
+  function splitOversizeFridgeRows(rows,module){
+    if(module.kind!=='FRIDGE'||module.freestanding)return rows;
+    const MAX_L=2780,MAX_W=2060,out=[];
+    rows.forEach(row=>{
+      const lengths=[],widths=[];let remainingL=Math.max(1,Number(row.length)||1),remainingW=Math.max(1,Number(row.width)||1);
+      while(remainingL>0){const part=Math.min(MAX_L,remainingL);lengths.push(part);remainingL-=part}
+      while(remainingW>0){const part=Math.min(MAX_W,remainingW);widths.push(part);remainingW-=part}
+      if(lengths.length===1&&widths.length===1){out.push(row);return}
+      let segment=1;
+      lengths.forEach(l=>widths.forEach(w=>{
+        out.push({...row,name:row.name+' · segment '+segment,code:row.code+'-S'+segment,length:round(Math.max(l,w)),width:round(Math.min(l,w)),note:[row.note,'Составная деталь · HARD лимит цельной детали 2780×2060 мм'].filter(Boolean).join(' · ')});
+        segment++;
+      }));
+    });
+    return out;
+  }
   function detailsFor(modules){
     const all=[];let no=1;
     modules.filter(m=>m.wall==='A').forEach(m=>{
@@ -234,10 +250,10 @@
       else if(m.kind==='DISHWASHER')rows=dishwasher(m,no);
       else if(m.kind==='SINK')rows=sinkBase(m,no);
       else if(m.kind==='DRAWERS')rows=drawersBase(m,no,Math.max(2,Math.min(5,Number(m.drawer_count)||2)));
-      else if(m.kind==='UPPER_HOOD')rows=upper(m,no,false,true);
+      else if(m.kind==='UPPER_HOOD')rows=m.hood_type==='FREESTANDING'?[]:upper(m,no,false,true);
       else if(m.kind==='UPPER_DRYER')rows=upper(m,no,true,false);
       else if(m.kind==='UPPER'||m.kind==='UPPER_TOP')rows=upper(m,no,false,false);
-      else if(m.kind==='FRIDGE'&&!m.freestanding)rows=tall(m,no,true,false);
+      else if(m.kind==='FRIDGE'&&!m.freestanding)rows=splitOversizeFridgeRows(tall(m,no,true,false),m);
       else if(m.kind==='TALL_OVEN')rows=tall(m,no,false,true);
       else if(m.tall)rows=tall(m,no,false,false);
       else if(m.kind==='FRIDGE'&&m.freestanding)rows=[];
