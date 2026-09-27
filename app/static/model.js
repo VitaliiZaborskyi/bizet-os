@@ -705,45 +705,45 @@
     };
   }
   function validateModuleDraft(draft,module){
-    if(!draft||!module)return'Модуль не выбран.';
+    if(!draft||!module)return tr('Модуль не выбран.','No module selected.');
     const kind=moduleEditorKind(module),run=Math.round(Number(draft.run_mm)||0);
     if(widthLocked(module))return'';
     if(kind==='FILLER'){
-      if(run<20||run>900)return'Филлер: ширина 20–900 мм.';
+      if(run<20||run>900)return tr('Филлер: ширина 20–900 мм.','Filler width: 20–900 mm.');
       return'';
     }
     if(kind==='LOWER'&&draft.configuration==='DRAWERS'){
-      if(run<300||run>900)return'Модуль с ящиками: ширина только 300–900 мм.';
+      if(run<300||run>900)return tr('Модуль с ящиками: ширина только 300–900 мм.','Drawer base cabinet width: 300–900 mm.');
       const count=Math.round(Number(draft.drawer_count)||0);
-      if(count<2||count>5)return'Количество ящиков: от 2 до 5.';
+      if(count<2||count>5)return tr('Количество ящиков: от 2 до 5.','Drawer count: 2 to 5.');
       return'';
     }
     if((kind==='LOWER'&&draft.configuration==='HINGED')||kind==='UPPER'){
       const horizontal=kind==='UPPER'&&draft.facade_orientation==='HORIZONTAL';
       const fc=clamp(Math.round(Number(draft.facade_count)||1),1,3);
       if(!horizontal){
-        if(fc===1&&(run<150||run>600))return'1 распашной фасад: ширина модуля 150–600 мм.';
-        if(fc===2&&(run<600||run>900))return'2 распашных фасада: ширина модуля 600–900 мм.';
-        if(fc===3&&run!==900)return'3 распашных фасада допускаются только при ширине 900 мм.';
-      }else if(run<150||run>900)return'Верхний модуль с горизонтальными фасадами: ширина 150–900 мм.';
+        if(fc===1&&(run<150||run>600))return tr('1 распашной фасад: ширина модуля 150–600 мм.','1 hinged door: cabinet width 150–600 mm.');
+        if(fc===2&&(run<600||run>900))return tr('2 распашных фасада: ширина модуля 600–900 мм.','2 hinged doors: cabinet width 600–900 mm.');
+        if(fc===3&&run!==900)return tr('3 распашных фасада допускаются только при ширине 900 мм.','3 hinged doors are allowed only at 900 mm width.');
+      }else if(run<150||run>900)return tr('Верхний модуль с горизонтальными фасадами: ширина 150–900 мм.','Horizontal wall cabinet width: 150–900 mm.');
       const shelves=Math.round(Number(draft.shelf_count)||0);
-      if(shelves<0||shelves>2)return'Полок может быть не больше двух.';
+      if(shelves<0||shelves>2)return tr('Полок может быть не больше двух.','Maximum 2 shelves.');
       return'';
     }
     if(kind==='TALL_PLAIN'){
-      if(run<300||run>900)return'Пенал без техники: ширина 300–900 мм.';
+      if(run<300||run>900)return tr('Пенал без техники: ширина 300–900 мм.','Tall cabinet width: 300–900 mm.');
       const fc=Math.round(Number(draft.tall_facade_count)||0),shelves=Math.round(Number(draft.shelf_count)||0);
-      if(fc<1||fc>3)return'Пенал: от 1 до 3 распашных фасадов по высоте.';
-      if(shelves<0||shelves>3)return'Пенал: не больше 3 полок.';
+      if(fc<1||fc>3)return tr('Пенал: от 1 до 3 распашных фасадов по высоте.','Tall cabinet: 1 to 3 hinged facade zones.');
+      if(shelves<0||shelves>3)return tr('Пенал: не больше 3 полок.','Tall cabinet: maximum 3 shelves.');
       if(draft.tall_drawer_mode==='VISIBLE'){
         const stack=Math.round(Number(draft.visible_drawer_stack_height_mm)||0);
-        if(stack<=0||stack>visibleTallDrawerLimit())return`Суммарная высота видимых ящиков не может превышать ${visibleTallDrawerLimit()} мм (высота нижних модулей минус столешница).`;
+        if(stack<=0||stack>visibleTallDrawerLimit())return tr(`Суммарная высота видимых ящиков не может превышать ${visibleTallDrawerLimit()} мм.`,`Total visible drawer height cannot exceed ${visibleTallDrawerLimit()} mm.`);
       }
       return'';
     }
     const minRun=module.kind==='SINK'&&Number(module.sink_bowl_count)===2?900:150;
-    if(run&&run<minRun)return`Минимальная ширина этого модуля: ${minRun} мм.`;
-    if(run>maxRunFor(module))return`Максимальная ширина: ${maxRunFor(module)} мм.`;
+    if(run&&run<minRun)return tr(`Минимальная ширина этого модуля: ${minRun} мм.`,`Minimum width for this module: ${minRun} mm.`);
+    if(run>maxRunFor(module))return tr(`Максимальная ширина: ${maxRunFor(module)} мм.`,`Maximum width: ${maxRunFor(module)} mm.`);
     return'';
   }
   function editField(label,key,value,type='number',options=[]){
@@ -752,60 +752,61 @@
   }
   function facadeOpeningFields(count,values){
     const opens=normalizeOpenings(count,values);
-    return`<div class="r104-facade-openings">${opens.map((value,i)=>editField(`Фасад ${i+1} · петли`,`facade_opening_${i}`,value,'select',[['LEFT','Слева'],['RIGHT','Справа']])).join('')}</div>`;
+    return`<div class="r104-facade-openings">${opens.map((value,i)=>editField(`${tr('Фасад','Door')} ${i+1} · ${tr('петли','hinges')}`,`facade_opening_${i}`,value,'select',[['LEFT',tr('Слева','Left')],['RIGHT',tr('Справа','Right')]])).join('')}</div>`;
   }
   function renderModuleEditor(module=activeModule){
     const panel=$('moduleEditPanel'),body=$('moduleEditBody'),rule=$('moduleEditRule');if(!panel||!body||!module)return;
     if(!moduleDraft||moduleDraft.id!==module.id)moduleDraft=draftFromModule(module);
     const d=moduleDraft,kind=moduleEditorKind(module),locked=widthLocked(module);
-    $('moduleEditTitle').textContent=`${module.number}. ${module.label}`;
-    let html=editField('Ширина, мм','run_mm',d.run_mm);
+    const title=$('moduleEditTitle'),priceLabel=panel.querySelector('.r104-module-price span'),kicker=panel.querySelector('.r104-module-editor-head small');
+    if(title)title.textContent=`${module.number}. ${moduleDisplayName(module)}`;
+    if(priceLabel)priceLabel.textContent=tr('Цена модуля','Module price');
+    if(kicker)kicker.textContent=tr('ПРАВКА МОДУЛЯ','EDIT MODULE');
+    let html=editField(tr('Ширина, мм','Width, mm'),'run_mm',d.run_mm);
     if(locked)html=html.replace('data-module-edit="run_mm"','data-module-edit="run_mm" disabled');
     if(kind==='LOWER'){
-      html+=editField('Конфигурация','configuration',d.configuration,'select',[['HINGED','Распашной'],['DRAWERS','Ящики']]);
+      html+=editField(tr('Конфигурация','Configuration'),'configuration',d.configuration,'select',[['HINGED',tr('Распашной','Hinged')],['DRAWERS',tr('Ящики','Drawers')]]);
       if(d.configuration==='DRAWERS'){
-        html+=editField('Ящиков','drawer_count',d.drawer_count,'select',[[2,'2'],[3,'3'],[4,'4'],[5,'5']]);
+        html+=editField(tr('Ящиков','Drawers'),'drawer_count',d.drawer_count,'select',[[2,'2'],[3,'3'],[4,'4'],[5,'5']]);
         const facadeH=Math.floor((Math.max(300,module.h)-5-3*(Number(d.drawer_count)-1))/Number(d.drawer_count));
-        html+=`<div class="r104-module-info">Фасад ≈ ${facadeH} мм · высота короба строго ${facadeH-50} мм.</div>`;
+        html+=`<div class="r104-module-info">${tr('Фасад','Facade')} ≈ ${facadeH} mm · ${tr('высота короба строго','box height exactly')} ${facadeH-50} mm.</div>`;
       }else{
-        html+=editField('Фасадов','facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
-        html+=editField('Полок','shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
-        html+=editField('Тип полок','shelf_type',d.shelf_type,'select',[['ADJUSTABLE','Регулируемые'],['FIXED','Жёсткие']]);
-        html+=facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
+        html+=editField(tr('Фасадов','Doors'),'facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
+        html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
+        html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);html+=facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
       }
     }else if(kind==='UPPER'){
-      html+=editField('Ориентация фасада','facade_orientation',d.facade_orientation,'select',[['VERTICAL','Вертикальная'],['HORIZONTAL','Горизонтальная']]);
-      html+=editField('Фасадов','facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
-      html+=editField('Полок','shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
-      html+=editField('Тип полок','shelf_type',d.shelf_type,'select',[['ADJUSTABLE','Регулируемые'],['FIXED','Жёсткие']]);
+      html+=editField(tr('Ориентация фасада','Facade orientation'),'facade_orientation',d.facade_orientation,'select',[['VERTICAL',tr('Вертикальная','Vertical')],['HORIZONTAL',tr('Горизонтальная','Horizontal')]]);
+      html+=editField(tr('Фасадов','Doors'),'facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
+      html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
+      html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);
       if(d.facade_orientation==='HORIZONTAL'){
-        html+=editField('Механизм','lift_mechanism',d.lift_mechanism,'select',[['LIFT_ONLY','Подъёмный механизм'],['HINGE_PLUS_LIFT','Петли + подъёмник']]);
-        html+='<div class="r104-module-info">Верх с горизонтальными фасадами использует подъёмную механику. Точный тариф механизма остаётся параметром библиотеки фурнитуры.</div>';
+        html+=editField(tr('Механизм','Mechanism'),'lift_mechanism',d.lift_mechanism,'select',[['LIFT_ONLY',tr('Подъёмный механизм','Lift mechanism')],['HINGE_PLUS_LIFT',tr('Петли + подъёмник','Hinges + lift')]]);html+=`<div class="r104-module-info">${tr('Горизонтальные фасады используют подъёмную механику. Точный тариф задаст библиотека фурнитуры.','Horizontal facades use lift hardware. Exact pricing will come from the hardware library.')}</div>`;
       }else html+=facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
     }else if(kind==='TALL_PLAIN'){
-      html+=editField('Фасадов по высоте','tall_facade_count',d.tall_facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
-      html+=editField('Полок','shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2'],[3,'3']]);
-      html+=editField('Тип полок','shelf_type',d.shelf_type,'select',[['ADJUSTABLE','Регулируемые'],['FIXED','Жёсткие']]);
-      html+=editField('Ящики','tall_drawer_mode',d.tall_drawer_mode,'select',[['NONE','Нет'],['HIDDEN','Скрытые за фасадом'],['VISIBLE','Видимые снизу']]);
-      if(d.tall_drawer_mode!=='NONE')html+=editField('Количество ящиков','tall_drawer_count',d.tall_drawer_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
-      if(d.tall_drawer_mode==='VISIBLE')html+=editField('Высота блока, мм','visible_drawer_stack_height_mm',d.visible_drawer_stack_height_mm);
+      html+=editField(tr('Фасадов по высоте','Facade zones'),'tall_facade_count',d.tall_facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
+      html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2'],[3,'3']]);
+      html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);
+      html+=editField(tr('Ящики','Drawers'),'tall_drawer_mode',d.tall_drawer_mode,'select',[['NONE',tr('Нет','None')],['HIDDEN',tr('Скрытые за фасадом','Hidden behind door')],['VISIBLE',tr('Видимые снизу','Visible at bottom')]]);
+      if(d.tall_drawer_mode!=='NONE')html+=editField(tr('Количество ящиков','Drawer count'),'tall_drawer_count',d.tall_drawer_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
+      if(d.tall_drawer_mode==='VISIBLE')html+=editField(tr('Высота блока, мм','Drawer block height, mm'),'visible_drawer_stack_height_mm',d.visible_drawer_stack_height_mm);
       html+=facadeOpeningFields(Number(d.tall_facade_count)||1,d.facade_openings);
-      html+=`<div class="r104-module-info">Видимые ящики занимают нижнюю зону пенала. Их суммарная высота ≤ ${visibleTallDrawerLimit()} мм.</div>`;
+      html+=`<div class="r104-module-info">${tr('Видимые ящики занимают нижнюю зону пенала.','Visible drawers occupy the bottom zone.')} ≤ ${visibleTallDrawerLimit()} mm.</div>`;
     }else if(kind==='FILLER'){
-      html+=editField('Форма','filler_shape',d.filler_shape,'select',[['FLAT','Плашмя'],['L_SHAPE','Г-образный']]);
-      html+=editField('Материал','filler_material',d.filler_material,'select',[['CARCASS','Материал корпуса'],['FACADE','Материал фасада']]);
+      html+=editField(tr('Форма','Shape'),'filler_shape',d.filler_shape,'select',[['FLAT',tr('Плашмя','Flat')],['L_SHAPE',tr('Г-образный','L-shaped')]]);
+      html+=editField(tr('Материал','Material'),'filler_material',d.filler_material,'select',[['CARCASS',tr('Материал корпуса','Carcass material')],['FACADE',tr('Материал фасада','Facade material')]]);
     }else{
-      html+='<div class="r104-module-info">Для специализированного модуля в R10.4.0 меняется только разрешённая ширина. Пеналы с техникой, вытяжка и сушка остаются по текущей библиотечной логике.</div>';
+      html+=`<div class="r104-module-info">${tr('Для специализированного модуля сейчас меняется только разрешённая ширина. Пеналы с техникой, вытяжка и сушка остаются по библиотечной логике.','For this specialized module only the permitted width is editable for now. Appliance tall cabinets, hood and dish dryer remain library-driven.')}</div>`;
     }
     body.innerHTML=html;
-    const error=validateModuleDraft(d,module);rule.hidden=!error;rule.textContent=error;$('moduleEditSave').disabled=!!error;
+    const save=$('moduleEditSave'),cancel=$('moduleEditCancel');
+    if(save)save.textContent=tr('Сохранить модуль','Save module');
+    if(cancel)cancel.textContent=tr('Отменить','Cancel');
+    const error=validateModuleDraft(d,module);rule.hidden=!error;rule.textContent=error;if(save)save.disabled=!!error;
     body.querySelectorAll('[data-module-edit]').forEach(el=>{
       const structural=['configuration','facade_count','facade_orientation','tall_facade_count','tall_drawer_mode'];
-      const eventName=el.tagName==='INPUT'?'input':'change';
-      let timer=0;
-      el.addEventListener(eventName,()=>{
-        clearTimeout(timer);timer=window.setTimeout(()=>readModuleEditor(structural.includes(el.dataset.moduleEdit)),el.tagName==='INPUT'?90:0);
-      });
+      const eventName=el.tagName==='INPUT'?'input':'change';let timer=0;
+      el.addEventListener(eventName,()=>{clearTimeout(timer);timer=window.setTimeout(()=>readModuleEditor(structural.includes(el.dataset.moduleEdit)),el.tagName==='INPUT'?90:0)});
     });
     refreshModuleDraftPrice();
   }
@@ -836,7 +837,7 @@
     price.textContent=current?money(current):'—';
     if(delta){
       const diff=current-moduleDraftBasePrice;
-      delta.textContent=current&&moduleDraftBasePrice?(diff===0?'Без изменения':(diff>0?'+':'')+money(diff)):'';
+      delta.textContent=current&&moduleDraftBasePrice?(diff===0?tr('Без изменения','No change'):(diff>0?'+':'')+money(diff)):'';
     }
   }
   async function saveModuleDraft(){
