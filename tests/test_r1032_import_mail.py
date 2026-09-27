@@ -107,7 +107,7 @@ def test_proposal_send_records_resend_message_id(monkeypatch):
     )
     assert active.status_code == 200
 
-    monkeypatch.setattr("app.api.routes_v11.send_with_resend", lambda recipient, subject, html_body: "email_test_123")
+    monkeypatch.setattr("app.api.routes_v11.send_with_resend", lambda recipient, subject, html_body, **kwargs: "email_test_123")
     response = client.post(
         f"/api/v1.1/projects/{pid}/proposal/send",
         json={
