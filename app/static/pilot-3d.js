@@ -342,9 +342,15 @@
     // Shelves: 0–2 for ordinary lower/upper modules, 0–3 for tall modules.
     if(!['DRAWERS','DISHWASHER','OVEN','TALL_OVEN','FRIDGE'].includes(module.kind)&&!(module.kind==='COOKTOP'&&module.oven_appliance_present)){
       const maxShelves=module.tall?3:2,rawShelves=module.shelf_count===undefined?1:Number(module.shelf_count),count=Math.max(0,Math.min(maxShelves,Number.isFinite(rawShelves)?rawShelves:1));
+      const facadeCount=Math.max(1,Number(module.facade_count)||1),boundaries=Array.isArray(module.middle_side_boundaries)?module.middle_side_boundaries.filter(v=>v>0&&v<facadeCount):[];
+      const cuts=boundaries.length?[0,...boundaries,facadeCount]:[0,facadeCount],innerW=Math.max(20,w-2*t);
       for(let i=1;i<=count;i++){
         const sz=z+h*i/(count+1);
-        panel({x:x+t,y:y+22,z:sz-t/2,w:Math.max(20,w-2*t),d:Math.max(30,d-44),h:t},'rgba(205,208,205,.24)');
+        for(let s=0;s<cuts.length-1;s++){
+          const a=cuts[s]/facadeCount,b=cuts[s+1]/facadeCount;
+          const sx=x+t+innerW*a+(s>0?t/2:0),sw=Math.max(20,innerW*(b-a)-(s>0?t/2:0)-(s<cuts.length-2?t/2:0));
+          panel({x:sx,y:y+22,z:sz-t/2,w:sw,d:Math.max(30,d-44),h:t},'rgba(205,208,205,.24)');
+        }
       }
     }
 
@@ -434,11 +440,13 @@
       }
     }
     if(module.level==='upper'){
-      const hangerW=32,hangerD=24,hangerH=38,hangerY=y+d-hangerD-t,hangerZ=z+h-hangerH-22;
-      [x+t+6,x+w-t-hangerW-6].forEach(hx=>{
+      const hangerW=32,hangerD=24,hangerH=38,hangerY=y+d-hangerD-t;
+      const levels=[z+h-hangerH-22];
+      if(module.kind!=='UPPER_TOP'&&h>900)levels.push(z+Math.max(80,h*.48)-hangerH/2);
+      levels.forEach(hangerZ=>[x+t+6,x+w-t-hangerW-6].forEach(hx=>{
         drawBox(ctx,projector,{x:hx,y:hangerY,z:hangerZ,w:hangerW,d:hangerD,h:hangerH},{body:'#73787b',side:'#565b5e',front:'#8a8f92',top:'#a1a5a7',stroke:'rgba(0,0,0,.45)'});
-      });
-      module.upper_hanger_visual='LEFT_RIGHT_REAR_TOP';
+      }));
+      module.upper_hanger_visual=levels.length>1?'DOUBLE_SET_LEFT_RIGHT_REAR':'LEFT_RIGHT_REAR_TOP';
     }
     return front;
   }
@@ -458,9 +466,9 @@
     });
   }
 
-  function drawWorktop(ctx,projector,group){
+  function drawWorktop(ctx,projector,group,avoidSinkJoint=false){
     const base=group.filter(m=>m.level!=='upper'&&!m.tall);if(!base.length)return;const c=colors(),p=projector.point;
-    const plan=window.BizetR10Rules?.worktopRunPlan?.(base)||{segments:[],joints:[]};
+    const plan=window.BizetR10Rules?.worktopRunPlan?.(base,{avoidSinkJoint})||{segments:[],joints:[]};
     if(!plan.segments.length)return;
     if(base[0].wall==='A'){
       const minY=Math.min(...base.map(m=>m.y)),depth=Math.max(...base.map(m=>m.d)),z=Math.max(...base.map(m=>m.z+m.h));
@@ -546,14 +554,47 @@
     return face;
   }
 
+  function drawEndPanel(ctx,projector,module,c){
+    if(!module.end_panel_side)return;
+    const sides=module.end_panel_side==='BOTH'?['LEFT','RIGHT']:[module.end_panel_side];
+    const mat=module.end_panel_material==='FACADE'?'rgba(226,222,214,.88)':'rgba(196,200,198,.84)';
+    sides.forEach(side=>{
+      const left=side==='LEFT',px=left?module.x:module.x+module.w-18;
+      if(module.end_panel_shape==='L_SHAPE'){
+        drawBox(ctx,projector,{x:px,y:module.y,z:module.z,w:18,d:40,h:module.h},{body:mat,side:mat,front:mat,top:mat,stroke:'rgba(45,48,50,.52)'});
+        drawBox(ctx,projector,{x:left?module.x:module.x+module.w-40,y:module.y,z:module.z,w:40,d:18,h:module.h},{body:mat,side:mat,front:mat,top:mat,stroke:'rgba(45,48,50,.52)'});
+      }else{
+        drawBox(ctx,projector,{x:px,y:module.y,z:module.z,w:18,d:module.d,h:module.h},{body:mat,side:mat,front:mat,top:mat,stroke:'rgba(45,48,50,.52)'});
+      }
+    });
+  }
+
   function drawBuiltInHood(ctx,projector,module,c){
-    const h=Math.min(150,Math.max(90,module.h*.18)),margin=Math.min(45,Math.max(24,module.w*.08));
+    const t=18,h=Math.min(150,Math.max(90,module.h*.18)),margin=Math.min(45,Math.max(24,module.w*.08));
     let box;
     if(module.wall==='A')box={x:module.x+margin,y:module.y+12,z:module.z+18,w:Math.max(120,module.w-margin*2),d:Math.max(100,Math.min(230,module.d-24)),h};
     else box={x:module.x+12,y:module.y+margin,z:module.z+18,w:Math.max(100,Math.min(230,module.w-24)),d:Math.max(120,module.d-margin*2),h};
     const faces=drawBox(ctx,projector,box,{body:'#3d4245',side:'#2b2f31',front:'#50565a',top:'#5e6468',stroke:'rgba(0,0,0,.52)'});
-    const p=projector.point;
     if(module.wall==='A'){
+      const p=projector.point,pipeR=75,pipeCx=module.x+module.w/2,pipeCy=module.y+module.d-110;
+      const lowerShelfZ=box.z+box.h+18,upperShelfZ=Math.min(module.z+module.h-170,Math.max(lowerShelfZ+150,module.z+module.h*.58)),topZ=module.z+module.h-t;
+      const shelfBox=zv=>drawBox(ctx,projector,{x:module.x+t,y:module.y+18,z:zv,w:Math.max(30,module.w-2*t),d:Math.max(50,module.d-36),h:t},{body:'rgba(205,208,205,.52)',side:'rgba(180,184,184,.48)',front:'rgba(218,220,216,.56)',top:'rgba(232,232,228,.48)',stroke:'rgba(55,58,60,.58)'});
+      shelfBox(lowerShelfZ);shelfBox(upperShelfZ);
+      const circle=zv=>{
+        const pts=[];for(let i=0;i<=24;i++){const a=Math.PI*2*i/24;pts.push(p([pipeCx+Math.cos(a)*pipeR,pipeCy+Math.sin(a)*pipeR,zv+t+2]))}
+        for(let i=1;i<pts.length;i++)line(ctx,pts[i-1],pts[i],'rgba(75,80,82,.86)',1.5);
+      };
+      circle(lowerShelfZ);circle(upperShelfZ);circle(topZ);
+      const cylinderTop=module.z+module.h-6,ring=(zv)=>Array.from({length:24},(_,i)=>{const a=Math.PI*2*i/24;return p([pipeCx+Math.cos(a)*pipeR,pipeCy+Math.sin(a)*pipeR,zv])});
+      const r1=ring(lowerShelfZ+t),r2=ring(cylinderTop);for(let i=0;i<24;i++){line(ctx,r1[i],r1[(i+1)%24],'rgba(125,130,132,.72)',1);line(ctx,r2[i],r2[(i+1)%24],'rgba(125,130,132,.72)',1)}
+      [0,6,12,18].forEach(i=>line(ctx,r1[i],r2[i],'rgba(125,130,132,.72)',1));
+      const uCover=(z0,z1)=>{
+        const hh=Math.max(40,z1-z0),frontY=pipeCy-105,sideDepth=210;
+        drawBox(ctx,projector,{x:pipeCx-105,y:frontY,z:z0,w:18,d:sideDepth,h:hh},{body:'rgba(194,198,196,.36)',side:'rgba(175,180,178,.34)',front:'rgba(205,208,205,.36)',top:'rgba(220,222,218,.30)',stroke:'rgba(65,68,70,.54)'});
+        drawBox(ctx,projector,{x:pipeCx+87,y:frontY,z:z0,w:18,d:sideDepth,h:hh},{body:'rgba(194,198,196,.36)',side:'rgba(175,180,178,.34)',front:'rgba(205,208,205,.36)',top:'rgba(220,222,218,.30)',stroke:'rgba(65,68,70,.54)'});
+        drawBox(ctx,projector,{x:pipeCx-87,y:frontY,z:z0,w:174,d:18,h:hh},{body:'rgba(194,198,196,.36)',side:'rgba(175,180,178,.34)',front:'rgba(205,208,205,.36)',top:'rgba(220,222,218,.30)',stroke:'rgba(65,68,70,.54)'});
+      };
+      uCover(lowerShelfZ+t,upperShelfZ);uCover(upperShelfZ+t,topZ);
       const y=box.y-2,z=box.z+18;for(let i=1;i<=4;i++){const xx=box.x+box.w*i/5;line(ctx,p([xx,y,z]),p([xx,y,z+box.h*.52]),'rgba(185,190,192,.75)',1)}
     }
     return moduleFrontFace(faces,module);
@@ -617,6 +658,7 @@
         }else{
           front=drawTechnicalFocus(ctx,projector,module,c);
           drawModuleDetails(ctx,projector,module,c);
+          drawEndPanel(ctx,projector,module,c);
           if(module.kind==='UPPER_HOOD'&&module.hood_type==='BUILT_IN')drawBuiltInHood(ctx,projector,module,c);
           drawTopAppliance(ctx,projector,module);
         }
@@ -644,11 +686,12 @@
         const style=freeFridge?{body:'#5b6065',side:'#484d51',front:'#6c7277',top:'#7e8489',stroke:'rgba(0,0,0,.38)'}:system?{body:c.system,side:c.moduleSide,front:c.system,top:c.moduleTop}:anchor?{body:c.module,side:c.moduleSide,front:c.anchor,top:c.moduleTop}:{};
         const faces=drawBox(ctx,projector,module,style);front=moduleFrontFace(faces,module);
         drawModuleDetails(ctx,projector,module,c);
+        drawEndPanel(ctx,projector,module,c);
         if(module.kind==='UPPER_HOOD'&&module.hood_type==='BUILT_IN')drawBuiltInHood(ctx,projector,module,c);
       }
       if(options.showNumbers!==false)drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front,center:faceCenter(front)});
     };
-    lower.forEach(drawModule);activeWalls.forEach(wall=>drawWorktop(ctx,projector,lower.filter(m=>m.wall===wall)));lower.forEach(m=>drawTopAppliance(ctx,projector,m));upper.forEach(drawModule);if(options.showModuleDimensions===true)drawModuleRunDimensions(ctx,projector,lower,c);
+    lower.forEach(drawModule);activeWalls.forEach(wall=>drawWorktop(ctx,projector,lower.filter(m=>m.wall===wall),options.worktopAvoidSinkJoint===true));lower.forEach(m=>drawTopAppliance(ctx,projector,m));upper.forEach(drawModule);if(options.showModuleDimensions===true)drawModuleRunDimensions(ctx,projector,lower,c);
     flushCanvas(ctx,forceCanvasReset);
     return{camera:{yaw:projector.yaw,pitch:projector.pitch,distanceScale:projector.distanceScale},hitAreas:hits,hitTest(x,y){
       const candidates=hits.filter(hit=>pointInPolygon(x,y,hit.points));
