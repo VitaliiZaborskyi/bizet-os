@@ -36,7 +36,8 @@
   function moduleSpec(modules){
     return modules.map(m=>{
       const run=m.wall==='A'?m.w:m.d,depth=m.wall==='A'?m.d:m.w;
-      return{no:m.number,name:m.label||m.kind,w:Math.round(run),h:Math.round(m.h),d:Math.round(depth)};
+      const display=window.BizetModelRuntime?.displayModuleName?.(m)||m.label||m.kind;
+      return{no:m.number,name:display,w:Math.round(run),h:Math.round(m.h),d:Math.round(depth)};
     }).sort((a,b)=>a.no-b.no);
   }
   function specTable(modules){
