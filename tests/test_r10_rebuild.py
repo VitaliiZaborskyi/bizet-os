@@ -1186,9 +1186,10 @@ def test_r1042_complexity_fifth_choice_is_named_custom_configuration():
 
 
 def test_r1042_room_source_flow_has_no_continue_to_configuration_copy():
-    combined = '\n'.join([read('workspace-r8.js'), read('room-r8.js'), read('room-v2.js'), read('room-latest.js')])
+    combined = '\n'.join([read('workspace-r8.js'), read('room-r8.js'), read('room-v2.js'), read('room-latest.js'), read('start-room-handoff.js')])
     assert 'Continue to configuration' not in combined
     assert 'Продолжить к конфигурации' not in combined
+    assert 'startRoomSourceContinue' not in read('start-room-handoff.js')
 
 
 def test_r1042_oven_width_is_hard_600_or_900_in_project_and_focus_editor():
