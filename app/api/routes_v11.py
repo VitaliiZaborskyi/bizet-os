@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import datetime, timezone
+import os
 import re
 import httpx
 
@@ -18,6 +19,7 @@ from app.quest.mapper import decision_to_client, decision_to_debug
 from app.quest.service import QuestAnswerError, QuestAnswerService
 from app.services.room_import import analyze_room_file
 from app.services.mail import build_proposal_email, send_with_resend, resend_configured, MailProviderNotConfigured, MailDeliveryError
+from app.services.documents import build_proposal_pdf, build_approval_pdf
 
 router = APIRouter(prefix="/api/v1.1")
 mutation_service = ProjectMutationService()
@@ -121,6 +123,10 @@ class SendProposalRequest(BaseModel):
     configuration: str
     runs: str = ""
     features: list[str] = Field(default_factory=list)
+    include_proposal: bool = True
+    include_approval_drawings: bool = False
+    visualization_data_url: str = ""
+    approval_svg_pages: list[str] = Field(default_factory=list)
 
 
 @router.get("/mail/status")
@@ -163,12 +169,20 @@ def send_project_proposal(project_id: str, payload: SendProposalRequest):
         raise HTTPException(status_code=409, detail="Activate Point B before sending a proposal")
 
     order_ref = project.identity.display_reference
-    body = build_proposal_email(order_ref, payload.model_dump())
+    payload_data = payload.model_dump()
+    body = build_proposal_email(order_ref, payload_data)
+    attachments: list[tuple[str, bytes]] = []
+    if payload.include_proposal:
+        attachments.append((f"BIZET_OFFER_{order_ref.replace('/', '-')}.pdf", build_proposal_pdf(order_ref, payload_data)))
+    if payload.include_approval_drawings:
+        attachments.append((f"BIZET_APPROVAL_{order_ref.replace('/', '-')}.pdf", build_approval_pdf(payload.approval_svg_pages)))
     try:
         message_id = send_with_resend(
             recipient,
-            f"BIZET OS · Commercial Proposal · {order_ref}",
+            f"BIZET OS · OFFER · {order_ref}",
             body,
+            attachments=attachments,
+            reply_to=(os.getenv("BIZET_CONTACT_EMAIL") or "cdbbizet@gmail.com").strip(),
         )
     except MailProviderNotConfigured as exc:
         project.commerce.proposal_delivery_status = "NOT_CONFIGURED"
