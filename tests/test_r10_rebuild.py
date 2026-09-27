@@ -1348,10 +1348,10 @@ def test_r1042_offer_download_uses_real_pdf_endpoint():
     assert 'Content-Disposition' in routes
 
 
-def test_r1043_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v():
+def test_r1044_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v():
     index = read("index.html")
     start = read("start.js")
-    for asset in ["start.css?v=173", "start.js?v=173", "start-room-handoff.js?v=173"]:
+    for asset in ["start.css?v=174", "start.js?v=174", "start-room-handoff.js?v=174"]:
         assert asset in index
     assert "{ value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
     assert "title: { ru: 'V', en: 'V' }" not in start
@@ -1499,3 +1499,162 @@ def test_r1043_checkpoint_keeps_first_tap_isolation_closed_and_freezes_qa_pack()
     assert "R10.4.3 owner QA corrections" in checkpoint
     assert "first-tap iPhone isolation lifecycle remains accepted CLOSED" in checkpoint
     assert "600 mm below the top of the cabinet body" in checkpoint
+
+
+def test_r1044_custom_configuration_reports_in_development():
+    start = read("start.js")
+    assert "customDevelopment" in start
+    assert "Мы работаем над этой функцией" in start
+    assert "Custom configuration is currently in development" in start
+    choose = start[start.index("async function choose(value)"):start.index("async function editSummaryStep")]
+    assert "STEPS[currentStep]?.field==='complexity_category'&&value==='V'" in choose
+    assert "showToast(copy('customDevelopment'))" in choose
+
+
+def test_r1044_isolation_inputs_prevent_ios_focus_zoom_and_save_blurs_field():
+    css = read("workspace-r8.css")
+    model = read("model.js")
+    assert ".r104-edit-field input,.r104-edit-field select" in css
+    assert "font-size:16px!important" in css
+    save = model[model.index("async function saveModuleDraft"):model.index("function cancelModuleDraft")]
+    assert "document.activeElement.blur()" in save
+    assert "enterNormalKitchenView();renderScene(false)" in save
+
+
+def test_r1044_three_hinged_doors_are_disabled_below_900_and_middle_sides_follow_openings():
+    model = read("model.js")
+    pointb = read("point-b.js")
+    renderer = read("pilot-3d.js")
+    editor = model[model.index("function renderModuleEditor"):model.index("function readModuleEditor")]
+    assert "[3,'3',Number(d.run_mm)!==900]" in editor
+    read_editor = model[model.index("function readModuleEditor"):model.index("function refreshModuleDraftPrice")]
+    assert "Number(next.run_mm)!==900&&Number(next.facade_count)===3" in read_editor
+    assert "option[value=\"3\"]" in read_editor
+    middle = model[model.index("function middleSideBoundaries"):model.index("function applyModuleEdit")]
+    assert "normalized[i]==='RIGHT'||normalized[i+1]==='LEFT'" in middle
+    assert "shelfCompartments" in pointb
+    assert "Compartment" in pointb
+    focus = renderer[renderer.index("// Shelves:"):renderer.index("if(module.kind==='FRIDGE'")]
+    assert "middle_side_boundaries" in focus
+    assert "cuts=boundaries.length?[0,...boundaries,facadeCount]" in focus
+
+
+def test_r1044_sink_base_has_shelf_and_two_frozen_vertical_rails():
+    pointb = read("point-b.js")
+    sink = pointb[pointb.index("function sinkBase"):pointb.index("function drawerParts")]
+    assert "'Sink Shelf'" in sink
+    assert "Сервисный вырез сзади под коммуникации мойки" in sink
+    assert sink.count("'Rail Front'") == 1
+    assert sink.count("'Rail Back Lower'") == 1
+    assert "Rail Additional" not in sink
+
+
+def test_r1044_board_worktop_joint_cannot_touch_sink_and_3d_uses_same_plan():
+    rules = read("r10-domain-rules.js")
+    pointb = read("point-b.js")
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    assert "SINK_ADJACENT_JOINT_FORBIDDEN_CATEGORIES" in rules
+    assert "NO_JOINT_ON_EITHER_BOUNDARY_TOUCHING_SINK_FOR_BOARD_WORKTOPS" in rules
+    plan = rules[rules.index("function worktopRunPlan"):rules.index("window.BizetR10Rules")]
+    assert "x.left?.kind==='SINK'||x.right?.kind==='SINK'" in plan
+    assert "allowedBoundaries" in plan
+    assert "worktopBlockedBySink" in pointb
+    assert "['I','II'].includes(category)&&worktopType!=='STONE'" in pointb
+    assert "function worktopAvoidSinkJoint" in model
+    assert "worktopAvoidSinkJoint:worktopAvoidSinkJoint()" in model
+    assert "worktopRunPlan?.(base,{avoidSinkJoint})" in renderer
+
+
+def test_r1044_end_panels_are_default_between_walls_module_height_and_editable():
+    model = read("model.js")
+    pointb = read("point-b.js")
+    renderer = read("pilot-3d.js")
+    rules = model[model.index("function applyEndPanelRules"):model.index("function buildModules")]
+    assert "configuration()!=='WALL_CENTER'" in rules
+    assert "m.end_panel_height_mm=Math.round(Number(m.h)||0)" in rules
+    assert "m.end_panel_floor_extension=false" in rules
+    assert "shape==='L_SHAPE'?40:18" in rules
+    editor = model[model.index("function renderModuleEditor"):model.index("function readModuleEditor")]
+    assert "Торцевая панель" in editor
+    assert "Г-образный филлер 40 мм" in editor
+    assert "end_panel_material" in editor
+    assert "function endPanelDetails" in pointb
+    assert "В габарите модуля; не опускается в пол" in pointb
+    assert "function drawEndPanel" in renderer
+
+
+def test_r1044_plinth_keeps_4100_joint_and_renderer_shows_joint():
+    rules = read("r10-domain-rules.js")
+    renderer = read("pilot-3d.js")
+    pointb = read("point-b.js")
+    assert "MAX_UNSPLICED_MM:4100" in rules[rules.index("const PLINTH_RULES"):rules.index("function plinthRunPlan")]
+    plinth = renderer[renderer.index("function drawPlinth"):renderer.index("function drawTopAppliance")]
+    assert "plan.joints.forEach" in plinth
+    assert "Соединитель цоколя универсальный" in pointb
+
+
+def test_r1044_built_in_hood_has_150_duct_110_rear_offset_two_shelves_and_two_u_claddings():
+    pointb = read("point-b.js")
+    renderer = read("pilot-3d.js")
+    hood = pointb[pointb.index("if(hood){"):pointb.index("const count=",pointb.index("if(hood){"))]
+    assert "Hood Shelf Lower" in hood and "Hood Shelf Upper" in hood
+    assert "Duct U1 Left" in hood and "Duct U1 Right" in hood and "Duct U1 Front" in hood
+    assert "Duct U2 Left" in hood and "Duct U2 Right" in hood and "Duct U2 Front" in hood
+    assert "Вырез Ø150" in hood
+    assert "110 мм от задней стенки" in hood
+    visual = renderer[renderer.index("function drawBuiltInHood"):renderer.index("function drawFreestandingHood")]
+    assert "pipeR=75" in visual
+    assert "pipeCy=module.y+module.d-110" in visual
+    assert "uCover(lowerShelfZ+t,upperShelfZ)" in visual
+    assert "uCover(upperShelfZ+t,topZ)" in visual
+
+
+def test_r1044_tall_single_row_upper_gets_second_hanger_set_in_bom_and_focus_3d():
+    pointb = read("point-b.js")
+    renderer = read("pilot-3d.js")
+    hardware = pointb[pointb.index("function countHardware"):pointb.index("function buildBOM")]
+    assert "const hangerSets=(m.kind!=='UPPER_TOP'&&Number(m.h)>900)?2:1" in hardware
+    focus = renderer[renderer.index("if(module.level==='upper')"):renderer.index("return front;",renderer.index("if(module.level==='upper')"))]
+    assert "module.kind!=='UPPER_TOP'&&h>900" in focus
+    assert "DOUBLE_SET_LEFT_RIGHT_REAR" in focus
+
+
+def test_r1044_visualization_prompt_is_internal_not_customer_ui_and_offer_payload_carries_it():
+    business = read("owner-qa-business.js")
+    routes = (ROOT / "app" / "api" / "routes_v11.py").read_text(encoding="utf-8")
+    flow = business[business.index("async function showThinkFlow"):business.index("async function showBuyFlow")]
+    assert "PILOT PROMPT" not in flow
+    assert "r104CopyVisualPrompt" not in flow
+    assert "navigator.clipboard.writeText" not in flow
+    assert "visualization_prompt:visualizationMasterPrompt(d)" in business
+    assert "visualization_payload:visualizationPayload(d)" in business
+    assert "visualization_prompt: str = \"\"" in routes
+    assert "visualization_payload: dict[str, object]" in routes
+
+
+def test_r1044_currency_is_left_of_price_not_in_3d_or_isolation():
+    html = read("workspace-r8.html")
+    pointb = read("point-b.js")
+    css = read("point-b.css")
+    assert "moduleCurrencySelect" not in html
+    assert "projectCurrencyControl" not in html
+    assert 'id="projectCurrencySelect"' in pointb
+    line = pointb[pointb.index("r104-price-line"):pointb.index("pointBPriceButton")]
+    assert line.index("projectCurrencySelect") < line.index("pointBPrice")
+    assert ".r104-price-line" in css and ".r104-price-currency" in css
+
+
+def test_r1044_checkpoint_freezes_polish_pack():
+    checkpoint = (ROOT / "R10_4_0_MUST_HAVE_CHECKPOINT.md").read_text(encoding="utf-8")
+    for token in [
+        "R10.4.4 owner polish + hard rules",
+        "Currency selector lives only in the main commercial/price area",
+        "a joint may not sit on either module boundary touching the sink",
+        "default end panels at both wall ends",
+        "three-door layouts create two middle sides",
+        "duct Ø150 mm",
+        "second left/right hanger set",
+        "Visualization master prompt is system-internal only",
+    ]:
+        assert token in checkpoint
