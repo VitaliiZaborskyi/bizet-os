@@ -569,13 +569,13 @@
     });
   }
 
-  function drawBuiltInHood(ctx,projector,module,c){
+  function drawBuiltInHood(ctx,projector,module,c,technical=false){
     const t=18,h=Math.min(150,Math.max(90,module.h*.18)),margin=Math.min(45,Math.max(24,module.w*.08));
     let box;
     if(module.wall==='A')box={x:module.x+margin,y:module.y+12,z:module.z+18,w:Math.max(120,module.w-margin*2),d:Math.max(100,Math.min(230,module.d-24)),h};
     else box={x:module.x+12,y:module.y+margin,z:module.z+18,w:Math.max(100,Math.min(230,module.w-24)),d:Math.max(120,module.d-margin*2),h};
     const faces=drawBox(ctx,projector,box,{body:'#3d4245',side:'#2b2f31',front:'#50565a',top:'#5e6468',stroke:'rgba(0,0,0,.52)'});
-    if(module.wall==='A'){
+    if(module.wall==='A'&&technical){
       const p=projector.point,pipeR=75,pipeCx=module.x+module.w/2,pipeCy=module.y+module.d-110;
       const lowerShelfZ=box.z+box.h+18,upperShelfZ=Math.min(module.z+module.h-170,Math.max(lowerShelfZ+150,module.z+module.h*.58)),topZ=module.z+module.h-t;
       const shelfBox=zv=>drawBox(ctx,projector,{x:module.x+t,y:module.y+18,z:zv,w:Math.max(30,module.w-2*t),d:Math.max(50,module.d-36),h:t},{body:'rgba(205,208,205,.52)',side:'rgba(180,184,184,.48)',front:'rgba(218,220,216,.56)',top:'rgba(232,232,228,.48)',stroke:'rgba(55,58,60,.58)'});
@@ -596,6 +596,9 @@
       };
       uCover(lowerShelfZ+t,upperShelfZ);uCover(upperShelfZ+t,topZ);
       const y=box.y-2,z=box.z+18;for(let i=1;i<=4;i++){const xx=box.x+box.w*i/5;line(ctx,p([xx,y,z]),p([xx,y,z+box.h*.52]),'rgba(185,190,192,.75)',1)}
+    }else if(module.wall==='A'){
+      const p=projector.point,y=box.y-2,z=box.z+Math.max(14,box.h*.22);
+      for(let i=1;i<=4;i++){const xx=box.x+box.w*i/5;line(ctx,p([xx,y,z]),p([xx,y,z+Math.min(42,box.h*.34)]),'rgba(185,190,192,.78)',1)}
     }
     return moduleFrontFace(faces,module);
   }
@@ -659,7 +662,7 @@
           front=drawTechnicalFocus(ctx,projector,module,c);
           drawModuleDetails(ctx,projector,module,c);
           drawEndPanel(ctx,projector,module,c);
-          if(module.kind==='UPPER_HOOD'&&module.hood_type==='BUILT_IN')drawBuiltInHood(ctx,projector,module,c);
+          if(module.kind==='UPPER_HOOD'&&module.hood_type==='BUILT_IN')drawBuiltInHood(ctx,projector,module,c,true);
           drawTopAppliance(ctx,projector,module);
         }
         if(options.showModuleDimensions)drawFocusedModuleDimensions(ctx,projector,module,c);
@@ -681,13 +684,13 @@
       }else if(module.kind==='UPPER_HOOD'&&module.hood_type==='FREESTANDING'){
         front=drawFreestandingHood(ctx,projector,module,c);
       }else{
-        const system=module.pending||module.system,anchor=module.anchor&&!system;
         const freeFridge=module.kind==='FRIDGE'&&module.freestanding;
-        const style=freeFridge?{body:'#5b6065',side:'#484d51',front:'#6c7277',top:'#7e8489',stroke:'rgba(0,0,0,.38)'}:system?{body:c.system,side:c.moduleSide,front:c.system,top:c.moduleTop}:anchor?{body:c.module,side:c.moduleSide,front:c.anchor,top:c.moduleTop}:{};
+        // R10.4.5: cabinet roles never change furniture colour. Anchors/system modules use the same project materials.
+        const style=freeFridge?{body:'#5b6065',side:'#484d51',front:'#6c7277',top:'#7e8489',stroke:'rgba(0,0,0,.38)'}:{};
         const faces=drawBox(ctx,projector,module,style);front=moduleFrontFace(faces,module);
         drawModuleDetails(ctx,projector,module,c);
         drawEndPanel(ctx,projector,module,c);
-        if(module.kind==='UPPER_HOOD'&&module.hood_type==='BUILT_IN')drawBuiltInHood(ctx,projector,module,c);
+        if(module.kind==='UPPER_HOOD'&&module.hood_type==='BUILT_IN')drawBuiltInHood(ctx,projector,module,c,false);
       }
       if(options.showNumbers!==false)drawNumber(ctx,front,module.number,c);hits.push({id:module.id,points:front,center:faceCenter(front)});
     };
