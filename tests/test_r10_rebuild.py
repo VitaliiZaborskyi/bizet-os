@@ -264,11 +264,13 @@ def test_r1031_dimensions_button_works_in_normal_and_focus_views():
     assert "function drawFocusedModuleDimensions" in renderer
     assert "if(options.showModuleDimensions)drawFocusedModuleDimensions" in renderer
 
-def test_r101_focus_has_explicit_whole_kitchen_exit():
+def test_r1042_focus_has_short_back_exit():
     html = read("workspace-r8.html")
     model = read("model.js")
     assert 'id="focusBackButton"' in html
-    assert "← Вся кухня" in html
+    assert "← Назад" in html
+    assert "← Вся кухня" not in html
+    assert "← Back" in model
     assert "$('focusBackButton')" in model
     assert "exitModuleFocus()" in model
 
@@ -490,14 +492,14 @@ def test_r103_mobile_light_step_bar_always_uses_dark_text():
     assert ".r8-tools button,.r8-tools button span{color:#171716!important}" in css
     assert ".r8-tools button.is-active{background:#fff!important;color:#171716!important}" in css
 
-def test_r1041_customer_main_actions_are_save_project_and_buy():
+def test_r1042_customer_main_actions_are_offer_and_buy():
     pointb = read("point-b.js")
     business = read("owner-qa-business.js")
-    assert ">Сохранить проект<" in pointb
+    assert ">Скачать предложение<" in pointb
     assert ">Купить<" in pointb
     refresh = business[business.index("function refresh"):business.index("function boot")]
-    assert "Сохранить проект" in refresh and "Save project" in refresh and "Купить" in refresh
-    assert "Подумаю" not in refresh and "'Think'" not in refresh
+    assert "Скачать предложение" in refresh and "'OFFER'" in refresh and "Купить" in refresh
+    assert "Сохранить проект" not in refresh and "Подумаю" not in refresh
     assert "r9ProducerButton" not in refresh
     assert "r9RoleButton" not in refresh
     assert "showThinkFlow" in refresh and "showBuyFlow" in refresh
@@ -515,18 +517,19 @@ def test_r103_buy_flow_selects_manufacturer_then_opens_payment_through_transitio
     assert "PAYMENT_PROVIDER_REQUIRED" in payment
     assert "Продолжить к оплате" in payment
 
-def test_r1041_save_project_flow_assigns_point_b_and_collects_contact_without_download_button():
+def test_r1042_offer_flow_selects_documents_downloads_sends_and_has_whatsapp():
     business = read("owner-qa-business.js")
     flow = business[business.index("async function showThinkFlow"):business.index("async function showBuyFlow")]
     assert "ensureOrderIdentity" in flow
     assert "commerce.proposal_status" in flow
-    assert "commerce.contact" in flow
-    assert "E-mail или телефон" in flow
-    assert "Сохранить и отправить" in flow
-    assert "Save and send" in flow
-    assert "window.open" not in flow
-    assert "printProposal" not in flow
-    assert ".download" not in flow
+    assert 'id="r104OfferProposal"' in flow
+    assert 'id="r104OfferApproval"' in flow
+    assert 'id="r104OfferDownload"' in flow
+    assert 'id="r104OfferSend"' in flow
+    assert "printProposal()" in flow
+    assert "openApprovalDrawings" in flow
+    assert "sendProposalEmail" in flow
+    assert "wa.me/380974587676" in flow
 
 def test_r103_commerce_state_is_domain_data_not_visual_only():
     models = (ROOT / "app" / "project" / "models.py").read_text(encoding="utf-8")
@@ -753,9 +756,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1041_fastapi_reports_current_version():
+def test_r1042_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.4.1"' in main
+    assert 'version="R10.4.2"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -844,14 +847,14 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
     assert "pointer" not in scheduler.lower()
 
 
-def test_r1041_workspace_cache_busts_renderer_assets():
+def test_r1042_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=171" in html
-    assert "/static/pilot-3d.js?v=171" in html
-    assert "/static/workspace-r8.css?v=171" in html
-    assert "/static/model-r5.js?v=171" in html
-    assert "/static/workspace-r8.js?v=171" in html
-    assert "/static/point-b.js?v=171" in html
+    assert "/static/model.js?v=172" in html
+    assert "/static/pilot-3d.js?v=172" in html
+    assert "/static/workspace-r8.css?v=172" in html
+    assert "/static/model-r5.js?v=172" in html
+    assert "/static/workspace-r8.js?v=172" in html
+    assert "/static/point-b.js?v=172" in html
 
 
 def test_r1037_focus_transition_forces_new_canvas_backing_store():
@@ -956,7 +959,7 @@ def test_r1040_isolation_has_integrated_draft_editor_and_explicit_save():
     assert "function renderModuleEditor" in model
     assert "function saveModuleDraft" in model
     assert "module_edit_overrides" in model
-    assert "R10.4.1_MODULE_SAVED" in model
+    assert "R10.4.2_MODULE_SAVED" in model
 
 
 def test_r1040_hinged_and_drawer_width_rules_are_hard_in_editor():
