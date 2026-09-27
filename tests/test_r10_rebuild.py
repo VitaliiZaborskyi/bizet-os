@@ -1250,7 +1250,9 @@ def test_r1042_refrigerator_is_hard_pinned_to_run_edge():
     model = read('model.js')
     block = model[model.index('function enforceFridgeEdgeInvariant'):model.index('function centerCompositionAnchor')]
     assert "m.kind==='FRIDGE'" in block
-    assert "edge==='END'?rest.concat(fridges):fridges.concat(rest)" in block
+    assert "return rest.concat(fridges)" in block
+    assert "return fridges.concat(rest)" in block
+    assert "isCornerGuard" in block
     arrange = model[model.index('function arrangeWall'):model.index('function buildModules')]
     assert 'ordered=enforceFridgeEdgeInvariant(ordered,edge)' in arrange
     assert arrange.index('ordered=enforceFridgeEdgeInvariant(ordered,edge)') > arrange.index('ordered=centerCompositionAnchor')
