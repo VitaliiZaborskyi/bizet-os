@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import datetime, timezone
 import re
+import httpx
 
 from app.engine.application_no import next_order_no
 from app.engine.rules import DecisionEngine
@@ -125,6 +126,29 @@ class SendProposalRequest(BaseModel):
 @router.get("/mail/status")
 def mail_status():
     return {"provider": "RESEND", "configured": resend_configured()}
+
+
+@router.get("/fx-rates")
+def fx_rates():
+    rates = {"UAH": 1.0}
+    as_of = None
+    try:
+        response = httpx.get(
+            "https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json",
+            timeout=8.0,
+        )
+        response.raise_for_status()
+        for row in response.json():
+            code = str(row.get("cc") or "").upper()
+            if code in {"EUR", "USD", "AUD"}:
+                uah_per_unit = float(row.get("rate") or 0)
+                if uah_per_unit > 0:
+                    rates[code] = 1.0 / uah_per_unit
+                if not as_of:
+                    as_of = row.get("exchangedate")
+    except Exception:
+        pass
+    return {"base": "UAH", "rates": rates, "as_of": as_of, "provider": "NBU"}
 
 
 @router.post("/projects/{project_id}/proposal/send")
