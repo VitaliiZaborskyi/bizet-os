@@ -280,17 +280,18 @@ def test_r101_sink_has_faucet_and_cooktop_has_burner_markers():
     assert "if(module.kind==='COOKTOP')" in top
     assert "[[.32,.36],[.68,.36],[.32,.63],[.68,.63]]" in top
 
-def test_r103_focus_hardware_is_simplified_to_round_legs_and_35mm_cups():
+def test_r1041_focus_hardware_scales_with_model_and_uses_compact_square_legs():
     renderer = read("pilot-3d.js")
     assert "function drawScilmLegProxy" in renderer
     assert "function drawBlumHingeProxy" in renderer
-    assert "drawScilmLegProxy" in renderer[renderer.index("function drawTechnicalFocus"):]
-    assert "drawBlumHingeProxy" in renderer[renderer.index("function drawTechnicalFocus"):]
-    hinge = renderer[renderer.index("function drawBlumHingeProxy"):renderer.index("function drawFocusedModuleDimensions")]
-    assert "Ø35 concealed-hinge cup" in hinge
-    assert "plateA" not in hinge and "plateB" not in hinge
     leg = renderer[renderer.index("function drawScilmLegProxy"):renderer.index("function drawBlumHingeProxy")]
-    assert "ctx.arc" in leg and "ctx.lineCap='round'" in leg
+    assert "drawBox(ctx,projector" in leg
+    assert "size=22" in leg and "stem=8" in leg
+    assert "ctx.arc" not in leg
+    hinge = renderer[renderer.index("function drawBlumHingeProxy"):renderer.index("function drawFocusedModuleDimensions")]
+    assert "cupX+17.5" in hinge
+    assert "Math.hypot(edge[0]-cup[0],edge[1]-cup[1])" in hinge
+    assert "Ø35 is projected from model space" in hinge
 
 def test_r101_dishwasher_is_optional_by_default():
     workspace = read("workspace-r8.js")
@@ -489,13 +490,14 @@ def test_r103_mobile_light_step_bar_always_uses_dark_text():
     assert ".r8-tools button,.r8-tools button span{color:#171716!important}" in css
     assert ".r8-tools button.is-active{background:#fff!important;color:#171716!important}" in css
 
-def test_r103_customer_main_actions_are_only_think_and_buy():
+def test_r1041_customer_main_actions_are_save_project_and_buy():
     pointb = read("point-b.js")
     business = read("owner-qa-business.js")
-    assert ">Подумаю<" in pointb
+    assert ">Сохранить проект<" in pointb
     assert ">Купить<" in pointb
     refresh = business[business.index("function refresh"):business.index("function boot")]
-    assert "Подумаю" in refresh and "Купить" in refresh
+    assert "Сохранить проект" in refresh and "Save project" in refresh and "Купить" in refresh
+    assert "Подумаю" not in refresh and "'Think'" not in refresh
     assert "r9ProducerButton" not in refresh
     assert "r9RoleButton" not in refresh
     assert "showThinkFlow" in refresh and "showBuyFlow" in refresh
@@ -513,17 +515,18 @@ def test_r103_buy_flow_selects_manufacturer_then_opens_payment_through_transitio
     assert "PAYMENT_PROVIDER_REQUIRED" in payment
     assert "Продолжить к оплате" in payment
 
-def test_r103_think_flow_assigns_point_b_and_collects_contact_without_download_button():
+def test_r1041_save_project_flow_assigns_point_b_and_collects_contact_without_download_button():
     business = read("owner-qa-business.js")
-    think = business[business.index("async function showThinkFlow"):business.index("async function showBuyFlow")]
-    assert "ensureOrderIdentity" in think
-    assert "commerce.proposal_status" in think
-    assert "commerce.contact" in think
-    assert "E-mail или телефон" in think
-    assert "Отправить КП" in think
-    assert "window.open" not in think
-    assert "printProposal" not in think
-    assert ".download" not in think
+    flow = business[business.index("async function showThinkFlow"):business.index("async function showBuyFlow")]
+    assert "ensureOrderIdentity" in flow
+    assert "commerce.proposal_status" in flow
+    assert "commerce.contact" in flow
+    assert "E-mail или телефон" in flow
+    assert "Сохранить и отправить" in flow
+    assert "Save and send" in flow
+    assert "window.open" not in flow
+    assert "printProposal" not in flow
+    assert ".download" not in flow
 
 def test_r103_commerce_state_is_domain_data_not_visual_only():
     models = (ROOT / "app" / "project" / "models.py").read_text(encoding="utf-8")
@@ -654,15 +657,16 @@ def test_r1039_configuration_is_one_screen_2x3_plus_disabled_custom_and_keeps_fi
     assert "canonical_room_model" in handoff
 
 
-def test_r1038_module_focus_enters_without_legacy_dialog_or_second_tap():
+def test_r1041_module_focus_enters_with_editor_before_single_frame_render():
     model = read("model.js")
     block = model[model.index("function openModule"):model.index("async function applyModuleCustomization")]
     assert "enterModuleFocus(selected)" in block
-    assert "renderScene(false)" in block
+    assert "renderModuleEditor(selected)" in block
+    assert "renderFocusModuleMenu()" in block
+    assert "commitFocusTransition(selected.id)" in block
     assert "dialog.show()" not in block
     assert "showModal" not in block
-    assert "scheduleRenderAfterLayout('focus-entry')" in block
-    assert "runFocusPaintBurst(activeModule.id)" in block
+    assert "runFocusPaintBurst" not in block
     assert "scrollIntoView" not in block
 
 def test_r1036_viewport_and_stage_resize_rerender_without_exiting_focus():
@@ -749,9 +753,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1040_fastapi_reports_current_version():
+def test_r1041_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.4.0"' in main
+    assert 'version="R10.4.1"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -840,14 +844,14 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
     assert "pointer" not in scheduler.lower()
 
 
-def test_r1040_workspace_cache_busts_renderer_assets():
+def test_r1041_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=170" in html
-    assert "/static/pilot-3d.js?v=170" in html
-    assert "/static/workspace-r8.css?v=170" in html
-    assert "/static/model-r5.js?v=170" in html
-    assert "/static/workspace-r8.js?v=170" in html
-    assert "/static/point-b.js?v=170" in html
+    assert "/static/model.js?v=171" in html
+    assert "/static/pilot-3d.js?v=171" in html
+    assert "/static/workspace-r8.css?v=171" in html
+    assert "/static/model-r5.js?v=171" in html
+    assert "/static/workspace-r8.js?v=171" in html
+    assert "/static/point-b.js?v=171" in html
 
 
 def test_r1037_focus_transition_forces_new_canvas_backing_store():
@@ -862,16 +866,14 @@ def test_r1037_focus_transition_forces_new_canvas_backing_store():
     assert "flushCanvas(ctx,forceCanvasReset)" in kitchen
 
 
-def test_r1037_focus_entry_runs_multi_frame_paint_burst_without_pointer_event():
+def test_r1041_focus_entry_uses_one_deferred_commit_not_paint_burst():
     model = read("model.js")
-    burst = model[model.index("function runFocusPaintBurst"):model.index("function setValidation")]
-    assert "requestAnimationFrame(paint)" in burst
-    assert "frames<6" in burst
-    assert "[70,160,280]" in burst
-    assert "renderScene(false)" in burst
-    assert "pointer" not in burst.lower()
-    open_block = model[model.index("function openModule"):model.index("async function applyModuleCustomization")]
-    assert "runFocusPaintBurst(activeModule.id)" in open_block
+    commit = model[model.index("function commitFocusTransition"):model.index("function setValidation")]
+    assert "requestAnimationFrame" in commit
+    assert "renderScene(false)" in commit
+    assert "renderModuleEditor(activeModule)" in commit
+    assert "runFocusPaintBurst" not in model
+    assert "[70,160,280]" not in model
 
 
 def test_r1037_focus_renderer_consumes_hard_reset_frames():
@@ -881,7 +883,7 @@ def test_r1037_focus_renderer_consumes_hard_reset_frames():
     assert "focusCanvasResetFrames--" in focus
     assert "forceCanvasReset" in focus
     enter = model[model.index("function enterNormalKitchenView"):model.index("function sinkWall")]
-    assert "focusCanvasResetFrames=8" in enter
+    assert "focusCanvasResetFrames=1" in enter
     assert "focusPaintToken++" in enter
 
 
@@ -954,7 +956,7 @@ def test_r1040_isolation_has_integrated_draft_editor_and_explicit_save():
     assert "function renderModuleEditor" in model
     assert "function saveModuleDraft" in model
     assert "module_edit_overrides" in model
-    assert "R10.4.0_MODULE_SAVED" in model
+    assert "R10.4.1_MODULE_SAVED" in model
 
 
 def test_r1040_hinged_and_drawer_width_rules_are_hard_in_editor():
@@ -1091,3 +1093,85 @@ def test_r1040_javascript_syntax_when_node_is_available():
         path = STATIC / name
         result = subprocess.run([node, "--check", str(path)], capture_output=True, text=True)
         assert result.returncode == 0, f"{name}: {result.stderr}"
+
+
+def test_r1041_english_module_names_use_base_cabinet_and_keep_mezzanine_separate():
+    model = read("model.js")
+    assert "if(m.kind==='HINGED')" in model
+    assert "'Base cabinet'" in model
+    assert "'Drawer base cabinet" in model
+    assert "if(m.kind==='UPPER_TOP')return 'Mezzanine cabinet'" in model
+    assert "top.push({...m,id:'top-'+m.id,label:'Антресоль',kind:'UPPER_TOP'" in model
+
+
+def test_r1041_focus_navigation_has_dropdown_and_prev_next_arrows():
+    html = read("workspace-r8.html")
+    model = read("model.js")
+    for token in ['id="focusPrevModule"', 'id="focusModuleLabel"', 'id="focusNextModule"', 'id="focusModuleMenu"']:
+        assert token in html
+    assert "function focusModuleOrder" in model
+    assert "function renderFocusModuleMenu" in model
+    assert "function switchFocusModule" in model
+    assert "data-focus-module" in model
+
+
+def test_r1041_number_toggle_disables_full_kitchen_badges():
+    html = read("workspace-r8.html")
+    model = read("model.js")
+    renderer = read("pilot-3d.js")
+    assert 'id="moduleNumbersToggle"' in html
+    assert "NUMBERS_KEY='bizet_os_show_module_numbers'" in model
+    assert "showNumbers:showModuleNumbers" in model
+    assert "if(options.showNumbers!==false)drawNumber" in renderer
+
+
+def test_r1041_touch_selection_has_phone_tolerance_and_focus_page_does_not_scroll():
+    model = read("model.js")
+    css = read("workspace-r8.css")
+    move = model[model.index("function moveCanvasGesture"):model.index("function endCanvasGesture")]
+    assert "drag.pointerType==='touch'?14:5" in move
+    end = model[model.index("function endCanvasGesture"):model.index("function bindCanvasSurface")]
+    assert "requestAnimationFrame(()=>openModule(id))" in end
+    focus_css = css[css.index("/* R10.4.1 — stable focus UX"):]
+    assert "body.r10-module-focus" in focus_css
+    assert "overflow:hidden!important" in focus_css
+    assert ".r104-module-editor" in focus_css
+    assert "overflow-y:auto" in focus_css
+
+
+def test_r1041_handles_keep_40mm_clearance_to_nearest_edge():
+    renderer = read("pilot-3d.js")
+    details = renderer[renderer.index("function drawModuleDetails"):renderer.index("function drawFocusDot")]
+    assert "offset=Math.max(40" in details
+    assert "edgeGap=40+len/2" in details
+    assert "module.z+40" in details
+    assert "module.z+module.h-40" in details
+
+
+def test_r1041_renderer_depth_sorts_box_faces_and_hit_test_prefers_nearest_face_center():
+    renderer = read("pilot-3d.js")
+    box = renderer[renderer.index("function drawBox"):renderer.index("function faceCenter")]
+    assert "avgDepth" in box
+    assert ".sort((a,b)=>avgDepth(b.face)-avgDepth(a.face)" in box
+    kitchen = renderer[renderer.index("function drawKitchenScene"):renderer.index("window.BizetPilot3D")]
+    assert "candidates=hits.filter" in kitchen
+    assert "Math.hypot(ac[0]-x,ac[1]-y)" in kitchen
+
+
+def test_r1041_order_reference_expands_year_to_avoid_day_month_confusion():
+    business = read("owner-qa-business.js")
+    identity = business[business.index("const identityRef"):business.index("function updateIdentityBadge")]
+    assert "match[3]" in identity
+    assert "20" in identity
+    assert "match[4]" in identity
+
+
+def test_r1041_workspace_chrome_translation_is_centralized():
+    workspace = read("workspace-r8.js")
+    model = read("model.js")
+    assert "function localizeWorkspaceChrome" in workspace
+    assert "Project settings" in workspace
+    assert "Module list" in workspace
+    assert "Another variant" in workspace
+    assert "const tr=(ru,en)" in model
+    assert "displayModuleName:moduleDisplayName" in model
