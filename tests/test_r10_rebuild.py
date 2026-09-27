@@ -758,9 +758,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1044_fastapi_reports_current_version():
+def test_r1045_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.4.4"' in main
+    assert 'version="R10.4.5"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -849,14 +849,14 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
     assert "pointer" not in scheduler.lower()
 
 
-def test_r1044_workspace_cache_busts_renderer_assets():
+def test_r1045_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=174" in html
-    assert "/static/pilot-3d.js?v=174" in html
-    assert "/static/workspace-r8.css?v=174" in html
-    assert "/static/model-r5.js?v=174" in html
-    assert "/static/workspace-r8.js?v=174" in html
-    assert "/static/point-b.js?v=174" in html
+    assert "/static/model.js?v=175" in html
+    assert "/static/pilot-3d.js?v=175" in html
+    assert "/static/workspace-r8.css?v=175" in html
+    assert "/static/model-r5.js?v=175" in html
+    assert "/static/workspace-r8.js?v=175" in html
+    assert "/static/point-b.js?v=175" in html
 
 
 def test_r1037_focus_transition_forces_new_canvas_backing_store():
@@ -961,7 +961,7 @@ def test_r1040_isolation_has_integrated_draft_editor_and_explicit_save():
     assert "function renderModuleEditor" in model
     assert "function saveModuleDraft" in model
     assert "module_edit_overrides" in model
-    assert "R10.4.4_MODULE_SAVED" in model
+    assert "R10.4.5_MODULE_SAVED" in model
 
 
 def test_r1040_hinged_and_drawer_width_rules_are_hard_in_editor():
@@ -1020,14 +1020,16 @@ def test_r1040_ordinary_lower_has_two_ribs_and_upper_has_no_generic_ribs():
     assert "'Rail Back'" not in upper
 
 
-def test_r1040_plinth_preserves_900_worktop_height_and_recalculates_bom():
+def test_r1045_plinth_variant_a_preserves_selected_lower_total_height_and_recalculates_bom():
     model = read("model.js")
     pointb = read("point-b.js")
     workspace = read("workspace-r8.js")
-    assert "LOWER_TOTAL_H=900" in model
-    assert "lowerBodyHeight(){return Math.max(300,LOWER_TOTAL_H-plinthHeight()-WORKTOP_H)}" in model
-    assert "visibleTallDrawerLimit(){return LOWER_TOTAL_H-WORKTOP_H}" in model
+    assert "DEFAULT_LOWER_TOTAL_H=900" in model
+    assert "function lowerTotalHeight()" in model
+    assert "lowerBodyHeight(){return Math.max(300,lowerTotalHeight()-plinthHeight()-WORKTOP_H)}" in model
+    assert "visibleTallDrawerLimit(){return lowerTotalHeight()-WORKTOP_H}" in model
     assert "plinth_height_mm:100" in workspace
+    assert "lower_total_height_mm:900" in workspace
     assert "areas.PLINTH" in pointb
     assert "Ножка H " in pointb
     assert "legHeight" in pointb
@@ -1658,5 +1660,105 @@ def test_r1044_checkpoint_freezes_polish_pack():
         "duct Ø150 mm",
         "second left/right hanger set",
         "Visualization master prompt is system-internal only",
+    ]:
+        assert token in checkpoint
+
+
+def test_r1045_focus_back_and_ruler_move_to_lower_left_without_module_nav_collision():
+    css = read("workspace-r8.css")
+    html = read("workspace-r8.html")
+    assert 'id="focusBackButton"' in html and 'id="modelDimensionsToggle"' in html
+    block = css[css.index("/* R10.4.5 — focus controls"): ]
+    assert "body.r10-module-focus .r8-stage-top" in block
+    assert "top:auto!important" in block
+    assert "left:12px!important" in block
+    assert "bottom:12px!important" in block
+    assert "body.r10-module-focus #constraintButton{display:none!important}" in block
+    nav = css[css.index(".r104-focus-module-nav"):css.index(".r104-focus-module-nav[hidden]")]
+    assert "top:10px" in nav and "right:10px" in nav
+
+
+def test_r1045_full_kitchen_uses_one_default_cabinet_colour_without_anchor_highlight():
+    renderer = read("pilot-3d.js")
+    draw = renderer[renderer.index("const drawModule=module=>"):renderer.index("lower.forEach(drawModule)")]
+    assert "const system=module.pending||module.system" not in draw
+    assert "front:c.anchor" not in draw
+    assert "front:c.system" not in draw
+    assert "const style=freeFridge?" in draw
+    assert "Anchors/system modules use the same project materials" in draw
+
+
+def test_r1045_built_in_hood_is_opaque_in_full_view_and_technical_inside_focus_only():
+    renderer = read("pilot-3d.js")
+    hood = renderer[renderer.index("function drawBuiltInHood"):renderer.index("function drawFreestandingHood")]
+    assert "technical=false" in hood
+    assert "module.wall==='A'&&technical" in hood
+    focus = renderer[renderer.index("if(options.focusMode)"):renderer.index("drawRoomBase")]
+    assert "drawBuiltInHood(ctx,projector,module,c,true)" in focus
+    normal = renderer[renderer.index("const drawModule=module=>"):renderer.index("lower.forEach(drawModule)")]
+    assert "drawBuiltInHood(ctx,projector,module,c,false)" in normal
+
+
+def test_r1045_tab_03_is_module_settings_with_all_global_dimensions_and_plinth_only_there():
+    html = read("workspace-r8.html")
+    workspace = read("workspace-r8.js")
+    assert '<button data-panel="upper" type="button"><span>03</span>Настройка модулей</button>' in html
+    assert "upper:['Настройка модулей','Module settings']" in workspace
+    titles = workspace[workspace.index("function panelTitle"):workspace.index("function materialState")]
+    assert "03 · НАСТРОЙКА МОДУЛЕЙ" in titles and "03 · MODULE SETTINGS" in titles
+    upper = workspace[workspace.index("if(panel==='upper')"):workspace.index("if(panel==='communications')")]
+    for key in ["lower_total_height_mm","upper_height_mm","upper_gap_mm","lower_depth_mm","upper_depth_mm","plinth_height_mm"]:
+        assert key in upper
+    room = workspace[workspace.index("if(panel==='room')"):workspace.index("if(panel==='appliances')")]
+    general = workspace[workspace.index("if(panel==='general')"):workspace.index("$('panelBody').innerHTML")]
+    assert "plinth_height_mm" not in room
+    assert "plinth_height_mm" not in general
+    assert "<h3>Ручки</h3>" in general
+
+
+def test_r1045_module_dimension_inputs_drive_actual_model_geometry():
+    model = read("model.js")
+    for token in [
+        "function lowerTotalHeight()",
+        "function lowerDepth()",
+        "function upperDepth()",
+        "function upperConfiguredHeight()",
+        "d:lowerDepth()",
+        "bottom=lowerTotalHeight()+gap",
+        "height=Math.min(upperConfiguredHeight(),room.heightMm-bottom-50)",
+        "const uDepth=upperDepth()",
+    ]:
+        assert token in model
+    assert "room.depthMm-uDepth" in model
+    assert "room.lengthMm-uDepth" in model
+    assert "Math.max(UPPER_HOOD_DEPTH,uDepth)" in model
+
+
+def test_r1045_module_settings_defaults_preserve_current_dimensions_and_translate():
+    workspace = read("workspace-r8.js")
+    assert "lower_total_height_mm:900" in workspace
+    assert "upper_height_mm:1000" in workspace
+    assert "lower_depth_mm:560" in workspace
+    assert "upper_depth_mm:320" in workspace
+    for token in [
+        "'Настройка модулей':'Module settings'",
+        "'Общая высота нижних модулей, мм':'Overall base cabinet height, mm'",
+        "'Общая высота верхних модулей, мм':'Wall cabinet height, mm'",
+        "'Глубина нижних модулей, мм':'Base cabinet depth, mm'",
+        "'Глубина верхних модулей, мм':'Wall cabinet depth, mm'",
+    ]:
+        assert token in workspace
+
+
+def test_r1045_checkpoint_freezes_module_settings_and_visual_polish_pack():
+    checkpoint = (ROOT / "R10_4_0_MUST_HAVE_CHECKPOINT.md").read_text(encoding="utf-8")
+    for token in [
+        "R10.4.5 module settings + visual polish",
+        "Back and dimensions controls move to the lower-left",
+        "no longer uses anchor/system role colouring",
+        "technical isolation detail only",
+        "Настройка модулей / Module settings",
+        "lower total height, upper height, gap between lower and upper, lower depth, upper depth and plinth height",
+        "Variant A remains HARD",
     ]:
         assert token in checkpoint
