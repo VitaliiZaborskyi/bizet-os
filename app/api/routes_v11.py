@@ -119,6 +119,7 @@ def patch_project(project_id: str, command: ChangeCommand):
 class SendProposalRequest(BaseModel):
     recipient: str
     price: str
+    currency: str = "UAH"
     manufacturer: str
     configuration: str
     runs: str = ""
