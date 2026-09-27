@@ -446,8 +446,15 @@
     const fridges=ordered.filter(m=>m.kind==='FRIDGE');
     if(!fridges.length)return ordered;
     const rest=ordered.filter(m=>m.kind!=='FRIDGE');
-    // HARD: refrigerators never sit between ordinary base modules. Keep the refrigerator block at the run edge.
-    return edge==='END'?rest.concat(fridges):fridges.concat(rest);
+    const isCornerGuard=m=>m&&(m.kind==='CORNER'||(m.kind==='SINK'&&m.corner));
+    // HARD: refrigerators never sit between ordinary base modules.
+    // A true corner module keeps the physical corner; the refrigerator is placed immediately beside that guard.
+    if(edge==='END'){
+      if(isCornerGuard(rest[rest.length-1]))return rest.slice(0,-1).concat(fridges,rest.slice(-1));
+      return rest.concat(fridges);
+    }
+    if(isCornerGuard(rest[0]))return rest.slice(0,1).concat(fridges,rest.slice(1));
+    return fridges.concat(rest);
   }
 
   function centerCompositionAnchor(ordered,wall,bounds){
