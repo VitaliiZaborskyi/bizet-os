@@ -1,6 +1,44 @@
 (()=> {
  const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
  const LANG_KEY='bizet_os_language',uiLang=()=>String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ru').toLowerCase().startsWith('en')?'en':'ru',tr=(ru,en)=>uiLang()==='en'?en:ru;
+ const PROJECT_I18N={
+   'Общие':'General','Как задать помещение':'How to define the room','Шаблон':'Template','Скан':'Scan','Загрузить файл':'Upload file',
+   'Три входа приводятся к единой Room Model.':'All three methods create the same Room Model.','Геометрия':'Geometry',
+   'Длина основной стены, мм':'Main wall length, mm','Глубина помещения, мм':'Room depth, mm','Высота помещения, мм':'Room height, mm','Высота цоколя, мм':'Plinth height, mm',
+   'Поверхности помещения':'Room surfaces','Выберите тип и тестовый материал или загрузите свою текстуру.':'Choose a surface type and material, or upload your own texture.',
+   'Пол':'Floor','Стены':'Walls','Потолок':'Ceiling','Не выбрано':'Not selected','Своя текстура':'Custom texture',
+   'Калибровка файла':'File calibration','Укажите один известный реальный размер. После анализа BIZET OS пересчитает Room Model.':'Enter one known real dimension. BIZET OS will then rescale the Room Model.',
+   'Известный размер, мм':'Known dimension, mm','Применить масштаб':'Apply scale','Подтвердить помещение':'Confirm room','Тип потолка':'Ceiling type',
+   'Натяжной — подготовленное основание':'Prepared for stretch ceiling','Готовый натяжной':'Finished stretch ceiling','Гипсокартон':'Drywall','Открытый зазор':'Open gap',
+   'Холодильник':'Refrigerator','Наличие':'Included','Да':'Yes','Нет':'No','Сторона':'Side','Слева':'Left','Справа':'Right','Тип':'Type',
+   'Встраиваемый':'Built-in','Отдельностоящий':'Freestanding','Ширина':'Width','Мойка':'Sink','Монтаж':'Installation','Накладная':'Top-mount','Вровень':'Flush-mount','Под столешницей':'Undermount',
+   'Чаш':'Bowls','Измельчитель':'Waste disposer','Фильтры':'Water filters','Варочная / ПММ':'Cooktop / dishwasher','Варочная':'Cooktop','Ширина варочной':'Cooktop width',
+   'Индукционная':'Induction','Электрическая':'Electric','Газовая':'Gas','Комбинированная':'Combined','Посудомоечная машина':'Dishwasher','Ширина ПММ':'Dishwasher width',
+   'Вытяжка / духовка':'Hood / oven','Вытяжка':'Hood','Ширина вытяжки':'Hood width','Духовка':'Oven','Ширина духовки':'Oven width','В нижнем модуле':'Base cabinet','В пенале':'Tall cabinet',
+   'Микроволновка':'Microwave','Кофемашина':'Coffee machine','Дополнительные настройки техники':'Additional appliance settings',
+   'Наполнение холодильника':'Refrigerator configuration','Только холодильник':'Refrigerator only','Только морозильник':'Freezer only','Холодильник + морозильник':'Refrigerator + freezer',
+   'Положение мойки':'Sink position','От угла':'At corner','Со смещением':'Offset','На прямом участке':'Straight run','Смещение мойки от угла, мм':'Sink offset from corner, mm',
+   'Стена варочной панели':'Cooktop wall','Стена ПММ':'Dishwasher wall','Авто':'Auto','Полновстраиваемая':'Fully integrated','Телескопическая':'Telescopic','Стена духового шкафа':'Oven wall',
+   'СВЧ / кофемашина':'Microwave / coffee machine','Тип СВЧ':'Microwave type','Тип кофемашины':'Coffee machine type','Опора кофемашины':'Coffee machine support',
+   'Обычная полка':'Fixed shelf','Выдвижная полка с фиксатором':'Locking pull-out shelf','Отделение кофемашины':'Coffee machine compartment','Открытое':'Open','Закрытое':'Closed',
+   'Открывание фасада':'Facade opening','Петли слева':'Left-hinged','Петли справа':'Right-hinged','Вертикально вверх':'Lift-up',
+   'Техника настроена?':'Appliances ready?','Примените выбранные параметры — BIZET OS перестроит модель с учётом техники.':'Apply the selected parameters and BIZET OS will rebuild the model with the appliances included.','Применить':'Apply',
+   'Компоновка':'Layout','От столешницы до верха, мм':'Countertop-to-wall-cabinet clearance, mm','Один ряд':'Single row','Антресоль':'Mezzanine','Распашной':'Hinged','Подъёмный':'Lift-up',
+   'Система ожидает':'Required utility points','Канализация · вода · питание варочной · вытяжка · холодильник · духовка · розетки.':'Drainage · water · cooktop power · hood · refrigerator · oven · outlets.',
+   'Статус координат':'Coordinates status','Уточнить позже':'Specify later','Проверено':'Confirmed',
+   'Добавить элемент стены':'Add wall element','Окно':'Window','Дверь':'Door','Радиатор':'Radiator','Подшторник / карниз':'Curtain recess / track','Ниша':'Niche','Колонна':'Column','Выступ':'Projection','Балка':'Beam','Другое':'Other',
+   'Стена':'Wall','Ширина, мм':'Width, mm','Высота, мм':'Height, mm','Глубина / выступ, мм':'Depth / projection, mm','От левого края, мм':'Offset from left edge, mm','От пола, мм':'Height above floor, mm',
+   'Добавить к модели':'Add to model','Добавлено':'Added','Удалить':'Remove','Пока нет дополнительных элементов.':'No additional elements yet.',
+   'Визуальное направление':'Visual direction','Выбрано на стартовом экране:':'Selected on the start screen:','Светлое':'Light','Тёмное':'Dark',
+   'Материалы мебели':'Furniture materials','Тестовый набор для связки модель → спецификация → будущая визуализация.':'Pilot set linking the model → specification → future visualization.',
+   'Фасады':'Facades','Корпус':'Carcass','Столешница':'Worktop','Подтверждение':'Confirmation','Подтвердить текущий вариант':'Confirm current selection',
+   'Ручки и цоколь':'Handles and plinth','Распашные модули':'Hinged cabinets','Ящики':'Drawers','Вертикальные ручки':'Vertical handles','Горизонтальные ручки':'Horizontal handles',
+   'Валюта отображения':'Display currency','Документы · тест':'Documents · test','Открыть BOM · TEST':'Open BOM · TEST','Чертежи для согласования · TEST':'Approval drawings · TEST',
+   'Плитка':'Tile','Паркет':'Parquet','Ламинат':'Laminate','Микроцемент':'Microcement','Краска':'Paint','Штукатурка':'Plaster','Панели':'Panels','Натяжной':'Stretch ceiling','Плитный материал':'Board material','Древесный':'Wood finish','ЛДСП':'Laminated board','Камень':'Stone','Дерево':'Wood',
+   'Песочная':'Sand','Светлый камень':'Light stone','Серая':'Grey','Дуб натуральный':'Natural oak','Дуб дымчатый':'Smoked oak','Ясень светлый':'Light ash','Дуб':'Oak','Серо-бежевый':'Greige','Тёмный':'Dark',
+   'Тёплый':'Warm','Серый':'Grey','Светлый':'Light','Тёплый белый':'Warm white','Песочный':'Sand','Грейдж':'Greige','Графит':'Graphite','Белая':'White','Орех':'Walnut','Светлая':'Light','Матовый':'Matte','Сатин':'Satin','Белый':'White','Светло-серый':'Light grey','Айвори':'Ivory','Шалфей':'Sage','Чёрный':'Black'
+ };
+ const ui=value=>uiLang()==='en'?(PROJECT_I18N[String(value)]||String(value)):String(value);
  let rt=null,history=[],locks=new Set(JSON.parse(localStorage.getItem('bizet_r8_locks')||'[]'));
  const projectId=new URLSearchParams(location.search).get('project')||sessionStorage.getItem('bizet_os_project_id')||localStorage.getItem('bizet_os_project_id')||'pilot';
  const VARIANT_KEY='bizet_r8_variant_slots_'+projectId,VARIANT_POS_KEY='bizet_r8_variant_pos_'+projectId;
