@@ -104,9 +104,8 @@
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Left',H,D));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Right',H,D));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Bottom',inner,partD));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail Front',inner,100));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail Back Lower',inner,100,1,EDGE,2,2,'Вертикально; верх заднего ребра ниже на 200–250 мм'));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail Additional',inner,100));
+    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail Front',inner,100,1,EDGE,2,2,'Вертикально; плоскость параллельна фасаду','Передняя кромка ребра вровень с передней кромкой боковин'));
+    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail Back Lower',inner,100,1,EDGE,2,2,'Вертикально; плоскость параллельна фасаду','Задняя кромка вровень с задней кромкой боковин; верх ребра на 150 мм ниже верха корпуса'));
     facadePieces(module,Math.max(100,H-TOP_GAP)).forEach(x=>out.push(detail(module,n++,s++,'ЛДСП 18 Facade','Facade',x.h,x.w,x.count,EDGE,2,2,'Петли + чашки Ø35','Без задней стенки')));
     return out;
   }
