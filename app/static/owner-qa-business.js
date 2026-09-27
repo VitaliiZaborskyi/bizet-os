@@ -363,6 +363,17 @@ ${JSON.stringify(payload)}`;
     window.addEventListener('bizet:modelready',()=>setTimeout(refresh,80));
     window.addEventListener('bizet:resume',()=>setTimeout(refresh,300));
     window.addEventListener('bizet:modelchange',()=>setTimeout(refresh,100));
+    window.addEventListener('bizet:languagechange',()=>{
+      const dialog=$('r10CommerceDialog'),offerOpen=!!(dialog?.open&&$('r104OfferProposal'));
+      const saved=offerOpen?{email:$('r10ProposalEmail')?.value||'',phone:$('r10ProposalPhone')?.value||'',proposal:$('r104OfferProposal')?.checked!==false,approval:$('r104OfferApproval')?.checked!==false}:null;
+      refresh();
+      if(offerOpen)showThinkFlow().then(()=>{
+        if($('r10ProposalEmail'))$('r10ProposalEmail').value=saved.email;
+        if($('r10ProposalPhone'))$('r10ProposalPhone').value=saved.phone;
+        if($('r104OfferProposal'))$('r104OfferProposal').checked=saved.proposal;
+        if($('r104OfferApproval'))$('r104OfferApproval').checked=saved.approval;
+      }).catch(()=>{});
+    });
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,400)},true);
   }
   window.BizetOwnerBusiness={refresh,producers:PRODUCERS,role,producer,loadIdentity,ensureOrderIdentity,identityRef:()=>identityRef(),getIdentity:()=>identityCache,showBuyFlow,showThinkFlow,showPaymentFlow,visualizationPayload:()=>{const d=data();return d?visualizationPayload(d):null},visualizationMasterPrompt:()=>{const d=data();return d?visualizationMasterPrompt(d):''}};
