@@ -687,7 +687,7 @@
       return Number(quote?.client??quote?.price??quote)||0;
     }catch(_){return 0}
   }
-  function money(value){return new Intl.NumberFormat(uiLang()==='en'?'en-US':'ru-RU',{maximumFractionDigits:0}).format(Math.round(Number(value)||0))+(uiLang()==='en'?' UAH':' грн')}
+  function money(value){return window.BizetPointB?.formatMoney?.(value)||new Intl.NumberFormat(uiLang()==='en'?'en-US':'ru-RU',{maximumFractionDigits:0}).format(Math.round(Number(value)||0))+' UAH'}
   function moduleEditorKind(module){
     if(!module)return'SPECIAL';
     if(module.kind==='FILLER')return'FILLER';
@@ -775,6 +775,8 @@
     if(title)title.textContent=`${module.number}. ${moduleDisplayName(module)}`;
     if(priceLabel)priceLabel.textContent=tr('Цена модуля','Module price');
     if(kicker)kicker.textContent=tr('ПРАВКА МОДУЛЯ','EDIT MODULE');
+    const currency=$('moduleCurrencySelect');
+    if(currency){currency.value=String(inputs.display_currency||'UAH').toUpperCase();currency.setAttribute('aria-label',tr('Валюта отображения','Display currency'));}
     const ovenOnly=isOvenModule(module);
     let html=ovenOnly
       ?editField(tr('Ширина духовки, мм','Oven width, mm'),'run_mm',d.run_mm,'select',[[600,'600'],[900,'900']])
@@ -1141,6 +1143,15 @@
     const btn=event.target.closest('[data-focus-preset]');if(!btn||btn.disabled)return;
     try{applyFocusPreset(btn.dataset.focusPreset)}catch(error){const status=$('focusVariantStatus');if(status){status.hidden=false;status.textContent=error.message}}
   });
+
+  $('moduleCurrencySelect')?.addEventListener('change',async event=>{
+    const code=String(event.target.value||'UAH').toUpperCase();
+    inputs={...inputs,display_currency:code};
+    await saveVisual({...visual,guided_inputs:inputs,r8_workspace:true},'R10.4.2 display currency');
+    window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'currency',currency:code}}));
+    refreshModuleDraftPrice();
+  });
+  window.addEventListener('bizet:fxready',()=>refreshModuleDraftPrice());
 
   $('moduleNumbersToggle')?.addEventListener('click',()=>{
     showModuleNumbers=!showModuleNumbers;localStorage.setItem(NUMBERS_KEY,showModuleNumbers?'1':'0');syncFocusControls();renderScene(false);
