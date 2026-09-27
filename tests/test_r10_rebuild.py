@@ -757,9 +757,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1043_fastapi_reports_current_version():
+def test_r1044_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.4.3"' in main
+    assert 'version="R10.4.4"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -848,14 +848,14 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
     assert "pointer" not in scheduler.lower()
 
 
-def test_r1043_workspace_cache_busts_renderer_assets():
+def test_r1044_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=173" in html
-    assert "/static/pilot-3d.js?v=173" in html
-    assert "/static/workspace-r8.css?v=173" in html
-    assert "/static/model-r5.js?v=173" in html
-    assert "/static/workspace-r8.js?v=173" in html
-    assert "/static/point-b.js?v=173" in html
+    assert "/static/model.js?v=174" in html
+    assert "/static/pilot-3d.js?v=174" in html
+    assert "/static/workspace-r8.css?v=174" in html
+    assert "/static/model-r5.js?v=174" in html
+    assert "/static/workspace-r8.js?v=174" in html
+    assert "/static/point-b.js?v=174" in html
 
 
 def test_r1037_focus_transition_forces_new_canvas_backing_store():
@@ -933,13 +933,13 @@ def test_r1038_focus_canvas_has_same_touch_and_pinch_contract():
     assert "pinchSurface?.dispatchEvent(new WheelEvent('wheel'" in bridge
 
 
-def test_r1043_start_assets_are_cache_busted():
+def test_r1044_start_assets_are_cache_busted():
     html = read("index.html")
-    assert "/static/start.css?v=173" in html
-    assert "/static/next-pilot.css?v=173" in html
-    assert "/static/start.js?v=173" in html
-    assert "/static/start-room-handoff.js?v=173" in html
-    assert "/static/next-pilot-start.js?v=173" in html
+    assert "/static/start.css?v=174" in html
+    assert "/static/next-pilot.css?v=174" in html
+    assert "/static/start.js?v=174" in html
+    assert "/static/start-room-handoff.js?v=174" in html
+    assert "/static/next-pilot-start.js?v=174" in html
 
 
 def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visible():
@@ -960,7 +960,7 @@ def test_r1040_isolation_has_integrated_draft_editor_and_explicit_save():
     assert "function renderModuleEditor" in model
     assert "function saveModuleDraft" in model
     assert "module_edit_overrides" in model
-    assert "R10.4.3_MODULE_SAVED" in model
+    assert "R10.4.4_MODULE_SAVED" in model
 
 
 def test_r1040_hinged_and_drawer_width_rules_are_hard_in_editor():
@@ -1221,17 +1221,18 @@ def test_r1042_two_finger_pan_keeps_pinch_zoom_and_centers_camera_on_kitchen():
     assert 'screenXOffset' in projector
 
 
-def test_r1042_currency_selector_uses_nbu_rates_and_propagates_to_prices():
+def test_r1044_currency_selector_uses_nbu_rates_and_is_not_in_isolation():
     html = read('workspace-r8.html')
     workspace = read('workspace-r8.js')
     model = read('model.js')
     pointb = read('point-b.js')
     routes = (ROOT / 'app' / 'api' / 'routes_v11.py').read_text(encoding='utf-8')
-    assert 'id="moduleCurrencySelect"' in html
+    assert 'id="moduleCurrencySelect"' not in html
+    assert 'moduleCurrencySelect' not in model
+    assert 'id="projectCurrencySelect"' in pointb
     for code in ['UAH','EUR','USD','AUD']:
-        assert f'value="{code}"' in html
+        assert f'<option value="{code}">{code}</option>' in pointb
     assert "display_currency:'UAH'" in workspace
-    assert 'moduleCurrencySelect' in model
     assert '/api/v1.1/fx-rates' in pointb
     assert 'formatMoney' in pointb and 'convertMoney' in pointb
     assert '@router.get("/fx-rates")' in routes
@@ -1366,12 +1367,14 @@ def test_r1043_room_source_has_no_continue_button_and_confirm_advances_directly(
     assert "renderConfigurationScreen(screen)" in confirm
 
 
-def test_r1043_currency_is_visible_globally_and_survives_saved_variant_apply():
+def test_r1044_currency_is_visible_beside_price_and_survives_saved_variant_apply():
     html = read("workspace-r8.html")
     model = read("model.js")
     workspace = read("workspace-r8.js")
-    assert 'id="projectCurrencySelect"' in html
-    assert 'id="moduleCurrencySelect"' in html
+    pointb = read("point-b.js")
+    assert 'id="projectCurrencySelect"' not in html
+    assert 'id="projectCurrencySelect"' in pointb
+    assert 'r104-price-line' in pointb
     assert "async function setDisplayCurrency" in model
     assert "projectCurrencySelect" in model
     apply = model[model.index("async function applyWorkspaceState"):model.index("function snapshot")]
