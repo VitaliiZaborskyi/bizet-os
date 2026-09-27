@@ -187,8 +187,12 @@
       else if(count===3&&layout==='TWO_SMALL_TOP')weights=[.25,.25,.5];
       else if(count===4&&layout==='LARGE_BOTTOM')weights=[.2,.2,.2,.4];
       let acc=0;for(let i=0;i<count-1;i++){acc+=weights[i];hline(acc)}
-      const offset=Math.max(20,Number(module.handle_offset_mm)||50);
-      acc=0;for(let i=0;i<count;i++){const bottom=acc,top=acc+weights[i];const hz=module.z+module.h*top-Math.min(offset,module.h*weights[i]*.38);handle(module.x+module.w*.5,hz,'HORIZONTAL',Math.min(150,module.w*.36));acc=top}
+      const offset=Math.max(40,Number(module.handle_offset_mm)||50);
+      acc=0;for(let i=0;i<count;i++){
+        const bottom=acc,top=acc+weights[i],faceH=module.h*weights[i],edgeInset=Math.min(Math.max(40,offset),Math.max(40,faceH-40));
+        const hz=module.z+module.h*top-edgeInset;
+        handle(module.x+module.w*.5,hz,'HORIZONTAL',Math.min(150,Math.max(40,module.w-80)));acc=top
+      }
     }
     else if(['HINGED','SINK','UPPER','UPPER_TOP','UPPER_DRYER'].includes(module.kind)&&!module.tall){
       const count=Math.max(1,Number(module.facade_count)||1),horizontal=module.level==='upper'&&module.facade_orientation==='HORIZONTAL';
@@ -224,7 +228,7 @@
           const ratio=(stack*i/drawerCount)/module.h;
           if(i<drawerCount)hline(ratio);
           const low=module.z+stack*(i-1)/drawerCount,high=module.z+stack*i/drawerCount;
-          handle(module.x+module.w*.5,high-Math.min(50,(high-low)*.3),'HORIZONTAL',Math.min(150,module.w*.36));
+          handle(module.x+module.w*.5,high-Math.max(40,Math.min(50,(high-low)*.3)),'HORIZONTAL',Math.min(150,Math.max(40,module.w-80)));
         }
         if(stack<module.h)hline(stack/module.h);
       }
@@ -232,8 +236,9 @@
       for(let i=1;i<facadeCount;i++)hline((stack+remaining*i/facadeCount)/module.h);
       for(let i=0;i<facadeCount;i++){
         const low=module.z+stack+remaining*i/facadeCount,high=module.z+stack+remaining*(i+1)/facadeCount,opening=opens[i]||(['LEFT','RIGHT'][i%2]);
-        const x=opening==='LEFT'?module.x+module.w-50:module.x+50;
-        handle(x,(low+high)/2,'VERTICAL',Math.min(160,(high-low)*.30));
+        const x=opening==='LEFT'?module.x+module.w-40:module.x+40;
+        const len=Math.min(160,Math.max(40,(high-low)-80));
+        handle(x,(low+high)/2,'VERTICAL',len);
       }
     }
     if(module.kind==='FRIDGE'&&module.content==='FRIDGE_FREEZER')hline(.34);
