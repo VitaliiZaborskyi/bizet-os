@@ -156,7 +156,8 @@ def test_model_is_rotatable_numbered_perspective_and_uses_only_active_walls():
     assert "surface.addEventListener('pointermove'" in model_js
     assert "surface.addEventListener('wheel'" in model_js
     assert "bindCanvasSurface(normalCanvas)" in model_js
-    assert "return walls.flatMap(w=>arrangeWall(w,grouped[w],room))" in model_js
+    assert "walls.flatMap(w=>arrangeWall(w,grouped[w],room))" in model_js
+    assert "applyFridgeConstructionRules" in model_js
     assert 'linear_left_offset_mm' in model_js
     assert 'linear_right_offset_mm' in model_js
     assert 'sorted.forEach((m,i)=>m.number=i+1)' in model_js
