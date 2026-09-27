@@ -105,3 +105,18 @@ R10.4.2 contracts:
 - visualization logic exposes a geometry-locked VisualizationPayload and master prompt; no external photoreal render provider is falsely claimed as connected;
 - e-mail delivery uses the existing Resend path, PDF attachments, and reply-to cdbbizet@gmail.com when configured; secrets stay in Render environment only;
 - WhatsApp demo channel opens +380974587676 with a prefilled order reference; automatic document delivery requires WhatsApp Business API and is not simulated.
+
+## R10.4.3 owner QA corrections — 2026-09-27
+
+- R10.4.3 stays on the R10.4 line; R10.5 is intentionally deferred.
+- Start Experience must show `Своя конфигурация / Custom configuration` without a visible Roman `V`, and the Template / Scan / File screen has no redundant Continue-to-configuration button. Start assets must be cache-busted so owner QA sees the current source.
+- Display currency UAH/EUR/USD/AUD is a project-global setting visible from the normal workspace. Saved/random variants must never overwrite it.
+- Commercial proposal amounts carry an explicit currency code. Proposal copy must describe only the current saved configuration and separate document types; unsupported validation claims are removed.
+- Built-in refrigerator: lower facade, when present, may not exceed the neighboring lower-cabinet facade height; bottom ventilation cutout is Ø250 mm; the cabinet top aligns to the overall kitchen top; a single board part may not exceed 2780×2060 mm and must be segmented when required.
+- Plinth uses the same 4100 mm segmentation logic as the worktop. It continues under built-in refrigerator/tall built-ins. Every additional plinth piece/joint adds one universal straight/corner connector at 50 UAH.
+- Built-in and freestanding hood types must produce visibly different 3D appliance representations; a freestanding hood is not detailed as a wall-cabinet carcass.
+- Live RU↔EN switching must rerender current workspace chrome, panels, Material Picker, isolation editor, dynamic statuses and OFFER flow. Isolation currency label is `Currency` in English.
+- Corrected oven rule: for Category I without Gola, the lower-oven support shelf top is exactly 600 mm below the top of the cabinet body, excluding the countertop. Do not apply or invent the Gola version yet.
+- Sink base uses exactly two vertical rails parallel to the facade: front rail flush with front side-panel edges; rear rail flush with rear edges and its top is 150 mm below the cabinet top.
+- Approval drawings stay at pilot quality in R10.4.3; no drawing-polish scope is added.
+- The R10.4.1 first-tap iPhone isolation lifecycle remains accepted CLOSED and is a no-regression contract.
