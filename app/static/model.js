@@ -908,7 +908,7 @@
     const error=validateModuleDraft(moduleDraft,moduleDraftBase||activeModule);if(error){const rule=$('moduleEditRule');rule.hidden=false;rule.textContent=error;return}
     const id=activeModule.id,overrides=moduleEditOverrides(),payload={...moduleDraft};delete payload.id;
     overrides[id]=payload;
-    await saveVisual({...visual,module_edit_overrides:overrides,module_direct_edit_status:'R10.4.2_MODULE_SAVED'},`R10.4.2 module edit ${id}`);
+    await saveVisual({...visual,module_edit_overrides:overrides,module_direct_edit_status:'R10.4.3_MODULE_SAVED'},`R10.4.3 module edit ${id}`);
     moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;
     enterNormalKitchenView();renderScene(false);
     window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'module-edit-save',module_id:id}}));
