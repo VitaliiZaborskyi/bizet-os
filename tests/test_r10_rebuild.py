@@ -526,8 +526,8 @@ def test_r1042_offer_flow_selects_documents_downloads_sends_and_has_whatsapp():
     assert 'id="r104OfferApproval"' in flow
     assert 'id="r104OfferDownload"' in flow
     assert 'id="r104OfferSend"' in flow
-    assert "printProposal()" in flow
-    assert "openApprovalDrawings" in flow
+    assert "downloadOfferDocument('proposal',d)" in flow
+    assert "downloadOfferDocument('approval',d)" in flow
     assert "sendProposalEmail" in flow
     assert "wa.me/380974587676" in flow
 
@@ -1333,3 +1333,14 @@ def test_r1042_checkpoint_closes_historical_isolation_bug_without_regressing_foc
     checkpoint = (ROOT / 'R10_4_0_MUST_HAVE_CHECKPOINT.md').read_text(encoding='utf-8')
     assert 'Owner QA closed the historical iPhone isolation bug after R10.4.1' in checkpoint
     assert 'Do not regress this lifecycle' in checkpoint
+
+def test_r1042_offer_download_uses_real_pdf_endpoint():
+    business = read('owner-qa-business.js')
+    routes = (ROOT / 'app' / 'api' / 'routes_v11.py').read_text(encoding='utf-8')
+    assert 'async function downloadOfferDocument' in business
+    assert '/offer/document/${encodeURIComponent(kind)}' in business
+    assert 'response.blob()' in business
+    assert 'a.download=name' in business
+    assert '@router.post("/projects/{project_id}/offer/document/{document_kind}")' in routes
+    assert 'media_type="application/pdf"' in routes
+    assert 'Content-Disposition' in routes
