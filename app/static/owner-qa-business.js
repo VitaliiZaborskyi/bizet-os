@@ -330,6 +330,6 @@ ${JSON.stringify(payload)}`;
     window.addEventListener('bizet:modelchange',()=>setTimeout(refresh,100));
     document.addEventListener('click',e=>{if(e.target.closest('#workspaceTools,.r8-variant-controls,.r8-module-card'))setTimeout(refresh,400)},true);
   }
-  window.BizetOwnerBusiness={refresh,producers:PRODUCERS,role,producer,loadIdentity,ensureOrderIdentity,identityRef:()=>identityRef(),getIdentity:()=>identityCache,showBuyFlow,showThinkFlow,showPaymentFlow};
+  window.BizetOwnerBusiness={refresh,producers:PRODUCERS,role,producer,loadIdentity,ensureOrderIdentity,identityRef:()=>identityRef(),getIdentity:()=>identityCache,showBuyFlow,showThinkFlow,showPaymentFlow,visualizationPayload:()=>{const d=data();return d?visualizationPayload(d):null},visualizationMasterPrompt:()=>{const d=data();return d?visualizationMasterPrompt(d):''}};
   boot();
 })();
