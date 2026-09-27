@@ -137,3 +137,14 @@ R10.4.2 contracts:
 - Visualization master prompt is system-internal only. OFFER no longer shows/copies it. The current dynamic prompt and VisualizationPayload are passed internally with OFFER payload; if an external render URL exists it is used in the proposal, otherwise the engineering preview remains the fallback until the 10.5 render provider is connected.
 - R10.4.3 approval drawings remain prototype quality; no drawing-polish scope is added here.
 - R10.4.1 first-tap isolation behavior remains a no-regression contract.
+
+
+## R10.4.5 module settings + visual polish — 2026-09-27
+
+- MODULE_FOCUS_MODE keeps module navigation/name at the top-right; Back and dimensions controls move to the lower-left safe area so the controls never collide.
+- Normal kitchen view no longer uses anchor/system role colouring. All cabinetry uses the same selected project material/colour by default; key modules are distinguished by geometry/appliances, not orange/yellow facade highlighting.
+- Built-in hood internals (duct, shelves, U-shaped cladding and Ø150 cut-outs) are technical isolation detail only. In the full-kitchen view the hood cabinet remains an opaque cabinet with only the hood appliance detail visible.
+- Project settings tab 03 is renamed from “Верхние модули / Wall cabinets” to “Настройка модулей / Module settings”.
+- Tab 03 now owns global module dimensions: lower total height, upper height, gap between lower and upper, lower depth, upper depth and plinth height.
+- Plinth height is removed from Room and General settings. Variant A remains HARD: changing plinth height changes lower carcass height while preserving the selected overall lower-row height.
+- Default dimension inputs preserve the current project appearance: lower total height 900 mm, upper height 1000 mm, gap 600 mm, lower depth 560 mm, upper depth 320 mm, plinth 100 mm.
