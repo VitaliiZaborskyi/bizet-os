@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Response
 from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import datetime, timezone
@@ -155,6 +155,28 @@ def fx_rates():
     except Exception:
         pass
     return {"base": "UAH", "rates": rates, "as_of": as_of, "provider": "NBU"}
+
+
+@router.post("/projects/{project_id}/offer/document/{document_kind}")
+def download_offer_document(project_id: str, document_kind: Literal["proposal", "approval"], payload: SendProposalRequest):
+    project = repository.get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if not project.identity.order_no:
+        raise HTTPException(status_code=409, detail="Activate Point B before downloading OFFER documents")
+    order_ref = project.identity.display_reference
+    safe_ref = order_ref.replace("/", "-").replace(" ", "_")
+    if document_kind == "proposal":
+        pdf = build_proposal_pdf(order_ref, payload.model_dump())
+        filename = f"BIZET_OFFER_{safe_ref}.pdf"
+    else:
+        pdf = build_approval_pdf(payload.approval_svg_pages)
+        filename = f"BIZET_APPROVAL_{safe_ref}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/projects/{project_id}/proposal/send")
