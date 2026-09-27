@@ -78,19 +78,24 @@
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Left',H,D));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,partD));
+    const lowerOven=module.kind==='COOKTOP'&&module.oven_appliance_present;
     const rawShelves=module.shelf_count===undefined?1:Number(module.shelf_count),shelfCount=Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:1));
     const shelfType=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
-    for(let i=0;i<shelfCount;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',shelfCount>1?`Shelf ${i+1}`:'Shelf',inner,partD,1,EDGE,2,2,shelfType));
-    if(!(module.kind==='COOKTOP'&&module.oven_appliance_present)){
+    if(!lowerOven){
+      for(let i=0;i<shelfCount;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',shelfCount>1?'Shelf '+(i+1):'Shelf',inner,partD,1,EDGE,2,2,shelfType));
+    }else if(Number(module.oven_support_shelf_offset_from_top_mm)===600){
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Oven Support Shelf',inner,partD,1,EDGE,2,2,'Опорная полка духовки','CATEGORY I · без Gola · верхняя плоскость полки = верх корпуса − 600 мм; столешница не участвует в отсчёте'));
+    }
+    if(!lowerOven){
       out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Rail Front',inner,100));
       out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Rail Back',inner,100));
     }
     (module.middle_side_boundaries||[]).forEach((boundary,i)=>{
-      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',`Middle Side ${i+1}`,H,partD,1,EDGE,2,2,'Вертикальная перегородка',`Граница фасадов ${boundary}`));
+      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Middle Side '+(i+1),H,partD,1,EDGE,2,2,'Вертикальная перегородка','Граница фасадов '+boundary));
     });
     out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз под заднюю стенку','PILOT: размер HDF требует финальной заморозки'));
     const openings=Array.isArray(module.facade_openings)?module.facade_openings.join('/'):'AUTO',faces=facadePieces(module,Math.max(100,H-TOP_GAP));
-    faces.forEach(x=>out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade',x.h,x.w,x.count,EDGE,2,2,'Петли + чашки Ø35',`Открывание: ${openings}`)));
+    faces.forEach(x=>out.push(detail(module,n++,seq++,'ЛДСП 18 Facade','Facade',x.h,x.w,x.count,EDGE,2,2,'Петли + чашки Ø35','Открывание: '+openings)));
     return out;
   }
   function sinkBase(module,startNo){
