@@ -24,7 +24,7 @@
    'Обычная полка':'Fixed shelf','Выдвижная полка с фиксатором':'Locking pull-out shelf','Отделение кофемашины':'Coffee machine compartment','Открытое':'Open','Закрытое':'Closed',
    'Открывание фасада':'Facade opening','Петли слева':'Left-hinged','Петли справа':'Right-hinged','Вертикально вверх':'Lift-up',
    'Техника настроена?':'Appliances ready?','Примените выбранные параметры — BIZET OS перестроит модель с учётом техники.':'Apply the selected parameters and BIZET OS will rebuild the model with the appliances included.','Применить':'Apply',
-   'Компоновка':'Layout','От столешницы до низа верхних модулей, мм':'Countertop-to-wall-cabinet clearance, mm','Один ряд':'Single row','Антресоль':'Mezzanine','Распашной':'Hinged','Подъёмный':'Lift-up',
+   'Настройка модулей':'Module settings','Параметры модулей':'Module dimensions','Общая высота нижних модулей, мм':'Overall base cabinet height, mm','Общая высота верхних модулей, мм':'Wall cabinet height, mm','Расстояние между нижними и верхними модулями, мм':'Clearance between base and wall cabinets, mm','Глубина нижних модулей, мм':'Base cabinet depth, mm','Глубина верхних модулей, мм':'Wall cabinet depth, mm','Высота цоколя меняет высоту корпуса, сохраняя общую высоту нижнего ряда.':'Changing plinth height changes carcass height while keeping the overall base-cabinet height fixed.','Компоновка':'Layout','От столешницы до низа верхних модулей, мм':'Countertop-to-wall-cabinet clearance, mm','Один ряд':'Single row','Антресоль':'Mezzanine','Распашной':'Hinged','Подъёмный':'Lift-up',
    'Система ожидает':'Required utility points','Канализация · вода · питание варочной · вытяжка · холодильник · духовка · розетки.':'Drainage · water · cooktop power · hood · refrigerator · oven · outlets.',
    'Статус координат':'Coordinates status','Уточнить позже':'Specify later','Проверено':'Confirmed',
    'Добавить элемент стены':'Add wall element','Окно':'Window','Дверь':'Door','Радиатор':'Radiator','Подшторник / карниз':'Curtain recess / track','Ниша':'Niche','Колонна':'Column','Выступ':'Projection','Балка':'Beam','Другое':'Other',
@@ -33,7 +33,7 @@
    'Визуальное направление':'Visual direction','Выбрано на стартовом экране:':'Selected on the start screen:','Светлое':'Light','Тёмное':'Dark',
    'Материалы мебели':'Furniture materials','Тестовый набор для связки модель → спецификация → будущая визуализация.':'Pilot set linking the model → specification → future visualization.',
    'Фасады':'Facades','Корпус':'Carcass','Столешница':'Worktop','Подтверждение':'Confirmation','Подтвердить текущий вариант':'Confirm current selection',
-   'Ручки и цоколь':'Handles and plinth','Распашные модули':'Hinged cabinets','Ящики':'Drawers','Вертикальные ручки':'Vertical handles','Горизонтальные ручки':'Horizontal handles',
+   'Ручки':'Handles','Ручки и цоколь':'Handles and plinth','Распашные модули':'Hinged cabinets','Ящики':'Drawers','Вертикальные ручки':'Vertical handles','Горизонтальные ручки':'Horizontal handles',
    'Валюта отображения':'Display currency','Документы · тест':'Documents · test','Открыть BOM · TEST':'Open BOM · TEST','Чертежи для согласования · TEST':'Approval drawings · TEST',
    'Плитка':'Tile','Паркет':'Parquet','Ламинат':'Laminate','Микроцемент':'Microcement','Краска':'Paint','Штукатурка':'Plaster','Панели':'Panels','Натяжной':'Stretch ceiling','Плитный материал':'Board material','Древесный':'Wood finish','ЛДСП':'Laminated board','Камень':'Stone','Дерево':'Wood',
    'Песочная':'Sand','Светлый камень':'Light stone','Серая':'Grey','Тёплая':'Warm','Ясень':'Ash','Серый камень':'Grey stone','Дуб натуральный':'Natural oak','Дуб дымчатый':'Smoked oak','Ясень светлый':'Light ash','Дуб':'Oak','Серо-бежевый':'Greige','Тёмный':'Dark',
@@ -91,7 +91,7 @@
  function localizeWorkspaceChrome(){
    const en=uiLang()==='en';document.documentElement.lang=en?'en':'ru';
    const nav={
-     room:['Помещение','Room'],appliances:['Техника','Appliances'],upper:['Верхние модули','Wall cabinets'],
+     room:['Помещение','Room'],appliances:['Техника','Appliances'],upper:['Настройка модулей','Module settings'],
      communications:['Коммуникации','Utilities'],elements:['Элементы стен','Wall elements'],materials:['Материалы','Materials'],general:['Общие','General']
    };
    document.querySelectorAll('#workspaceTools [data-panel]').forEach(btn=>{
@@ -258,7 +258,7 @@
    if(panel==='room'){
      const room=rt.getRoom(),importState=rt.getVisual().room_import||{};
      html='<section class="r8-section"><h3>Как задать помещение</h3><div class="r8-choice-row r10-room-source"><button data-action="room-source-manual">Шаблон</button><button data-action="room-source-scan">Скан</button><button data-action="room-source-file">Загрузить файл</button></div><input id="r10RoomFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg,image/*,application/pdf" hidden><p class="r10-room-import-status" id="r10RoomImportStatus">'+esc(importState.message||'Три входа приводятся к единой Room Model.')+'</p></section>';
-     html+='<section class="r8-section"><h3>Геометрия</h3><div class="r8-two">'+numberField('Длина основной стены, мм','__room_length',room.lengthMm,1000)+numberField('Глубина помещения, мм','__room_depth',room.depthMm,1000)+'</div>'+numberField('Высота помещения, мм','__room_height',room.heightMm,2000)+numberField('Высота цоколя, мм','plinth_height_mm',100,0)+'</section>';
+     html+='<section class="r8-section"><h3>Геометрия</h3><div class="r8-two">'+numberField('Длина основной стены, мм','__room_length',room.lengthMm,1000)+numberField('Глубина помещения, мм','__room_depth',room.depthMm,1000)+'</div>'+numberField('Высота помещения, мм','__room_height',room.heightMm,2000)+'</section>';
      html+='<section class="r8-section"><h3>Поверхности помещения</h3><p>Выберите тип и тестовый материал или загрузите свою текстуру.</p><div class="r104-surface-buttons">'+materialButton('floor')+materialButton('walls')+materialButton('ceiling')+'</div></section>';
      html+='<section class="r8-section r10-file-calibration" '+(importState.source==='FILE'?'':'hidden')+'><h3>Калибровка файла</h3><p>Укажите один известный реальный размер. После анализа BIZET OS пересчитает Room Model.</p><label class="r8-field"><span>Известный размер, мм</span><input id="r10KnownDimension" type="number" inputmode="numeric" min="300" step="1" value="'+esc(importState.known_dimension_mm||room.lengthMm)+'"></label><button class="r8-save" data-action="calibrate-import">Применить масштаб</button>'+(importState.status==='ROOM_MODEL_PREVIEW_READY'?'<button class="r8-secondary" data-action="confirm-import">Подтвердить помещение</button>':'')+'</section>';
      html+='<section class="r8-section"><h3>Потолок</h3>'+field('Тип потолка','ceiling',[['STRETCH_A','Натяжной — подготовленное основание'],['STRETCH_B','Готовый натяжной'],['GYPSUM','Гипсокартон'],['OPEN_GAP','Открытый зазор']])+'</section>';
@@ -274,7 +274,14 @@
      html+='<section class="r8-section r8-apply-section"><h3>Техника настроена?</h3><p>Примените выбранные параметры — BIZET OS перестроит модель с учётом техники.</p><button class="r8-save" data-action="apply-appliances">Применить</button></section>';
    }
    if(panel==='upper'){
-     html='<section class="r8-section"><h3>Компоновка</h3>'+field('От столешницы до низа верхних модулей, мм','upper_gap_mm',[[550,'550'],[600,'600'],[650,'650'],[700,'700']])+'<div class="r8-choice-row"><button data-action="upper-standard">Один ряд</button><button data-action="upper-antresol">Антресоль</button><button data-action="upper-hinged">Распашной</button><button data-action="upper-lift">Подъёмный</button></div></section>';
+     html='<section class="r8-section"><h3>Параметры модулей</h3><div class="r104-general-grid">'
+       +numberField('Общая высота нижних модулей, мм','lower_total_height_mm',900,650)
+       +numberField('Общая высота верхних модулей, мм','upper_height_mm',1000,220)
+       +numberField('Расстояние между нижними и верхними модулями, мм','upper_gap_mm',600,300)
+       +numberField('Глубина нижних модулей, мм','lower_depth_mm',560,300)
+       +numberField('Глубина верхних модулей, мм','upper_depth_mm',320,200)
+       +numberField('Высота цоколя, мм','plinth_height_mm',100,0)
+       +'</div><p>Высота цоколя меняет высоту корпуса, сохраняя общую высоту нижнего ряда.</p></section>';
    }
    if(panel==='communications'){
      html='<section class="r8-section"><h3>Система ожидает</h3><p>Канализация · вода · питание варочной · вытяжка · холодильник · духовка · розетки.</p>'+field('Статус координат','communications_status',[['PENDING_COORDINATE_DETAIL','Уточнить позже'],['USER_CONFIRMED','Проверено']])+'</section>';
@@ -289,10 +296,9 @@
      html+='<section class="r8-section"><h3>Подтверждение</h3><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
    }
    if(panel==='general'){
-     html='<section class="r8-section"><h3>Ручки и цоколь</h3><div class="r104-general-grid">'
+     html='<section class="r8-section"><h3>Ручки</h3><div class="r104-general-grid">'
        +field('Распашные модули','hinged_handle_orientation',[['VERTICAL','Вертикальные ручки'],['HORIZONTAL','Горизонтальные ручки']])
        +field('Ящики','drawer_handle_orientation',[['HORIZONTAL','Горизонтальные ручки'],['VERTICAL','Вертикальные ручки']])
-       +numberField('Высота цоколя, мм','plinth_height_mm',100,0)
        +field('Валюта отображения','display_currency',[['UAH','UAH'],['EUR','EUR'],['USD','USD'],['AUD','AUD']])
        +'</div></section>';
      html+='<section class="r8-section"><h3>Документы · тест</h3><div class="r104-test-actions"><button class="r8-secondary" data-action="bom-test">Открыть BOM · TEST</button><button class="r8-secondary" data-action="approval-test">Чертежи для согласования · TEST</button></div></section>';
@@ -385,7 +391,7 @@
  function updateReadiness(){ /* R10.3.4: no visible project-readiness UI. */ }
  async function ensureTemplate(){
    const I=rt.getInputs(),patch={};
-   const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,hinged_handle_orientation:'VERTICAL',drawer_handle_orientation:'HORIZONTAL',display_currency:'UAH',oven_width_mm:600,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600};
+   const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,lower_total_height_mm:900,upper_height_mm:1000,lower_depth_mm:560,upper_depth_mm:320,hinged_handle_orientation:'VERTICAL',drawer_handle_orientation:'HORIZONTAL',display_currency:'UAH',oven_width_mm:600,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600};
    Object.keys(defaults).forEach(k=>{if(I[k]===undefined||I[k]===null||I[k]==='')patch[k]=defaults[k]});if(Object.keys(patch).length)await rt.patchInputs(patch,'R8 base template');
  }
  function renderVariantDots(){
