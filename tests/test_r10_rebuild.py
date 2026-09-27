@@ -606,7 +606,7 @@ def test_r1034_workspace_labels_remove_readiness_and_keep_randomizer_contract():
 def test_r1031_upper_handles_move_to_bottom_edge_and_focus_has_hangers_no_rail():
     renderer = read("pilot-3d.js")
     details = renderer[renderer.index("function drawModuleDetails"):renderer.index("function drawFocusDot")]
-    assert "module.level==='upper'?module.z+offset" in details
+    assert "module.level==='upper'?module.z+40:module.z+module.h-40" in details
     focus = renderer[renderer.index("function drawTechnicalFocus"):renderer.index("function drawModuleRunDimensions")]
     assert "if(module.level!=='upper')" in focus
     assert "if(module.level==='upper')" in focus
@@ -917,7 +917,7 @@ def test_r1038_only_active_canvas_owns_gestures():
     assert "bindCanvasSurface(normalCanvas)" in block
     assert "bindCanvasSurface(focusCanvas)" in block
     assert "surface===normalCanvas" in block
-    assert "window.setTimeout(()=>openModule(id),0)" in block
+    assert "requestAnimationFrame(()=>openModule(id))" in block
 
 
 def test_r1038_focus_canvas_has_same_touch_and_pinch_contract():
