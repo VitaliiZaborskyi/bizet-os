@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import html
 import os
 from typing import Any
@@ -57,17 +58,33 @@ def build_proposal_email(order_ref: str, payload: dict[str, Any]) -> str:
 </body></html>"""
 
 
-def send_with_resend(recipient: str, subject: str, html_body: str) -> str:
+def send_with_resend(
+    recipient: str,
+    subject: str,
+    html_body: str,
+    *,
+    attachments: list[tuple[str, bytes]] | None = None,
+    reply_to: str | None = None,
+) -> str:
     api_key = _cfg("RESEND_API_KEY")
     sender = _cfg("RESEND_FROM")
     if not api_key or not sender:
         raise MailProviderNotConfigured("RESEND_API_KEY and RESEND_FROM are required")
+    payload: dict[str, Any] = {"from": sender, "to": [recipient], "subject": subject, "html": html_body}
+    if reply_to:
+        payload["reply_to"] = reply_to
+    if attachments:
+        payload["attachments"] = [
+            {"filename": filename, "content": base64.b64encode(content).decode("ascii")}
+            for filename, content in attachments
+            if filename and content
+        ]
     try:
         response = httpx.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json={"from": sender, "to": [recipient], "subject": subject, "html": html_body},
-            timeout=15.0,
+            json=payload,
+            timeout=20.0,
         )
     except httpx.HTTPError as exc:
         raise MailDeliveryError(f"Resend request failed: {exc}") from exc
