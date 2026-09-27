@@ -556,7 +556,7 @@ function bindStartRoomImport(screen) {
       selectedRoomImportMeta=project.scene?.visual_settings?.room_import||selectedRoomImportMeta;
       confirm.hidden=true;
       status.textContent=isRu()?'Помещение подтверждено. Эти размеры будут использованы при построении 3D.':'Room confirmed. These dimensions will be used for the 3D model.';
-      const next=screen.querySelector('#startRoomSourceContinue');if(next)next.hidden=false;
+      renderConfigurationScreen(screen);
     }catch(error){status.textContent=(isRu()?'Не удалось подтвердить: ':'Could not confirm: ')+error.message}
   };
 }
@@ -668,7 +668,7 @@ function renderRoomSourceScreen(screen) {
       </div>
     </div>
     <p class="room-source-status" id="roomSourceStatus"></p>
-    <button class="primary-button room-source-next" id="startRoomSourceContinue" type="button" hidden><span>${isRu()?'Далее к конфигурации':'Continue to configuration'}</span><span class="button-arrow" aria-hidden="true">→</span></button>`;
+`;
 
   screen.querySelector('#startTemplateButton')?.addEventListener('click',async()=>{
     try{await patchProject('scene.visual_settings.room_input_mode','TEMPLATE','Room input source: template')}catch(_){}
@@ -678,7 +678,6 @@ function renderRoomSourceScreen(screen) {
     const status=screen.querySelector('#roomSourceStatus');
     if(status)status.textContent=isRu()?'Скан — в стадии разработки.':'Scan — in development.';
   });
-  screen.querySelector('#startRoomSourceContinue')?.addEventListener('click',()=>renderConfigurationScreen(screen));
   bindStartRoomImport(screen);
   window.scrollTo({top:0,behavior:'auto'});
 }
