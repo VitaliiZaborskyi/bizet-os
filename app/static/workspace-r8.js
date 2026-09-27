@@ -177,7 +177,7 @@
    const map={
      room:[tr('01 · ПОМЕЩЕНИЕ','01 · ROOM'),tr('Помещение','Room')],
      appliances:[tr('02 · ТЕХНИКА','02 · APPLIANCES'),tr('Бытовая техника','Appliances')],
-     upper:[tr('03 · ВЕРХНИЕ МОДУЛИ','03 · WALL CABINETS'),tr('Верхние модули','Wall cabinets')],
+     upper:[tr('03 · НАСТРОЙКА МОДУЛЕЙ','03 · MODULE SETTINGS'),tr('Настройка модулей','Module settings')],
      communications:[tr('04 · КОММУНИКАЦИИ','04 · UTILITIES'),tr('Коммуникации','Utilities')],
      elements:[tr('05 · ЭЛЕМЕНТЫ СТЕН','05 · WALL ELEMENTS'),tr('Элементы стен','Wall elements')],
      materials:[tr('06 · МАТЕРИАЛЫ','06 · MATERIALS'),tr('Материалы','Materials')],
