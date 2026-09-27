@@ -41,7 +41,9 @@ def build_proposal_pdf(order_ref: str, payload: dict[str, Any]) -> bytes:
         except Exception:
             pass
 
-    price = str(payload.get("price") or "—")
+    currency = str(payload.get("currency") or "UAH").upper()
+    raw_price = str(payload.get("price") or "—").strip()
+    price = raw_price if currency in raw_price.upper() else f"{raw_price} {currency}"
     manufacturer = str(payload.get("manufacturer") or "BIZET")
     configuration = str(payload.get("configuration") or "—")
     runs = str(payload.get("runs") or "")
@@ -64,7 +66,7 @@ def build_proposal_pdf(order_ref: str, payload: dict[str, Any]) -> bytes:
 
     page.insert_textbox(
         fitz.Rect(36, 760, 559, 810),
-        "BIZET by Zaborsky · Preliminary commercial proposal. Final engineering and production validation is required.",
+        "BIZET by Zaborsky · Generated from the current saved BIZET OS project configuration. Approval drawings and manufacturing documentation are separate documents.",
         fontsize=7.5,
         fontname="helv",
         color=muted,
