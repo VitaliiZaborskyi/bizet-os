@@ -64,3 +64,22 @@ Before calling it ready, mobile and desktop flows must be reviewed as complete u
 - Room and furniture material selection is introduced with a small pilot preset library plus custom texture upload. A future photoreal visualization renderer consumes the same saved material/geometry data; the engineering canvas itself is not presented as photoreal rendering.
 
 The critical iPhone isolation-paint issue above remains OPEN until direct owner QA closes it.
+
+## R10.4.1 bridge-to-R10.5 QA targets — 2026-09-27
+
+R10.4.1 is a stabilization pass before R10.5, not a feature-expansion release.
+
+Owner QA targets:
+- one tap must enter module focus reliably on iPhone; no repeated tapping and no whole-page scrolling in focus;
+- the module editor must be populated immediately on focus entry;
+- English lower generic modules must display as **Base cabinet**;
+- mezzanine cabinets remain separate modules with their own IDs/numbers and own focus entries;
+- focus header supports previous / next module plus a dropdown list of all modules;
+- # toggles kitchen numbering without changing project data;
+- compact square leg proxies and Ø35 hinge cups must scale with the model;
+- handle geometry keeps at least 40 mm from the nearest facade edge;
+- renderer depth ordering must keep facade planes readable while rotating;
+- customer secondary action is **Save project / Сохранить проект**;
+- order reference display expands the year to four digits so 26.09 cannot be misread as a day/month date.
+
+The historical iPhone focus-paint bug remains OPEN until direct owner QA confirms reliable first-tap entry.
