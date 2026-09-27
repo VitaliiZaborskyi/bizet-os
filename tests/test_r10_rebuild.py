@@ -933,13 +933,13 @@ def test_r1038_focus_canvas_has_same_touch_and_pinch_contract():
     assert "pinchSurface?.dispatchEvent(new WheelEvent('wheel'" in bridge
 
 
-def test_r1039_start_assets_are_cache_busted():
+def test_r1043_start_assets_are_cache_busted():
     html = read("index.html")
-    assert "/static/start.css?v=169" in html
-    assert "/static/next-pilot.css?v=169" in html
-    assert "/static/start.js?v=169" in html
-    assert "/static/start-room-handoff.js?v=169" in html
-    assert "/static/next-pilot-start.js?v=169" in html
+    assert "/static/start.css?v=173" in html
+    assert "/static/next-pilot.css?v=173" in html
+    assert "/static/start.js?v=173" in html
+    assert "/static/start-room-handoff.js?v=173" in html
+    assert "/static/next-pilot-start.js?v=173" in html
 
 
 def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visible():
