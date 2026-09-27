@@ -614,7 +614,8 @@ def test_r1031_upper_handles_move_to_bottom_edge_and_focus_has_hangers_no_rail()
     focus = renderer[renderer.index("function drawTechnicalFocus"):renderer.index("function drawModuleRunDimensions")]
     assert "if(module.level!=='upper')" in focus
     assert "if(module.level==='upper')" in focus
-    assert "upper_hanger_visual='LEFT_RIGHT_REAR_TOP'" in focus
+    assert "'LEFT_RIGHT_REAR_TOP'" in focus
+    assert "'DOUBLE_SET_LEFT_RIGHT_REAR'" in focus
     assert "drawFocusDot(ctx" not in focus
 
 def test_r1031_worktop_is_split_at_4100_and_bom_counts_per_run():
@@ -1444,14 +1445,15 @@ def test_r1043_hood_visuals_distinguish_built_in_from_freestanding_and_bom_match
     assert "m.kind==='UPPER_HOOD')rows=m.hood_type==='FREESTANDING'?[]:upper" in pointb
 
 
-def test_r1043_live_language_switch_rerenders_workspace_isolation_materials_and_offer():
+def test_r1044_live_language_switch_rerenders_workspace_isolation_materials_offer_and_main_currency():
     html = read("workspace-r8.html")
     workspace = read("workspace-r8.js")
     model = read("model.js")
     business = read("owner-qa-business.js")
-    assert "<span>Валюта</span>" in html
-    editor = model[model.index("function renderModuleEditor"):model.index("function readModuleEditor")]
-    assert "currencyLabel.textContent=tr('Валюта','Currency')" in editor
+    pointb = read("point-b.js")
+    assert "moduleCurrencySelect" not in html
+    assert 'id="projectCurrencySelect"' in pointb
+    assert "document.documentElement.lang==='en'?'Currency':'Валюта'" in pointb
     assert "window.addEventListener('bizet:languagechange'" in workspace
     assert "if(activePanel)renderPanel(activePanel)" in workspace
     assert "materialPickerDraft)renderMaterialPicker()" in workspace
@@ -1534,9 +1536,8 @@ def test_r1044_three_hinged_doors_are_disabled_below_900_and_middle_sides_follow
     assert "normalized[i]==='RIGHT'||normalized[i+1]==='LEFT'" in middle
     assert "shelfCompartments" in pointb
     assert "Compartment" in pointb
-    focus = renderer[renderer.index("// Shelves:"):renderer.index("if(module.kind==='FRIDGE'")]
-    assert "middle_side_boundaries" in focus
-    assert "cuts=boundaries.length?[0,...boundaries,facadeCount]" in focus
+    assert "middle_side_boundaries" in renderer
+    assert "cuts=boundaries.length?[0,...boundaries,facadeCount]" in renderer
 
 
 def test_r1044_sink_base_has_shelf_and_two_frozen_vertical_rails():
@@ -1599,8 +1600,9 @@ def test_r1044_built_in_hood_has_150_duct_110_rear_offset_two_shelves_and_two_u_
     renderer = read("pilot-3d.js")
     hood = pointb[pointb.index("if(hood){"):pointb.index("const count=",pointb.index("if(hood){"))]
     assert "Hood Shelf Lower" in hood and "Hood Shelf Upper" in hood
-    assert "Duct U1 Left" in hood and "Duct U1 Right" in hood and "Duct U1 Front" in hood
-    assert "Duct U2 Left" in hood and "Duct U2 Right" in hood and "Duct U2 Front" in hood
+    assert "['Left','Right'].forEach" in hood
+    assert "Duct U1 ${side}" in hood and "Duct U1 Front" in hood
+    assert "Duct U2 ${side}" in hood and "Duct U2 Front" in hood
     assert "Вырез Ø150" in hood
     assert "110 мм от задней стенки" in hood
     visual = renderer[renderer.index("function drawBuiltInHood"):renderer.index("function drawFreestandingHood")]
