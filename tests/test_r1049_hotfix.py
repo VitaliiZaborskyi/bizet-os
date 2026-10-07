@@ -16,7 +16,7 @@ def test_r1050_kitchen_uses_current_shared_webgl_viewer_without_default_fog():
     js = read("kitchen-webgl-r1050.js")
     assert "three@0.128.0/build/three.min.js" in html
     assert "OrbitControls.js" in html
-    assert "/static/kitchen-webgl-r1050.js?v=1050" in html
+    assert "/static/kitchen-webgl-r1050.js?v=1051" in html
     assert "new THREE.WebGLRenderer" in js
     assert "new THREE.OrbitControls" in js
     assert "scene.background=new THREE.Color(0xefede7)" in js
@@ -27,7 +27,7 @@ def test_r1050_kitchen_uses_current_shared_webgl_viewer_without_default_fog():
 def test_r1050_ukrainian_visible_workspace_strings():
     html = read("workspace-r8.html")
     js = read("ua-ui-r1050.js")
-    assert "/static/ua-ui-r1050.js?v=1050" in html
+    assert "/static/ua-ui-r1050.js?v=1051" in html
     for token in [
         "'Итоговая стоимость':'Підсумкова вартість'",
         "'Скачать предложение':'Завантажити пропозицію'",
@@ -47,8 +47,8 @@ def test_r1050_grande_does_not_trigger_ios_input_zoom_and_rule_is_localized():
     assert ".panel .field input,.panel .field select{font-size:16px;min-height:48px}" in css
     assert "Жорстке правило: верх блоку звичайних шухляд не вище 1200 мм від підлоги." in js
     assert "Hard rule: верх блоку" not in js
-    assert "/static/grande-r1048.css?v=1050" in html
-    assert "/static/grande-r1048.js?v=1050" in html
+    assert "/static/grande-r1048.css?v=1051" in html
+    assert "/static/grande-r1048.js?v=1051" in html
 
 
 def test_r1050_javascript_syntax_when_node_is_available():
