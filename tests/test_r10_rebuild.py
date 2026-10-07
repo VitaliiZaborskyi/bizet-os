@@ -758,9 +758,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1046_fastapi_reports_current_version():
+def test_r1047_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.4.6"' in main
+    assert 'version="R10.4.7"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
