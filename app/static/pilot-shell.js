@@ -2,10 +2,12 @@
   const THEME_KEY = 'bizet_os_theme';
   const LANGUAGE_KEY = 'bizet_os_language';
   const FEEDBACK_KEY = 'bizet_os_pilot_feedback';
-  const button = document.getElementById('settingsButton');
+  let button = document.getElementById('settingsButton');
 
   let theme = localStorage.getItem(THEME_KEY) || 'dark';
-  let language = localStorage.getItem(LANGUAGE_KEY) || 'ru';
+  const LANGUAGE_DEFAULT_MARK='bizet_os_language_v1049_default';
+  if(!localStorage.getItem(LANGUAGE_DEFAULT_MARK)){localStorage.setItem(LANGUAGE_KEY,'ua');localStorage.setItem(LANGUAGE_DEFAULT_MARK,'1');}
+  let language = localStorage.getItem(LANGUAGE_KEY) || 'ua';
 
   const COPY = {
     ru: {
@@ -21,6 +23,13 @@
       auth:'Sign in and registration will be connected as a separate account layer. Guest mode remains available.',
       feedbackTitle:'Feedback', feedbackCopy:'Describe a question, idea, or issue.', feedbackPlaceholder:'Your message', feedbackSubmit:'Save for pilot', feedbackSaved:'The message has been saved in this browser for the current pilot.',
       tutorialTitle:'How to use the system', tutorialCopy:'The video guide will be connected after the scenario is approved.'
+    },
+    ua: {
+      settings:'Налаштування', theme:'Тема', light:'Світла', dark:'Темна', language:'Мова',
+      feedback:'Зворотний зв’язок', tutorial:'Як користуватися системою', login:'Увійти', register:'Реєстрація',
+      auth:'Вхід і реєстрація будуть підключені окремим шаром акаунта. Гостьовий режим залишається доступним.',
+      feedbackTitle:'Зворотний зв’язок', feedbackCopy:'Опишіть питання, ідею або зауваження.', feedbackPlaceholder:'Ваше повідомлення', feedbackSubmit:'Зберегти для пілота', feedbackSaved:'Повідомлення збережено в цьому браузері для поточного пілота.',
+      tutorialTitle:'Як користуватися системою', tutorialCopy:'Відеоінструкція буде підключена після затвердження сценарію.'
     }
   };
   const t = key => COPY[language]?.[key] || COPY.ru[key] || key;
@@ -34,8 +43,16 @@
   }
 
   applyTheme();
-  document.documentElement.lang = language;
-  if (!button) return;
+  document.documentElement.lang = language === 'ua' ? 'uk' : language;
+  if (!button) {
+    const style=document.createElement('style');
+    style.id='bizetGlobalSettingsStyle';
+    style.textContent='.bizet-global-settings{position:fixed;right:12px;top:12px;z-index:9990}.bizet-global-settings .menu-button{width:40px;height:40px;border-radius:12px;border:1px solid rgba(127,127,127,.28);background:rgba(30,30,29,.88);color:#fff;font-weight:800}.bizet-global-settings .settings-panel{position:absolute;right:0;top:46px;width:min(320px,calc(100vw - 24px));z-index:9991}';
+    document.head.appendChild(style);
+    const host=document.createElement('div');host.className='settings-wrap bizet-global-settings';
+    button=document.createElement('button');button.id='settingsButton';button.type='button';button.textContent='•••';button.setAttribute('aria-label',t('settings'));
+    host.appendChild(button);document.body.appendChild(host);
+  }
 
   let wrap = button.closest('.settings-wrap');
   if (!wrap) {
@@ -60,7 +77,7 @@
     panel.innerHTML = `
       <div class="settings-title" id="pilotSettingsTitle">${t('settings')}</div>
       <label class="settings-field"><span>${t('theme')}</span><select id="pilotThemeSelect"><option value="light">${t('light')}</option><option value="dark">${t('dark')}</option></select></label>
-      <label class="settings-field"><span>${t('language')}</span><select id="pilotLanguageSelect"><option value="ru">Русский</option><option value="en">English</option></select></label>
+      <label class="settings-field"><span>${t('language')}</span><select id="pilotLanguageSelect"><option value="ua">Українська</option><option value="ru">Русский</option><option value="en">English</option></select></label>
       <div class="settings-links"><button class="settings-link" id="pilotFeedbackButton" type="button">${t('feedback')}</button><button class="settings-link" id="pilotTutorialButton" type="button">${t('tutorial')}</button></div>
       <div class="account-actions"><button class="account-button" id="pilotLoginButton" type="button">${t('login')}</button><button class="account-button primary-account" id="pilotRegisterButton" type="button">${t('register')}</button></div>
       <p class="settings-notice" id="pilotSettingsNotice" hidden></p>`;
@@ -74,9 +91,9 @@
       applyTheme();
     });
     languageSelect.addEventListener('change', event => {
-      language = event.target.value === 'en' ? 'en' : 'ru';
+      language = ['ua','ru','en'].includes(event.target.value) ? event.target.value : 'ua';
       localStorage.setItem(LANGUAGE_KEY, language);
-      document.documentElement.lang = language;
+      document.documentElement.lang = language === 'ua' ? 'uk' : language;
       panelMarkup();
       window.dispatchEvent(new CustomEvent('bizet:languagechange', {detail:{language}}));
     });
