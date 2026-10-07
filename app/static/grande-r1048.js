@@ -8,14 +8,14 @@ if(!window.THREE || !window.THREE.OrbitControls){
 }
 const THREE=window.THREE;
 const LANG_KEY='bizet_os_language';
-let lang=localStorage.getItem(LANG_KEY)||'ru';
+let lang=localStorage.getItem(LANG_KEY)||'ua';
 const placement=new URLSearchParams(location.search).get('placement')||'center';
 
 const T={
 ru:{
  room:'Помещение',size:'Габариты + материалы',drawers:'Ящики',shelves:'Полки',equipment:'Оснащение',lighting:'Освещение',production:'Производство',
  add:'＋ Добавить ещё изделие',price:'Стоимость',position:'Позиция',view:'VIEW',edit:'EDIT',
- hint:'Поворот инвертирован · pinch — масштаб · удержание изделия — перемещение вдоль стены',
+ hint:'Обертання за рухом пальця · pinch — масштаб · утримання виробу — рух уздовж стіни',
  move:'Перемещение вдоль стены',carcass:'Корпус',fronts:'Фасады',drawerLayer:'Ящики',shelfLayer:'Полки',hardware:'Фурнитура',fasteners:'Крепёж',holes:'Сверловка',lightLayer:'Освещение',dimensions:'Размеры',
  wallWidth:'Ширина стены, мм',roomDepth:'Глубина помещения, мм',roomHeight:'Высота помещения, мм',
  width:'Ширина, мм',height:'Высота, мм',depth:'Глубина, мм',materials:'Материалы',bodyMat:'Корпус · скандинавское белое дерево',accentMat:'Фасад / акцент · сумеречный голубой',thickness:'Толщина основных деталей: 18 мм',
@@ -35,7 +35,7 @@ ru:{
 en:{
  room:'Room',size:'Dimensions + materials',drawers:'Drawers',shelves:'Shelves',equipment:'Equipment',lighting:'Lighting',production:'Production',
  add:'＋ Add another product',price:'Price',position:'Position',view:'VIEW',edit:'EDIT',
- hint:'Rotation is inverted · pinch to zoom · hold product to move along wall',
+ hint:'Rotation follows the pointer · pinch to zoom · hold product to move along wall',
  move:'Move along wall',carcass:'Carcass',fronts:'Fronts',drawerLayer:'Drawers',shelfLayer:'Shelves',hardware:'Hardware',fasteners:'Fasteners',holes:'Drilling',lightLayer:'Lighting',dimensions:'Dimensions',
  wallWidth:'Wall width, mm',roomDepth:'Room depth, mm',roomHeight:'Room height, mm',
  width:'Width, mm',height:'Height, mm',depth:'Depth, mm',materials:'Materials',bodyMat:'Carcass · Scandinavian white wood',accentMat:'Front / accent · twilight blue',thickness:'Main part thickness: 18 mm',
@@ -54,7 +54,7 @@ en:{
 ua:{
  room:'Приміщення',size:'Габарити + матеріали',drawers:'Шухляди',shelves:'Полиці',equipment:'Оснащення',lighting:'Освітлення',production:'Виробництво',
  add:'＋ Додати ще виріб',price:'Вартість',position:'Позиція',view:'VIEW',edit:'EDIT',
- hint:'Обертання інвертоване · pinch — масштаб · утримання виробу — рух уздовж стіни',
+ hint:'Обертання за рухом пальця · pinch — масштаб · утримання виробу — рух уздовж стіни',
  move:'Рух уздовж стіни',carcass:'Корпус',fronts:'Фасади',drawerLayer:'Шухляди',shelfLayer:'Полиці',hardware:'Фурнітура',fasteners:'Кріплення',holes:'Свердління',lightLayer:'Освітлення',dimensions:'Розміри',
  wallWidth:'Ширина стіни, мм',roomDepth:'Глибина приміщення, мм',roomHeight:'Висота приміщення, мм',
  width:'Ширина, мм',height:'Висота, мм',depth:'Глибина, мм',materials:'Матеріали',bodyMat:'Корпус · скандинавське біле дерево',accentMat:'Фасад / акцент · сутінковий блакитний',thickness:'Товщина основних деталей: 18 мм',
@@ -94,30 +94,30 @@ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreferen
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 renderer.outputEncoding=THREE.sRGBEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.04;
+renderer.toneMappingExposure=.94;
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 host.appendChild(renderer.domElement);
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0xebe8e0);
-scene.fog=new THREE.Fog(0xebe8e0,4200,8200);
+scene.background=new THREE.Color(0x24262a);
+scene.fog=new THREE.Fog(0x24262a,4200,8200);
 
 const camera=new THREE.PerspectiveCamera(38,1,1,15000);
 const controls=new THREE.OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true;controls.dampingFactor=.08;
-controls.rotateSpeed=-.62;
-controls.panSpeed=-.65;
+controls.rotateSpeed=.62;
+controls.panSpeed=.65;
 controls.zoomSpeed=.85;
 controls.minDistance=900;controls.maxDistance=6200;
 controls.minPolarAngle=.18;controls.maxPolarAngle=1.48;
 controls.screenSpacePanning=true;
 controls.enableKeys=false;
 
-const hemi=new THREE.HemisphereLight(0xffffff,0x807769,.78);scene.add(hemi);
-const key=new THREE.DirectionalLight(0xffffff,.88);key.position.set(-1800,3300,2600);key.castShadow=true;
+const hemi=new THREE.HemisphereLight(0xffffff,0x34363a,.66);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,.68);key.position.set(-1800,3300,2600);key.castShadow=true;
 key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-2600;key.shadow.camera.right=2600;key.shadow.camera.top=3200;key.shadow.camera.bottom=-500;key.shadow.camera.near=100;key.shadow.camera.far=8500;scene.add(key);
-const fill=new THREE.DirectionalLight(0xbfd2ff,.23);fill.position.set(2600,1800,1200);scene.add(fill);
+const fill=new THREE.DirectionalLight(0xbfd2ff,.18);fill.position.set(2600,1800,1200);scene.add(fill);
 
 const roomGroup=new THREE.Group(), modelGroup=new THREE.Group(), dimensionGroup=new THREE.Group(), techGroup=new THREE.Group(), ledGroup=new THREE.Group();
 scene.add(roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup);
@@ -216,11 +216,11 @@ function addHandleHoles(frontSpec){
 
 function buildRoom(){
  disposeGroup(roomGroup);
- const floorMat=new THREE.MeshStandardMaterial({color:0xd6d0c4,roughness:.92,metalness:0});floorMat.userData.owned=true;
+ const floorMat=new THREE.MeshStandardMaterial({color:0x3b3d41,roughness:.94,metalness:0});floorMat.userData.owned=true;
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(S.roomW,S.roomD),floorMat);floor.rotation.x=-Math.PI/2;floor.position.set(0,0,0);floor.receiveShadow=true;roomGroup.add(floor);
- const wallMat=new THREE.MeshStandardMaterial({color:0xf2efe8,roughness:.95,metalness:0});wallMat.userData.owned=true;
+ const wallMat=new THREE.MeshStandardMaterial({color:0x52555a,roughness:.96,metalness:0});wallMat.userData.owned=true;
  const wall=new THREE.Mesh(new THREE.PlaneGeometry(S.roomW,S.roomH),wallMat);wall.position.set(0,S.roomH/2,-S.roomD/2);wall.receiveShadow=true;roomGroup.add(wall);
- const grid=new THREE.GridHelper(Math.max(S.roomW,S.roomD),Math.max(6,Math.round(Math.max(S.roomW,S.roomD)/500)),0xb9b3aa,0xcac5bc);
+ const grid=new THREE.GridHelper(Math.max(S.roomW,S.roomD),Math.max(6,Math.round(Math.max(S.roomW,S.roomD)/500)),0x777b82,0x555960);
  grid.position.y=.5;grid.material.opacity=.20;grid.material.transparent=true;roomGroup.add(grid);
 }
 
@@ -618,6 +618,8 @@ $('panelClose').onclick=closePanel;
 $('addProduct').onclick=()=>location.href='/wardrobes?manufacturer=treeart&add=1';
 $('back').onclick=()=>location.href='/wardrobes?manufacturer=treeart';
 $('lang').onchange=e=>{lang=e.target.value;localStorage.setItem(LANG_KEY,lang);applyLanguage()};
+window.addEventListener('bizet:languagechange',e=>{const next=e.detail?.language;if(['ua','ru','en'].includes(next)){lang=next;applyLanguage()}});
+window.addEventListener('bizet:themechange',()=>{renderer.domElement.style.filter=document.documentElement.dataset.theme==='dark'?'none':'brightness(1.03)'});
 $('currencySelect').onchange=e=>{S.currency=e.target.value;updatePrice()};
 $('orderClose').onclick=()=>$('orderDialog').close();
 
