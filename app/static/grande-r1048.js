@@ -301,6 +301,8 @@ function buildModel(){
    detail.push(makeDetail('GR.D'+(i+1)+'.BT','Drawer bottom '+(i+1),drawerDepth-2*dt,dw-2*dt,3,'HDF 3 mm','202:9'));
    detail.push(makeDetail('GR.D'+(i+1)+'.FA','Drawer facade '+(i+1),frontW,frontH,t,'MDF 18 mm','202:58','50',1,'FACADE'));
    const slideY=base+55;
+   box('Drawer slide L '+(i+1),12,10,Math.max(180,drawerDepth-25),split+t/2+10,slideY,drawerDepth/2+10,metalMat,'hardware','DR'+(i+1)+'_SLIDE_L');
+   box('Drawer slide R '+(i+1),12,10,Math.max(180,drawerDepth-25),W-t-10,slideY,drawerDepth/2+10,metalMat,'hardware','DR'+(i+1)+'_SLIDE_R');
    [[split+t/2+2,100],[split+t/2+2,D-120],[W-t-2,100],[W-t-2,D-120]].forEach(([x,z])=>addHole(x,slideY,z,'x',5,5,'DRAWER_SLIDE'));
  }
 
@@ -309,6 +311,12 @@ function buildModel(){
  const doorX1=split+t/2+3+doorW/2,doorX2=doorX1+doorW+gap;
  box('Inset door left',doorW,doorH,t,doorX1,doorY,frontZ,accentMat,'fronts','DOOR_L');
  box('Inset door right',doorW,doorH,t,doorX2,doorY,frontZ,accentMat,'fronts','DOOR_R');
+ [doorBottom+120,doorY,H-150].forEach((hy,idx)=>{
+   cylinder('Hinge cup L '+idx,17,11,doorX1-doorW/2+35,hy,frontZ-7,silverMat,'hardware','z',18);
+   box('Hinge arm L '+idx,38,10,16,doorX1-doorW/2+17,hy,frontZ-20,metalMat,'hardware','HINGE_L');
+   cylinder('Hinge cup R '+idx,17,11,doorX2+doorW/2-35,hy,frontZ-7,silverMat,'hardware','z',18);
+   box('Hinge arm R '+idx,38,10,16,doorX2+doorW/2-17,hy,frontZ-20,metalMat,'hardware','HINGE_R');
+ });
  const doorHandleY=Math.min(H-120,1000);
  addHandle(doorX1+doorW/2-40,doorHandleY,frontZ+t/2+12,'V');
  addHandle(doorX2-doorW/2+40,doorHandleY,frontZ+t/2+12,'V');
