@@ -136,7 +136,7 @@ function catPush(cat,mesh){(categoryMeshes[cat]||(categoryMeshes[cat]=[])).push(
 function disposeGroup(group){
  while(group.children.length){const o=group.children.pop();o.traverse?.(n=>{if(n.geometry)n.geometry.dispose();if(n.material&&n.material.userData?.owned)n.material.dispose()})}
 }
-function matClone(base){const m=base.clone();m.userData.owned=true;return m}
+function matClone(base){const m=base.clone();m.side=THREE.DoubleSide;m.userData.owned=true;return m}
 function box(name,w,h,d,x,y,z,mat,cat,partId){
  const geo=new THREE.BoxGeometry(Math.max(.1,w),Math.max(.1,h),Math.max(.1,d));
  const mesh=new THREE.Mesh(geo,matClone(mat));mesh.name=name;mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;
