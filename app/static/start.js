@@ -297,13 +297,17 @@ function renderStep() {
     const variantFilter = option.variantFilter || 'none';
     const kicker = option.kicker ? `<span class="card-kicker">${t(option.kicker)}</span>` : '';
     const note = option.note ? `<span class="card-note">${t(option.note)}</span>` : '';
-    return `<button class="choice-card${selectedClass}${layoutClass}" type="button" data-value="${option.value}" data-variant="${option.value}" style='--card-image:${image};--card-fallback:${fallback};--variant-filter:${variantFilter}'>
+    const isWardrobeRoute = step.field === 'product_type' && option.value === 'ZONE_WARDROBE';
+    const tag = isWardrobeRoute ? 'a' : 'button';
+    const typeAttr = isWardrobeRoute ? '' : ' type="button"';
+    const hrefAttr = isWardrobeRoute ? ' href="/wardrobes"' : '';
+    return `<${tag} class="choice-card${selectedClass}${layoutClass}"${typeAttr}${hrefAttr} data-value="${option.value}" data-variant="${option.value}" style='--card-image:${image};--card-fallback:${fallback};--variant-filter:${variantFilter}'>
       <span class="card-content">
         ${kicker}
         <span class="card-title">${t(option.title)}</span>
         ${note}
       </span>
-    </button>`;
+    </${tag}>`;
   }).join('');
 
   grid.querySelectorAll('.choice-card').forEach((button) => {
@@ -313,7 +317,7 @@ function renderStep() {
 
 async function choose(value) {
   if (busy) return;
-  if (STEPS[currentStep]?.field === 'product_type' && value === 'ZONE_WARDROBE') { window.location.href='/wardrobes?manufacturer=treeart'; return; }
+  if (STEPS[currentStep]?.field === 'product_type' && value === 'ZONE_WARDROBE') { window.location.assign('/wardrobes'); return; }
   if (STEPS[currentStep]?.field==='complexity_category'&&value==='V'){
     showToast(copy('customDevelopment'));
     return;
