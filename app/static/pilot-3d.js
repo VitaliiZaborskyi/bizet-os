@@ -707,5 +707,111 @@
     }};
   }
 
-  window.BizetPilot3D={drawRoomScene,drawKitchenScene,pointInPolygon,cameraDefaults};
+
+  function drawWardrobeScene(canvas,options={}){
+    const {ctx,width,height}=setupCanvas(canvas,options.forceCanvasReset===true);
+    const model=options.model||{},room=options.room||{};
+    const P=createProjector(width,height,{
+      lengthMm:Number(room.lengthMm)||4200,
+      depthMm:Number(room.depthMm)||3200,
+      heightMm:Number(room.heightMm)||2800
+    },'WALL_CENTER',{
+      yaw:Number.isFinite(options.camera?.yaw)?options.camera.yaw:-20*DEG,
+      pitch:Number.isFinite(options.camera?.pitch)?options.camera.pitch:18*DEG,
+      distanceScale:Number(options.camera?.distanceScale)||.86,
+      targetX:Number.isFinite(Number(options.camera?.targetX))?Number(options.camera.targetX):(Number(model.x)||1550)+(Number(model.width)||1100)/2,
+      targetY:Number.isFinite(Number(options.camera?.targetY))?Number(options.camera.targetY):(Number(room.depthMm)||3200)-Math.max(250,(Number(model.depth)||500)*.48),
+      targetZ:Number.isFinite(Number(options.camera?.targetZ))?Number(options.camera.targetZ):(Number(model.height)||1900)*.48,
+      screenYOffset:Number.isFinite(Number(options.camera?.screenYOffset))?Number(options.camera.screenYOffset):-36
+    });
+    const c=colors(),p=P.point;
+    drawRoomBase(ctx,P,'WALL_CENTER',['A'],options.showRoomDimensions===true);
+    const W=Math.max(500,Number(model.width)||1100),H=Math.max(800,Number(model.height)||1900),D=Math.max(250,Number(model.depth)||500);
+    const x=clamp(Number(model.x)||((P.L-W)/2),20,Math.max(20,P.L-W-20));
+    const y=P.D-D-40,z=0,t=Math.max(16,Math.min(22,Number(model.thickness)||18));
+    const split=clamp(Number(model.splitRatio)||.37,.22,.62),splitX=x+W*split;
+    const visibility={carcass:true,fronts:true,drawers:true,shelves:true,hardware:true,fasteners:true,holes:true,...(options.visibility||{})};
+    const body=model.bodyColor||'#d7cfc1',side=model.sideColor||'#c2b9aa',front=model.frontColor||'#9fb2c8';
+    const hits=[];
+    function part(id,box,style={},cat='carcass'){
+      if(visibility[cat]===false)return null;
+      const faces=drawBox(ctx,P,box,{body:style.body||body,side:style.side||side,front:style.front||body,top:style.top||style.front||body,stroke:c.line});
+      const face=box.d<=50?faces.frontYMin:faces.frontYMin;
+      hits.push({id,points:face,center:faceCenter(face)});
+      return faces;
+    }
+    // Grande: one user-level product, internally preserved as physical parts.
+    part('BOTTOM',{x,y,z,w:W,d:D,h:t},{front:body});
+    part('TOP',{x,y,z:H-t,w:W,d:D,h:t},{front:body});
+    part('SIDE_L',{x,y,z,w:t,d:D,h:H},{front:side});
+    part('SIDE_R',{x:x+W-t,y,z,w:t,d:D,h:H},{front:side});
+    part('DIVIDER',{x:splitX-t/2,y,z,w:t,d:D,h:H},{front:side});
+    if(options.showBack!==false)part('BACK',{x:x+t,y:y+D-10,z:t,w:W-2*t,d:8,h:H-2*t},{front:shadeHex(body,-10)},'carcass');
+
+    if(visibility.shelves!==false){
+      const leftCount=clamp(Math.round(Number(model.shelvesLeft)||4),0,12);
+      for(let i=1;i<=leftCount;i++){
+        const zz=t+(H-2*t)*i/(leftCount+1);
+        part('SHELF_L_'+i,{x:x+t,y:y+8,z:zz,w:splitX-x-1.5*t,d:D-24,h:t},{front:shadeHex(body,-5)},'shelves');
+      }
+      const rightCount=clamp(Math.round(Number(model.shelvesRight)||1),0,12);
+      const drawerTop=Math.min(1200,Math.max(t,Number(model.drawerStart)||0)+Math.max(1,Number(model.drawerCount)||2)*(Number(model.drawerHeight)||220));
+      for(let i=1;i<=rightCount;i++){
+        const low=Math.max(drawerTop+70,H*.52),high=H-t-70,zz=low+(high-low)*i/(rightCount+1);
+        part('SHELF_R_'+i,{x:splitX+t/2,y:y+8,z:zz,w:x+W-t-(splitX+t/2),d:D-24,h:t},{front:shadeHex(body,-5)},'shelves');
+      }
+    }
+
+    const drawerCount=clamp(Math.round(Number(model.drawerCount)||2),1,5);
+    const drawerStart=Math.max(0,Number(model.drawerStart)||0);
+    const drawerHeight=Math.max(120,Number(model.drawerHeight)||220);
+    const drawerTop=Math.min(1200,drawerStart+drawerCount*drawerHeight);
+    if(visibility.drawers!==false){
+      for(let i=0;i<drawerCount;i++){
+        const zz=drawerStart+i*drawerHeight;
+        part('DRAWER_'+(i+1),{x:splitX+t/2+5,y:y-22,z:zz,w:x+W-t-(splitX+t/2)-10,d:34,h:Math.max(90,Math.min(drawerHeight-5,1200-zz))},{body:front,side:shadeHex(front,-14),front:front,top:shadeHex(front,12)},'drawers');
+      }
+    }
+    if(visibility.fronts!==false && options.isolated!==true){
+      const fw=(W*(1-split)-3*t)/2,fh=Math.max(180,H-drawerTop-t);
+      const fx=splitX+t/2+3;
+      const f1=part('FACADE_1',{x:fx,y:y-25,z:drawerTop,w:fw,d:22,h:fh},{body:front,side:shadeHex(front,-18),front:front,top:shadeHex(front,12)},'fronts');
+      const f2=part('FACADE_2',{x:fx+fw+4,y:y-25,z:drawerTop,w:fw,d:22,h:fh},{body:front,side:shadeHex(front,-18),front:front,top:shadeHex(front,12)},'fronts');
+      if(visibility.hardware!==false){
+        const hz=drawerTop+fh*.54,handle='#343536';
+        line(ctx,p([fx+fw-42,y-31,hz-70]),p([fx+fw-42,y-31,hz+70]),handle,3);
+        line(ctx,p([fx+fw+46,y-31,hz-70]),p([fx+fw+46,y-31,hz+70]),handle,3);
+      }
+    }
+    if(visibility.hardware!==false && model.rodEnabled){
+      const rz=H-Math.max(80,Number(model.rodOffsetTop)||500);
+      line(ctx,p([splitX+38,y+96,rz]),p([x+W-42,y+96,rz]),'#5c6165',5);
+    }
+    if(options.isolated===true && visibility.holes!==false){
+      ctx.save();ctx.fillStyle='#625d57';
+      [splitX+16,x+W-t-16].forEach(hx=>{for(let hz=260;hz<H-140;hz+=64){const q=p([hx,y+22,hz]);ctx.beginPath();ctx.arc(q[0],q[1],1.7,0,Math.PI*2);ctx.fill()}});
+      ctx.restore();
+    }
+    if(options.isolated===true && visibility.fasteners!==false){
+      ctx.save();ctx.fillStyle='#777b7f';
+      [[x+t/2,t+35],[x+W-t/2,t+35],[x+t/2,H-t-35],[x+W-t/2,H-t-35]].forEach(v=>{const q=p([v[0],y+18,v[1]]);ctx.beginPath();ctx.arc(q[0],q[1],3,0,Math.PI*2);ctx.fill()});
+      ctx.restore();
+    }
+    if(options.showDimensions!==false){
+      dimensionLine(ctx,p([x,y,H+35]),p([x+W,y,H+35]),Math.round(W)+' мм',[0,-10],c);
+      dimensionLine(ctx,p([x+W+35,y,0]),p([x+W+35,y,H]),Math.round(H)+' мм',[16,0],c);
+      dimensionLine(ctx,p([x,y,0]),p([x,y+D,0]),Math.round(D)+' мм',[-12,7],c);
+    }
+    ctx.save();ctx.font='700 11px -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif';ctx.fillStyle=c.dimension;ctx.textAlign='center';
+    ctx.fillText('Tree Art · Grande · инженерный 3D',width/2,height-18);ctx.restore();
+    return{camera:{yaw:P.yaw,pitch:P.pitch,distanceScale:P.distanceScale,targetX:P.target[0],targetY:P.target[1],targetZ:P.target[2],screenYOffset:P.screenYOffset},modelBounds:{x,y,z,w:W,d:D,h:H},hitAreas:hits,hitTest(px,py){for(let i=hits.length-1;i>=0;i--)if(pointInPolygon(px,py,hits[i].points))return hits[i].id;return null}};
+  }
+
+  function shadeHex(hex,delta){
+    if(typeof hex!=='string'||!/^#[0-9a-f]{6}$/i.test(hex))return hex;
+    const v=parseInt(hex.slice(1),16),parts=[(v>>16)&255,(v>>8)&255,v&255].map(n=>clamp(n+delta,0,255));
+    return '#'+parts.map(n=>Math.round(n).toString(16).padStart(2,'0')).join('');
+  }
+
+  window.BizetPilot3D={drawRoomScene,drawKitchenScene,drawWardrobeScene,pointInPolygon,cameraDefaults};
 })();
