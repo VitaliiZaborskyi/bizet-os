@@ -1,22 +1,58 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f4f4f1">
-<title>BIZET OS R10.4.6 — Tree Art Grande</title><link rel="stylesheet" href="/static/grande-r1046.css?v=1"></head>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f4f1">
+<title>BIZET OS R10.4.7 — Tree Art Grande</title>
+<link rel="stylesheet" href="/static/grande-r1046.css?v=1047">
+</head>
 <body>
-<header><button id="back" class="icon">←</button><a href="/" class="brand">BIZET <i>OS</i></a><span class="crumb">Tree Art · Grande</span><div class="mode"><button id="viewMode" class="active">VIEW</button><button id="editMode">EDIT</button></div><select id="lang"><option value="ru">RU</option><option value="en">EN</option><option value="ua">UA</option></select></header>
+<header>
+  <button id="back" class="icon" aria-label="Назад">←</button>
+  <a href="/" class="brand">BIZET <i>OS</i></a>
+  <span class="crumb">Tree Art · Grande</span>
+  <div class="mode"><button id="viewMode" class="active">VIEW</button><button id="editMode">EDIT</button></div>
+  <select id="lang" aria-label="Язык"><option value="ru">RU</option><option value="en">EN</option><option value="ua">UA</option></select>
+</header>
 <main>
-<nav id="tools" class="tools">
-<button data-panel="room"><b>01</b><span>Помещение</span></button><button data-panel="size"><b>02</b><span>Габариты</span></button><button data-panel="drawers"><b>03</b><span>Ящики</span></button><button data-panel="shelves"><b>04</b><span>Полки</span></button><button data-panel="equipment"><b>05</b><span>Оснащение</span></button><button data-panel="materials"><b>06</b><span>Материалы</span></button><button data-panel="output"><b>07</b><span>Выход</span></button>
-</nav>
-<section class="stageCol">
-<div class="stage" id="stage">
-<canvas id="canvas"></canvas>
-<div class="hud top"><button id="dims">📏</button><button id="layers">◫</button><button id="reset">↺</button><button id="isolate">◎</button></div>
-<div class="status" id="status">Grande · 1 изделие · Tree Art</div>
-<div class="hint" id="hint">Поверните одним пальцем · двумя — масштаб · удерживайте изделие и двигайте вдоль стены</div>
-<div class="layerPanel" id="layerPanel" hidden></div>
-</div>
-<div class="bottomRow"><button class="add" id="addProduct">＋ Добавить ещё изделие</button><span id="positionLabel"></span></div>
-</section>
-<aside id="panel" class="panel" hidden><button id="panelClose" class="panelClose">×</button><small id="panelKicker"></small><h2 id="panelTitle"></h2><div id="panelBody"></div></aside>
+  <nav id="tools" class="tools" aria-label="Инструменты">
+    <button data-panel="room"><b>01</b><span>Помещение</span></button>
+    <button data-panel="size"><b>02</b><span>Габариты</span></button>
+    <button data-panel="drawers"><b>03</b><span>Ящики</span></button>
+    <button data-panel="shelves"><b>04</b><span>Полки</span></button>
+    <button data-panel="equipment"><b>05</b><span>Оснащение</span></button>
+    <button data-panel="materials"><b>06</b><span>Материалы</span></button>
+    <button data-panel="output"><b>07</b><span>Выход</span></button>
+  </nav>
+
+  <section class="stageCol">
+    <div class="stage" id="stage">
+      <canvas id="canvas"></canvas>
+      <div class="hud top">
+        <button id="dims" title="Размеры">📏</button>
+        <button id="layers" title="Слои">◫</button>
+        <button id="reset" title="Камера">↺</button>
+        <button id="isolate" title="Изоляция">◎</button>
+      </div>
+      <div class="status" id="status"><strong>Grande</strong><span>Tree Art · R10.4.7</span></div>
+      <div class="hint" id="hint">Поверните модель пальцем · pinch — масштаб · удержание — перемещение вдоль стены</div>
+      <div class="layerPanel" id="layerPanel" hidden></div>
+    </div>
+    <div class="bottomRow">
+      <button class="add" id="addProduct">＋ Добавить ещё изделие</button>
+      <span id="positionLabel"></span>
+    </div>
+  </section>
+
+  <aside id="panel" class="panel" hidden>
+    <button id="panelClose" class="panelClose" aria-label="Закрыть">×</button>
+    <small id="panelKicker"></small>
+    <h2 id="panelTitle"></h2>
+    <div id="panelBody"></div>
+  </aside>
 </main>
-<script src="/static/grande-r1046.js?v=1"></script></body></html>
+<script src="/static/pilot-3d.js?v=1047"></script>
+<script src="/static/grande-r1046.js?v=1047"></script>
+</body>
+</html>
