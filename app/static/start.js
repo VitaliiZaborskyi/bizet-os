@@ -84,10 +84,10 @@ const STEPS = [
     subtitle: { ru: 'Сравните один и тот же образ изделия — от более простого исполнения к более насыщенному.', en: 'Compare the same product image from a simpler to a richer level.' },
     options: [
       { value: 'I', title: { ru: 'I', en: 'I' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(1.14) saturate(.58) contrast(.88)', fallback: 'linear-gradient(145deg,#e2ddd5,#a89e91)' },
-      { value: 'II', title: { ru: 'II', en: 'II' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(1.08) saturate(.76) contrast(.94)', fallback: 'linear-gradient(145deg,#d8d0c7,#8c7e70)' },
-      { value: 'III', title: { ru: 'III', en: 'III' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(1.00) saturate(.94) contrast(1.00)', fallback: 'linear-gradient(145deg,#c9c1b8,#6e6359)' },
-      { value: 'IV', title: { ru: 'IV', en: 'IV' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(.92) saturate(1.05) contrast(1.08)', fallback: 'linear-gradient(145deg,#c6bdae,#65594d)' },
-      { value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(.83) saturate(1.16) contrast(1.16)', fallback: 'linear-gradient(145deg,#b9afa3,#4d4540)' },
+      { value: 'II', disabled: true, note: {ru:'Недоступно в пилоте',en:'Disabled in pilot',ua:'Недоступно в пілоті'}, title: { ru: 'II', en: 'II' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(1.08) saturate(.76) contrast(.94)', fallback: 'linear-gradient(145deg,#d8d0c7,#8c7e70)' },
+      { value: 'III', disabled: true, note: {ru:'Недоступно в пилоте',en:'Disabled in pilot',ua:'Недоступно в пілоті'}, title: { ru: 'III', en: 'III' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(1.00) saturate(.94) contrast(1.00)', fallback: 'linear-gradient(145deg,#c9c1b8,#6e6359)' },
+      { value: 'IV', disabled: true, note: {ru:'Недоступно в пилоте',en:'Disabled in pilot',ua:'Недоступно в пілоті'}, title: { ru: 'IV', en: 'IV' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(.92) saturate(1.05) contrast(1.08)', fallback: 'linear-gradient(145deg,#c6bdae,#65594d)' },
+      { value: 'V', disabled: true, note: {ru:'Недоступно в пилоте',en:'Disabled in pilot',ua:'Недоступно в пілоті'}, title: { ru: 'Своя конфигурация', en: 'Custom configuration' }, image: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=82', variantFilter: 'brightness(.83) saturate(1.16) contrast(1.16)', fallback: 'linear-gradient(145deg,#b9afa3,#4d4540)' },
     ],
   },
   {
@@ -157,7 +157,7 @@ const UA_AUTO = {
   'Какое оформление вам ближе?':'Яке оформлення вам ближче?',
   'Это не выбор конкретного цвета — только общее оформление проекта.':'Це не вибір конкретного кольору — лише загальне оформлення проєкту.',
   'Светлое':'Світле','Тёмное':'Темне',
-  'Tree Art · активно':'Tree Art · активно'
+  'Tree Art · активно':'Tree Art · активно','Недоступно в пилоте':'Недоступно в пілоті'
 };
 const UA_COPY = {
   settings:'Налаштування',theme:'Тема',light:'Світла',dark:'Темна',language:'Мова',login:'Увійти',register:'Реєстрація',
@@ -303,7 +303,9 @@ function renderStep() {
     const tag = isWardrobeRoute ? 'a' : 'button';
     const typeAttr = isWardrobeRoute ? '' : ' type="button"';
     const hrefAttr = isWardrobeRoute ? ' href="/wardrobes"' : '';
-    return `<${tag} class="choice-card${selectedClass}${layoutClass}"${typeAttr}${hrefAttr} data-value="${option.value}" data-variant="${option.value}" style='--card-image:${image};--card-fallback:${fallback};--variant-filter:${variantFilter}'>
+    const disabledAttr = option.disabled && tag==='button' ? ' disabled aria-disabled="true"' : '';
+    const disabledClass = option.disabled ? ' pilot-disabled-choice' : '';
+    return `<${tag} class="choice-card${selectedClass}${layoutClass}${disabledClass}"${typeAttr}${hrefAttr}${disabledAttr} data-value="${option.value}" data-variant="${option.value}" style='--card-image:${image};--card-fallback:${fallback};--variant-filter:${variantFilter}'>
       <span class="card-content">
         ${kicker}
         <span class="card-title">${t(option.title)}</span>
@@ -320,6 +322,7 @@ function renderStep() {
 async function choose(value) {
   if (busy) return;
   if (STEPS[currentStep]?.field === 'product_type' && value === 'ZONE_WARDROBE') { window.location.assign('/wardrobes'); return; }
+  if (STEPS[currentStep]?.field==='complexity_category'&&value!=='I'){showToast(currentLanguage==='ua'?'У пілоті активна лише категорія I.':currentLanguage==='en'?'Only category I is active in this pilot.':'В пилоте активна только категория I.');return}
   if (STEPS[currentStep]?.field==='complexity_category'&&value==='V'){
     showToast(copy('customDevelopment'));
     return;
