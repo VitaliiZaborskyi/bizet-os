@@ -149,7 +149,7 @@ function cylinder(name,r,len,x,y,z,mat,cat,axis='x',segments=24){
  mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData={cat,solid:true};modelGroup.add(mesh);catPush(cat,mesh);return mesh;
 }
 function addHandle(x,y,z,orientation='H'){
- if(S.handleMode!=='HANDLE'||!visibility.hardware)return;
+ if(S.handleMode!=='HANDLE')return;
  if(orientation==='H'){
    box('Handle',130,10,14,x,y,z,metalMat,'hardware','HANDLE');
    box('Handle post L',10,10,22,x-45,y,z-15,metalMat,'hardware','HANDLE');
@@ -332,6 +332,7 @@ function buildModel(){
  if(S.ledEnabled)buildLed();
  detailsCache=detail;
  modelGroup.position.set(S.x-S.roomW/2,0,-S.roomD/2+12);
+ ledGroup.position.copy(modelGroup.position);
  renderTechnical();
  buildDimensions();
  applyVisibility();
@@ -392,7 +393,7 @@ function applyVisibility(){
  furnitureMeshes.forEach(mesh=>{
    const base=mesh.material;
    const shouldXray=xray && ['carcass','shelves','drawers'].includes(mesh.userData.cat);
-   base.transparent=shouldXray;base.opacity=shouldXray?.28:1;base.depthWrite=!shouldXray;base.needsUpdate=true;
+   base.transparent=shouldXray;base.opacity=shouldXray ? .28 : 1;base.depthWrite=!shouldXray;base.needsUpdate=true;
  });
 }
 
