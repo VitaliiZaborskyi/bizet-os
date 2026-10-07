@@ -64,7 +64,8 @@ const STEPS = [
       },
       {
         value: 'ZONE_WARDROBE',
-        title: { ru: 'Шкафы', en: 'Wardrobes' },
+        title: { ru: 'Шкафы', en: 'Wardrobes', ua: 'Шафи' },
+        note: { ru: 'Tree Art · активно', en: 'Tree Art · active', ua: 'Tree Art · активно' },
         image: 'https://images.unsplash.com/photo-1778731660303-1fa5ede75477?auto=format&fit=crop&w=1400&q=82',
         fallback: 'linear-gradient(145deg,#c9c1b8,#6e6359)'
       },
@@ -285,6 +286,7 @@ function renderStep() {
 
 async function choose(value) {
   if (busy) return;
+  if (STEPS[currentStep]?.field === 'product_type' && value === 'ZONE_WARDROBE') { window.location.href='/wardrobes?manufacturer=treeart'; return; }
   if (STEPS[currentStep]?.field==='complexity_category'&&value==='V'){
     showToast(copy('customDevelopment'));
     return;
@@ -298,7 +300,6 @@ async function choose(value) {
       body: JSON.stringify({ answer: value }),
     });
     project = result.project;
-    if (step.field === 'product_type' && value === 'ZONE_WARDROBE') { window.location.href='/wardrobes'; return; }
     if (editingFromSummary) {
       editingFromSummary = false;
       currentStep = STEPS.length;
