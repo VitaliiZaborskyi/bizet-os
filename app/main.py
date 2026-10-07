@@ -11,7 +11,7 @@ from app.api.routes_v11 import router as router_v11
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
 
-app = FastAPI(title="BIZET OS 1.1", version="R10.4.5")
+app = FastAPI(title="BIZET OS 1.1", version="R10.4.6")
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.include_router(router)
 app.include_router(router_v11)
@@ -25,7 +25,7 @@ async def pilot_cache_headers(request: Request, call_next):
     path = request.url.path
     if path.startswith("/static/"):
         response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=86400"
-    elif path in {"/", "/room", "/room-setup", "/workspace", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/communications", "/materials"}:
+    elif path in {"/", "/room", "/room-setup", "/workspace", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/communications", "/materials", "/wardrobes", "/grande"}:
         response.headers["Cache-Control"] = "no-cache"
     return response
 
@@ -39,6 +39,18 @@ def index_head():
 @app.get("/", include_in_schema=False)
 def index():
     return FileResponse(STATIC / "index.html")
+
+
+@app.get("/wardrobes", include_in_schema=False)
+def wardrobes_r1046():
+    """R10.4.6 wardrobe manufacturer/catalog flow."""
+    return FileResponse(STATIC / "wardrobes-r1046.html")
+
+
+@app.get("/grande", include_in_schema=False)
+def grande_r1046():
+    """Tree Art Grande engineering 3D pilot."""
+    return FileResponse(STATIC / "grande-r1046.html")
 
 
 @app.get("/custom-configuration", include_in_schema=False)
