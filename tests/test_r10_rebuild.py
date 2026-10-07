@@ -936,11 +936,11 @@ def test_r1038_focus_canvas_has_same_touch_and_pinch_contract():
 
 def test_r1044_start_assets_are_cache_busted():
     html = read("index.html")
-    assert "/static/start.css?v=174" in html
-    assert "/static/next-pilot.css?v=174" in html
-    assert "/static/start.js?v=174" in html
-    assert "/static/start-room-handoff.js?v=174" in html
-    assert "/static/next-pilot-start.js?v=174" in html
+    assert "/static/start.css?v=1048" in html
+    assert "/static/next-pilot.css?v=1048" in html
+    assert "/static/start.js?v=1048" in html
+    assert "/static/start-room-handoff.js?v=1048" in html
+    assert "/static/next-pilot-start.js?v=1048" in html
 
 
 def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visible():
@@ -1354,7 +1354,7 @@ def test_r1042_offer_download_uses_real_pdf_endpoint():
 def test_r1044_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v():
     index = read("index.html")
     start = read("start.js")
-    for asset in ["start.css?v=174", "start.js?v=174", "start-room-handoff.js?v=174"]:
+    for asset in ["start.css?v=1048", "start.js?v=1048", "start-room-handoff.js?v=1048"]:
         assert asset in index
     assert "{ value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
     assert "title: { ru: 'V', en: 'V' }" not in start
