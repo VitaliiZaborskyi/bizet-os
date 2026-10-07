@@ -758,9 +758,9 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
     assert "body.r8-workspace-body{height:100vh;overflow:hidden}" not in mobile
 
 
-def test_r1048_fastapi_reports_current_version():
+def test_r1049_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.4.8"' in main
+    assert 'version="R10.4.9"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -936,11 +936,11 @@ def test_r1038_focus_canvas_has_same_touch_and_pinch_contract():
 
 def test_r1044_start_assets_are_cache_busted():
     html = read("index.html")
-    assert "/static/start.css?v=1048" in html
-    assert "/static/next-pilot.css?v=1048" in html
+    assert "/static/start.css?v=1049" in html
+    assert "/static/next-pilot.css?v=1049" in html
     assert "/static/start.js?v=1049" in html
-    assert "/static/start-room-handoff.js?v=1048" in html
-    assert "/static/next-pilot-start.js?v=1048" in html
+    assert "/static/start-room-handoff.js?v=1049" in html
+    assert "/static/next-pilot-start.js?v=1049" in html
 
 
 def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visible():
@@ -1354,7 +1354,7 @@ def test_r1042_offer_download_uses_real_pdf_endpoint():
 def test_r1044_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v():
     index = read("index.html")
     start = read("start.js")
-    for asset in ["start.css?v=1048", "start.js?v=1049", "start-room-handoff.js?v=1048"]:
+    for asset in ["start.css?v=1049", "start.js?v=1049", "start-room-handoff.js?v=1049"]:
         assert asset in index
     assert "{ value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
     assert "title: { ru: 'V', en: 'V' }" not in start
@@ -1505,7 +1505,7 @@ def test_r1043_checkpoint_keeps_first_tap_isolation_closed_and_freezes_qa_pack()
     assert "600 mm below the top of the cabinet body" in checkpoint
 
 
-def test_r1048_wardrobes_card_has_hard_route_and_js_fallback():
+def test_r1049_wardrobes_card_has_hard_route_and_js_fallback():
     start = read("start.js")
     assert "hrefAttr = isWardrobeRoute ? ' href=\"/wardrobes\"' : ''" in start
     assert "window.location.assign('/wardrobes')" in start
