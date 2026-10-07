@@ -13,7 +13,7 @@ def test_r1048_grande_uses_webgl_threejs_pipeline():
     assert "three@0.128.0/build/three.min.js" in html
     assert "OrbitControls.js" in html
     assert "new THREE.WebGLRenderer" in js
-    assert "controls.rotateSpeed=-.62" in js
+    assert "controls.rotateSpeed=.62" in js
     assert "transparent:false" in js
 
 
