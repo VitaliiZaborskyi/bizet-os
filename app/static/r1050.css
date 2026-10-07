@@ -1,0 +1,38 @@
+/* BIZET OS R10.5.0 visual contract */
+html{-webkit-text-size-adjust:100%}
+input,select,textarea{font-size:16px!important}
+html[data-theme="light"],html:not([data-theme="dark"]){--r1050-ink:#111}
+html[data-theme="light"] body,html[data-theme="light"] button,html[data-theme="light"] a,html[data-theme="light"] .r8-brand,html[data-theme="light"] .r8-brand strong,html[data-theme="light"] .r8-brand i,html[data-theme="light"] .r8-master,
+html:not([data-theme="dark"]) .r8-brand,html:not([data-theme="dark"]) .r8-brand strong,html:not([data-theme="dark"]) .r8-brand i{color:#111!important}
+.r1050-view-full{overflow:hidden!important}
+.r1050-view-full .r8-shell{position:fixed;inset:0;z-index:400;background:#f1efe9}
+.r1050-view-full .r8-topbar,.r1050-view-full #workspaceTools,.r1050-view-full .r8-module-strip-label,.r1050-view-full #moduleStrip,.r1050-view-full #pointBFinalActions,.r1050-view-full #modelStatus,.r1050-view-full #focusVariantRibbon,.r1050-view-full #moduleEditPanel{opacity:0;pointer-events:none;transform:translateY(12px)}
+.r8-topbar,#workspaceTools,.r8-module-strip-label,#moduleStrip,#pointBFinalActions,#modelStatus,#focusVariantRibbon,#moduleEditPanel{transition:opacity .32s ease,transform .38s cubic-bezier(.2,.8,.2,1)}
+.r1050-view-full .r8-main{display:block!important;position:fixed;inset:0!important;padding:0!important;margin:0!important}
+.r1050-view-full .r8-canvas-column{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;padding:0!important;margin:0!important}
+.r1050-view-full #modelStage{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;min-height:100dvh!important;border:0!important;border-radius:0!important;box-shadow:none!important;transition:all .42s cubic-bezier(.2,.8,.2,1)}
+.r1050-view-full #r1050KitchenWebGL{border-radius:0!important}
+.r1050-view-full .r8-stage-top{position:fixed!important;top:max(12px,env(safe-area-inset-top));right:12px;left:auto!important;z-index:999!important;display:flex!important;gap:7px}
+.r1050-view-full .r8-stage-top>*:not(.r1049-viewer-mode):not(#deepShadowButton):not(#motionButton){display:none!important}
+.r1050-view-full .r1049-viewer-mode{display:flex!important;background:rgba(255,255,255,.94);border-radius:999px;padding:4px;box-shadow:0 8px 28px rgba(0,0,0,.14)}
+#deepShadowButton,#motionButton{min-width:42px;height:40px;border:1px solid rgba(0,0,0,.1);border-radius:12px;background:rgba(255,255,255,.94);color:#111;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+#deepShadowButton.active,#motionButton.active{background:#171716;color:#fff}
+.r1050-view-full .r8-variant-controls{opacity:0;pointer-events:none}
+.r1050-view-full #editorPanel{display:none!important}
+.r1050-view-full .r8-stage{background:#efede7!important}
+#pointBFinalActions{position:relative!important;left:auto!important;top:auto!important;right:auto!important;bottom:auto!important;z-index:auto!important}
+#pointBFinalActions .r104-price-line{display:grid!important;grid-template-columns:auto 1fr!important;align-items:center!important;width:100%!important}
+#pointBFinalActions .r104-price-currency{grid-column:1!important;justify-self:start!important}
+#pointBFinalActions .r8-final-price{grid-column:2!important;justify-self:end!important;text-align:right!important}
+.r1050-production-grid{display:grid;gap:10px}
+.r1050-production-grid label{display:grid;gap:6px;font-size:12px;color:var(--r8-muted)}
+.r1050-production-grid select{min-height:44px;border:1px solid var(--r8-line);border-radius:12px;background:var(--r8-bg);color:var(--r8-ink);padding:0 12px}
+.r1050-export-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.r1050-export-actions button{min-height:44px;border:1px solid var(--r8-line);border-radius:12px;background:var(--r8-bg);color:var(--r8-ink);font-weight:750}
+.r1050-export-actions button.primary{background:var(--r8-ink);color:var(--r8-bg)}
+.r1050-source-badge{display:inline-flex;border:1px solid var(--r8-line);border-radius:999px;padding:6px 9px;font-size:10px;font-weight:800;letter-spacing:.06em}
+.pilot-disabled-choice{opacity:.32!important;filter:grayscale(1)!important;pointer-events:none!important;cursor:not-allowed!important}
+@media(max-width:820px){
+  .r1050-view-full .r8-stage-top{top:max(9px,env(safe-area-inset-top));right:9px}
+  .r1050-export-actions{grid-template-columns:1fr}
+}
