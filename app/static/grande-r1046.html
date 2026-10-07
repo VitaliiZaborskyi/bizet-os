@@ -4,55 +4,85 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f4f4f1">
-<title>BIZET OS R10.4.7 — Tree Art Grande</title>
-<link rel="stylesheet" href="/static/grande-r1046.css?v=1047">
+<title>BIZET OS R10.4.8 — Tree Art Grande</title>
+<link rel="stylesheet" href="/static/grande-r1048.css?v=1048">
 </head>
-<body>
+<body class="view-mode">
 <header>
   <button id="back" class="icon" aria-label="Назад">←</button>
   <a href="/" class="brand">BIZET <i>OS</i></a>
   <span class="crumb">Tree Art · Grande</span>
-  <div class="mode"><button id="viewMode" class="active">VIEW</button><button id="editMode">EDIT</button></div>
-  <select id="lang" aria-label="Язык"><option value="ru">RU</option><option value="en">EN</option><option value="ua">UA</option></select>
+  <div class="mode" aria-label="Режим">
+    <button id="viewMode" class="active">VIEW</button>
+    <button id="editMode">EDIT</button>
+  </div>
+  <select id="lang" aria-label="Язык">
+    <option value="ru">RU</option><option value="en">EN</option><option value="ua">UA</option>
+  </select>
 </header>
-<main>
-  <nav id="tools" class="tools" aria-label="Инструменты">
-    <button data-panel="room"><b>01</b><span>Помещение</span></button>
-    <button data-panel="size"><b>02</b><span>Габариты</span></button>
-    <button data-panel="drawers"><b>03</b><span>Ящики</span></button>
-    <button data-panel="shelves"><b>04</b><span>Полки</span></button>
-    <button data-panel="equipment"><b>05</b><span>Оснащение</span></button>
-    <button data-panel="materials"><b>06</b><span>Материалы</span></button>
-    <button data-panel="output"><b>07</b><span>Выход</span></button>
-  </nav>
 
+<main>
   <section class="stageCol">
     <div class="stage" id="stage">
-      <canvas id="canvas"></canvas>
+      <div id="webglHost" class="webgl-host"></div>
+
+      <nav id="tools" class="tools" aria-label="Инженерные настройки">
+        <button data-panel="room"><b>01</b><span>Помещение</span></button>
+        <button data-panel="size"><b>02</b><span>Габариты</span></button>
+        <button data-panel="drawers"><b>03</b><span>Ящики</span></button>
+        <button data-panel="shelves"><b>04</b><span>Полки</span></button>
+        <button data-panel="equipment"><b>05</b><span>Оснащение</span></button>
+        <button data-panel="lighting"><b>06</b><span>Освещение</span></button>
+        <button data-panel="production"><b>07</b><span>Производство</span></button>
+      </nav>
+
       <div class="hud top">
         <button id="dims" title="Размеры">📏</button>
         <button id="layers" title="Слои">◫</button>
-        <button id="reset" title="Камера">↺</button>
+        <button id="xray" title="Прозрачность">◒</button>
+        <button id="reset" title="Сбросить камеру">↺</button>
         <button id="isolate" title="Изоляция">◎</button>
       </div>
-      <div class="status" id="status"><strong>Grande</strong><span>Tree Art · R10.4.7</span></div>
-      <div class="hint" id="hint">Поверните модель пальцем · pinch — масштаб · удержание — перемещение вдоль стены</div>
+
+      <div class="status">
+        <strong>Grande</strong>
+        <span>Tree Art · WebGL 3D · R10.4.8</span>
+      </div>
+
+      <div class="priceHud" id="priceHud">
+        <div><span id="priceLabel">Стоимость</span><strong id="priceValue">—</strong></div>
+        <select id="currencySelect" aria-label="Валюта">
+          <option value="UAH">UAH</option><option value="EUR">EUR</option><option value="USD">USD</option><option value="AUD">AUD</option>
+        </select>
+      </div>
+
+      <div class="hint" id="hint">Поворот инвертирован · pinch — масштаб · удержание изделия — перемещение вдоль стены</div>
       <div class="layerPanel" id="layerPanel" hidden></div>
-    </div>
-    <div class="bottomRow">
+
       <button class="add" id="addProduct">＋ Добавить ещё изделие</button>
-      <span id="positionLabel"></span>
+      <span class="position" id="positionLabel"></span>
+
+      <aside id="panel" class="panel" hidden>
+        <button id="panelClose" class="panelClose" aria-label="Закрыть">×</button>
+        <small id="panelKicker">TREE ART · GRANDE</small>
+        <h2 id="panelTitle"></h2>
+        <div id="panelBody"></div>
+      </aside>
     </div>
   </section>
-
-  <aside id="panel" class="panel" hidden>
-    <button id="panelClose" class="panelClose" aria-label="Закрыть">×</button>
-    <small id="panelKicker"></small>
-    <h2 id="panelTitle"></h2>
-    <div id="panelBody"></div>
-  </aside>
 </main>
-<script src="/static/pilot-3d.js?v=1047"></script>
-<script src="/static/grande-r1046.js?v=1047"></script>
+
+<dialog id="orderDialog" class="orderDialog">
+  <div class="orderCard">
+    <button id="orderClose" class="panelClose">×</button>
+    <small>BIZET · PILOT</small>
+    <h2 id="orderTitle">Заказ</h2>
+    <div id="orderBody"></div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="/static/grande-r1048.js?v=1048"></script>
 </body>
 </html>
