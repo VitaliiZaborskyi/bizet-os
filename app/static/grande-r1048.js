@@ -461,6 +461,21 @@ function checkbox(label,key,checked){
 function closePanel(){
  activePanel=null;$('panel').hidden=true;[...$('tools').children].forEach(b=>b.classList.remove('active'));
 }
+function grandeDrawerBase(){return S.lowerZoneEnabled?Math.max(S.t,Number(S.lowerZoneHeight)||0):S.t}
+function grandeMaxDrawerCount(height=S.drawerHeight){
+ const usable=Math.max(0,Math.min(1200,S.h-S.t)-grandeDrawerBase());
+ return Math.max(1,Math.min(5,Math.floor(usable/Math.max(120,Number(height)||120))));
+}
+function constrainGrandeDrawers(reason=''){
+ const max=grandeMaxDrawerCount();
+ if(S.drawerCount>max){
+   S.drawerCount=max;
+   if(reason)toast((lang==='ua'?'Максимум для поточної геометрії: ':lang==='en'?'Maximum for current geometry: ':'Максимум для текущей геометрии: ')+max);
+ }
+ const maxH=Math.max(120,Math.floor((1200-grandeDrawerBase())/Math.max(1,S.drawerCount)));
+ S.drawerHeight=Math.min(Number(S.drawerHeight)||220,Math.min(420,maxH));
+ return max;
+}
 function openPanel(name){
  activePanel=name;$('panel').hidden=false;
  [...$('tools').children].forEach(b=>b.classList.toggle('active',b.dataset.panel===name));
@@ -468,9 +483,10 @@ function openPanel(name){
  if(name==='room')html='<div class="section">'+field(tr('wallWidth'),'roomW',S.roomW,1800,10000)+field(tr('roomDepth'),'roomD',S.roomD,1800,8000)+field(tr('roomHeight'),'roomH',S.roomH,1800,5000)+'</div>';
  if(name==='size')html='<div class="section">'+field(tr('width'),'w',S.w,500,2780)+field(tr('height'),'h',S.h,800,2780)+field(tr('depth'),'d',S.d,250,900)+'</div><div class="section"><div class="subhead">'+tr('materials')+'</div><label class="field"><span>'+tr('bodyMat')+'</span><input data-key="bodyColor" type="color" value="'+S.bodyColor+'"></label><label class="field"><span>'+tr('accentMat')+'</span><input data-key="accentColor" type="color" value="'+S.accentColor+'"></label><p class="note">'+tr('thickness')+'</p></div>';
  if(name==='drawers'){
-   html='<div class="section">'+field(tr('drawerCount'),'drawerCount',S.drawerCount,1,5,1)+field(tr('drawerHeight'),'drawerHeight',S.drawerHeight,120,420)+select(tr('lowerShelf'),'lowerZoneEnabled',[['0',tr('lowerShelfNo')],['1',tr('lowerShelfYes')]],S.lowerZoneEnabled?'1':'0');
+   const drawerMax=grandeMaxDrawerCount();
+   html='<div class="section">'+field(tr('drawerCount'),'drawerCount',S.drawerCount,1,drawerMax,1)+field(tr('drawerHeight'),'drawerHeight',S.drawerHeight,120,Math.min(420,Math.max(120,Math.floor((1200-grandeDrawerBase())/Math.max(1,S.drawerCount)))),10)+select(tr('lowerShelf'),'lowerZoneEnabled',[['0',tr('lowerShelfNo')],['1',tr('lowerShelfYes')]],S.lowerZoneEnabled?'1':'0');
    if(S.lowerZoneEnabled)html+=field(tr('lowerZoneHeight'),'lowerZoneHeight',S.lowerZoneHeight,180,800)+field(tr('lowerZoneCount'),'lowerZoneShelfCount',S.lowerZoneShelfCount,1,4,1);
-   html+='<p class="warn">'+tr('drawerRule')+'</p><p class="note">'+tr('drawerBody')+'</p></div>';
+   html+='<p class="warn">'+tr('drawerRule')+'</p><p class="note">'+(lang==='ua'?'Поточний максимум шухляд: ':lang==='en'?'Current drawer maximum: ':'Текущий максимум ящиков: ')+drawerMax+'</p><p class="note">'+tr('drawerBody')+'</p></div>';
  }
  if(name==='shelves'){
    html='<div class="section"><div class="subhead">'+tr('leftOpen')+'</div>'+field(tr('shelfCount'),'shelvesLeft',S.shelvesLeft,0,12,1)+'</div>';
@@ -500,13 +516,11 @@ function bindPanel(){
      if(k==='rodEnabled'||k==='ledEnabled'||k==='lowerZoneEnabled')v=v==='1'||v===1||v===true;
      S[k]=v;
      if(S.lowerZoneEnabled===false){S.lowerZoneShelfCount=Math.max(1,S.lowerZoneShelfCount)}
-     if(S.drawerCount*S.drawerHeight+(S.lowerZoneEnabled?S.lowerZoneHeight:S.t)>1200){
-       S.drawerHeight=Math.max(120,Math.floor((1200-(S.lowerZoneEnabled?S.lowerZoneHeight:S.t))/Math.max(1,S.drawerCount)));
-     }
+     if(['drawerCount','drawerHeight','lowerZoneEnabled','lowerZoneHeight','h'].includes(k))constrainGrandeDrawers(k==='drawerCount'||k==='lowerZoneHeight'||k==='lowerZoneEnabled'?'drawer-limit':'');
      S.x=Math.max(0,Math.min(S.x,Math.max(0,S.roomW-S.w)));
      if(['roomW','roomD','roomH'].includes(k))buildRoom();
      buildModel();
-     if(['lowerZoneEnabled','rodEnabled','ledEnabled'].includes(k))openPanel(activePanel);
+     if(['lowerZoneEnabled','lowerZoneHeight','drawerCount','drawerHeight','rodEnabled','ledEnabled','h'].includes(k))openPanel(activePanel);
    });
  });
  $('apply').onclick=closePanel;
@@ -546,7 +560,7 @@ function buildBom(){
  if(S.handleMode==='HANDLE')add('Фурнитура','Ручка',S.drawerCount+2,'шт',PRICES.HANDLE);
  else add('Фурнитура','Push-to-open / Tip-On',S.drawerCount+2,'шт',0,'Тариф не заморожен');
  add('Крепёж','Конфирмат',fastenerOps.filter(x=>x.type==='CONFIRMAT').length,'шт',PRICES.CONFIRMAT);
- add('Крепёж','Шкант / технологический крепёж',Math.max(8,S.shelvesLeft*4+S.shelvesRight*4),'шт',PRICES.DOWEL);
+ // R10.5.1: no dowel BOM line until a canonical connection is proven from DWG or BIZET rules.
  if(S.rodEnabled)add('Фурнитура','Штанга + 2 крепления',1,'компл',0,'Тариф Tree Art не получен');
  if(S.ledEnabled)add('Освещение','LED комплект',1,'компл',0,'Тариф не заморожен');
  const cost=rows.reduce((s,r)=>s+r.total,0),client=cost*2;
@@ -636,7 +650,7 @@ $('currencySelect').onchange=e=>{S.currency=e.target.value;updatePrice()};
 $('orderClose').onclick=()=>$('orderDialog').close();
 
 buildRoom();buildModel();resize();frameModel();layerPanel();applyLanguage();loadFx();
-window.BizetGrandeR1050Bridge={version:'R10.5.0',state:S,scene,renderer,camera,controls,roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,hemi,key,fill,
+window.BizetGrandeR1050Bridge={version:'R10.5.1',state:S,scene,renderer,camera,controls,roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,hemi,key,fill,
  getDetails:()=>detailsCache,getDrills:()=>drillOps,getFasteners:()=>fastenerOps,getFurniture:()=>furnitureMeshes,getCategories:()=>categoryMeshes,
  buildModel,buildRoom,buildDimensions,applyVisibility,frameModel,renderTechnical,openPanel,closePanel,toast};
 })();
