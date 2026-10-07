@@ -144,6 +144,31 @@ const STATIC_COPY = {
   }
 };
 
+const UA_AUTO = {
+  'Тип дома':'Тип будинку',
+  'Выберите тип объекта. Это поможет BIZET OS правильно выстроить дальнейший маршрут.':'Оберіть тип об’єкта. Це допоможе BIZET OS правильно побудувати подальший маршрут.',
+  'Новострой':'Новобудова','Старый фонд':'Старий фонд','Частный дом':'Приватний будинок','Коммерческое помещение':'Комерційне приміщення',
+  'Выберите зону':'Оберіть зону',
+  'Сначала определяем зону объекта. Конкретные изделия внутри неё BIZET OS будет уточнять дальше.':'Спочатку визначаємо зону об’єкта. Конкретні вироби всередині неї BIZET OS уточнюватиме далі.',
+  'Кухня':'Кухня','Спальная':'Спальня','Гостиная':'Вітальня','Шкафы':'Шафи','Другое':'Інше',
+  'Выберите уровень комплектации':'Оберіть рівень комплектації',
+  'Сравните один и тот же образ изделия — от более простого исполнения к более насыщенному.':'Порівняйте той самий виріб — від простішого виконання до більш насиченого.',
+  'Своя конфигурация':'Власна конфігурація',
+  'Какое оформление вам ближе?':'Яке оформлення вам ближче?',
+  'Это не выбор конкретного цвета — только общее оформление проекта.':'Це не вибір конкретного кольору — лише загальне оформлення проєкту.',
+  'Светлое':'Світле','Тёмное':'Темне',
+  'Tree Art · активно':'Tree Art · активно'
+};
+const UA_COPY = {
+  settings:'Налаштування',theme:'Тема',light:'Світла',dark:'Темна',language:'Мова',login:'Увійти',register:'Реєстрація',
+  feedback:'Зворотний зв’язок',tutorial:'Як користуватися системою',step:'Крок',of:'з',summaryTitle:'Ваш вибір',continue:'Деталі вашого приміщення',
+  legacy:'Технічний стенд',authPending:'Вхід і реєстрацію буде підключено окремим шаром акаунта. Гостьовий режим залишається доступним.',
+  feedbackTitle:'Зворотний зв’язок',feedbackCopy:'Опишіть питання, ідею або зауваження.',feedbackPlaceholder:'Ваше повідомлення',feedbackSubmit:'Зберегти для пілота',
+  feedbackSaved:'Повідомлення збережено в цьому браузері для поточного пілота.',tutorialTitle:'Як користуватися системою',tutorialCopy:'Тут запускатиметься відеоінструкція.',
+  roomDetailsPending:'Наступний екран — деталі приміщення.',customDevelopment:'Ми працюємо над цією функцією.',changeSelection:'Змінити',saveError:'Не вдалося зберегти вибір',
+  loadErrorTitle:'Не вдалося відкрити проєкт',loadErrorSubtitle:'Перевірте підключення до BIZET OS і повторіть спробу.'
+};
+
 const LABELS = {
   object_type: {
     NEW_BUILD: { ru: 'Новострой', en: 'New build' }, OLD_STOCK: { ru: 'Старый фонд', en: 'Historic building' },
@@ -169,11 +194,13 @@ let currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
 let toastTimer = null;
 
 function t(value) {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') return currentLanguage === 'ua' ? (UA_AUTO[value] || value) : value;
+  if (currentLanguage === 'ua') return value?.ua || UA_AUTO[value?.ru] || value?.ru || '';
   return value?.[currentLanguage] || value?.ru || '';
 }
 
 function copy(key) {
+  if (currentLanguage === 'ua') return UA_COPY[key] || STATIC_COPY.ru[key] || key;
   return STATIC_COPY[currentLanguage]?.[key] || STATIC_COPY.ru[key] || key;
 }
 
@@ -266,7 +293,7 @@ function renderStep() {
     const selectedClass = option.value === selected ? ' selected' : '';
     const wideSpecial = (step.field === 'product_type' && option.value === 'ZONE_OTHER') ||
       (step.field === 'complexity_category' && option.value === 'V');
-    const layoutClass = wideSpecial ? ' r1039-wide-choice' : '';
+    const layoutClass = (wideSpecial ? ' r1039-wide-choice' : '') + (option.value === 'ZONE_WARDROBE' ? ' wardrobe-active' : '');
     const variantFilter = option.variantFilter || 'none';
     const kicker = option.kicker ? `<span class="card-kicker">${t(option.kicker)}</span>` : '';
     const note = option.note ? `<span class="card-note">${t(option.note)}</span>` : '';
