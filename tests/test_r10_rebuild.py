@@ -760,7 +760,7 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
 
 def test_r1049_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.5.0"' in main
+    assert 'version="R10.5.1"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -851,11 +851,11 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
 
 def test_r1045_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=1050" in html
-    assert "/static/pilot-3d.js?v=1050" in html
-    assert "/static/workspace-r8.css?v=1050" in html
+    assert "/static/model.js?v=1051" in html
+    assert "/static/pilot-3d.js?v=1051" in html
+    assert "/static/workspace-r8.css?v=1051" in html
     assert "/static/model-r5.js?v=175" in html
-    assert "/static/workspace-r8.js?v=1050" in html
+    assert "/static/workspace-r8.js?v=1051" in html
     assert "/static/point-b.js?v=175" in html
 
 
@@ -936,11 +936,11 @@ def test_r1038_focus_canvas_has_same_touch_and_pinch_contract():
 
 def test_r1044_start_assets_are_cache_busted():
     html = read("index.html")
-    assert "/static/start.css?v=1050" in html
-    assert "/static/next-pilot.css?v=1050" in html
-    assert "/static/start.js?v=1050" in html
-    assert "/static/start-room-handoff.js?v=1050" in html
-    assert "/static/next-pilot-start.js?v=1050" in html
+    assert "/static/start.css?v=1051" in html
+    assert "/static/next-pilot.css?v=1051" in html
+    assert "/static/start.js?v=1051" in html
+    assert "/static/start-room-handoff.js?v=1051" in html
+    assert "/static/next-pilot-start.js?v=1051" in html
 
 
 def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visible():
@@ -1358,7 +1358,7 @@ def test_r1042_offer_download_uses_real_pdf_endpoint():
 def test_r1044_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v():
     index = read("index.html")
     start = read("start.js")
-    for asset in ["start.css?v=1050", "start.js?v=1050", "start-room-handoff.js?v=1050"]:
+    for asset in ["start.css?v=1051", "start.js?v=1051", "start-room-handoff.js?v=1051"]:
         assert asset in index
     assert "{ value: 'V', disabled: true" in start
     assert "Custom configuration" in start
