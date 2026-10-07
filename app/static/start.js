@@ -189,7 +189,9 @@ let project = null;
 let currentStep = 0;
 let busy = false;
 let editingFromSummary = false;
-let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'ru';
+const LANGUAGE_DEFAULT_MARK='bizet_os_language_v1049_default';
+if(!localStorage.getItem(LANGUAGE_DEFAULT_MARK)){localStorage.setItem(LANGUAGE_KEY,'ua');localStorage.setItem(LANGUAGE_DEFAULT_MARK,'1');}
+let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'ua';
 let currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
 let toastTimer = null;
 
