@@ -1,6 +1,24 @@
 (()=> {
  const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
- const LANG_KEY='bizet_os_language',uiLang=()=>String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ru').toLowerCase().startsWith('en')?'en':'ru',tr=(ru,en)=>uiLang()==='en'?en:ru;
+ const LANG_KEY='bizet_os_language';
+ const UA_I18N={
+  'Общие':'Загальні','Как задать помещение':'Як задати приміщення','Шаблон':'Шаблон','Скан':'Скан','Загрузить файл':'Завантажити файл',
+  'Геометрия':'Геометрія','Длина основной стены, мм':'Довжина основної стіни, мм','Глубина помещения, мм':'Глибина приміщення, мм','Высота помещения, мм':'Висота приміщення, мм',
+  'Поверхности помещения':'Поверхні приміщення','Пол':'Підлога','Стены':'Стіни','Потолок':'Стеля','Не выбрано':'Не вибрано','Своя текстура':'Власна текстура',
+  'Калибровка файла':'Калібрування файлу','Известный размер, мм':'Відомий розмір, мм','Применить масштаб':'Застосувати масштаб','Подтвердить помещение':'Підтвердити приміщення',
+  'Холодильник':'Холодильник','Наличие':'Наявність','Да':'Так','Нет':'Ні','Сторона':'Сторона','Слева':'Ліворуч','Справа':'Праворуч','Тип':'Тип','Ширина':'Ширина',
+  'Мойка':'Мийка','Монтаж':'Монтаж','Под столешницей':'Під стільницею','Чаш':'Чаш','Измельчитель':'Подрібнювач','Фильтры':'Фільтри',
+  'Варочная / ПММ':'Варильна / ПММ','Варочная':'Варильна','Посудомоечная машина':'Посудомийна машина','Вытяжка / духовка':'Витяжка / духова шафа','Вытяжка':'Витяжка','Духовка':'Духова шафа',
+  'Микроволновка':'Мікрохвильова піч','Кофемашина':'Кавомашина','Настройка модулей':'Налаштування модулів','Параметры модулей':'Параметри модулів',
+  'Коммуникации':'Комунікації','Элементы стен':'Елементи стін','Материалы':'Матеріали','Общие настройки':'Загальні налаштування',
+  'Добавить элемент стены':'Додати елемент стіни','Окно':'Вікно','Дверь':'Двері','Радиатор':'Радіатор','Ниша':'Ніша','Колонна':'Колона','Балка':'Балка','Удалить':'Видалити',
+  'Фасады':'Фасади','Корпус':'Корпус','Столешница':'Стільниця','Ручки':'Ручки','Ящики':'Шухляди','Подтверждение':'Підтвердження','Подтвердить текущий вариант':'Підтвердити поточний варіант',
+  'Настройки проекта':'Налаштування проєкту','Список модулей':'Список модулів','Другой вариант':'Інший варіант','Варианты модуля':'Варіанти модуля','Настройки':'Налаштування','Тема':'Тема',
+  'Светлая':'Світла','Тёмная':'Темна','Базовый вариант':'Базовий варіант','О базовом варианте':'Про базовий варіант','Свернуть':'Згорнути','Закрыть':'Закрити','Отмена':'Скасувати','Применить':'Застосувати',
+  'Помещение':'Приміщення','Техника':'Техніка','Бытовая техника':'Побутова техніка','ПРАВКА МОДУЛЯ':'РЕДАГУВАННЯ МОДУЛЯ','Модуль':'Модуль'
+ };
+ const uiLang=()=>{const v=String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ua').toLowerCase();return v.startsWith('en')?'en':(v.startsWith('ua')||v.startsWith('uk'))?'ua':'ru'};
+ const tr=(ru,en)=>uiLang()==='en'?en:uiLang()==='ua'?(UA_I18N[ru]||ru):ru;
  const PROJECT_I18N={
    'Общие':'General','Как задать помещение':'How to define the room','Шаблон':'Template','Скан':'Scan','Загрузить файл':'Upload file',
    'Три входа приводятся к единой Room Model.':'All three methods create the same Room Model.','Геометрия':'Geometry',
@@ -39,7 +57,7 @@
    'Песочная':'Sand','Светлый камень':'Light stone','Серая':'Grey','Тёплая':'Warm','Ясень':'Ash','Серый камень':'Grey stone','Дуб натуральный':'Natural oak','Дуб дымчатый':'Smoked oak','Ясень светлый':'Light ash','Дуб':'Oak','Серо-бежевый':'Greige','Тёмный':'Dark',
    'Тёплый':'Warm','Серый':'Grey','Светлый':'Light','Тёплый белый':'Warm white','Песочный':'Sand','Грейдж':'Greige','Графит':'Graphite','Белая':'White','Орех':'Walnut','Светлая':'Light','Матовый':'Matte','Сатин':'Satin','Белый':'White','Светло-серый':'Light grey','Айвори':'Ivory','Шалфей':'Sage','Чёрный':'Black'
  };
- const ui=value=>uiLang()==='en'?(PROJECT_I18N[String(value)]||String(value)):String(value);
+ const ui=value=>uiLang()==='en'?(PROJECT_I18N[String(value)]||String(value)):uiLang()==='ua'?(UA_I18N[String(value)]||String(value)):String(value);
  let rt=null,history=[],locks=new Set(JSON.parse(localStorage.getItem('bizet_r8_locks')||'[]'));
  const projectId=new URLSearchParams(location.search).get('project')||sessionStorage.getItem('bizet_os_project_id')||localStorage.getItem('bizet_os_project_id')||'pilot';
  const VARIANT_KEY='bizet_r8_variant_slots_'+projectId,VARIANT_POS_KEY='bizet_r8_variant_pos_'+projectId;
@@ -89,14 +107,15 @@
 
  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
  function localizeWorkspaceChrome(){
-   const en=uiLang()==='en';document.documentElement.lang=en?'en':'ru';
+   const lang=uiLang(),en=lang==='en';document.documentElement.lang=lang==='ua'?'uk':lang;
+   const pick=pair=>en?pair[1]:lang==='ua'?(UA_I18N[pair[0]]||pair[0]):pair[0];
    const nav={
      room:['Помещение','Room'],appliances:['Техника','Appliances'],upper:['Настройка модулей','Module settings'],
      communications:['Коммуникации','Utilities'],elements:['Элементы стен','Wall elements'],materials:['Материалы','Materials'],general:['Общие','General']
    };
    document.querySelectorAll('#workspaceTools [data-panel]').forEach(btn=>{
      const pair=nav[btn.dataset.panel];if(!pair)return;
-     const n=btn.querySelector('span')?.textContent||'';btn.innerHTML='<span>'+esc(n)+'</span>'+esc(en?pair[1]:pair[0]);
+     const n=btn.querySelector('span')?.textContent||'';btn.innerHTML='<span>'+esc(n)+'</span>'+esc(pick(pair));
    });
    const toolsLabel=document.querySelector('.r8-tools-label');if(toolsLabel)toolsLabel.textContent=tr('Настройки проекта','Project settings');
    const stripLabel=document.querySelector('.r8-module-strip-label');if(stripLabel)stripLabel.textContent=tr('Список модулей','Module list');
@@ -108,6 +127,7 @@
      const light=theme.querySelector('option[value="light"]'),dark=theme.querySelector('option[value="dark"]');
      if(light)light.textContent=tr('Светлая','Light');if(dark)dark.textContent=tr('Тёмная','Dark');
    }
+   const languageSelect=$('workspaceLanguageSelect');if(languageSelect)languageSelect.value=lang;
    const projectState=document.querySelector('.r8-project-state>span');if(projectState)projectState.textContent=tr('Базовый вариант','Base variant');
    const baseInfo=$('baseInfoButton');if(baseInfo)baseInfo.setAttribute('aria-label',tr('О базовом варианте','About base variant'));
    const panelClose=$('panelClose');if(panelClose)panelClose.setAttribute('aria-label',tr('Свернуть','Collapse'));
@@ -123,6 +143,20 @@
    if($('surfaceMaterialCancel'))$('surfaceMaterialCancel').textContent=tr('Отмена','Cancel');
    if($('surfaceMaterialApply'))$('surfaceMaterialApply').textContent=tr('Применить','Apply');
  }
+ const KITCHEN_MODE_KEY='bizet_kitchen_view_mode';
+ function setKitchenUiMode(mode){
+   const next=mode==='EDIT'?'EDIT':'VIEW';
+   window.BIZET_KITCHEN_UI_MODE=next;
+   localStorage.setItem(KITCHEN_MODE_KEY,next);
+   document.body.classList.toggle('kitchen-view-mode',next==='VIEW');
+   $('kitchenViewMode')?.classList.toggle('active',next==='VIEW');
+   $('kitchenEditMode')?.classList.toggle('active',next==='EDIT');
+   if(next==='VIEW'){$('editorPanel')?.setAttribute('hidden','');}
+ }
+ $('kitchenViewMode')?.addEventListener('click',()=>setKitchenUiMode('VIEW'));
+ $('kitchenEditMode')?.addEventListener('click',()=>setKitchenUiMode('EDIT'));
+ setKitchenUiMode(localStorage.getItem(KITCHEN_MODE_KEY)||'VIEW');
+ $('workspaceLanguageSelect')?.addEventListener('change',e=>{const v=['ua','ru','en'].includes(e.target.value)?e.target.value:'ua';localStorage.setItem(LANG_KEY,v);location.reload()});
  function option(value,label){return '<option value="'+esc(value)+'">'+esc(ui(label))+'</option>'}
  function field(label,key,choices){const current=rt.getInputs()[key];return '<label class="r8-field"><span>'+esc(ui(label))+'</span><select data-input="'+key+'">'+choices.map(x=>option(x[0],x[1])).join('')+'</select></label>'}
  function numberField(label,key,def,min){const current=Number(rt.getInputs()[key]??def);return '<label class="r8-field"><span>'+esc(ui(label))+'</span><input type="number" min="'+(min||0)+'" step="1" value="'+current+'" data-number="'+key+'"></label>'}
