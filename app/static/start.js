@@ -331,6 +331,10 @@ async function choose(value) {
   showError('');
   const step = STEPS[currentStep];
   try {
+    if (project.context?.[step.field]) {
+      const reopened = await request(`/api/v1.1/projects/${project.identity.internal_id}/quest/actions/${step.actionId}/reopen`, { method: 'POST' });
+      project = reopened.project || reopened;
+    }
     const result = await request(`/api/v1.1/projects/${project.identity.internal_id}/quest/actions/${step.actionId}/answer`, {
       method: 'POST',
       body: JSON.stringify({ answer: value }),
@@ -516,9 +520,10 @@ $('continueButton').addEventListener('click', () => {
   applyStaticLanguage();
   try {
     await loadProject();
-    currentStep = firstIncompleteStep();
-    if (currentStep >= STEPS.length) await renderSummary();
-    else renderStep();
+    // R10.5.1: "/" is always the true first screen. Existing project data is kept,
+    // but the route itself never resumes in the middle of onboarding.
+    currentStep = 0;
+    renderStep();
   } catch (error) {
     $('stepTitle').textContent = copy('loadErrorTitle');
     $('stepSubtitle').textContent = copy('loadErrorSubtitle');
