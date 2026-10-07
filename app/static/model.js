@@ -1207,8 +1207,7 @@
     if(event.cancelable)event.preventDefault();
     const cam=viewMode===VIEW_FOCUS?focusCamera:camera;
     cam.yaw=drag.yaw-dx*.0095;
-    if(viewMode===VIEW_FOCUS)cam.pitch=clamp(drag.pitch+dy*.006,-1.12,1.12);
-    else cam.pitch=drag.pitch;
+    cam.pitch=clamp(drag.pitch+dy*.006,-1.12,1.12);
     renderScene(false);
   }
   function endCanvasGesture(event){
@@ -1216,7 +1215,7 @@
     const surface=drag.surface,mode=drag.mode,wasMoved=dragMoved;
     drag=null;
     try{surface.releasePointerCapture?.(event.pointerId)}catch(_){}
-    if(!wasMoved&&!mode&&scene&&viewMode===VIEW_NORMAL&&surface===normalCanvas){
+    if(!wasMoved&&!mode&&scene&&viewMode===VIEW_NORMAL&&surface===normalCanvas&&window.BIZET_KITCHEN_UI_MODE!=='VIEW'){
       const rect=normalCanvas.getBoundingClientRect(),id=scene.hitTest(event.clientX-rect.left,event.clientY-rect.top);
       if(id)requestAnimationFrame(()=>openModule(id));
     }
