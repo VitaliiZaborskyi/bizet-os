@@ -15,7 +15,7 @@
   'Фасады':'Фасади','Корпус':'Корпус','Столешница':'Стільниця','Ручки':'Ручки','Ящики':'Шухляди','Подтверждение':'Підтвердження','Подтвердить текущий вариант':'Підтвердити поточний варіант',
   'Настройки проекта':'Налаштування проєкту','Список модулей':'Список модулів','Другой вариант':'Інший варіант','Варианты модуля':'Варіанти модуля','Настройки':'Налаштування','Тема':'Тема',
   'Светлая':'Світла','Тёмная':'Темна','Базовый вариант':'Базовий варіант','О базовом варианте':'Про базовий варіант','Свернуть':'Згорнути','Закрыть':'Закрити','Отмена':'Скасувати','Применить':'Застосувати',
-  'Помещение':'Приміщення','Техника':'Техніка','Бытовая техника':'Побутова техніка','ПРАВКА МОДУЛЯ':'РЕДАГУВАННЯ МОДУЛЯ','Модуль':'Модуль'
+  'Помещение':'Приміщення','Техника':'Техніка','Бытовая техника':'Побутова техніка','ПРАВКА МОДУЛЯ':'РЕДАГУВАННЯ МОДУЛЯ','Модуль':'Модуль','Экспорт':'Експорт','Производственный подрядчик':'Виробничий підрядник','Источник инженерных данных':'Джерело інженерних даних'
  };
  const uiLang=()=>{const v=String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ua').toLowerCase();return v.startsWith('en')?'en':(v.startsWith('ua')||v.startsWith('uk'))?'ua':'ru'};
  const tr=(ru,en)=>uiLang()==='en'?en:uiLang()==='ua'?(UA_I18N[ru]||ru):ru;
@@ -111,7 +111,7 @@
    const pick=pair=>en?pair[1]:lang==='ua'?(UA_I18N[pair[0]]||pair[0]):pair[0];
    const nav={
      room:['Помещение','Room'],appliances:['Техника','Appliances'],upper:['Настройка модулей','Module settings'],
-     communications:['Коммуникации','Utilities'],elements:['Элементы стен','Wall elements'],materials:['Материалы','Materials'],general:['Общие','General']
+     communications:['Коммуникации','Utilities'],elements:['Элементы стен','Wall elements'],materials:['Материалы','Materials'],general:['Экспорт','Export']
    };
    document.querySelectorAll('#workspaceTools [data-panel]').forEach(btn=>{
      const pair=nav[btn.dataset.panel];if(!pair)return;
@@ -316,6 +316,10 @@
        +numberField('Глубина верхних модулей, мм','upper_depth_mm',320,200)
        +numberField('Высота цоколя, мм','plinth_height_mm',100,0)
        +'</div><p>Высота цоколя меняет высоту корпуса, сохраняя общую высоту нижнего ряда.</p></section>';
+     html+='<section class="r8-section"><h3>Ручки</h3><p>Распашные фасады: вертикально, 40 мм от бокового края и 40 мм от верхнего/нижнего края. Ящики и подъёмные фасады: горизонтально по центру.</p><div class="r104-general-grid">'
+       +field('Распашные модули','hinged_handle_orientation',[['VERTICAL','Вертикальные ручки'],['HORIZONTAL','Горизонтальные ручки']])
+       +field('Ящики','drawer_handle_orientation',[['HORIZONTAL','Горизонтальные ручки'],['VERTICAL','Вертикальные ручки']])
+       +'</div></section>';
    }
    if(panel==='communications'){
      html='<section class="r8-section"><h3>Система ожидает</h3><p>Канализация · вода · питание варочной · вытяжка · холодильник · духовка · розетки.</p>'+field('Статус координат','communications_status',[['PENDING_COORDINATE_DETAIL','Уточнить позже'],['USER_CONFIRMED','Проверено']])+'</section>';
@@ -330,12 +334,13 @@
      html+='<section class="r8-section"><h3>Подтверждение</h3><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
    }
    if(panel==='general'){
-     html='<section class="r8-section"><h3>Ручки</h3><div class="r104-general-grid">'
-       +field('Распашные модули','hinged_handle_orientation',[['VERTICAL','Вертикальные ручки'],['HORIZONTAL','Горизонтальные ручки']])
-       +field('Ящики','drawer_handle_orientation',[['HORIZONTAL','Горизонтальные ручки'],['VERTICAL','Вертикальные ручки']])
-       +field('Валюта отображения','display_currency',[['UAH','UAH'],['EUR','EUR'],['USD','USD'],['AUD','AUD']])
+     html='<section class="r8-section"><h3>Экспорт</h3><div class="r1050-production-grid">'
+       +'<span class="r1050-source-badge">BIZET GENERATED</span>'
+       +'<label><span>Производственный подрядчик</span><select id="productionProfileR1050"><option value="QUADRO">Quadro · active</option><option value="VIYAR" disabled>Viyar · soon</option><option value="KRONAS" disabled>Kronas · soon</option></select></label>'
+       +'<p>Один инженерный BIZET Model → профиль производства → нужные артикулы и выходной формат.</p>'
+       +'<div class="r1050-export-actions"><button class="primary" id="exportProjectR1050">XML .project</button><button id="exportBomR1050">BOM</button><button id="exportDetailR1050">Деталировка</button><button id="exportApprovalR1050">Чертежи</button></div>'
        +'</div></section>';
-     html+='<section class="r8-section"><h3>Документы · тест</h3><div class="r104-test-actions"><button class="r8-secondary" data-action="bom-test">Открыть BOM · TEST</button><button class="r8-secondary" data-action="approval-test">Чертежи для согласования · TEST</button></div></section>';
+     html+='<section class="r8-section"><h3>Дальнейшие выходы</h3><p>DWG / DXF / GLB / развёртки / визуализации подключаются как отдельные адаптеры без изменения инженерного ядра.</p></section>';
    }
    $('panelBody').innerHTML=html;localizePanelBody();bindInputs();bindMaterialTargets();
    if(panel==='room')bindRoomImport();
