@@ -15,20 +15,20 @@ def test_r1050_app_and_current_assets_are_wired():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
     workspace = read("workspace-r8.html")
     grande = read("grande-r1046.html")
-    assert 'version="R10.5.0"' in main
+    assert 'version="R10.5.1"' in main
     for asset in [
-        "/static/r1050.css?v=1050",
-        "/static/production-r1050.js?v=1050",
-        "/static/kitchen-webgl-r1050.js?v=1050",
-        "/static/workspace-r1050.js?v=1050",
-        "/static/ua-ui-r1050.js?v=1050",
+        "/static/r1050.css?v=1051",
+        "/static/production-r1050.js?v=1051",
+        "/static/kitchen-webgl-r1050.js?v=1051",
+        "/static/workspace-r1050.js?v=1051",
+        "/static/ua-ui-r1050.js?v=1051",
     ]:
         assert asset in workspace
     for asset in [
-        "/static/production-r1050.js?v=1050",
-        "/static/grande-r1050.css?v=1050",
-        "/static/grande-r1050.js?v=1050",
-        "/static/ua-ui-r1050.js?v=1050",
+        "/static/production-r1050.js?v=1051",
+        "/static/grande-r1050.css?v=1051",
+        "/static/grande-r1050.js?v=1051",
+        "/static/ua-ui-r1050.js?v=1051",
     ]:
         assert asset in grande
 
@@ -122,7 +122,7 @@ def test_r1050_kitchen_dimensions_are_large_and_focus_is_transparent():
     viewer = read("kitchen-webgl-r1050.js")
     assert "function textSprite(text,scale=2.4)" in viewer
     assert "focus?2.8:2.35" in viewer
-    assert "ghost.opacity=.22" in viewer
+    assert "ghost.opacity=.18" in viewer
     assert "addFocusInternals" in viewer
     assert "CONFIRMAT_6_3X50" in viewer
 
