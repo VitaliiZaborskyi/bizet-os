@@ -1,0 +1,48 @@
+/* BIZET OS R10.5.1 viewer integrity */
+@media (min-width:701px){
+  .room-source-card{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    gap:0!important;
+    min-width:0!important;
+    overflow:hidden!important;
+  }
+  .room-source-card .room-source-visual{
+    display:block!important;
+    flex:0 0 118px!important;
+    width:100%!important;
+    min-height:118px!important;
+    margin:0 0 17px!important;
+  }
+  .room-source-card .room-source-copy{
+    display:block!important;
+    min-width:0!important;
+    position:relative!important;
+    z-index:2!important;
+  }
+  .room-source-card .room-source-copy strong,
+  .room-source-card .room-source-copy small{
+    position:static!important;
+    transform:none!important;
+    white-space:normal!important;
+  }
+}
+.room-source-visual.file::before{
+  content:'PDF · JPG'!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+html[data-theme="light"] .brand,
+html[data-theme="light"] .brand span,
+html[data-theme="light"] .r8-brand,
+html[data-theme="light"] .r8-brand strong,
+html[data-theme="light"] .r8-brand i{color:#111!important}
+.r1051-export-error{
+  margin:10px 0 0;padding:10px 12px;border-radius:12px;
+  background:#fff0ef;color:#8e2922;font-size:12px;line-height:1.4
+}
+.r1051-export-ok{
+  margin:10px 0 0;padding:10px 12px;border-radius:12px;
+  background:#edf8ef;color:#245c31;font-size:12px;line-height:1.4
+}
