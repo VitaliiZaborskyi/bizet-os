@@ -760,7 +760,7 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
 
 def test_r1049_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.4.9"' in main
+    assert 'version="R10.5.0"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
@@ -851,11 +851,11 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
 
 def test_r1045_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=1049" in html
-    assert "/static/pilot-3d.js?v=1049" in html
-    assert "/static/workspace-r8.css?v=1049" in html
+    assert "/static/model.js?v=1050" in html
+    assert "/static/pilot-3d.js?v=1050" in html
+    assert "/static/workspace-r8.css?v=1050" in html
     assert "/static/model-r5.js?v=175" in html
-    assert "/static/workspace-r8.js?v=1049" in html
+    assert "/static/workspace-r8.js?v=1050" in html
     assert "/static/point-b.js?v=175" in html
 
 
@@ -936,11 +936,11 @@ def test_r1038_focus_canvas_has_same_touch_and_pinch_contract():
 
 def test_r1044_start_assets_are_cache_busted():
     html = read("index.html")
-    assert "/static/start.css?v=1049" in html
-    assert "/static/next-pilot.css?v=1049" in html
-    assert "/static/start.js?v=1049" in html
-    assert "/static/start-room-handoff.js?v=1049" in html
-    assert "/static/next-pilot-start.js?v=1049" in html
+    assert "/static/start.css?v=1050" in html
+    assert "/static/next-pilot.css?v=1050" in html
+    assert "/static/start.js?v=1050" in html
+    assert "/static/start-room-handoff.js?v=1050" in html
+    assert "/static/next-pilot-start.js?v=1050" in html
 
 
 def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visible():
@@ -1185,7 +1185,8 @@ def test_r1041_workspace_chrome_translation_is_centralized():
 
 def test_r1042_complexity_fifth_choice_is_named_custom_configuration():
     start = read('start.js')
-    assert "{ value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
+    assert "{ value: 'V', disabled: true" in start
+    assert "Custom configuration" in start
     assert "V: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
 
 
@@ -1354,7 +1355,7 @@ def test_r1042_offer_download_uses_real_pdf_endpoint():
 def test_r1044_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v():
     index = read("index.html")
     start = read("start.js")
-    for asset in ["start.css?v=1049", "start.js?v=1049", "start-room-handoff.js?v=1049"]:
+    for asset in ["start.css?v=1050", "start.js?v=1050", "start-room-handoff.js?v=1050"]:
         assert asset in index
     assert "{ value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
     assert "title: { ru: 'V', en: 'V' }" not in start
@@ -1512,14 +1513,14 @@ def test_r1049_wardrobes_card_has_hard_route_and_js_fallback():
     assert "/wardrobes?manufacturer=treeart" not in start
 
 
-def test_r1044_custom_configuration_reports_in_development():
+def test_r1050_only_complexity_category_i_is_active():
     start = read("start.js")
-    assert "customDevelopment" in start
-    assert "Мы работаем над этой функцией" in start
-    assert "Custom configuration is currently in development" in start
     choose = start[start.index("async function choose(value)"):start.index("async function editSummaryStep")]
-    assert "STEPS[currentStep]?.field==='complexity_category'&&value==='V'" in choose
-    assert "showToast(copy('customDevelopment'))" in choose
+    assert "disabled: true" in start
+    for value in ["II", "III", "IV", "V"]:
+        assert f"value: '{value}', disabled: true" in start
+    assert "complexity_category'&&value!=='I'" in choose
+    assert "Only category I is active in this pilot." in choose
 
 
 def test_r1044_isolation_inputs_prevent_ios_focus_zoom_and_save_blurs_field():
@@ -1719,7 +1720,9 @@ def test_r1045_tab_03_is_module_settings_with_all_global_dimensions_and_plinth_o
     general = workspace[workspace.index("if(panel==='general')"):workspace.index("$('panelBody').innerHTML")]
     assert "plinth_height_mm" not in room
     assert "plinth_height_mm" not in general
-    assert "<h3>Ручки</h3>" in general
+    assert "<h3>Ручки</h3>" in upper
+    assert "<h3>Ручки</h3>" not in general
+    assert "<h3>Экспорт</h3>" in general
 
 
 def test_r1045_module_dimension_inputs_drive_actual_model_geometry():
