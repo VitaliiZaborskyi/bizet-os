@@ -428,3 +428,18 @@ body[data-start-kind="configuration"] .configuration-custom-choice .config-card-
   body[data-start-kind="configuration"] .config-auto-note,
   body[data-start-kind="configuration"] .screen-five-error[hidden]{display:none!important}
 }
+
+
+/* R10.4.8 — Wardrobes is a live route, never a future/disabled zone. */
+.choice-card.wardrobe-active{
+  opacity:1!important;
+  pointer-events:auto!important;
+  filter:none!important;
+  box-shadow:0 0 0 2px rgba(47,124,255,.42),var(--shadow)!important;
+}
+.choice-card.wardrobe-active .card-note{
+  opacity:1!important;
+  color:#fff!important;
+  font-weight:750!important;
+}
+.choice-card.wardrobe-active:disabled{opacity:1!important;pointer-events:auto!important}
