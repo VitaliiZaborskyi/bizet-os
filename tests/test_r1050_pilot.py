@@ -187,8 +187,8 @@ def test_r1050_only_complexity_i_is_selectable():
 
 def test_r1050_light_theme_forces_dark_brand_and_inputs_block_ios_zoom():
     css = read("r1050.css")
-    assert "html[data-theme="light"] .brand" in css
-    assert "html[data-theme="light"] .brand span" in css
+    assert 'html[data-theme="light"] .brand' in css
+    assert 'html[data-theme="light"] .brand span' in css
     assert "color:#111!important" in css
     assert "input,select,textarea{font-size:16px!important}" in css
 
