@@ -593,8 +593,8 @@ def test_r1034_canvas_owns_3d_gestures_and_page_scroll_stays_outside_canvas():
     assert "drag.mode='ROTATE'" in gesture
     assert "surface.setPointerCapture" in gesture
     assert "event.preventDefault()" in gesture
-    assert "if(viewMode===VIEW_FOCUS)cam.pitch=clamp" in gesture
-    assert "else cam.pitch=drag.pitch" in gesture
+    assert "cam.pitch=clamp(drag.pitch+dy*.006,-1.12,1.12)" in gesture
+    assert "else cam.pitch=drag.pitch" not in gesture
     assert "pointerdown" in gesture and "pointermove" in gesture
 
 def test_r1034_workspace_labels_remove_readiness_and_keep_randomizer_contract():
@@ -851,11 +851,11 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
 
 def test_r1045_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=175" in html
-    assert "/static/pilot-3d.js?v=175" in html
-    assert "/static/workspace-r8.css?v=175" in html
+    assert "/static/model.js?v=1049" in html
+    assert "/static/pilot-3d.js?v=1049" in html
+    assert "/static/workspace-r8.css?v=1049" in html
     assert "/static/model-r5.js?v=175" in html
-    assert "/static/workspace-r8.js?v=175" in html
+    assert "/static/workspace-r8.js?v=1049" in html
     assert "/static/point-b.js?v=175" in html
 
 
