@@ -85,8 +85,8 @@
       furniture.moduleTop=carcassMap[carcassPreset];
     }
     const roomLight={
-      floor:{OAK_NATURAL:'#cbb58f',STONE_LIGHT:'#d1cec5',TILE_SAND:'#d7c9ad',CONCRETE_WARM:'#bbb7ae'}[floorPreset]||'#ddd7ca',
-      wall:{WARM_WHITE:'#e9e5db',SAND:'#d9ccb7',GREIGE:'#c9c4b9',STONE:'#bebbb4'}[wallPreset]||'#e5e0d6'
+      floor:{OAK_NATURAL:'#cbb58f',STONE_LIGHT:'#d1cec5',TILE_SAND:'#d7c9ad',CONCRETE_WARM:'#bbb7ae'}[floorPreset]||'#50545a',
+      wall:{WARM_WHITE:'#e9e5db',SAND:'#d9ccb7',GREIGE:'#c9c4b9',STONE:'#bebbb4'}[wallPreset]||'#62666c'
     };
     const roomDark={
       floor:{OAK_NATURAL:'#5b4c38',STONE_LIGHT:'#4b4b48',TILE_SAND:'#544b3d',CONCRETE_WARM:'#464541'}[floorPreset]||'#2a2925',
