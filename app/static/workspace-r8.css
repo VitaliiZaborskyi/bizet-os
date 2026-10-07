@@ -450,3 +450,18 @@ body.r10-module-focus .r10-dimensions-icon{
     gap:6px;
   }
 }
+
+/* R10.4.9 — shared BIZET viewer contract */
+.r1049-viewer-mode{display:flex;align-items:center;padding:3px;border:1px solid rgba(127,127,127,.26);border-radius:999px;background:rgba(20,21,22,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.r1049-viewer-mode button{border:0;background:transparent;color:#bfc2c6;font:800 11px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;letter-spacing:.08em;padding:8px 11px;border-radius:999px;cursor:pointer}
+.r1049-viewer-mode button.active{background:#f2f1ed;color:#18191a;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+html[data-theme="light"] .r1049-viewer-mode{background:rgba(246,246,243,.82)}
+body.kitchen-view-mode #workspaceTools,
+body.kitchen-view-mode #editorPanel,
+body.kitchen-view-mode .r8-module-strip-label,
+body.kitchen-view-mode #moduleStrip,
+body.kitchen-view-mode #moduleEditPanel,
+body.kitchen-view-mode #focusVariantRibbon{display:none!important}
+body.kitchen-view-mode .r8-main{grid-template-columns:minmax(0,1fr)!important}
+body.kitchen-view-mode .r8-canvas-column{grid-column:1/-1!important}
+@media(max-width:820px){.r1049-viewer-mode button{padding:7px 9px}.r8-stage-top{gap:6px}}
