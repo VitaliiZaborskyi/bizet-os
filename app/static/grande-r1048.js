@@ -447,7 +447,7 @@ renderer.domElement.addEventListener('pointermove',e=>{
 function endMove(){clearTimeout(holdTimer);holdTimer=null;moveStart=null;if(moving){moving=false;controls.enabled=controlsWas;$('hint').textContent=tr('hint')}}
 renderer.domElement.addEventListener('pointerup',endMove);renderer.domElement.addEventListener('pointercancel',endMove);
 
-function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}animate();
+function animate(){requestAnimationFrame(animate);controls.update();if(!window.BizetGrandeR1050Post?.render?.())renderer.render(scene,camera)}animate();
 
 function field(label,key,value,min,max,step=10){
  return '<label class="field"><span>'+label+'</span><input data-key="'+key+'" type="number" value="'+value+'" min="'+min+'" max="'+max+'" step="'+step+'"></label>';
