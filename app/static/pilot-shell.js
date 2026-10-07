@@ -159,4 +159,5 @@
 
   panelMarkup();
   refreshDialogCopy();
-if(!document.querySelector('script[data-r1050-ua]')){const s=document.createElement('script');s.src='/static/ua-ui-r1050.js?v=1050';s.dataset.r1050Ua='1';document.head.appendChild(s)}\n})();
+if(!document.querySelector('script[data-r1050-ua]')){const s=document.createElement('script');s.src='/static/ua-ui-r1050.js?v=1050';s.dataset.r1050Ua='1';document.head.appendChild(s)}
+})();
