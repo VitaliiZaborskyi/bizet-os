@@ -2,8 +2,8 @@
 html{-webkit-text-size-adjust:100%}
 input,select,textarea{font-size:16px!important}
 html[data-theme="light"],html:not([data-theme="dark"]){--r1050-ink:#111}
-html[data-theme="light"] body,html[data-theme="light"] button,html[data-theme="light"] a,html[data-theme="light"] .r8-brand,html[data-theme="light"] .r8-brand strong,html[data-theme="light"] .r8-brand i,html[data-theme="light"] .r8-master,
-html:not([data-theme="dark"]) .r8-brand,html:not([data-theme="dark"]) .r8-brand strong,html:not([data-theme="dark"]) .r8-brand i{color:#111!important}
+html[data-theme="light"] body,html[data-theme="light"] button,html[data-theme="light"] a,html[data-theme="light"] .brand,html[data-theme="light"] .brand span,html[data-theme="light"] .brand i,html[data-theme="light"] .r8-brand,html[data-theme="light"] .r8-brand strong,html[data-theme="light"] .r8-brand i,html[data-theme="light"] .r8-master,
+html:not([data-theme="dark"]) .brand,html:not([data-theme="dark"]) .brand span,html:not([data-theme="dark"]) .brand i,html:not([data-theme="dark"]) .r8-brand,html:not([data-theme="dark"]) .r8-brand strong,html:not([data-theme="dark"]) .r8-brand i{color:#111!important}
 .r1050-view-full{overflow:hidden!important}
 .r1050-view-full .r8-shell{position:fixed;inset:0;z-index:400;background:#f1efe9}
 .r1050-view-full .r8-topbar,.r1050-view-full #workspaceTools,.r1050-view-full .r8-module-strip-label,.r1050-view-full #moduleStrip,.r1050-view-full #pointBFinalActions,.r1050-view-full #modelStatus,.r1050-view-full #focusVariantRibbon,.r1050-view-full #moduleEditPanel{opacity:0;pointer-events:none;transform:translateY(12px)}
