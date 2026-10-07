@@ -940,7 +940,7 @@ def test_r1044_start_assets_are_cache_busted():
     assert "/static/next-pilot.css?v=1048" in html
     assert "/static/start.js?v=1049" in html
     assert "/static/start-room-handoff.js?v=1048" in html
-    assert "/static/next-pilot-start.js?v=1049" in html
+    assert "/static/next-pilot-start.js?v=1048" in html
 
 
 def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visible():
