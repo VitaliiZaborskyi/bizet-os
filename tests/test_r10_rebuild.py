@@ -938,9 +938,9 @@ def test_r1044_start_assets_are_cache_busted():
     html = read("index.html")
     assert "/static/start.css?v=1048" in html
     assert "/static/next-pilot.css?v=1048" in html
-    assert "/static/start.js?v=1048" in html
+    assert "/static/start.js?v=1049" in html
     assert "/static/start-room-handoff.js?v=1048" in html
-    assert "/static/next-pilot-start.js?v=1048" in html
+    assert "/static/next-pilot-start.js?v=1049" in html
 
 
 def test_r1039_checkpoint_keeps_critical_isolation_bug_and_dual_ux_shells_visible():
@@ -1354,7 +1354,7 @@ def test_r1042_offer_download_uses_real_pdf_endpoint():
 def test_r1044_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v():
     index = read("index.html")
     start = read("start.js")
-    for asset in ["start.css?v=1048", "start.js?v=1048", "start-room-handoff.js?v=1048"]:
+    for asset in ["start.css?v=1048", "start.js?v=1049", "start-room-handoff.js?v=1048"]:
         assert asset in index
     assert "{ value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
     assert "title: { ru: 'V', en: 'V' }" not in start
@@ -1503,6 +1503,13 @@ def test_r1043_checkpoint_keeps_first_tap_isolation_closed_and_freezes_qa_pack()
     assert "R10.4.3 owner QA corrections" in checkpoint
     assert "first-tap iPhone isolation lifecycle remains accepted CLOSED" in checkpoint
     assert "600 mm below the top of the cabinet body" in checkpoint
+
+
+def test_r1048_wardrobes_card_has_hard_route_and_js_fallback():
+    start = read("start.js")
+    assert "hrefAttr = isWardrobeRoute ? ' href=\"/wardrobes\"' : ''" in start
+    assert "window.location.assign('/wardrobes')" in start
+    assert "/wardrobes?manufacturer=treeart" not in start
 
 
 def test_r1044_custom_configuration_reports_in_development():
