@@ -56,6 +56,7 @@ def test_r1048_start_wardrobes_route_is_live():
     js = read("app/static/start.js")
     css = read("app/static/next-pilot.css")
     assert "value === 'ZONE_WARDROBE'" in js
-    assert "window.location.href='/wardrobes?manufacturer=treeart'" in js
+    assert "window.location.assign('/wardrobes')" in js
+    assert "hrefAttr = isWardrobeRoute ? ' href=\"/wardrobes\"' : ''" in js
     assert "wardrobe-active" in js
     assert ".choice-card.wardrobe-active" in css
