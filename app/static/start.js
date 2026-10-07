@@ -64,7 +64,7 @@ const STEPS = [
       },
       {
         value: 'ZONE_WARDROBE',
-        title: { ru: 'Гардеробная', en: 'Wardrobe' },
+        title: { ru: 'Шкафы', en: 'Wardrobes' },
         image: 'https://images.unsplash.com/photo-1778731660303-1fa5ede75477?auto=format&fit=crop&w=1400&q=82',
         fallback: 'linear-gradient(145deg,#c9c1b8,#6e6359)'
       },
@@ -150,7 +150,7 @@ const LABELS = {
   },
   product_type: {
     ZONE_KITCHEN: { ru: 'Кухня', en: 'Kitchen' }, ZONE_BEDROOM: { ru: 'Спальная', en: 'Bedroom' },
-    ZONE_LIVING_ROOM: { ru: 'Гостиная', en: 'Living room' }, ZONE_WARDROBE: { ru: 'Гардеробная', en: 'Wardrobe' },
+    ZONE_LIVING_ROOM: { ru: 'Гостиная', en: 'Living room' }, ZONE_WARDROBE: { ru: 'Шкафы', en: 'Wardrobes' },
     ZONE_OTHER: { ru: 'Другое', en: 'Other' }, COMMERCIAL_ZONE_PENDING: { ru: 'Коммерческая зона', en: 'Commercial zone' },
     KITCHEN: { ru: 'Кухня', en: 'Kitchen' }, WARDROBE: { ru: 'Гардеробная', en: 'Wardrobe' }, CABINET: { ru: 'Корпусное изделие', en: 'Cabinet' },
     LIVING_ROOM: { ru: 'Гостиная', en: 'Living room' }, OTHER: { ru: 'Другое', en: 'Other' }
@@ -298,6 +298,7 @@ async function choose(value) {
       body: JSON.stringify({ answer: value }),
     });
     project = result.project;
+    if (step.field === 'product_type' && value === 'ZONE_WARDROBE') { window.location.href='/wardrobes'; return; }
     if (editingFromSummary) {
       editingFromSummary = false;
       currentStep = STEPS.length;
