@@ -18,9 +18,10 @@ function syncMode(){document.body.classList.toggle('grande-view-full',document.b
 function bindProduction(){
  const body=$('panelBody');if(!body||!$('downloadExport')||body.querySelector('.r1050-grande-production'))return;
  const block=document.createElement('div');block.className='r1050-grande-production';
- block.innerHTML='<span class="r1050-grande-source">IMPORT · CAD adapter pending</span><label>Виробничий підрядник<select id="grandeProductionProfile"><option value="QUADRO">Quadro · active</option><option disabled>Viyar · soon</option><option disabled>Kronas · soon</option></select></label><small>Project3dc формується через профіль Quadro. Артикул кромки 0.8 мм лишається generic, доки не додано довідник підрядника.</small>';
+ block.innerHTML='<span class="r1050-grande-source">IMPORT · CAD adapter pending</span><label>Виробничий підрядник<select id="grandeProductionProfile"><option value="QUADRO">Quadro · active</option><option disabled>Viyar · soon</option><option disabled>Kronas · soon</option></select></label><small>Grande поки є параметричною реконструкцією, а не розібраним DWG. Строгий preflight не дозволить видати непідтверджений production XML.</small><button type="button" id="grandeQuadroReproR1051">Quadro · мінімальний тест</button><div id="grandePreflightR1051" aria-live="polite"></div>';
  body.insertBefore(block,body.firstChild);
  const sel=$('grandeProductionProfile');if(sel){sel.value=window.BizetProductionR1050?.profile?.().id||'QUADRO';sel.onchange=()=>window.BizetProductionR1050?.setProfile?.(sel.value)}
+ $('grandeQuadroReproR1051')?.addEventListener('click',()=>window.BizetProductionR1050?.downloadQuadroRepro?.());
 }
 function buildDoorPivot(mesh){
  const b=bridge(),part=mesh.userData?.partId;if(!b||!part)return null;
@@ -49,6 +50,8 @@ function setupMotion(){
  });
  function tick(){requestAnimationFrame(tick);animations.forEach(a=>{a.current+=(a.target-a.current)*.11;if(a.kind==='door')a.pivot.rotation.y=a.sign*a.current*Math.PI*.58;else a.members.forEach((m,i)=>m.position.copy(a.bases[i]).add(new THREE.Vector3(0,0,300*a.current)))})}tick();
 }
-function boot(){ensureButtons();syncMode();setupMotion();const panel=$('panelBody');if(panel)new MutationObserver(()=>setTimeout(bindProduction,0)).observe(panel,{childList:true,subtree:true});new MutationObserver(syncMode).observe(document.body,{attributes:true,attributeFilter:['class']});document.addEventListener('dblclick',e=>{if(e.target.closest('.stage'))e.preventDefault()},{capture:true})}
+function boot(){ensureButtons();syncMode();setupMotion();
+ window.addEventListener('bizet:export-preflight',e=>{const el=$('grandePreflightR1051');if(!el)return;const r=e.detail?.report;if(!r)return;el.className=r.ok?'r1051-export-ok':'r1051-export-error';el.textContent=r.ok?'Preflight OK':('Export blocked: '+(r.errors||[]).slice(0,5).join(' · '))});
+const panel=$('panelBody');if(panel)new MutationObserver(()=>setTimeout(bindProduction,0)).observe(panel,{childList:true,subtree:true});new MutationObserver(syncMode).observe(document.body,{attributes:true,attributeFilter:['class']});document.addEventListener('dblclick',e=>{if(e.target.closest('.stage'))e.preventDefault()},{capture:true})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
