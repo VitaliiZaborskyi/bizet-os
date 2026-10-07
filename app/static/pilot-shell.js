@@ -44,6 +44,7 @@
 
   applyTheme();
   document.documentElement.lang = language === 'ua' ? 'uk' : language;
+  if (document.getElementById('workspaceSettingsPanel')) return;
   if (!button) {
     const style=document.createElement('style');
     style.id='bizetGlobalSettingsStyle';
