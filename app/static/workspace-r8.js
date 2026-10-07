@@ -338,7 +338,8 @@
        +'<span class="r1050-source-badge">BIZET GENERATED</span>'
        +'<label><span>Производственный подрядчик</span><select id="productionProfileR1050"><option value="QUADRO">Quadro · active</option><option value="VIYAR" disabled>Viyar · soon</option><option value="KRONAS" disabled>Kronas · soon</option></select></label>'
        +'<p>Один инженерный BIZET Model → профиль производства → нужные артикулы и выходной формат.</p>'
-       +'<div class="r1050-export-actions"><button class="primary" id="exportProjectR1050">XML .project</button><button id="exportBomR1050">BOM</button><button id="exportDetailR1050">Деталировка</button><button id="exportApprovalR1050">Чертежи</button></div>'
+       +'<div class="r1050-export-actions"><button class="primary" id="exportProjectR1050">XML .project</button><button id="exportQuadroReproR1051">Quadro · мінімальний тест</button><button id="exportBomR1050">BOM</button><button id="exportDetailR1050">Деталировка</button><button id="exportApprovalR1050">Чертежи</button></div>'
+       +'<div id="exportPreflightR1051" aria-live="polite"></div>'
        +'</div></section>';
      html+='<section class="r8-section"><h3>Дальнейшие выходы</h3><p>DWG / DXF / GLB / развёртки / визуализации подключаются как отдельные адаптеры без изменения инженерного ядра.</p></section>';
    }
