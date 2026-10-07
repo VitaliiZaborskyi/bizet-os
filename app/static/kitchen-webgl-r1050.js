@@ -102,7 +102,15 @@ function addFocusInternals(room,m,bodyMat){
  pieces.forEach(p=>meshBox(room,p,bodyMat.clone(),furnitureGroup,'body',m.id).material.userData.owned=true);
  const metal=ownMat({color:'#a8adb0',roughness:.3,metalness:.7});
  const fastener=window.BizetProductionR1050?.FASTENER_TEMPLATES?.CONFIRMAT_6_3X50;
- [30,70,D-70,D-30].filter(v=>v>20&&v<D-20).forEach(depth=>{[x+t/2,x+W-t/2].forEach(px=>{[z+9,z+H-9].forEach(pz=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(3.15,3.15,50,10),metal.clone());c.material.userData.owned=true;c.rotation.z=Math.PI/2;c.position.copy(roomToWorld(room,px,y+depth,pz));hardwareGroup.add(c)}})});
+ [30,70,D-70,D-30].filter(v=>v>20&&v<D-20).forEach(depth=>{
+   [x+t/2,x+W-t/2].forEach(px=>{
+     [z+9,z+H-9].forEach(pz=>{
+       const c=new THREE.Mesh(new THREE.CylinderGeometry(3.15,3.15,50,10),metal.clone());
+       c.material.userData.owned=true;c.rotation.z=Math.PI/2;
+       c.position.copy(roomToWorld(room,px,y+depth,pz));hardwareGroup.add(c);
+     });
+   });
+ });
  metal.dispose();
 }
 function lowerRuns(modules){const out=[];['A','B','C'].forEach(wall=>{const list=modules.filter(m=>(m.wall||'A')===wall&&m.level!=='upper'&&!m.tall&&!m.freestanding&&m.kind!=='FILLER').sort((a,b)=>wall==='A'?(+a.x-+b.x):(+a.y-+b.y));if(list.length)out.push([wall,list])});return out}
