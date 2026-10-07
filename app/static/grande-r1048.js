@@ -100,8 +100,8 @@ renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 host.appendChild(renderer.domElement);
 
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x24262a);
-scene.fog=new THREE.Fog(0x24262a,4200,8200);
+scene.background=new THREE.Color(0xefede7);
+scene.fog=null;
 
 const camera=new THREE.PerspectiveCamera(38,1,1,15000);
 const controls=new THREE.OrbitControls(camera,renderer.domElement);
@@ -114,10 +114,10 @@ controls.minPolarAngle=.18;controls.maxPolarAngle=1.48;
 controls.screenSpacePanning=true;
 controls.enableKeys=false;
 
-const hemi=new THREE.HemisphereLight(0xffffff,0x34363a,.66);scene.add(hemi);
-const key=new THREE.DirectionalLight(0xffffff,.68);key.position.set(-1800,3300,2600);key.castShadow=true;
+const hemi=new THREE.HemisphereLight(0xffffff,0xa7a39a,1.0);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xffffff,.52);key.position.set(-1800,3300,2600);key.castShadow=true;
 key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-2600;key.shadow.camera.right=2600;key.shadow.camera.top=3200;key.shadow.camera.bottom=-500;key.shadow.camera.near=100;key.shadow.camera.far=8500;scene.add(key);
-const fill=new THREE.DirectionalLight(0xbfd2ff,.18);fill.position.set(2600,1800,1200);scene.add(fill);
+const fill=new THREE.DirectionalLight(0xd9e5ff,.20);fill.position.set(2600,1800,1200);scene.add(fill);
 
 const roomGroup=new THREE.Group(), modelGroup=new THREE.Group(), dimensionGroup=new THREE.Group(), techGroup=new THREE.Group(), ledGroup=new THREE.Group();
 scene.add(roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup);
@@ -216,11 +216,11 @@ function addHandleHoles(frontSpec){
 
 function buildRoom(){
  disposeGroup(roomGroup);
- const floorMat=new THREE.MeshStandardMaterial({color:0x3b3d41,roughness:.94,metalness:0});floorMat.userData.owned=true;
+ const floorMat=new THREE.MeshStandardMaterial({color:0xc8c3ba,roughness:.94,metalness:0});floorMat.userData.owned=true;
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(S.roomW,S.roomD),floorMat);floor.rotation.x=-Math.PI/2;floor.position.set(0,0,0);floor.receiveShadow=true;roomGroup.add(floor);
- const wallMat=new THREE.MeshStandardMaterial({color:0x52555a,roughness:.96,metalness:0});wallMat.userData.owned=true;
+ const wallMat=new THREE.MeshStandardMaterial({color:0xe3ded5,roughness:.96,metalness:0});wallMat.userData.owned=true;
  const wall=new THREE.Mesh(new THREE.PlaneGeometry(S.roomW,S.roomH),wallMat);wall.position.set(0,S.roomH/2,-S.roomD/2);wall.receiveShadow=true;roomGroup.add(wall);
- const grid=new THREE.GridHelper(Math.max(S.roomW,S.roomD),Math.max(6,Math.round(Math.max(S.roomW,S.roomD)/500)),0x777b82,0x555960);
+ const grid=new THREE.GridHelper(Math.max(S.roomW,S.roomD),Math.max(6,Math.round(Math.max(S.roomW,S.roomD)/500)),0xb7b1a8,0xd2cdc4);
  grid.position.y=.5;grid.material.opacity=.20;grid.material.transparent=true;roomGroup.add(grid);
 }
 
@@ -291,8 +291,9 @@ function buildModel(){
    box('Drawer '+(i+1)+' bottom',dw-2*dt,3,drawerDepth-2*dt,cx,base+22,cz,backMat,'drawers','DR'+(i+1)+'_BOTTOM');
    const frontW=rightInner-6,frontH=Math.max(110,S.drawerHeight-4);
    box('Drawer facade '+(i+1),frontW,frontH,t,split+t/2+rightInner/2,frontY,frontZ,accentMat,'fronts','DR'+(i+1)+'_FACADE');
-   addHandle(split+t/2+rightInner/2,frontY,frontZ+t/2+12,'H');
-   frontSpecs.push({x:split+t/2+rightInner/2,y:frontY,z:frontZ+t/2,orientation:'H',partId:'DR'+(i+1)+'_FACADE'});
+   const drawerHandleY=base+S.drawerHeight-40;
+   addHandle(split+t/2+rightInner/2,drawerHandleY,frontZ+t/2+12,'H');
+   frontSpecs.push({x:split+t/2+rightInner/2,y:drawerHandleY,z:frontZ+t/2,orientation:'H',partId:'DR'+(i+1)+'_FACADE'});
    detail.push(makeDetail('GR.D'+(i+1)+'.SL','Drawer side L '+(i+1),drawerDepth,drawerSideH,dt,'Chipboard drawers 16.2 mm','202:90'));
    detail.push(makeDetail('GR.D'+(i+1)+'.SR','Drawer side R '+(i+1),drawerDepth,drawerSideH,dt,'Chipboard drawers 16.2 mm','202:90'));
    detail.push(makeDetail('GR.D'+(i+1)+'.BK','Drawer back '+(i+1),dw-2*dt,drawerSideH,dt,'Chipboard drawers 16.2 mm','202:90'));
@@ -308,10 +309,11 @@ function buildModel(){
  const doorX1=split+t/2+3+doorW/2,doorX2=doorX1+doorW+gap;
  box('Inset door left',doorW,doorH,t,doorX1,doorY,frontZ,accentMat,'fronts','DOOR_L');
  box('Inset door right',doorW,doorH,t,doorX2,doorY,frontZ,accentMat,'fronts','DOOR_R');
- addHandle(doorX1+doorW/2-42,doorY,frontZ+t/2+12,'V');
- addHandle(doorX2-doorW/2+42,doorY,frontZ+t/2+12,'V');
- frontSpecs.push({x:doorX1+doorW/2-42,y:doorY,z:frontZ+t/2,orientation:'V',partId:'DOOR_L'});
- frontSpecs.push({x:doorX2-doorW/2+42,y:doorY,z:frontZ+t/2,orientation:'V',partId:'DOOR_R'});
+ const doorHandleY=Math.min(H-120,1000);
+ addHandle(doorX1+doorW/2-40,doorHandleY,frontZ+t/2+12,'V');
+ addHandle(doorX2-doorW/2+40,doorHandleY,frontZ+t/2+12,'V');
+ frontSpecs.push({x:doorX1+doorW/2-40,y:doorHandleY,z:frontZ+t/2,orientation:'V',partId:'DOOR_L'});
+ frontSpecs.push({x:doorX2-doorW/2+40,y:doorHandleY,z:frontZ+t/2,orientation:'V',partId:'DOOR_R'});
  detail.push(makeDetail('GR.F1','Inset door left',doorH,doorW,t,'MDF 18 mm','202:58','50',1,'FACADE'));
  detail.push(makeDetail('GR.F2','Inset door right',doorH,doorW,t,'MDF 18 mm','202:58','50',1,'FACADE'));
  addHandleHoles(frontSpecs);
@@ -387,12 +389,12 @@ function applyVisibility(){
  ledGroup.visible=S.ledEnabled && visibility.lighting!==false;
  dimensionGroup.visible=showDimensions;
  if(isolated){
-   (categoryMeshes.fronts||[]).forEach(m=>m.visible=false);
    roomGroup.visible=false;
+   visibility.fasteners=true;visibility.holes=true;renderTechnical();
  }else roomGroup.visible=true;
  furnitureMeshes.forEach(mesh=>{
    const base=mesh.material;
-   const shouldXray=xray && ['carcass','shelves','drawers'].includes(mesh.userData.cat);
+   const shouldXray=(xray||isolated) && ['carcass','shelves','drawers','fronts'].includes(mesh.userData.cat);
    base.transparent=shouldXray;base.opacity=shouldXray ? .28 : 1;base.depthWrite=!shouldXray;base.needsUpdate=true;
  });
 }
@@ -558,6 +560,7 @@ function downloadBom(){
  download('BIZET_Grande_BOM.csv','text/csv;charset=utf-8',csv(b.rows,['Группа','Позиция','Количество','Ед.','Валюта','Цена','Сумма','Примечание'],r=>[r.group,r.item,r.qty,r.unit,code,convertMoney(r.rate,code)??r.rate,convertMoney(r.total,code)??r.total,r.note]));
 }
 function downloadDetails(){
+ if(window.BizetProductionR1050?.engineeringFromGrande){const m=window.BizetProductionR1050.engineeringFromGrande();window.BizetProductionR1050.downloadDetail(m,'BIZET_Grande_Detailing_R1050.csv');return}
  download('BIZET_Grande_Detailing.csv','text/csv;charset=utf-8',csv(detailsCache,['Код','Деталь','Материал','Длина','Ширина','Толщина','Количество'],d=>[d.code,d.name,d.material,d.length,d.width,d.thick,d.qty]));
 }
 function escXml(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
@@ -588,6 +591,7 @@ function projectXml(){
 }
 function toast(msg){const e=document.createElement('div');e.className='toast';e.textContent=msg;$('stage').appendChild(e);setTimeout(()=>e.remove(),2400)}
 function downloadExport(){
+ if(S.exportFormat==='PROJECT'&&window.BizetProductionR1050?.exportGrande){window.BizetProductionR1050.exportGrande();return}
  if(S.exportFormat==='PROJECT'){download('Grande_BIZET_PILOT.project','application/xml;charset=utf-8',projectXml());return}
  toast(tr('otherPending'));
 }
@@ -624,4 +628,7 @@ $('currencySelect').onchange=e=>{S.currency=e.target.value;updatePrice()};
 $('orderClose').onclick=()=>$('orderDialog').close();
 
 buildRoom();buildModel();resize();frameModel();layerPanel();applyLanguage();loadFx();
+window.BizetGrandeR1050Bridge={version:'R10.5.0',state:S,scene,renderer,camera,controls,roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,hemi,key,fill,
+ getDetails:()=>detailsCache,getDrills:()=>drillOps,getFasteners:()=>fastenerOps,getFurniture:()=>furnitureMeshes,getCategories:()=>categoryMeshes,
+ buildModel,buildRoom,buildDimensions,applyVisibility,frameModel,renderTechnical,openPanel,closePanel,toast};
 })();
