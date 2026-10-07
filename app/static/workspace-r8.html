@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="uk">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/static/model.css">
   <link rel="stylesheet" href="/static/model-r5.css">
   <link rel="stylesheet" href="/static/pilot-shell.css">
-  <link rel="stylesheet" href="/static/workspace-r8.css?v=175">
+  <link rel="stylesheet" href="/static/workspace-r8.css?v=1049">
   <link rel="stylesheet" href="/static/point-b.css?v=175">
   <link rel="stylesheet" href="/static/owner-qa-business.css?v=175">
 </head>
@@ -28,7 +28,8 @@
         <button class="r8-icon" id="settingsButton" type="button" aria-label="Настройки" aria-expanded="false">•••</button>
         <div class="settings-panel r10-workspace-settings-panel" id="workspaceSettingsPanel" hidden>
           <div class="settings-title">Настройки</div>
-          <label class="settings-field"><span>Тема</span><select id="workspaceThemeSelect"><option value="light">Светлая</option><option value="dark">Тёмная</option></select></label>
+          <label class="settings-field"><span>Тема</span><select id="workspaceThemeSelect"><option value="light">Світла</option><option value="dark">Темна</option></select></label>
+          <label class="settings-field"><span>Мова</span><select id="workspaceLanguageSelect"><option value="ua">Українська</option><option value="ru">Русский</option><option value="en">English</option></select></label>
           <div id="workspaceBackgroundHost"></div>
         </div>
       </div>
@@ -51,6 +52,10 @@
           <canvas id="modelCanvas" class="model-canvas r10-kitchen-canvas" aria-label="Интерактивная модель кухни"></canvas>
           <canvas id="focusCanvas" class="model-canvas r10-focus-canvas" aria-label="Изолированный модуль" aria-hidden="true"></canvas>
           <div class="r8-stage-top">
+            <div class="r1049-viewer-mode" aria-label="Режим 3D">
+              <button id="kitchenViewMode" type="button" class="active">VIEW</button>
+              <button id="kitchenEditMode" type="button">EDIT</button>
+            </div>
             <button class="r8-pill r10-focus-back" id="focusBackButton" type="button" hidden>← Назад</button>
             <button class="r8-pill r10-dimensions-icon" id="modelDimensionsToggle" type="button" aria-pressed="true" aria-label="Скрыть размеры" title="Скрыть размеры">📏</button>
             <button class="r8-pill r104-number-toggle" id="moduleNumbersToggle" type="button" aria-pressed="true" aria-label="Скрыть номера модулей" title="Скрыть номера модулей">#</button>
@@ -164,16 +169,16 @@
   </dialog>
 
   <script src="/static/pilot-r8-shell.js?v=175"></script>
-  <script src="/static/pilot-shell.js"></script>
+  <script src="/static/pilot-shell.js?v=1049"></script>
   <script src="/static/r10-domain-rules.js?v=175"></script>
   <script src="/static/r10-hardware-assets.js?v=175"></script>
-  <script src="/static/pilot-3d.js?v=175"></script>
+  <script src="/static/pilot-3d.js?v=1049"></script>
   <script src="/static/model-r5-pre.js"></script>
   <script src="/static/model-r6-dimensions.js?v=175"></script>
-  <script src="/static/model.js?v=175"></script>
+  <script src="/static/model.js?v=1049"></script>
   <script src="/static/model-r5.js?v=175"></script>
   <script src="/static/pilot-r6.js"></script>
-  <script src="/static/workspace-r8.js?v=175"></script>
+  <script src="/static/workspace-r8.js?v=1049"></script>
   <script src="/static/point-b.js?v=175"></script>
   <script src="/static/owner-qa-business.js?v=175"></script>
 </body>
