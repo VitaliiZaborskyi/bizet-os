@@ -43,7 +43,7 @@ const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 let selectable=[],movables=[],lastOptions=null,lastMode='',lastRoomKey='',down=null,lastTap={time:0,id:''},motionEnabled=false,deepShadow=localStorage.getItem('bizet_deep_shadow')==='1';
 const openState=new Map();
 
-function ownMat(p){const m=new THREE.MeshStandardMaterial(p);m.userData.owned=true;return m}
+function ownMat(p){const m=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,...p});m.userData.owned=true;return m}
 function clearGroup(g){while(g.children.length){const c=g.children.pop();c.traverse?.(n=>{n.geometry?.dispose?.();const ms=n.material?(Array.isArray(n.material)?n.material:[n.material]):[];ms.forEach(m=>{if(m?.userData?.owned){m.map?.dispose?.();m.dispose?.()}})})}}
 function roomToWorld(room,x,y,z){return new THREE.Vector3(Number(x)-Number(room.lengthMm||6000)/2,Number(z),Number(y)-Number(room.depthMm||4200)/2)}
 function center(room,m){return roomToWorld(room,Number(m.x||0)+Number(m.w||0)/2,Number(m.y||0)+Number(m.d||0)/2,Number(m.z||0)+Number(m.h||0)/2)}
