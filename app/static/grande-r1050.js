@@ -1,11 +1,18 @@
 (() => {
 'use strict';
 const $=id=>document.getElementById(id);
-let motion=false,deep=localStorage.getItem('bizet_deep_shadow')==='1',lastTap={t:0,id:''},animations=[];
+let motion=false,deep=localStorage.getItem('bizet_deep_shadow')==='1',lastTap={t:0,id:''},animations=[],composer=null,saoPass=null;
 function bridge(){return window.BizetGrandeR1050Bridge}
+function ensureComposer(){
+ const b=bridge();if(composer||!b||!THREE.EffectComposer||!THREE.RenderPass||!THREE.SAOPass)return;
+ composer=new THREE.EffectComposer(b.renderer);composer.addPass(new THREE.RenderPass(b.scene,b.camera));
+ saoPass=new THREE.SAOPass(b.scene,b.camera,false,true);saoPass.params.saoBias=.35;saoPass.params.saoIntensity=.032;saoPass.params.saoScale=85;saoPass.params.saoKernelRadius=34;saoPass.params.saoBlur=true;saoPass.params.saoBlurRadius=12;saoPass.params.saoBlurStdDev=5;saoPass.enabled=deep;composer.addPass(saoPass);
+ window.BizetGrandeR1050Post={render(){if(!(deep&&composer))return false;const r=b.renderer.domElement.getBoundingClientRect();composer.setSize(r.width||1,r.height||1);composer.render();return true}};
+}
 function setDeep(on){
- const b=bridge();deep=!!on;localStorage.setItem('bizet_deep_shadow',deep?'1':'0');
- if(b){b.hemi.intensity=deep?.63:1;b.key.intensity=deep?.9:.52;b.fill.intensity=deep?.12:.2;b.renderer.toneMappingExposure=deep?.96:1.02}
+ const b=bridge();deep=!!on;localStorage.setItem('bizet_deep_shadow',deep?'1':'0');ensureComposer();
+ if(b){b.hemi.intensity=deep?.92:1;b.key.intensity=deep?.62:.52;b.fill.intensity=deep?.18:.2;b.renderer.toneMappingExposure=deep?1.0:1.02}
+ if(saoPass)saoPass.enabled=deep;
  $('deepShadowGrande')?.classList.toggle('active',deep);
 }
 function ensureButtons(){
@@ -50,7 +57,7 @@ function setupMotion(){
  });
  function tick(){requestAnimationFrame(tick);animations.forEach(a=>{a.current+=(a.target-a.current)*.11;if(a.kind==='door')a.pivot.rotation.y=a.sign*a.current*Math.PI*.58;else a.members.forEach((m,i)=>m.position.copy(a.bases[i]).add(new THREE.Vector3(0,0,300*a.current)))})}tick();
 }
-function boot(){ensureButtons();syncMode();setupMotion();
+function boot(){ensureComposer();ensureButtons();syncMode();setupMotion();
  window.addEventListener('bizet:export-preflight',e=>{const el=$('grandePreflightR1051');if(!el)return;const r=e.detail?.report;if(!r)return;el.className=r.ok?'r1051-export-ok':'r1051-export-error';el.textContent=r.ok?'Preflight OK':('Export blocked: '+(r.errors||[]).slice(0,5).join(' · '))});
 const panel=$('panelBody');if(panel)new MutationObserver(()=>setTimeout(bindProduction,0)).observe(panel,{childList:true,subtree:true});new MutationObserver(syncMode).observe(document.body,{attributes:true,attributeFilter:['class']});document.addEventListener('dblclick',e=>{if(e.target.closest('.stage'))e.preventDefault()},{capture:true})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
