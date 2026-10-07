@@ -1,0 +1,16 @@
+/* Grande R10.5.0 */
+body.grande-view-full header{height:0!important;min-height:0!important;border:0!important;background:transparent!important;overflow:visible}
+body.grande-view-full header>*:not(.mode){opacity:0;pointer-events:none;transform:translateY(-10px)}
+body.grande-view-full header .mode{position:fixed;z-index:999;right:12px;top:max(12px,env(safe-area-inset-top));opacity:1!important;pointer-events:auto!important;box-shadow:0 8px 28px rgba(0,0,0,.14)}
+body.grande-view-full main{position:fixed;inset:0;height:100dvh!important}
+body.grande-view-full .stageCol{padding:0}
+body.grande-view-full .stage{border:0;border-radius:0;box-shadow:none}
+body.grande-view-full .tools,body.grande-view-full .panel,body.grande-view-full .add,body.grande-view-full .priceHud,body.grande-view-full .position{opacity:0!important;pointer-events:none!important}
+header,header>*,.stage,.tools,.panel,.add,.priceHud,.position{transition:all .4s cubic-bezier(.2,.8,.2,1)}
+#deepShadowGrande,#motionGrande{font-size:11px!important;font-weight:850!important}
+#deepShadowGrande.active,#motionGrande.active{background:#171717!important;color:#fff!important}
+.r1050-grande-production{display:grid;gap:9px;margin-bottom:12px;padding:11px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.55)}
+.r1050-grande-production label{display:grid;gap:5px;font-size:11px;color:var(--muted)}
+.r1050-grande-production select{min-height:44px;font-size:16px}
+.r1050-grande-source{display:inline-flex;width:max-content;padding:5px 8px;border:1px solid var(--line);border-radius:999px;font-size:9px;font-weight:800;letter-spacing:.06em}
+html[data-theme="light"] .brand,html[data-theme="light"] header,html[data-theme="light"] header button{color:#111!important}
