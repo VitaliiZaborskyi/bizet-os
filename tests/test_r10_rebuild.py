@@ -1243,12 +1243,13 @@ def test_r1044_currency_selector_uses_nbu_rates_and_is_not_in_isolation():
     assert 'bank.gov.ua/NBUStatService' in routes
 
 
-def test_r1042_project_settings_have_general_section_and_central_translation():
+def test_r1050_project_settings_have_export_section_and_central_translation():
     html = read('workspace-r8.html')
     workspace = read('workspace-r8.js')
-    assert '<button data-panel="general" type="button"><span>07</span>Общие</button>' in html
+    assert '<button data-panel="general" type="button"><span>07</span>Экспорт</button>' in html
+    assert "general:['Экспорт','Export']" in workspace
     assert 'const PROJECT_I18N=' in workspace
-    for token in ['How to define the room','Room surfaces','Additional appliance settings','Integrated hood type','Required utility points','Wall elements','Furniture materials','Handles and plinth','Custom texture']:
+    for token in ['How to define the room','Room surfaces','Additional appliance settings','Integrated hood type','Required utility points','Wall elements','Furniture materials','Custom texture']:
         assert token in workspace
     assert 'function localizePanelBody' in workspace
 
@@ -1284,10 +1285,12 @@ def test_r1042_save_module_returns_to_full_kitchen_after_commit():
     assert 'bizet:modelchange' in block
 
 
-def test_r1042_bom_test_is_visible_and_downloadable():
+def test_r1050_bom_export_remains_visible_and_uses_existing_bom_engine():
     workspace = read('workspace-r8.js')
+    glue = read('workspace-r1050.js')
     pointb = read('point-b.js')
-    assert 'data-action="bom-test"' in workspace
+    assert 'id="exportBomR1050"' in workspace
+    assert "showBOMTest" in glue
     assert 'showBOMTest' in pointb
     assert 'BOM · TEST' in pointb
     assert 'id="dlBomTest"' in pointb
@@ -1357,7 +1360,8 @@ def test_r1044_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v(
     start = read("start.js")
     for asset in ["start.css?v=1050", "start.js?v=1050", "start-room-handoff.js?v=1050"]:
         assert asset in index
-    assert "{ value: 'V', title: { ru: 'Своя конфигурация', en: 'Custom configuration' }" in start
+    assert "{ value: 'V', disabled: true" in start
+    assert "Custom configuration" in start
     assert "title: { ru: 'V', en: 'V' }" not in start
     assert "Категория V" not in start and "Category V" not in start
 
