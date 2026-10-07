@@ -106,7 +106,24 @@ function addFocusInternals(room,m,bodyMat){
  metal.dispose();
 }
 function lowerRuns(modules){const out=[];['A','B','C'].forEach(wall=>{const list=modules.filter(m=>(m.wall||'A')===wall&&m.level!=='upper'&&!m.tall&&!m.freestanding&&m.kind!=='FILLER').sort((a,b)=>wall==='A'?(+a.x-+b.x):(+a.y-+b.y));if(list.length)out.push([wall,list])});return out}
-function segmentBy4100(wall,list){const segs=[];let current=[],start=wall==='A'?+list[0].x:+list[0].y;for(const m of list){const end=wall==='A'?+m.x+ +m.w:+m.y+ +m.d;if(current.length&&end-start>4100){segs.push(current);current=[];start=wall==='A'?+m.x:+m.y}current.push(m)}if(current.length)segs.push(current);return segs}
+function segmentBy4100(wall,list){
+ const pos=m=>wall==='A'?+m.x:+m.y,run=m=>wall==='A'?+m.w:+m.d,out=[];let i=0;
+ while(i<list.length){
+   const start=pos(list[i]);let best=i,bestEnd=pos(list[i])+run(list[i]);
+   // 4100 mm is a hard maximum. Among valid module boundaries, the closest
+   // boundary to 4100 from below is therefore the last boundary <= 4100.
+   for(let j=i;j<list.length;j++){
+     const end=pos(list[j])+run(list[j]),span=end-start;
+     if(span<=4100+.001){best=j;bestEnd=end;continue}
+     break;
+   }
+   // A single oversize module cannot be split at a module joint; keep it intact
+   // and let engineering validation flag that exceptional case.
+   if(best===i&&bestEnd-start>4100)best=i;
+   out.push(list.slice(i,best+1));i=best+1;
+ }
+ return out;
+}
 function addWorktopAndPlinth(room,modules){
  const c=colors(),wm=ownMat({color:c.worktop,roughness:.42}),pm=ownMat({color:c.body,roughness:.6});
  lowerRuns(modules).forEach(([wall,list])=>segmentBy4100(wall,list).forEach(seg=>{const first=seg[0],last=seg.at(-1),topZ=Math.max(...seg.map(m=>+m.z+ +m.h))+1;
