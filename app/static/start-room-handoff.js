@@ -19,9 +19,14 @@ let savingConfiguration = false;
 let roomImportObjectUrl = '';
 let selectedRoomImportMeta = null;
 
-function isRu() {
-  return (document.getElementById('languageSelect')?.value || document.documentElement.lang || 'ru') === 'ru';
+function uiLang() {
+  const raw=String(document.getElementById('languageSelect')?.value || localStorage.getItem('bizet_os_language') || document.documentElement.lang || 'ua').toLowerCase();
+  if(raw==='ua'||raw.startsWith('uk')) return 'ua';
+  if(raw.startsWith('en')) return 'en';
+  return 'ru';
 }
+function isRu() { return uiLang()==='ru'; }
+function t3(ru,en,ua){ return uiLang()==='ua' ? ua : uiLang()==='en' ? en : ru; }
 
 function currentProjectId() {
   const id = sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY);
@@ -636,24 +641,24 @@ function renderConfigurationScreen(screen) {
 function renderRoomSourceScreen(screen) {
   screenFiveMode='SOURCE';
   document.body.dataset.startKind='room_source';
-  screen.setAttribute('aria-label',isRu()?'Исходные данные помещения':'Room input source');
+  screen.setAttribute('aria-label',t3('Исходные данные помещения','Room input source','Вхідні дані приміщення'));
   screen.innerHTML=`
     <div class="screen-five-head">
-      <h1>${isRu()?'Как начнём работу с помещением?':'How should we start with the room?'}</h1>
-      <p class="config-screen-help">${isRu()?'Выберите источник исходных данных. Этот шаг используется до выбора конфигурации изделия.':'Choose the input source before selecting the product configuration.'}</p>
+      <h1>${t3('Как начнём работу с помещением?','How should we start with the room?','Як почнемо роботу з приміщенням?')}</h1>
+      <p class="config-screen-help">${t3('Выберите источник исходных данных. Этот шаг используется до выбора конфигурации изделия.','Choose the input source before selecting the product configuration.','Оберіть джерело вхідних даних. Цей крок виконується до вибору конфігурації виробу.')}</p>
     </div>
     <div class="room-source-choice-grid">
       <button class="room-source-card" id="startTemplateButton" type="button">
         <span class="room-source-visual template"></span>
-        <span><strong>${isRu()?'Шаблон':'Template'}</strong><small>${isRu()?'Работаем с базовой геометрией и уточняем размеры вручную.':'Start from base geometry and refine dimensions.'}</small></span>
+        <span class="room-source-copy"><strong>${t3('Шаблон','Template','Шаблон')}</strong><small>${t3('Работаем с базовой геометрией и уточняем размеры вручную.','Start from base geometry and refine dimensions.','Починаємо з базової геометрії та уточнюємо розміри вручну.')}</small></span>
       </button>
       <button class="room-source-card" id="startUploadFileButton" type="button">
         <span class="room-source-visual file"></span>
-        <span><strong>${isRu()?'Загрузить файл':'Upload file'}</strong><small>${isRu()?'PDF или фотография помещения.':'PDF or room photo.'}</small></span>
+        <span class="room-source-copy"><strong>${t3('Загрузить файл','Upload file','Завантажити файл')}</strong><small>${t3('PDF или фотография помещения.','PDF or room photo.','PDF або фотографія приміщення.')}</small></span>
       </button>
       <button class="room-source-card" id="startScanButton" type="button">
         <span class="room-source-visual scan"></span>
-        <span><strong>${isRu()?'Скан':'Scan'}</strong><small>${isRu()?'Сканирование помещения будет подключено отдельным слоем.':'Room scanning will be connected as a separate layer.'}</small></span>
+        <span class="room-source-copy"><strong>${t3('Скан','Scan','Скан')}</strong><small>${t3('Сканирование помещения будет подключено отдельным слоем.','Room scanning will be connected as a separate layer.','Сканування приміщення буде підключено окремим шаром.')}</small></span>
       </button>
     </div>
     <input id="startRoomFileInput" type="file" accept=".pdf,image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" hidden>
@@ -661,9 +666,9 @@ function renderRoomSourceScreen(screen) {
       <div class="start-room-file-panel" id="startRoomFilePanel" hidden>
         <div class="start-room-file-preview" id="startRoomFilePreview"></div>
         <p class="start-room-file-meta" id="startRoomFileMeta"></p>
-        <label class="start-room-known-dimension"><span>${isRu()?'Один известный реальный размер, мм':'One known real dimension, mm'}</span><input id="startRoomKnownDimension" type="number" inputmode="numeric" min="300" step="1" placeholder="3000"></label>
-        <button class="start-room-scale-apply" id="startRoomScaleApply" type="button">${isRu()?'Применить масштаб':'Apply scale'}</button>
-        <button class="start-room-confirm" id="startRoomConfirm" type="button" hidden>${isRu()?'Подтвердить помещение':'Confirm room'}</button>
+        <label class="start-room-known-dimension"><span>${t3('Один известный реальный размер, мм','One known real dimension, mm','Один відомий реальний розмір, мм')}</span><input id="startRoomKnownDimension" type="number" inputmode="numeric" min="300" step="1" placeholder="3000"></label>
+        <button class="start-room-scale-apply" id="startRoomScaleApply" type="button">${t3('Применить масштаб','Apply scale','Застосувати масштаб')}</button>
+        <button class="start-room-confirm" id="startRoomConfirm" type="button" hidden>${t3('Подтвердить помещение','Confirm room','Підтвердити приміщення')}</button>
         <p class="start-room-file-status" id="startRoomFileStatus"></p>
       </div>
     </div>
@@ -676,7 +681,7 @@ function renderRoomSourceScreen(screen) {
   });
   screen.querySelector('#startScanButton')?.addEventListener('click',()=>{
     const status=screen.querySelector('#roomSourceStatus');
-    if(status)status.textContent=isRu()?'Скан — в стадии разработки.':'Scan — in development.';
+    if(status)status.textContent=t3('Скан — в стадии разработки.','Scan — in development.','Скан — у розробці.');
   });
   bindStartRoomImport(screen);
   window.scrollTo({top:0,behavior:'auto'});
