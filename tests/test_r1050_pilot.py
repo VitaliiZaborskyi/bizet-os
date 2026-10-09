@@ -96,7 +96,7 @@ def test_r1050_standard_kitchen_is_clean_and_deep_shadow_is_optional():
     viewer = read("kitchen-webgl-r1050.js")
     workspace = read("workspace-r1050.js")
     assert "scene.fog=null" in viewer
-    assert "scene.background=new THREE.Color(0xefede7)" in viewer
+    assert "scene.background=new THREE.Color(0x34383d)" in viewer
     assert "deepShadow=localStorage.getItem('bizet_deep_shadow')==='1'" in viewer
     assert "function setDeepShadow(on)" in viewer
     assert "setDeepShadow" in workspace

@@ -19,7 +19,7 @@ def test_r1050_kitchen_uses_current_shared_webgl_viewer_without_default_fog():
     assert "/static/kitchen-webgl-r1050.js?v=1051" in html
     assert "new THREE.WebGLRenderer" in js
     assert "new THREE.OrbitControls" in js
-    assert "scene.background=new THREE.Color(0xefede7)" in js
+    assert "scene.background=new THREE.Color(0x34383d)" in js
     assert "scene.fog=null" in js
     assert "window.BizetPilot3D.drawKitchenScene=" in js
 
