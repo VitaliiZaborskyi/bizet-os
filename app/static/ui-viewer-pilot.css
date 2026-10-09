@@ -1,0 +1,109 @@
+/* BIZET OS — UI / Viewer Pilot 2026-10-09
+   Presentation-first, SketchUp-like edge readability, theme contrast and conditional settings. */
+
+html[data-theme="light"]{
+  --r1052-text:#111214;
+  --r1052-muted:#4b5056;
+}
+html[data-theme="dark"]{
+  --r1052-text:#f7f7f4;
+  --r1052-muted:#c2c5c8;
+}
+html[data-theme="light"] .r8-panel,
+html[data-theme="light"] .r8-section,
+html[data-theme="light"] .r8-final-actions,
+html[data-theme="light"] .r104-price-line,
+html[data-theme="light"] #pointBFinalActions{
+  color:var(--r1052-text)!important;
+}
+html[data-theme="light"] .r8-final-price strong,
+html[data-theme="light"] .r8-final-price span,
+html[data-theme="light"] .r104-price-line strong,
+html[data-theme="light"] .r104-price-line span,
+html[data-theme="light"] .r104-price-currency,
+html[data-theme="light"] .r104-price-currency span,
+html[data-theme="light"] .r8-section h3,
+html[data-theme="light"] .r8-section label,
+html[data-theme="light"] .r8-section p{
+  color:var(--r1052-text)!important;
+}
+html[data-theme="dark"] .r8-final-price strong,
+html[data-theme="dark"] .r104-price-line strong,
+html[data-theme="dark"] .r8-section h3{
+  color:var(--r1052-text)!important;
+}
+html[data-theme="dark"] .r8-final-price span,
+html[data-theme="dark"] .r104-price-line span,
+html[data-theme="dark"] .r8-section p{
+  color:var(--r1052-muted)!important;
+}
+
+/* Direction architecture screen: intentionally restrained, no fake functionality. */
+.choice-grid[data-kind="bizet_direction"]{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.bizet-direction-card,
+.bizet-design-placeholder{
+  min-height:150px!important;
+  background:linear-gradient(145deg,#2d3135,#17191b)!important;
+  color:#f7f7f4!important;
+}
+.bizet-direction-card .card-content,
+.bizet-design-placeholder .card-content{
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.48))!important;
+}
+.bizet-direction-card .card-title{font-size:clamp(20px,2vw,30px)!important}
+html[data-theme="light"] .bizet-direction-card,
+html[data-theme="light"] .bizet-design-placeholder{box-shadow:0 15px 35px rgba(0,0,0,.13)}
+
+/* Logical dependencies remain in place but cannot be activated accidentally. */
+.r1052-disabled-setting{
+  opacity:.36!important;
+  filter:saturate(.35);
+}
+.r1052-disabled-setting select,
+.r1052-disabled-setting input{
+  pointer-events:none!important;
+  cursor:not-allowed!important;
+}
+.r1052-disabled-setting[data-disabled-reason]::after{
+  content:attr(data-disabled-reason);
+  display:block;
+  margin-top:4px;
+  font-size:10px;
+  color:var(--r8-muted);
+}
+
+/* Multi-zone lighting UI */
+.r1052-lighting-section{display:grid;gap:10px}
+.r1052-lighting-master,
+.r1052-lighting-option{
+  display:flex!important;
+  align-items:center;
+  gap:10px;
+  min-height:42px;
+  padding:9px 10px;
+  border:1px solid var(--r8-line);
+  border-radius:12px;
+  color:var(--r8-ink);
+  background:color-mix(in srgb,var(--r8-panel) 88%,transparent);
+}
+.r1052-lighting-master input,
+.r1052-lighting-option input{width:18px;height:18px;flex:0 0 auto;accent-color:#d8b45a}
+.r1052-lighting-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* Presentation viewer uses a dark neutral world; isolation gets light technical gray from WebGL. */
+.r1050-view-full .r8-stage,
+.r1050-view-full #r1050KitchenWebGL{background:#34383d!important}
+body:not(.r1050-view-full) #r1050KitchenWebGL{background:#34383d}
+body.kitchen-view-mode #modelDimensionsToggle,
+body.kitchen-view-mode #moduleNumbersToggle{display:none!important}
+
+@media(max-width:820px){
+  .choice-grid[data-kind="bizet_direction"]{grid-template-columns:1fr 1fr}
+  .r1052-lighting-grid{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .choice-grid[data-kind="bizet_direction"]{grid-template-columns:1fr}
+  .bizet-direction-card{min-height:104px!important}
+}

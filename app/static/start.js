@@ -189,6 +189,8 @@ let project = null;
 let currentStep = 0;
 let busy = false;
 let editingFromSummary = false;
+let directionGateOpen = false;
+let designPlaceholderOpen = false;
 const LANGUAGE_DEFAULT_MARK='bizet_os_language_v1049_default';
 if(!localStorage.getItem(LANGUAGE_DEFAULT_MARK)){localStorage.setItem(LANGUAGE_KEY,'ua');localStorage.setItem(LANGUAGE_DEFAULT_MARK,'1');}
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || 'ua';
@@ -266,7 +268,76 @@ function activeStepDefinition() {
   return step;
 }
 
+function directionText(ru, en, ua) {
+  return currentLanguage === 'en' ? en : currentLanguage === 'ua' ? ua : ru;
+}
+
+function renderDirectionGate() {
+  directionGateOpen = true;
+  designPlaceholderOpen = false;
+  showError('');
+  $('summaryCard').hidden = true;
+  $('introBlock').hidden = false;
+  $('choiceGrid').hidden = false;
+  document.body.dataset.startKind = 'bizet_direction';
+  $('stepMeta').textContent = 'BIZET OS';
+  $('stepTitle').textContent = directionText('Направление', 'Direction', 'Напрям роботи');
+  $('stepSubtitle').textContent = directionText(
+    'Выберите, с чем будем работать. Сейчас полноценная ветка — мебель.',
+    'Choose what you want to work with. Furniture is the full pilot route today.',
+    'Оберіть напрям роботи. Зараз повноцінна гілка — меблі.'
+  );
+  $('backButton').hidden = false;
+  $('backButton').style.removeProperty('display');
+  const grid = $('choiceGrid');
+  grid.dataset.count = '4';
+  grid.dataset.kind = 'bizet_direction';
+  const soon = directionText('Скоро', 'Soon', 'Незабаром');
+  const placeholder = directionText('Предпросмотр ветки', 'Branch preview', 'Попередній перегляд гілки');
+  grid.innerHTML = [
+    ['FURNITURE', directionText('Мебель','Furniture','Меблі'), '', false],
+    ['DESIGN', directionText('Дизайн','Design','Дизайн'), placeholder, false],
+    ['REPAIR', directionText('Ремонт','Renovation','Ремонт'), soon, true],
+    ['ENGINEERING', directionText('Инженерия','Engineering','Інженерія'), soon, true],
+  ].map(([value,title,note,disabled]) =>
+    '<button type="button" class="choice-card bizet-direction-card'+(disabled?' pilot-disabled-choice':'')+'" data-direction="'+value+'" '+(disabled?'disabled aria-disabled="true"':'')+'>'+
+      '<span class="card-content"><span class="card-title">'+title+'</span>'+(note?'<span class="card-note">'+note+'</span>':'')+'</span>'+
+    '</button>'
+  ).join('');
+  grid.querySelector('[data-direction="FURNITURE"]')?.addEventListener('click', () => {
+    directionGateOpen = false;
+    currentStep = 1;
+    renderStep();
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+  grid.querySelector('[data-direction="DESIGN"]')?.addEventListener('click', renderDesignPlaceholder);
+}
+
+function renderDesignPlaceholder() {
+  directionGateOpen = false;
+  designPlaceholderOpen = true;
+  $('summaryCard').hidden = true;
+  $('introBlock').hidden = false;
+  $('choiceGrid').hidden = false;
+  document.body.dataset.startKind = 'bizet_design_placeholder';
+  $('stepMeta').textContent = 'BIZET OS';
+  $('stepTitle').textContent = directionText('Дизайн', 'Design', 'Дизайн');
+  $('stepSubtitle').textContent = directionText(
+    'Ветка заложена в архитектуру BIZET OS. Инструменты дизайна подключим отдельным этапом.',
+    'This branch is reserved in BIZET OS. Design tools will be connected in a dedicated stage.',
+    'Гілку закладено в архітектуру BIZET OS. Інструменти дизайну підключимо окремим етапом.'
+  );
+  $('backButton').hidden = false;
+  $('backButton').style.removeProperty('display');
+  const grid = $('choiceGrid');
+  grid.dataset.count = '1';
+  grid.dataset.kind = 'bizet_design_placeholder';
+  grid.innerHTML = '<button type="button" class="choice-card bizet-design-placeholder" disabled aria-disabled="true"><span class="card-content"><span class="card-title">'+directionText('Раздел в разработке','Section in development','Розділ у розробці')+'</span><span class="card-note">'+directionText('Вернуться можно кнопкой «Назад»','Use Back to return','Повернутися можна кнопкою «Назад»')+'</span></span></button>';
+}
+
 function renderStep() {
+  directionGateOpen = false;
+  designPlaceholderOpen = false;
   showError('');
   $('summaryCard').hidden = true;
   $('introBlock').hidden = false;
@@ -344,6 +415,12 @@ async function choose(value) {
       editingFromSummary = false;
       currentStep = STEPS.length;
       await renderSummary();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (currentStep === 0) {
+      renderDirectionGate();
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -505,6 +582,18 @@ $('feedbackSubmit').addEventListener('click', () => {
 
 $('backButton').addEventListener('click', () => {
   editingFromSummary = false;
+  if (designPlaceholderOpen) {
+    renderDirectionGate();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  if (directionGateOpen) {
+    directionGateOpen = false;
+    currentStep = 0;
+    renderStep();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
   if (currentStep >= STEPS.length) currentStep = STEPS.length - 1;
   else currentStep = Math.max(0, currentStep - 1);
   renderStep();
