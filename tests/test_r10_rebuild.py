@@ -851,7 +851,7 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
 
 def test_r1045_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=20261011" in html
+    assert "/static/model.js?v=20261011b" in html
     assert "/static/pilot-3d.js?v=1051" in html
     assert "/static/workspace-r8.css?v=1051" in html
     assert "/static/model-r5.js?v=175" in html
