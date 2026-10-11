@@ -851,7 +851,7 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
 
 def test_r1045_workspace_cache_busts_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=1051" in html
+    assert "/static/model.js?v=20261011" in html
     assert "/static/pilot-3d.js?v=1051" in html
     assert "/static/workspace-r8.css?v=1051" in html
     assert "/static/model-r5.js?v=175" in html
@@ -938,7 +938,7 @@ def test_r1044_start_assets_are_cache_busted():
     html = read("index.html")
     assert "/static/start.css?v=1051" in html
     assert "/static/next-pilot.css?v=1051" in html
-    assert "/static/start.js?v=1051" in html
+    assert "/static/start.js?v=20261011" in html
     assert "/static/start-room-handoff.js?v=1051" in html
     assert "/static/next-pilot-start.js?v=1051" in html
 
@@ -1416,7 +1416,10 @@ def test_r1043_built_in_fridge_has_capped_lower_facade_250_vent_and_sheet_limits
     assert "max_part_length_mm:2780" in lower and "max_part_width_mm:2060" in lower
     rules = model[model.index("function applyFridgeConstructionRules"):model.index("function buildLower")]
     assert "neighbor_lower_facade_height_mm" in rules
-    assert "Math.min(Math.max(100,Math.round((Number(fridge.h)||0)*.34)),neighborFacadeH)" in rules
+    assert "fridge.lower_facade_height_mm=Math.min(totalH-260,neighborFacadeH)" in rules
+    assert "fridge.facade_count=2" in rules
+    assert "fridge.fridge_plinth_grille_width_mm=460" in rules
+    assert "fridge.fridge_plinth_grille_height_mm=60" in rules
     assert "Круглый вырез Ø250" in pointb
     assert "function splitOversizeFridgeRows" in pointb
     assert "MAX_L=2780,MAX_W=2060" in pointb
@@ -1586,7 +1589,9 @@ def test_r1044_end_panels_are_default_between_walls_module_height_and_editable()
     pointb = read("point-b.js")
     renderer = read("pilot-3d.js")
     rules = model[model.index("function applyEndPanelRules"):model.index("function buildModules")]
-    assert "configuration()!=='WALL_CENTER'" in rules
+    assert "configuration()==='CUSTOM'" in rules
+    assert "cornerEdgesForWall(wall)" in rules
+    assert "m.end_panel_front_flush=true" in rules
     assert "m.end_panel_height_mm=Math.round(Number(m.h)||0)" in rules
     assert "m.end_panel_floor_extension=false" in rules
     assert "shape==='L_SHAPE'?40:18" in rules
