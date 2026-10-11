@@ -137,10 +137,14 @@ function disposeGroup(group){
  while(group.children.length){const o=group.children.pop();o.traverse?.(n=>{if(n.geometry)n.geometry.dispose();if(n.material&&n.material.userData?.owned)n.material.dispose()})}
 }
 function matClone(base){const m=base.clone();m.side=THREE.DoubleSide;m.userData.owned=true;return m}
+function addVisibleEdges(mesh){
+ const geo=new THREE.EdgesGeometry(mesh.geometry,28),mat=new THREE.LineBasicMaterial({color:0x24272a,transparent:true,opacity:.86});mat.userData.owned=true;
+ const edges=new THREE.LineSegments(geo,mat);edges.renderOrder=8;edges.userData={viewerEdge:true};mesh.add(edges);return edges;
+}
 function box(name,w,h,d,x,y,z,mat,cat,partId){
  const geo=new THREE.BoxGeometry(Math.max(.1,w),Math.max(.1,h),Math.max(.1,d));
  const mesh=new THREE.Mesh(geo,matClone(mat));mesh.name=name;mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;
- mesh.userData={cat,partId,solid:true};modelGroup.add(mesh);catPush(cat,mesh);return mesh;
+ mesh.userData={cat,partId,solid:true};addVisibleEdges(mesh);modelGroup.add(mesh);catPush(cat,mesh);return mesh;
 }
 function cylinder(name,r,len,x,y,z,mat,cat,axis='x',segments=24){
  const geo=new THREE.CylinderGeometry(r,r,len,segments);
@@ -148,16 +152,17 @@ function cylinder(name,r,len,x,y,z,mat,cat,axis='x',segments=24){
  if(axis==='x')mesh.rotation.z=Math.PI/2;else if(axis==='z')mesh.rotation.x=Math.PI/2;
  mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData={cat,solid:true};modelGroup.add(mesh);catPush(cat,mesh);return mesh;
 }
-function addHandle(x,y,z,orientation='H'){
+function addHandle(x,y,z,orientation='H',ownerPartId=''){
  if(S.handleMode!=='HANDLE')return;
+ const prefix=ownerPartId?ownerPartId+'_HANDLE':'HANDLE';
  if(orientation==='H'){
-   box('Handle',130,10,14,x,y,z,metalMat,'hardware','HANDLE');
-   box('Handle post L',10,10,22,x-45,y,z-15,metalMat,'hardware','HANDLE');
-   box('Handle post R',10,10,22,x+45,y,z-15,metalMat,'hardware','HANDLE');
+   box('Handle',130,10,14,x,y,z,metalMat,'hardware',prefix+'_BAR');
+   box('Handle post L',10,10,22,x-45,y,z-15,metalMat,'hardware',prefix+'_POST_L');
+   box('Handle post R',10,10,22,x+45,y,z-15,metalMat,'hardware',prefix+'_POST_R');
  }else{
-   box('Handle',10,130,14,x,y,z,metalMat,'hardware','HANDLE');
-   box('Handle post 1',10,10,22,x,y-45,z-15,metalMat,'hardware','HANDLE');
-   box('Handle post 2',10,10,22,x,y+45,z-15,metalMat,'hardware','HANDLE');
+   box('Handle',10,130,14,x,y,z,metalMat,'hardware',prefix+'_BAR');
+   box('Handle post 1',10,10,22,x,y-45,z-15,metalMat,'hardware',prefix+'_POST_1');
+   box('Handle post 2',10,10,22,x,y+45,z-15,metalMat,'hardware',prefix+'_POST_2');
  }
 }
 function addHole(x,y,z,axis='x',diam=5,depth=5,partId=''){
@@ -237,6 +242,7 @@ function buildModel(){
  const frontZ=D-3-t/2;
  const detail=[];
  const frontSpecs=[];
+ const rightShelfCenters=[];
 
  box('Left side',t,H,D,t/2,H/2,zCenter,bodyMat,'carcass','SIDE_L');
  box('Right side',t,H,D,W-t/2,H/2,zCenter,bodyMat,'carcass','SIDE_R');
@@ -271,7 +277,7 @@ function buildModel(){
  const drawerTop=Math.min(1200,drawerBase+S.drawerCount*S.drawerHeight);
  for(let i=1;i<=S.shelvesRight;i++){
    const low=Math.max(drawerTop+90,H*.54),high=H-t-90;
-   const y=low+(high-low)*i/(S.shelvesRight+1);
+   const y=low+(high-low)*i/(S.shelvesRight+1);rightShelfCenters.push(y);
    box('Right shelf '+i,rightInner,t,D-28,split+t/2+rightInner/2,y,D/2-4,bodyMat,'shelves','SHELF_R_'+i);
    addRigidShelfHoles(y,'RIGHT');
    detail.push(makeDetail('GR.RS'+i,'Rigid shelf · right '+i,rightInner,D-28,t,'Chipboard 18 mm','202:2'));
@@ -292,7 +298,7 @@ function buildModel(){
    const frontW=rightInner-6,frontH=Math.max(110,S.drawerHeight-4);
    box('Drawer facade '+(i+1),frontW,frontH,t,split+t/2+rightInner/2,frontY,frontZ,accentMat,'fronts','DR'+(i+1)+'_FACADE');
    const drawerHandleY=base+S.drawerHeight-40;
-   addHandle(split+t/2+rightInner/2,drawerHandleY,frontZ+t/2+12,'H');
+   addHandle(split+t/2+rightInner/2,drawerHandleY,frontZ+t/2+12,'H','DR'+(i+1)+'_FACADE');
    frontSpecs.push({x:split+t/2+rightInner/2,y:drawerHandleY,z:frontZ+t/2,orientation:'H',partId:'DR'+(i+1)+'_FACADE'});
    detail.push(makeDetail('GR.D'+(i+1)+'.SL','Drawer side L '+(i+1),drawerDepth,drawerSideH,dt,'Chipboard drawers 16.2 mm','202:90'));
    detail.push(makeDetail('GR.D'+(i+1)+'.SR','Drawer side R '+(i+1),drawerDepth,drawerSideH,dt,'Chipboard drawers 16.2 mm','202:90'));
@@ -318,8 +324,8 @@ function buildModel(){
    box('Hinge arm R '+idx,38,10,16,doorX2+doorW/2-17,hy,frontZ-20,metalMat,'hardware','HINGE_R');
  });
  const doorHandleY=Math.min(H-120,1000);
- addHandle(doorX1+doorW/2-40,doorHandleY,frontZ+t/2+12,'V');
- addHandle(doorX2-doorW/2+40,doorHandleY,frontZ+t/2+12,'V');
+ addHandle(doorX1+doorW/2-40,doorHandleY,frontZ+t/2+12,'V','DOOR_L');
+ addHandle(doorX2-doorW/2+40,doorHandleY,frontZ+t/2+12,'V','DOOR_R');
  frontSpecs.push({x:doorX1+doorW/2-40,y:doorHandleY,z:frontZ+t/2,orientation:'V',partId:'DOOR_L'});
  frontSpecs.push({x:doorX2-doorW/2+40,y:doorHandleY,z:frontZ+t/2,orientation:'V',partId:'DOOR_R'});
  detail.push(makeDetail('GR.F1','Inset door left',doorH,doorW,t,'MDF 18 mm','202:58','50',1,'FACADE'));
@@ -331,7 +337,9 @@ function buildModel(){
  }));
 
  if(S.rodEnabled){
-   const rodY=H-Math.max(100,S.rodTop),x1=split+t/2+34,x2=W-t-34,z=D*.56;
+   const upperShelfCenter=rightShelfCenters.length?Math.min(...rightShelfCenters):H-t/2;
+   const rodY=window.BizetR10Rules?.clothesRodCenterFromUpperShelf?.(upperShelfCenter,t) ?? (upperShelfCenter-t/2-80);
+   const x1=split+t/2+34,x2=W-t-34,z=D*.56;
    cylinder('Clothes rail',8,x2-x1,(x1+x2)/2,rodY,z,silverMat,'hardware','x');
    cylinder('Rail support left',21,12,x1-7,rodY,z,metalMat,'hardware','x');
    cylinder('Rail support right',21,12,x2+7,rodY,z,metalMat,'hardware','x');
@@ -493,7 +501,8 @@ function openPanel(name){
    html+='<div class="section"><div class="subhead">'+tr('rightClosed')+'</div>'+field(tr('shelfCount'),'shelvesRight',S.shelvesRight,0,12,1)+'</div><p class="note">'+tr('rigidNote')+'</p>';
  }
  if(name==='equipment'){
-   html='<div class="section">'+select(tr('rod'),'rodEnabled',[['0',tr('rodOff')],['1',tr('rodOn')]],S.rodEnabled?'1':'0')+(S.rodEnabled?field(tr('rodTop'),'rodTop',S.rodTop,100,1800):'')+'</div>';
+   const rodRuleNote=lang==='ua'?'Центр штанги автоматично розташовується на 80 мм нижче нижньої площини полиці над нею.':lang==='en'?'The rail center is automatically positioned 80 mm below the underside of the shelf above it.':'Центр штанги автоматически располагается на 80 мм ниже нижней плоскости полки над ней.';
+   html='<div class="section">'+select(tr('rod'),'rodEnabled',[['0',tr('rodOff')],['1',tr('rodOn')]],S.rodEnabled?'1':'0')+(S.rodEnabled?'<p class="note">'+rodRuleNote+'</p>':'')+'</div>';
    html+='<div class="section">'+select(tr('handles'),'handleMode',[['HANDLE',tr('withHandles')],['PUSH',tr('handleless')]],S.handleMode)+'<p class="note">'+tr('handlesNote')+'</p></div>';
  }
  if(name==='lighting'){
