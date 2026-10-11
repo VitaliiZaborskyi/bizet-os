@@ -192,7 +192,7 @@
       module.facade_count=requested===3&&effectiveRun!==900?2:requested;module.facade_count_user=true;
     }
     if(edit.facade_orientation)module.facade_orientation=edit.facade_orientation;
-    if(edit.facade_orientation==='HORIZONTAL'){module.opening='LIFT';module.lift_mechanism=edit.lift_mechanism||'LIFT_ONLY'}
+    if(edit.facade_orientation==='HORIZONTAL'){module.opening='LIFT';module.lift_mechanism=edit.lift_mechanism||'LIFT_ONLY';module.facade_stack_count=module.facade_count||1;module.lift_hardware_proxy=true}
     if(edit.opening)module.opening=edit.opening;
     if(Array.isArray(edit.facade_openings)){
       module.facade_openings=normalizeOpenings(module.facade_count||edit.facade_openings.length,edit.facade_openings);
@@ -306,7 +306,7 @@
       const width=Number(inputs.fridge_width_mm)||600,freeFridge=inputs.fridge_type==='FREESTANDING';
       const tallHeight=freeFridge?Math.max(1500,Math.min(roomValues().heightMm-140,2100)):Math.max(900,kitchenTopZ()-plinthHeight());
       const clearance=freeFridge?freestandingGap(width):0,runWidth=freeFridge?width+clearance*2:width;
-      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:plinthHeight(),content:freeFridge?'FRIDGE_FREEZER':(inputs.fridge_content||'PENDING'),freestanding:freeFridge,appliance_width_mm:width,appliance_clearance_mm:clearance,freezer_bottom:true,fridge_bottom_vent_diameter_mm:freeFridge?0:250,max_part_length_mm:2780,max_part_width_mm:2060};
+      const fridgeExtra={tall:true,h:tallHeight,z:freeFridge?0:plinthHeight(),content:freeFridge?'FRIDGE_FREEZER':(inputs.fridge_content||'PENDING'),freestanding:freeFridge,appliance_width_mm:width,appliance_clearance_mm:clearance,freezer_bottom:true,fridge_bottom_vent_diameter_mm:freeFridge?0:250,fridge_appliance_height_mm:freeFridge?tallHeight:1800,fridge_upper_shelf:true,fridge_upper_back_panel:true,fridge_plinth_grille_width_mm:freeFridge?0:460,fridge_plinth_grille_height_mm:freeFridge?0:60,facade_count:freeFridge?0:2,facade_openings:freeFridge?[]:['LEFT','LEFT'],max_part_length_mm:2780,max_part_width_mm:2060};
       if(inputs.fridge_type==='BUILT_IN'&&width===1200){
         list.push(baseModule('fridge-left','Холодильник L',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_left_unit||'PENDING'}));
         list.push(baseModule('fridge-right','Холодильник R',600,'FRIDGE',fWall,{...fridgeExtra,freestanding:false,content:inputs.fridge_right_unit||'PENDING'}));
@@ -589,17 +589,20 @@
     const out=list.map(m=>({...m}));
     out.filter(m=>m.kind==='FRIDGE'&&!m.freestanding).forEach(fridge=>{
       fridge.fridge_bottom_vent_diameter_mm=250;
+      fridge.fridge_plinth_grille_width_mm=460;
+      fridge.fridge_plinth_grille_height_mm=60;
       fridge.max_part_length_mm=2780;fridge.max_part_width_mm=2060;
+      fridge.facade_count=2;fridge.fridge_upper_shelf=true;fridge.fridge_upper_back_panel=true;
       const candidates=out.filter(m=>m.wall===fridge.wall&&m.id!==fridge.id&&m.level!=='upper'&&!m.tall&&!['FILLER','FRIDGE'].includes(m.kind));
-      if(!candidates.length)return;
       const pos=m=>m.wall==='A'?(Number(m.x)||0)+(Number(m.w)||0)/2:(Number(m.y)||0)+(Number(m.d)||0)/2;
-      const fp=pos(fridge),neighbor=[...candidates].sort((a,b)=>Math.abs(pos(a)-fp)-Math.abs(pos(b)-fp))[0];
-      const hasLowerFacade=fridge.content&&!['FRIDGE_ONLY','FREEZER_ONLY'].includes(fridge.content);
-      if(hasLowerFacade){
-        const neighborFacadeH=Math.max(100,Math.round((Number(neighbor.h)||lowerBodyHeight())-5));
-        fridge.neighbor_lower_facade_height_mm=neighborFacadeH;
-        fridge.lower_facade_height_mm=Math.min(Math.max(100,Math.round((Number(fridge.h)||0)*.34)),neighborFacadeH);
-      }else fridge.lower_facade_height_mm=0;
+      const fp=pos(fridge),neighbor=candidates.length?[...candidates].sort((a,b)=>Math.abs(pos(a)-fp)-Math.abs(pos(b)-fp))[0]:null;
+      const neighborFacadeH=Math.max(100,Math.round(Number(neighbor?.h)||lowerBodyHeight())),totalH=Math.max(900,Math.round(Number(fridge.h)||2100));
+      fridge.neighbor_lower_facade_height_mm=neighborFacadeH;
+      fridge.lower_facade_height_mm=Math.min(totalH-260,neighborFacadeH);
+      fridge.upper_facade_height_mm=Math.max(256,totalH-fridge.lower_facade_height_mm-4);
+      fridge.fridge_appliance_height_mm=Math.min(1850,Math.max(1700,Number(fridge.fridge_appliance_height_mm)||1800),totalH-220);
+      fridge.fridge_upper_shelf_z_mm=Math.round((Number(fridge.z)||0)+fridge.fridge_appliance_height_mm);
+      fridge.fridge_construction_rule='BUILT_IN_2_FRONT_NEIGHBOR_ALIGN_VENT_250_GRILLE_460X60';
     });
     return out;
   }
@@ -618,8 +621,8 @@
         else{const center=m.y+m.d/2,y=clamp(center-hoodWidth/2,0,room.depthMm-hoodWidth),x=m.wall==='B'?0:room.lengthMm-hoodDepth;result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y,z:bottom,w:hoodDepth,d:hoodWidth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth})}
         return;
       }
-      if(m.wall==='A')result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:'A',x:m.x,y:room.depthMm-uDepth,z:bottom,w:m.w,d:uDepth,h:height,level:'upper',anchor:false,system:true,pending:m.pending});
-      else result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:m.wall,x:m.wall==='B'?0:room.lengthMm-uDepth,y:m.y,z:bottom,w:uDepth,d:m.d,h:height,level:'upper',anchor:false,system:true,pending:m.pending});
+      if(m.wall==='A')result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:'A',x:m.x,y:room.depthMm-uDepth,z:bottom,w:m.w,d:uDepth,h:height,level:'upper',anchor:false,system:true,pending:m.pending,source_kind:m.kind,source_id:m.id});
+      else result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:m.wall,x:m.wall==='B'?0:room.lengthMm-uDepth,y:m.y,z:bottom,w:uDepth,d:m.d,h:height,level:'upper',anchor:false,system:true,pending:m.pending,source_kind:m.kind,source_id:m.id});
     });
     const variant=variantState();
     result.forEach(m=>{if(m.kind==='UPPER'){m.label=variant.upper_opening==='LIFT'?'Верхний · подъёмный':'Верхний · распашной'}});
@@ -666,33 +669,43 @@
     }
   }
 
-  function applyEndPanelRules(list){
-    if(configuration()!=='WALL_CENTER')return list;
-    const out=list.map(m=>({...m})),groups=new Map();
-    out.filter(m=>m.wall==='A'&&m.kind!=='FILLER').forEach(m=>{
-      const key=`${m.level||'lower'}:${Math.round(Number(m.z)||0)}:${Math.round(Number(m.h)||0)}`;
-      if(!groups.has(key))groups.set(key,[]);groups.get(key).push(m);
+  function moduleRunStart(m){return m.wall==='A'?(Number(m.x)||0):(Number(m.y)||0)}
+  function moduleRunLength(m){return m.wall==='A'?(Number(m.w)||0):(Number(m.d)||0)}
+  function applyTemplateOpeningRules(list){
+    if(configuration()==='CUSTOM')return list;
+    const out=list.map(m=>({...m})),byWall=new Map();
+    out.forEach(m=>{const w=m.wall||'A';if(!byWall.has(w))byWall.set(w,[]);byWall.get(w).push(m)});
+    byWall.forEach((group,wall)=>{
+      const lower=group.filter(m=>m.level!=='upper'),anchor=lower.find(m=>m.kind==='COOKTOP')||lower.find(m=>m.kind==='TALL_OVEN');
+      const axis=anchor?moduleRunStart(anchor)+moduleRunLength(anchor)/2:wallSpan(wall,roomValues())/2;
+      group.forEach(m=>{
+        if(m.freestanding||m.kind==='FILLER'||m.kind==='DISHWASHER'||m.kind==='COOKTOP'||m.kind==='UPPER_HOOD'||m.kind==='DRAWERS')return;
+        if(m.level==='upper'&&m.facade_orientation==='HORIZONTAL')return;
+        let count=Math.max(1,Math.round(Number(m.facade_count)||1));const run=moduleRunLength(m),start=moduleRunStart(m);
+        if(m.level==='upper'&&m.source_kind==='SINK'&&run>600){count=2;m.facade_count=2;m.facade_count_user=true;m.facade_openings=['LEFT','RIGHT'];m.template_opening_locked=true;m.template_opening_rule='SINK_UPPER_DOUBLE_OVER_600';return}
+        const gap=4,cell=Math.max(1,(run-gap*(count-1))/count);
+        m.facade_openings=Array.from({length:count},(_,i)=>(start+i*(cell+gap)+cell/2)<=axis?'LEFT':'RIGHT');
+        m.template_opening_locked=true;m.template_opening_axis_mm=Math.round(axis);m.template_opening_rule='TEMPLATE_CENTER_LEFT_RIGHT';
+      });
     });
+    return out;
+  }
+
+  function applyEndPanelRules(list){
+    if(configuration()==='CUSTOM')return list;
+    const out=list.map(m=>({...m})),groups=new Map();
+    out.filter(m=>m.kind!=='FILLER').forEach(m=>{const key=`${m.wall||'A'}:${m.level||'lower'}:${Math.round(Number(m.z)||0)}:${Math.round(Number(m.h)||0)}`;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(m)});
     groups.forEach(group=>{
-      group.sort((a,b)=>(Number(a.x)||0)-(Number(b.x)||0));
-      const first=group[0],last=group[group.length-1];
-      const mark=(m,side)=>{
-        if(!m)return;
-        const shape=m.end_panel_shape||'FLAT',material=m.end_panel_material||'CARCASS';
-        m.end_panel_side=m.end_panel_side&&m.end_panel_side!==side?'BOTH':side;
-        m.end_panel_shape=shape;m.end_panel_material=material;
-        m.end_panel_height_mm=Math.round(Number(m.h)||0);
-        m.end_panel_floor_extension=false;
-        m.end_panel_width_mm=shape==='L_SHAPE'?40:18;
-      };
-      mark(first,'LEFT');mark(last,'RIGHT');
+      const wall=group[0]?.wall||'A',corners=cornerEdgesForWall(wall);group.sort((a,b)=>moduleRunStart(a)-moduleRunStart(b));
+      const mark=(m,edge)=>{if(!m||corners.has(edge))return;const shape=m.end_panel_shape||'FLAT',material=m.end_panel_material||'CARCASS',side=edge==='START'?'LEFT':'RIGHT';m.end_panel_side=m.end_panel_side&&m.end_panel_side!==side?'BOTH':side;m.end_panel_edges=Array.from(new Set([...(m.end_panel_edges||[]),edge]));m.end_panel_shape=shape;m.end_panel_material=material;m.end_panel_height_mm=Math.round(Number(m.h)||0);m.end_panel_floor_extension=false;m.end_panel_width_mm=shape==='L_SHAPE'?40:18;m.end_panel_front_flush=true};
+      mark(group[0],'START');mark(group[group.length-1],'END');
     });
     return out;
   }
 
   function buildModules(){
     layoutWarnings=[];
-    const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(applyEndPanelRules(lower.concat(upper)));
+    const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(applyEndPanelRules(applyTemplateOpeningRules(lower.concat(upper))));
     evaluateErgonomics(all);
     const standardPackageH=lowerTotalHeight()+Math.max(300,Number(inputs.upper_gap_mm)||600)+upperConfiguredHeight();
     if(room.heightMm<standardPackageH&&upper.length){
@@ -863,7 +876,7 @@
       }else{
         html+=editField(tr('Фасадов','Doors'),'facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3',Number(d.run_mm)!==900]]);
         html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
-        html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);html+=facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
+        html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);html+=module.template_opening_locked?`<div class="r104-module-info">${tr('Сторона открывания задана шаблонным правилом относительно центра варочной/духовки.','Opening side is locked by the template rule relative to the cooktop/oven center.')}</div>`:facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
       }
     }else if(kind==='UPPER'){
       html+=editField(tr('Ориентация фасада','Facade orientation'),'facade_orientation',d.facade_orientation,'select',[['VERTICAL',tr('Вертикальная','Vertical')],['HORIZONTAL',tr('Горизонтальная','Horizontal')]]);
@@ -871,8 +884,8 @@
       html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
       html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);
       if(d.facade_orientation==='HORIZONTAL'){
-        html+=editField(tr('Механизм','Mechanism'),'lift_mechanism',d.lift_mechanism,'select',[['LIFT_ONLY',tr('Подъёмный механизм','Lift mechanism')],['HINGE_PLUS_LIFT',tr('Петли + подъёмник','Hinges + lift')]]);html+=`<div class="r104-module-info">${tr('Горизонтальные фасады используют подъёмную механику. Точный тариф задаст библиотека фурнитуры.','Horizontal facades use lift hardware. Exact pricing will come from the hardware library.')}</div>`;
-      }else html+=facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
+        html+=editField(tr('Механизм','Mechanism'),'lift_mechanism',d.lift_mechanism,'select',[['LIFT_ONLY','Aventos HK'],['HINGE_PLUS_LIFT',tr('2 газлифта + петли','2 gas lifts + hinges')]]);html+=`<div class="r104-module-info">${tr('Выбранная механика должна быть видна и в общем 3D, и в изоляции. Геометрия механизма пока является инженерным proxy до выбора артикула.','Selected lift hardware must be visible both in the full 3D and isolation. Hardware geometry remains an engineering proxy until an exact article is selected.')}</div>`;
+      }else html+=module.template_opening_locked?`<div class="r104-module-info">${tr('Сторона открывания задана шаблонным правилом относительно центра варочной/духовки.','Opening side is locked by the template rule relative to the cooktop/oven center.')}</div>`:facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
     }else if(kind==='TALL_PLAIN'){
       html+=editField(tr('Фасадов по высоте','Facade zones'),'tall_facade_count',d.tall_facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
       html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2'],[3,'3']]);
