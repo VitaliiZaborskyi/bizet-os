@@ -283,9 +283,9 @@ function renderDirectionGate() {
   $('stepMeta').textContent = 'BIZET OS';
   $('stepTitle').textContent = directionText('Направление', 'Direction', 'Напрям роботи');
   $('stepSubtitle').textContent = directionText(
-    'Выберите, с чем будем работать. Сейчас полноценная ветка — мебель.',
-    'Choose what you want to work with. Furniture is the full pilot route today.',
-    'Оберіть напрям роботи. Зараз повноцінна гілка — меблі.'
+    'Выберите направление — визуально, без лишних шагов.',
+    'Choose a direction visually, without extra steps.',
+    'Оберіть напрям візуально, без зайвих кроків.'
   );
   $('backButton').hidden = false;
   $('backButton').style.removeProperty('display');
@@ -294,16 +294,19 @@ function renderDirectionGate() {
   grid.dataset.kind = 'bizet_direction';
   const soon = directionText('Скоро', 'Soon', 'Незабаром');
   const placeholder = directionText('Предпросмотр ветки', 'Branch preview', 'Попередній перегляд гілки');
-  grid.innerHTML = [
-    ['FURNITURE', directionText('Мебель','Furniture','Меблі'), '', false],
-    ['DESIGN', directionText('Дизайн','Design','Дизайн'), placeholder, false],
-    ['REPAIR', directionText('Ремонт','Renovation','Ремонт'), soon, true],
-    ['ENGINEERING', directionText('Инженерия','Engineering','Інженерія'), soon, true],
-  ].map(([value,title,note,disabled]) =>
-    '<button type="button" class="choice-card bizet-direction-card'+(disabled?' pilot-disabled-choice':'')+'" data-direction="'+value+'" '+(disabled?'disabled aria-disabled="true"':'')+'>'+
-      '<span class="card-content"><span class="card-title">'+title+'</span>'+(note?'<span class="card-note">'+note+'</span>':'')+'</span>'+
-    '</button>'
-  ).join('');
+  const cards = [
+    {value:'FURNITURE',title:directionText('Мебель','Furniture','Меблі'),note:'',disabled:false,image:'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1400&q=84',fallback:'linear-gradient(145deg,#c8b9a7,#5f5045)'},
+    {value:'DESIGN',title:directionText('Дизайн','Design','Дизайн'),note:placeholder,disabled:false,image:'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1400&q=84',fallback:'linear-gradient(145deg,#d8d2ca,#70675f)'},
+    {value:'REPAIR',title:directionText('Ремонт','Renovation','Ремонт'),note:soon,disabled:true,image:'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1400&q=84',fallback:'linear-gradient(145deg,#c5b8aa,#66584c)'},
+    {value:'ENGINEERING',title:directionText('Инженерия','Engineering','Інженерія'),note:soon,disabled:true,image:'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1400&q=84',fallback:'linear-gradient(145deg,#b9c1c6,#4d555b)'},
+  ];
+  grid.innerHTML = cards.map(card => {
+    const disabledClass=card.disabled?' pilot-disabled-choice':'';
+    const disabledAttr=card.disabled?' disabled aria-disabled="true"':'';
+    return '<button type="button" class="choice-card bizet-direction-card'+disabledClass+'" data-direction="'+card.value+'"'+disabledAttr+
+      ' style=\'--card-image:url("'+card.image+'");--card-fallback:'+card.fallback+';--variant-filter:none\'>'+
+      '<span class="card-content"><span class="card-title">'+card.title+'</span>'+(card.note?'<span class="card-note">'+card.note+'</span>':'')+'</span></button>';
+  }).join('');
   grid.querySelector('[data-direction="FURNITURE"]')?.addEventListener('click', () => {
     directionGateOpen = false;
     currentStep = 1;
