@@ -1010,19 +1010,17 @@
     const current=modules.find(m=>m.id===activeModule.id);
     if(!current){activeModule=null;renderNormalKitchen(false);return}
     activeModule=current;
-    const run=Math.max(300,runDimension(current)),dep=Math.max(280,depthDimension(current));
-    const room={lengthMm:run+1000,depthMm:dep+1000,heightMm:Math.max(1200,current.h+520)};
-    const clone={...current,wall:'A',x:500,y:room.depthMm-dep-320,z:120,w:run,d:dep,number:current.number};
+    const room=roomValues();
     prepareRenderLayout();
     const forceCanvasReset=focusCanvasResetFrames>0;
     if(forceCanvasReset)focusCanvasResetFrames--;
     scene=window.BizetPilot3D.drawKitchenScene($('focusCanvas'),{
-      room,configuration:'WALL_CENTER',activeWalls:[],modules:[clone],
-      camera:{...focusCamera,screenXOffset:Number(focusCamera.screenXOffset)||0,screenYOffset:Number(focusCamera.screenYOffset)||0,targetX:clone.x+clone.w/2,targetY:clone.y+clone.d/2,targetZ:clone.z+clone.h/2},showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,showNumbers:false,architecturalElements:[],focusMode:true,
+      room,configuration:configuration(),activeWalls:[],modules:[current],
+      camera:{...focusCamera,screenXOffset:Number(focusCamera.screenXOffset)||0,screenYOffset:Number(focusCamera.screenYOffset)||0,targetX:current.x+current.w/2,targetY:current.y+current.d/2,targetZ:current.z+current.h/2},showDimensions:focusDimensionsVisible,showModuleDimensions:focusDimensionsVisible,showNumbers:false,architecturalElements:[],focusMode:true,
       forceCanvasReset
     });
     syncConstraintBanner();renderFocusVariantRibbon(activeModule);
-    $('modelStatus').textContent=tr('Режим модуля · «Назад» вернёт общий вид.','Module mode · Back returns to the full kitchen.');
+    $('modelStatus').textContent=tr('Режим модуля · используется тот же 3D-объект, что и в общей сцене.','Module mode · the same 3D object as in the full scene is used.');
   }
   function renderScene(engineOk=false){
     setFurniturePalette();
