@@ -71,7 +71,7 @@ def test_fridge_overlap_plinth_and_sink_faucet_visual_bugs_are_addressed():
     viewer=read("kitchen-webgl-r1050.js")
     assert "function addBuiltInFridge" in viewer
     assert "if(m.kind==='FRIDGE'&&m.freestanding)" in viewer
-    assert "['FRIDGE','DISHWASHER'].includes(m.kind)" in viewer
+    assert "if(m.kind==='DISHWASHER')" in viewer
     assert "plinthRecess()" in viewer
     assert "recess=plinthRecess()" in viewer
     assert "'faucet-proxy'" in viewer
