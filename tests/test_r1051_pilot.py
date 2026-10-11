@@ -18,7 +18,7 @@ def test_r1051_current_version_and_assets():
     assert '/static/r1051.css?v=1051' in workspace
     assert '/static/r1051.css?v=1051' in index
     assert '/static/r1051.css?v=1051' in grande
-    for asset in ["production-r1050.js?v=1051","kitchen-webgl-r1050.js?v=20261011","workspace-r1050.js?v=20261011","ua-ui-r1050.js?v=1051"]:
+    for asset in ["production-r1050.js?v=1051","kitchen-webgl-r1050.js?v=20261011b","workspace-r1050.js?v=20261011","ua-ui-r1050.js?v=1051"]:
         assert asset in workspace
     assert '<link rel="stylesheet" href="/static/r1050.css?v=1051">' in workspace
 
@@ -66,17 +66,17 @@ def test_r1051_dimensions_are_outside_kitchen_and_focus_bbox():
     assert "L+safe" in block
     assert "safe=360" in block
 
-def test_r1051_isolation_owns_only_selected_module_and_contains_hardware():
+def test_current_isolation_reuses_actual_module_builder_and_no_fake_confirmats():
     viewer=read("kitchen-webgl-r1050.js")
-    focus=viewer[viewer.index("function addFocusInternals"):viewer.index("function lowerRuns")]
+    model=read("model.js")
+    assert "addFocusInternals" not in viewer
+    assert "CylinderGeometry(3.15,3.15,50" not in viewer
     build=viewer[viewer.index("function buildFurniture"):viewer.index("function frame(")]
-    assert "addLegs(room,m)" in focus
-    assert "addHinges(room,m" in focus
-    assert "CylinderGeometry(3.15,3.15,50" in focus
-    assert "ghost.opacity=.18" in build
-    assert "addFocusInternals(room,m,ghost)" in build
-    assert "makeFront(room,m,i,count,focusFront.clone())" in build
-    assert "addLegs(room,mods[0])" not in build
+    assert "addCarcass(room,m,body)" in build
+    assert "mods.forEach(buildOne)" in build
+    focus=model[model.index("function renderModuleFocus"):model.index("function renderScene")]
+    assert "modules:[current]" in focus
+    assert "configuration:configuration()" in focus
 
 def test_r1051_handles_face_facade_and_stay_inside_hinged_front():
     viewer=read("kitchen-webgl-r1050.js")
