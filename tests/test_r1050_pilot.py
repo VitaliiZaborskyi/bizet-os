@@ -19,15 +19,15 @@ def test_r1050_app_and_current_assets_are_wired():
     for asset in [
         "/static/r1050.css?v=1051",
         "/static/production-r1050.js?v=1051",
-        "/static/kitchen-webgl-r1050.js?v=20261011",
+        "/static/kitchen-webgl-r1050.js?v=20261011b",
         "/static/workspace-r1050.js?v=20261011",
         "/static/ua-ui-r1050.js?v=1051",
     ]:
         assert asset in workspace
     for asset in [
         "/static/production-r1050.js?v=1051",
-        "/static/grande-r1050.css?v=1051",
-        "/static/grande-r1050.js?v=1051",
+        "/static/grande-r1050.css?v=20261011b",
+        "/static/grande-r1050.js?v=20261011b",
         "/static/ua-ui-r1050.js?v=1051",
     ]:
         assert asset in grande
@@ -114,14 +114,17 @@ def test_view_mode_is_fullscreen_and_fronts_are_directly_interactive():
     assert "m.type==='door'" in viewer
     assert "m.type==='drawer'" in viewer
 
-def test_r1050_kitchen_dimensions_are_large_and_focus_is_transparent():
+def test_current_isolation_uses_shared_module_geometry_not_focus_proxy():
     viewer = read("kitchen-webgl-r1050.js")
-    assert "function textSprite(text,scale=2.4)" in viewer
-    assert "focus?2.8:2.35" in viewer
-    assert "ghost.opacity=.18" in viewer
-    assert "addFocusInternals" in viewer
-    assert "CONFIRMAT_6_3X50" in viewer
-
+    model = read("model.js")
+    assert "function addCarcass(room,m,mat)" in viewer
+    assert "addFocusInternals" not in viewer
+    build = viewer[viewer.index("function buildFurniture"):viewer.index("function frame(")]
+    assert "mods.forEach(buildOne)" in build
+    assert "focus=!!options.focusMode" in build
+    focus = model[model.index("function renderModuleFocus"):model.index("function renderScene")]
+    assert "modules:[current]" in focus
+    assert "clone={...current" not in focus
 
 def test_r1050_handle_rules_and_simplified_hardware_are_visible():
     viewer = read("kitchen-webgl-r1050.js")
