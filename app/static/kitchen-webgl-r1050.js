@@ -322,29 +322,6 @@ function addAppliance(room,m){
  steel.dispose();dark.dispose();
 }
 
-function addFocusInternals(room,m,bodyMat){
- const t=18,W=+m.w,H=+m.h,D=+m.d,x=+m.x,y=+m.y,z=+m.z;
- const pieces=[
-  {x,y,z,w:t,d:D,h:H},{x:x+W-t,y,z,w:t,d:D,h:H},{x:x+t,y,z,w:W-2*t,d:D,h:t},{x:x+t,y,z:z+H-t,w:W-2*t,d:D,h:t},
-  {x:x+t,y:y+D-4,z:z+t,w:W-2*t,d:4,h:H-2*t}
- ];
- if(H>500)pieces.push({x:x+t,y:y+12,z:z+H*.5,w:W-2*t,d:D-24,h:t});
- pieces.forEach(p=>meshBox(room,p,bodyMat.clone(),furnitureGroup,'body',m.id).material.userData.owned=true);
- const metal=ownMat({color:'#a8adb0',roughness:.3,metalness:.7});
- const fastener=window.BizetProductionR1050?.FASTENER_TEMPLATES?.CONFIRMAT_6_3X50;
- [30,70,D-70,D-30].filter(v=>v>20&&v<D-20).forEach(depth=>{
-   [x+t/2,x+W-t/2].forEach(px=>{
-     [z+9,z+H-9].forEach(pz=>{
-       const c=new THREE.Mesh(new THREE.CylinderGeometry(3.15,3.15,50,10),metal.clone());
-       c.material.userData.owned=true;c.rotation.z=Math.PI/2;
-       c.position.copy(roomToWorld(room,px,y+depth,pz));hardwareGroup.add(c);
-     });
-   });
- });
- metal.dispose();
- addLegs(room,m);
- addHinges(room,m,Math.max(1,Number(m.facade_count)||1));
-}
 function addEndPanels(room,m,bodyMat,frontMat){
  const edges=Array.isArray(m.end_panel_edges)?m.end_panel_edges:[];if(!edges.length||m.kind==='FRIDGE')return;
  const wall=m.wall||'A',t=Math.max(8,Number(m.end_panel_width_mm)||18),mat=(m.end_panel_material==='FACADE'?frontMat:bodyMat);
