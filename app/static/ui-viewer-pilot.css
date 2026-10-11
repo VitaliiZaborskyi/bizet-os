@@ -134,3 +134,33 @@ body.kitchen-view-mode #moduleNumbersToggle{display:none!important}
   .choice-grid[data-kind="bizet_direction"]{grid-template-columns:1fr}
   .bizet-direction-card{min-height:104px!important}
 }
+
+/* Pilot #09 — contrast is owned by the actual surface, not only by global theme. */
+html[data-theme="light"] .r8-topbar{
+  background:rgba(244,244,241,.96)!important;
+  color:#111214!important;
+}
+html[data-theme="dark"] .r8-topbar{
+  background:rgba(25,26,28,.96)!important;
+  color:#f7f7f4!important;
+}
+html[data-theme="light"] .r8-topbar .r8-brand,
+html[data-theme="light"] .r8-topbar .r8-brand strong,
+html[data-theme="light"] .r8-topbar .r8-master,
+html[data-theme="light"] .r8-topbar .r8-project-state{color:#111214!important}
+html[data-theme="dark"] .r8-topbar .r8-brand,
+html[data-theme="dark"] .r8-topbar .r8-brand strong,
+html[data-theme="dark"] .r8-topbar .r8-master,
+html[data-theme="dark"] .r8-topbar .r8-project-state{color:#f7f7f4!important}
+.r10-constraint-banner,.r10-constraint-banner *{color:#fff!important}
+html[data-theme="light"] #pointBFinalActions .r104-price-line{
+  background:rgba(255,255,255,.94);color:#111214!important;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:8px 10px
+}
+html[data-theme="dark"] #pointBFinalActions .r104-price-line{
+  background:rgba(24,25,27,.94);color:#fff!important;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 10px
+}
+html[data-theme="dark"] #pointBFinalActions .r104-price-line *,
+html[data-theme="dark"] #pointBFinalActions .r8-final-price *,
+html[data-theme="dark"] #pointBFinalActions .r104-price-currency *{color:#fff!important}
+html[data-theme="light"] #pointBFinalActions .r104-price-line *,
+html[data-theme="light"] #pointBFinalActions .r8-final-price *{color:#111214!important}
