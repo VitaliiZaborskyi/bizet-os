@@ -72,8 +72,9 @@ def test_horizontal_lift_hardware_is_visible_in_main_and_isolation():
     assert "'aventos-hk-proxy'" in viewer
     assert "'gas-lift-proxy'" in viewer
     build=viewer[viewer.index("function buildFurniture"):viewer.index("function frame(")]
-    assert build.count("addLiftHardware(room,m)")>=2
-    assert "makeFront(room,m,i,count,focusFront.clone())" in build
+    assert "addLiftHardware(room,m)" in build
+    assert "focus=!!options.focusMode" in build
+    assert "mods.forEach(buildOne)" in build
 
 def test_view_facades_and_drawers_toggle_on_single_tap_without_motion_button():
     viewer=read("kitchen-webgl-r1050.js")
