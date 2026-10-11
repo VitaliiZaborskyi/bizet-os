@@ -2,9 +2,9 @@
 'use strict';
 const $=id=>document.getElementById(id);
 function ensureViewerButtons(){
- const host=document.querySelector('.r8-stage-top');if(!host)return;
- if(!$('deepShadowButton')){const b=document.createElement('button');b.id='deepShadowButton';b.type='button';b.textContent='DS';b.title='Deep Shadow';b.setAttribute('aria-label','Deep Shadow');host.appendChild(b);b.onclick=()=>{const next=!window.BizetKitchenWebGL?.isDeepShadow?.();window.BizetKitchenWebGL?.setDeepShadow?.(next);b.classList.toggle('active',next)};b.classList.toggle('active',window.BizetKitchenWebGL?.isDeepShadow?.()||false)}
- if(!$('motionButton')){const b=document.createElement('button');b.id='motionButton';b.type='button';b.textContent='↔';b.title='Анімація фасадів і шухляд';b.setAttribute('aria-label','Анімація фасадів і шухляд');host.appendChild(b);b.onclick=()=>{const next=!b.classList.contains('active');b.classList.toggle('active',next);window.BizetKitchenWebGL?.setMotion?.(next)}}
+ ['deepShadowButton','motionButton'].forEach(id=>$(id)?.remove());
+ window.BizetKitchenWebGL?.setDeepShadow?.(false);
+ window.BizetKitchenWebGL?.setMotion?.(true);
 }
 function syncView(){
  const isView=window.BIZET_KITCHEN_UI_MODE==='VIEW'||document.body.classList.contains('kitchen-view-mode');
@@ -38,7 +38,6 @@ function boot(){
  document.addEventListener('dblclick',e=>{if(e.target.closest('#modelStage'))e.preventDefault()},{capture:true});
  window.addEventListener('bizet:modelchange',()=>setTimeout(()=>{window.BizetKitchenWebGL?.redraw?.();enforceCurrencyLocation()},40));
  window.addEventListener('bizet:themechange',()=>document.documentElement.dataset.theme=localStorage.getItem('bizet_os_theme')||'light');
- window.addEventListener('bizet:deepshadowchange',e=>$('deepShadowButton')?.classList.toggle('active',!!e.detail?.enabled));
  window.addEventListener('bizet:export-preflight',e=>showPreflight(e.detail?.report));
  setInterval(enforceCurrencyLocation,1200);
 }
