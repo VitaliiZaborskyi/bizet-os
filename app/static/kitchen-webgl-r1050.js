@@ -272,7 +272,7 @@ function addCarcass(room,m,mat){
 }
 function addTallOvenVisual(room,m,darkMat,steelMat){
  const wall=m.wall||'A',z=+m.z,H=+m.h,openingH=Math.min(600,Math.max(500,H*.28)),ovenZ=z+Math.max(180,Math.min(H-openingH-220,H*.32));
- const frontMat=ownMat({color:colors().front,roughness:.5}),frameMat=steelMat.clone();frameMat.userData.owned=true;
+ const frontMat=ownMat({color:colors().front,roughness:.5}),trimMat=steelMat.clone();trimMat.userData.owned=true;
  const makeFrontPanel=(pz,ph,id)=>{
    if(ph<90)return;
    let s={...m,z:pz,h:ph};
@@ -280,13 +280,21 @@ function addTallOvenVisual(room,m,darkMat,steelMat){
    const q=meshBox(room,s,frontMat.clone(),furnitureGroup,'oven-cabinet-front',m.id);q.material.userData.owned=true;q.userData.partRole=id;
  };
  makeFrontPanel(z,ovenZ-z-4,'LOWER_FRONT');makeFrontPanel(ovenZ+openingH+4,z+H-(ovenZ+openingH+4),'UPPER_FRONT');
- let glass={...m,z:ovenZ+8,h:openingH-16};
- if(wall==='A'){glass.x=+m.x+18;glass.w=Math.max(80,+m.w-36);glass.y=+m.y-14;glass.d=12}else{glass.y=+m.y+18;glass.d=Math.max(80,+m.d-36);glass.x=wall==='B'?+m.x+ +m.w+2:+m.x-14;glass.w=12}
+ let glass={...m,z:ovenZ+18,h:openingH-36};
+ if(wall==='A'){glass.x=+m.x+24;glass.w=Math.max(80,+m.w-48);glass.y=+m.y-16;glass.d=10}else{glass.y=+m.y+24;glass.d=Math.max(80,+m.d-48);glass.x=wall==='B'?+m.x+ +m.w+6:+m.x-16;glass.w=10}
  const oven=meshBox(room,glass,darkMat.clone(),hardwareGroup,'oven-3d',m.id);oven.material.userData.owned=true;oven.userData.visualizationProxy=true;
- let frame={...glass,z:ovenZ,h:openingH};if(wall==='A'){frame.x=+m.x+8;frame.w=Math.max(100,+m.w-16);frame.d=5}else{frame.y=+m.y+8;frame.d=Math.max(100,+m.d-16);frame.w=5}
- const trim=meshBox(room,frame,frameMat,hardwareGroup,'oven-frame',m.id);trim.userData.visualizationProxy=true;
- const p=center(room,glass),fv=frontVector(wall);p.y+=openingH*.34;p.add(fv.clone().multiplyScalar(22));const handle=addHandleBar(p,false);handle.scale.set(.78,.78,.78);handle.userData.visualization='OVEN_HANDLE';
- frontMat.dispose();
+ const addTrim=s=>{const q=meshBox(room,s,trimMat.clone(),hardwareGroup,'oven-frame',m.id);q.material.userData.owned=true;q.userData.visualizationProxy=true};
+ if(wall==='A'){
+   const fy=+m.y-19,W=Math.max(100,+m.w-16);
+   addTrim({x:+m.x+8,y:fy,z:ovenZ,w:W,d:5,h:18});addTrim({x:+m.x+8,y:fy,z:ovenZ+openingH-18,w:W,d:5,h:18});
+   addTrim({x:+m.x+8,y:fy,z:ovenZ+18,w:18,d:5,h:openingH-36});addTrim({x:+m.x+ +m.w-26,y:fy,z:ovenZ+18,w:18,d:5,h:openingH-36});
+ }else{
+   const fx=wall==='B'?+m.x+ +m.w+9:+m.x-19,D=Math.max(100,+m.d-16);
+   addTrim({x:fx,y:+m.y+8,z:ovenZ,w:5,d:D,h:18});addTrim({x:fx,y:+m.y+8,z:ovenZ+openingH-18,w:5,d:D,h:18});
+   addTrim({x:fx,y:+m.y+8,z:ovenZ+18,w:5,d:18,h:openingH-36});addTrim({x:fx,y:+m.y+ +m.d-26,z:ovenZ+18,w:5,d:18,h:openingH-36});
+ }
+ const p=center(room,glass),fv=frontVector(wall);p.y+=openingH*.34;p.add(fv.clone().multiplyScalar(24));const handle=addHandleBar(p,false);handle.scale.set(.78,.78,.78);handle.userData.visualization='OVEN_HANDLE';
+ frontMat.dispose();trimMat.dispose();
 }
 
 function addAppliance(room,m){
