@@ -38,23 +38,50 @@ html[data-theme="dark"] .r8-section p{
   color:var(--r1052-muted)!important;
 }
 
-/* Direction architecture screen: intentionally restrained, no fake functionality. */
+/* Direction architecture screen: same visual language as the first screen, always one viewport. */
+body[data-start-kind="bizet_direction"]{height:100dvh;overflow:hidden}
+body[data-start-kind="bizet_direction"] .app-shell{height:100dvh;min-height:0;overflow:hidden}
+body[data-start-kind="bizet_direction"] .footer{display:none!important}
+body[data-start-kind="bizet_direction"] .experience{
+  flex:1 1 auto;margin:0 auto;padding:10px 0 16px;min-height:0;
+  display:grid;grid-template-rows:auto minmax(0,1fr);align-content:stretch
+}
+body[data-start-kind="bizet_direction"] .intro{margin:0 auto 14px}
+body[data-start-kind="bizet_direction"] .intro p{margin-top:9px}
 .choice-grid[data-kind="bizet_direction"]{
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  min-height:0;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:stretch
 }
-.bizet-direction-card,
-.bizet-design-placeholder{
-  min-height:150px!important;
-  background:linear-gradient(145deg,#2d3135,#17191b)!important;
-  color:#f7f7f4!important;
+.bizet-direction-card{
+  min-height:0!important;height:min(58dvh,430px);color:#fff!important;
+  background:var(--card-fallback)!important
 }
-.bizet-direction-card .card-content,
-.bizet-design-placeholder .card-content{
-  background:linear-gradient(180deg,transparent,rgba(0,0,0,.48))!important;
+.bizet-direction-card::before{
+  background-image:var(--card-image),var(--card-fallback)!important;
+  background-size:cover!important;background-position:center!important
 }
-.bizet-direction-card .card-title{font-size:clamp(20px,2vw,30px)!important}
-html[data-theme="light"] .bizet-direction-card,
-html[data-theme="light"] .bizet-design-placeholder{box-shadow:0 15px 35px rgba(0,0,0,.13)}
+.bizet-direction-card .card-content{background:none!important}
+.bizet-direction-card .card-title{font-size:clamp(22px,2.2vw,32px)!important;text-shadow:0 2px 18px rgba(0,0,0,.42)}
+.choice-grid[data-kind="bizet_direction"] .pilot-disabled-choice{opacity:.68!important;filter:saturate(.55)!important;pointer-events:none!important}
+.bizet-design-placeholder{min-height:220px!important;background:linear-gradient(145deg,#2d3135,#17191b)!important;color:#f7f7f4!important}
+#deepShadowButton,#motionButton{display:none!important}
+
+@media(max-width:1050px){
+ body[data-start-kind="bizet_direction"] .experience{padding-top:6px}
+ .choice-grid[data-kind="bizet_direction"]{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .bizet-direction-card{height:clamp(150px,27dvh,250px)}
+}
+@media(max-width:700px){
+ body[data-start-kind="bizet_direction"] .topbar{height:58px}
+ body[data-start-kind="bizet_direction"] .experience{width:min(100% - 18px,620px);padding:4px 0 8px}
+ body[data-start-kind="bizet_direction"] .intro{margin-bottom:8px}
+ body[data-start-kind="bizet_direction"] .intro h1{font-size:clamp(28px,8vw,38px)}
+ body[data-start-kind="bizet_direction"] .intro p{font-size:12px;line-height:1.25;margin-top:6px}
+ .choice-grid[data-kind="bizet_direction"]{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ .bizet-direction-card{height:clamp(132px,28dvh,218px)!important;border-radius:18px!important}
+ .bizet-direction-card .card-content{padding:14px!important}
+ .bizet-direction-card .card-title{font-size:20px!important}
+ .bizet-direction-card .card-note{font-size:10px!important}
+}
 
 /* Logical dependencies remain in place but cannot be activated accidentally. */
 .r1052-disabled-setting{
