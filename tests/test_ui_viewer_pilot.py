@@ -51,14 +51,14 @@ def test_module_lighting_is_multiselect_and_has_visualization_only_contract():
     assert "visualizationProxy:true,productionProxy:false" in viewer
     assert "makeLightingGradient" in viewer
 
-def test_viewer_uses_visible_edges_cleaner_ao_and_technical_isolation():
+def test_viewer_uses_visible_edges_and_disables_unstable_ao():
     viewer=read("kitchen-webgl-r1050.js")
     assert "new THREE.EdgesGeometry" in viewer
     assert "viewerEdge:true" in viewer
     assert "focus?0xd9dde1:0x34383d" in viewer
-    assert "saoPass.params.saoIntensity=.014" in viewer
-    assert "saoPass.params.saoKernelRadius=20" in viewer
-    assert "saoPass.params.saoBlurRadius=8" in viewer
+    assert "function setDeepShadow()" in viewer
+    assert "saoPass.enabled=false" in viewer
+    assert "if(deepShadow&&composer)composer.render()" not in viewer
 
 def test_default_environment_is_graphite_and_walnut_like():
     viewer=read("kitchen-webgl-r1050.js")
@@ -71,7 +71,8 @@ def test_fridge_overlap_plinth_and_sink_faucet_visual_bugs_are_addressed():
     viewer=read("kitchen-webgl-r1050.js")
     assert "former body+appliance overlap caused z-fighting" in viewer
     assert "['FRIDGE','DISHWASHER'].includes(m.kind)" in viewer
-    assert "y:+first.y-18" in viewer
+    assert "plinthRecess()" in viewer
+    assert "recess=plinthRecess()" in viewer
     assert "'faucet-proxy'" in viewer
     assert "it never implies machining, cutout or BOM" in viewer
     assert "'sink-proxy'" in viewer
