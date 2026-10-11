@@ -92,18 +92,16 @@ def test_r1050_import_does_not_claim_raw_grande_dwg_parse():
     assert "UNRESOLVED" in production
 
 
-def test_r1050_standard_kitchen_is_clean_and_deep_shadow_is_optional():
+def test_current_pilot_keeps_clean_scene_and_disables_unstable_deep_shadow():
     viewer = read("kitchen-webgl-r1050.js")
     workspace = read("workspace-r1050.js")
     assert "scene.fog=null" in viewer
     assert "scene.background=new THREE.Color(0x34383d)" in viewer
-    assert "deepShadow=localStorage.getItem('bizet_deep_shadow')==='1'" in viewer
-    assert "function setDeepShadow(on)" in viewer
-    assert "setDeepShadow" in workspace
-    assert "deepShadowButton" in workspace
+    assert "function setDeepShadow()" in viewer
+    assert "saoPass.enabled=false" in viewer
+    assert "['deepShadowButton','motionButton'].forEach" in workspace
 
-
-def test_r1050_view_mode_is_fullscreen_and_motion_is_opt_in():
+def test_view_mode_is_fullscreen_and_fronts_are_directly_interactive():
     css = read("r1050.css")
     js = read("workspace-r1050.js")
     viewer = read("kitchen-webgl-r1050.js")
@@ -111,12 +109,10 @@ def test_r1050_view_mode_is_fullscreen_and_motion_is_opt_in():
     assert "width:100vw!important" in css
     assert "height:100dvh!important" in css
     assert "document.body.classList.toggle('r1050-view-full',isView)" in js
-    assert "motionButton" in js
-    assert "double" not in viewer.lower() or "lastTap" in viewer
-    assert "lastTap.id===id&&now-lastTap.time<420" in viewer
+    assert "window.BIZET_KITCHEN_UI_MODE==='VIEW'&&id" in viewer
+    assert "lastTap.id===id&&now-lastTap.time<420" not in viewer
     assert "m.type==='door'" in viewer
     assert "m.type==='drawer'" in viewer
-
 
 def test_r1050_kitchen_dimensions_are_large_and_focus_is_transparent():
     viewer = read("kitchen-webgl-r1050.js")
