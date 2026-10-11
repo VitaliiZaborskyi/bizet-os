@@ -38,15 +38,16 @@ def test_r1051_root_always_starts_from_first_step_but_keeps_project():
     assert "/reopen" in start
     assert "localStorage.removeItem" not in start[start.index("// R10.5.1:"):]
 
-def test_r1051_deep_shadow_uses_real_sao_pipeline():
+def test_current_pilot_disables_unstable_deep_shadow_pipeline():
     html=read("workspace-r8.html")
     viewer=read("kitchen-webgl-r1050.js")
-    for asset in ["EffectComposer.js","ShaderPass.js","CopyShader.js","SAOShader.js","DepthLimitedBlurShader.js","UnpackDepthRGBAShader.js","RenderPass.js","SAOPass.js"]:
+    for asset in ["EffectComposer.js","SAOPass.js"]:
         assert asset in html
     assert "new THREE.SAOPass" in viewer
-    assert "saoPass.params.saoIntensity" in viewer
-    assert "if(deepShadow&&composer)composer.render()" in viewer
-    assert "DS is ambient/contact occlusion" in viewer
+    assert "function setDeepShadow()" in viewer
+    assert "saoPass.enabled=false" in viewer
+    assert "renderer.render(scene,camera)" in viewer
+    assert "if(deepShadow&&composer)composer.render()" not in viewer
 
 def test_r1051_randomization_rebuild_cleans_door_pivots_and_surfaces_are_double_sided():
     viewer=read("kitchen-webgl-r1050.js")
@@ -73,7 +74,8 @@ def test_r1051_isolation_owns_only_selected_module_and_contains_hardware():
     assert "addHinges(room,m" in focus
     assert "CylinderGeometry(3.15,3.15,50" in focus
     assert "ghost.opacity=.18" in build
-    assert "addFocusInternals(room,mods[0],ghost);addAppliance(room,mods[0])" in build
+    assert "addFocusInternals(room,m,ghost)" in build
+    assert "makeFront(room,m,i,count,focusFront.clone())" in build
     assert "addLegs(room,mods[0])" not in build
 
 def test_r1051_handles_face_facade_and_stay_inside_hinged_front():
