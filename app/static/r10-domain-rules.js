@@ -57,6 +57,15 @@
     CONNECTOR_POLICY:'ONE_UNIVERSAL_CONNECTOR_PER_JOINT_STRAIGHT_OR_CORNER',
     classification:'HARD_CATEGORY_I'
   });
+  const CLOTHES_ROD_RULES=Object.freeze({
+    CENTER_BELOW_UPPER_SHELF_MM:80,
+    ANCHOR:'NEAREST_UPPER_SHELF_UNDERSIDE',
+    FALLBACK:'TOP_PANEL_UNDERSIDE',
+    classification:'HARD'
+  });
+  function clothesRodCenterFromUpperShelf(shelfCenterMm,shelfThicknessMm=18){
+    return (Number(shelfCenterMm)||0)-Math.max(0,Number(shelfThicknessMm)||0)/2-CLOTHES_ROD_RULES.CENTER_BELOW_UPPER_SHELF_MM;
+  }
   function plinthRunPlan(group=[]){
     const base=group.filter(m=>m&&m.level!=='upper'&&!m.freestanding&&Number(m.z)>0);
     if(!base.length)return{start:0,end:0,span:0,joints:[],segments:[]};
@@ -119,6 +128,8 @@
     worktopRunPlan,
     plinthRules:PLINTH_RULES,
     plinthRunPlan,
+    clothesRodRules:CLOTHES_ROD_RULES,
+    clothesRodCenterFromUpperShelf,
     hingeSideCupPosition:Object.freeze({status:'DEFERRED_REQUIRES_OWNER_FREEZE'}),
     additionalHingeCount:Object.freeze({status:'HUMAN_OPEN'})
   });
