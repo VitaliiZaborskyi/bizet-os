@@ -59,7 +59,7 @@ def test_plinth_and_legs_share_40_or_90_mm_recess_rule():
     viewer=read("kitchen-webgl-r1050.js")
     assert "return I.dishwasher_type&&I.dishwasher_type!=='NO'?90:40" in viewer
     assert "+m.y+recess" in viewer
-    assert "front-recess-28" in viewer
+    assert "front-recess-14" in viewer
     assert "recess=plinthRecess()" in viewer
     assert "pl.userData.recess_mm=recess" in viewer
 
