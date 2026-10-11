@@ -10,8 +10,8 @@ def read(name):
     return (STATIC / name).read_text(encoding="utf-8")
 
 def test_ui_pilot_assets_are_layered_after_r1051():
-    assert '/static/ui-viewer-pilot.css?v=20261009' in read("index.html")
-    assert '/static/ui-viewer-pilot.css?v=20261009' in read("workspace-r8.html")
+    assert '/static/ui-viewer-pilot.css?v=20261011' in read("index.html")
+    assert '/static/ui-viewer-pilot.css?v=20261011' in read("workspace-r8.html")
     assert 'version="R10.5.1"' in (ROOT/"app"/"main.py").read_text(encoding="utf-8")
 
 def test_direction_gate_is_frontend_only_and_has_four_future_branches():
@@ -69,7 +69,8 @@ def test_default_environment_is_graphite_and_walnut_like():
 
 def test_fridge_overlap_plinth_and_sink_faucet_visual_bugs_are_addressed():
     viewer=read("kitchen-webgl-r1050.js")
-    assert "former body+appliance overlap caused z-fighting" in viewer
+    assert "function addBuiltInFridge" in viewer
+    assert "if(m.kind==='FRIDGE'&&m.freestanding)" in viewer
     assert "['FRIDGE','DISHWASHER'].includes(m.kind)" in viewer
     assert "plinthRecess()" in viewer
     assert "recess=plinthRecess()" in viewer
