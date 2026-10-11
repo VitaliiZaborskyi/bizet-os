@@ -14,3 +14,11 @@ header,header>*,.stage,.tools,.panel,.add,.priceHud,.position{transition:all .4s
 .r1050-grande-production select{min-height:44px;font-size:16px}
 .r1050-grande-source{display:inline-flex;width:max-content;padding:5px 8px;border:1px solid var(--line);border-radius:999px;font-size:9px;font-weight:800;letter-spacing:.06em}
 html[data-theme="light"] .brand,html[data-theme="light"] header,html[data-theme="light"] header button{color:#111!important}
+
+/* Pilot #09 — Grande dark price surface always owns light text. */
+.priceHud,.priceHud span,.priceHud strong{color:#fff!important}
+html[data-theme="light"] header{background:rgba(244,244,241,.96)!important;color:#111214!important}
+html[data-theme="dark"] header{background:rgba(25,26,28,.96)!important;color:#f7f7f4!important}
+html[data-theme="dark"] header .brand,
+html[data-theme="dark"] header .brand i,
+html[data-theme="dark"] header .crumb{color:#f7f7f4!important}
