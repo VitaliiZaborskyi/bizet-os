@@ -256,7 +256,48 @@ function addBuiltInFridge(room,m,bodyMat,frontMat){
  const g=meshBox(room,grille,gm,hardwareGroup,'fridge-plinth-grille',m.id);g.userData.visualizationProxy=false;
 }
 
+function viewerInputs(){return window.BizetModelRuntime?.getInputs?.()||{}}
+function worktopThickness(){return Math.max(10,Math.min(120,Number(viewerInputs().worktop_thickness_mm)||38))}
+function addSinkCarcass(room,m,mat){
+ const wall=m.wall||'A',t=18,x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h,innerRun=(wall==='A'?W:D)-2*t,railH=100,parts=[];
+ if(wall==='A'){
+   parts.push({x,y,z,w:t,d:D,h:H},{x:x+W-t,y,z,w:t,d:D,h:H},{x:x+t,y,z,w:W-2*t,d:D,h:t});
+   parts.forEach((p,i)=>{const q=meshBox(room,p,mat.clone(),furnitureGroup,'sink-carcass',m.id);q.material.userData.owned=true;q.userData.partRole=['SIDE_L','SIDE_R','BOTTOM'][i]});
+   const rails=[
+     {x:x+t,y:y+6,z:z+H-railH,w:W-2*t,d:t,h:railH,role:'FRONT_TOP_RAIL'},
+     {x:x+t,y:y+D-t-4,z:z+t,w:W-2*t,d:t,h:railH,role:'REAR_BOTTOM_RAIL'},
+     {x:x+t,y:y+D-t-4,z:z+H-150-railH,w:W-2*t,d:t,h:railH,role:'REAR_UPPER_RAIL'}
+   ];
+   rails.forEach(r=>{const q=meshBox(room,r,mat.clone(),furnitureGroup,'sink-rail',m.id);q.material.userData.owned=true;q.userData.partRole=r.role});
+   const trayMat=ownMat({color:'#b9bec1',roughness:.28,metalness:.68}),tray=meshBox(room,{x:x+t+4,y:y+18,z:z+t+2,w:Math.max(80,W-2*t-8),d:Math.max(100,D-36),h:2},trayMat,hardwareGroup,'sink-tray',m.id);
+   tray.userData={...tray.userData,supplier:'KRONAS',article:m.sink_tray_article||'',canonicalAccessory:true};
+ }else{
+   parts.push({x,y,z,w:W,d:t,h:H},{x,y:y+D-t,z,w:W,d:t,h:H},{x,y:y+t,z,w:W,d:D-2*t,h:t});
+   parts.forEach((p,i)=>{const q=meshBox(room,p,mat.clone(),furnitureGroup,'sink-carcass',m.id);q.material.userData.owned=true;q.userData.partRole=['SIDE_L','SIDE_R','BOTTOM'][i]});
+   const frontX=wall==='B'?x+W-t-6:x+6,rearX=wall==='B'?x+4:x+W-t-4;
+   const rails=[
+     {x:frontX,y:y+t,z:z+H-railH,w:t,d:D-2*t,h:railH,role:'FRONT_TOP_RAIL'},
+     {x:rearX,y:y+t,z:z+t,w:t,d:D-2*t,h:railH,role:'REAR_BOTTOM_RAIL'},
+     {x:rearX,y:y+t,z:z+H-150-railH,w:t,d:D-2*t,h:railH,role:'REAR_UPPER_RAIL'}
+   ];
+   rails.forEach(r=>{const q=meshBox(room,r,mat.clone(),furnitureGroup,'sink-rail',m.id);q.material.userData.owned=true;q.userData.partRole=r.role});
+   const trayMat=ownMat({color:'#b9bec1',roughness:.28,metalness:.68}),tray=meshBox(room,{x:x+18,y:y+t+4,z:z+t+2,w:Math.max(100,W-36),d:Math.max(80,D-2*t-8),h:2},trayMat,hardwareGroup,'sink-tray',m.id);
+   tray.userData={...tray.userData,supplier:'KRONAS',article:m.sink_tray_article||'',canonicalAccessory:true};
+ }
+}
+function addCarcassShelves(room,m,mat){
+ if(['SINK','COOKTOP','TALL_OVEN','UPPER_HOOD','DISHWASHER','FRIDGE','FILLER'].includes(m.kind))return;
+ const wall=m.wall||'A',t=18,x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h;
+ const defaultCount=m.level==='upper'?(H<=750?1:H<=1100?2:Math.max(2,Math.ceil(H/400)-1)):1;
+ const count=Math.max(0,Math.min(4,Number.isFinite(Number(m.shelf_count))?Number(m.shelf_count):defaultCount));
+ for(let i=1;i<=count;i++){
+   const sz=z+t+(H-2*t)*i/(count+1);
+   const s=wall==='A'?{x:x+t,y:y+8,z:sz,w:Math.max(40,W-2*t),d:Math.max(80,D-16),h:t}:{x:x+8,y:y+t,z:sz,w:Math.max(80,W-16),d:Math.max(40,D-2*t),h:t};
+   const q=meshBox(room,s,mat.clone(),furnitureGroup,'shelf',m.id);q.material.userData.owned=true;q.userData.partRole='SHELF_'+i;
+ }
+}
 function addCarcass(room,m,mat){
+ if(m.kind==='SINK'){addSinkCarcass(room,m,mat);return}
  const wall=m.wall||'A',t=18,x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h,parts=[];
  if(wall==='A')parts.push(
   {x,y,z,w:t,d:D,h:H},{x:x+W-t,y,z,w:t,d:D,h:H},
@@ -268,7 +309,9 @@ function addCarcass(room,m,mat){
   {x,y:y+t,z,w:W,d:Math.max(20,D-2*t),h:t},{x,y:y+t,z:z+H-t,w:W,d:Math.max(20,D-2*t),h:t},
   {x:wall==='B'?x:x+W-4,y:y+t,z:z+t,w:4,d:Math.max(20,D-2*t),h:Math.max(20,H-2*t)}
  );
- return parts.map((p,i)=>{const q=meshBox(room,p,mat.clone(),furnitureGroup,'carcass-part',m.id);q.material.userData.owned=true;q.userData.partRole=['SIDE_A','SIDE_B','BOTTOM','TOP','BACK'][i];return q});
+ const made=parts.map((p,i)=>{const q=meshBox(room,p,mat.clone(),furnitureGroup,'carcass-part',m.id);q.material.userData.owned=true;q.userData.partRole=['SIDE_A','SIDE_B','BOTTOM','TOP','BACK'][i];return q});
+ addCarcassShelves(room,m,mat);
+ return made;
 }
 function addTallOvenVisual(room,m,darkMat,steelMat){
  const wall=m.wall||'A',z=+m.z,H=+m.h,openingH=Math.min(600,Math.max(500,H*.28)),ovenZ=z+Math.max(180,Math.min(H-openingH-220,H*.32));
@@ -297,11 +340,64 @@ function addTallOvenVisual(room,m,darkMat,steelMat){
  frontMat.dispose();trimMat.dispose();
 }
 
+function addBaseOvenAssembly(room,m,darkMat,steelMat){
+ const frontMat=ownMat({color:colors().front,roughness:.5}),gap=Math.max(0,Number(m.oven_technical_gap_mm)||3),drawerFacadeH=Math.max(0,Number(m.oven_drawer_facade_height_mm)||0),ovenH=Math.max(300,Number(m.oven_appliance_height_mm)||600);
+ if(drawerFacadeH>=70){
+   const drawerModule={...m,id:m.id+'-oven-drawer',kind:'DRAWERS',z:+m.z,h:drawerFacadeH,drawer_count:1};
+   makeFront(room,drawerModule,0,1,frontMat.clone());
+ }
+ const wall=m.wall||'A',ovenZ=+m.z+drawerFacadeH+gap;
+ let glass={...m,z:ovenZ+16,h:Math.max(220,ovenH-32)};
+ if(wall==='A'){glass.x=+m.x+22;glass.w=Math.max(80,+m.w-44);glass.y=+m.y-15;glass.d=10}
+ else{glass.y=+m.y+22;glass.d=Math.max(80,+m.d-44);glass.x=wall==='B'?+m.x+ +m.w+5:+m.x-15;glass.w=10}
+ const oven=meshBox(room,glass,darkMat.clone(),hardwareGroup,'oven-3d',m.id);oven.material.userData.owned=true;oven.userData.visualizationProxy=true;
+ const p=center(room,glass),fv=frontVector(wall);p.y+=Math.max(80,ovenH*.34);p.add(fv.clone().multiplyScalar(24));const handle=addHandleBar(p,false);handle.scale.set(.78,.78,.78);handle.userData.visualization='OVEN_HANDLE';
+ const controlMat=steelMat.clone();controlMat.userData.owned=true;
+ let panel={...glass,z:ovenZ+ovenH-92,h:72};
+ if(wall==='A'){panel.x=+m.x+16;panel.w=Math.max(80,+m.w-32);panel.y=+m.y-17;panel.d=6}
+ else{panel.y=+m.y+16;panel.d=Math.max(80,+m.d-32);panel.x=wall==='B'?+m.x+ +m.w+7:+m.x-17;panel.w=6}
+ const cp=meshBox(room,panel,controlMat,hardwareGroup,'oven-control-panel',m.id);cp.userData.visualizationProxy=true;
+ frontMat.dispose();
+}
+function addDishwasherFacade(room,m,mat){
+ if(m.freestanding)return;
+ const wall=m.wall||'A',spec={...m},id=(m.id||'dishwasher')+':FRONT';
+ if(wall==='A'){spec.x=+m.x+1;spec.w=Math.max(20,+m.w-2);spec.d=8;spec.y=+m.y-9}
+ else{spec.y=+m.y+1;spec.d=Math.max(20,+m.d-2);spec.w=8;spec.x=wall==='B'?+m.x+ +m.w+1:+m.x-9}
+ const mesh=meshBox(room,spec,mat,furnitureGroup,'dishwasher-front',m.id);mesh.userData.movableId=id;selectable.push(mesh);
+ const pivot=new THREE.Group(),world=mesh.position.clone();furnitureGroup.add(pivot);
+ pivot.position.set(world.x,world.y-spec.h/2,world.z);pivot.attach(mesh);pivot.userData={movableId:id,type:'dishwasher',moduleId:m.id,wall};
+ const mover={id,type:'dishwasher',pivot,mesh,wall,target:openState.get(id)?1:0,current:openState.get(id)?1:0};movables.push(mover);
+ const fv=frontVector(wall),p=center(room,spec);p.y+=spec.h/2-40;p.add(fv.clone().multiplyScalar(18));
+ const h=addHandleBar(p,false);h.userData.movableId=id;pivot.attach(h);
+}
+function addHoodVisual(room,m,steelMat,darkMat){
+ const wall=m.wall||'A',builtIn=m.hood_type!=='FREESTANDING',x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h;
+ const stages=builtIn?[
+   {w:.88,d:.82,h:80,z:35},{w:.68,d:.78,h:80,z:115},{w:.48,d:.74,h:80,z:195}
+ ]:[
+   {w:.96,d:.88,h:100,z:-130},{w:.72,d:.80,h:100,z:-30},{w:.50,d:.72,h:100,z:70}
+ ];
+ stages.forEach((s,i)=>{
+   let p;if(wall==='A')p={x:x+(W-W*s.w)/2,y:y+(D-D*s.d)/2,z:z+s.z,w:W*s.w,d:D*s.d,h:s.h};
+   else p={x:x+(W-W*s.d)/2,y:y+(D-D*s.w)/2,z:z+s.z,w:W*s.d,d:D*s.w,h:s.h};
+   const q=meshBox(room,p,(i===0?darkMat:steelMat).clone(),hardwareGroup,'hood-body',m.id);q.material.userData.owned=true;q.userData.visualizationProxy=true;
+ });
+ const pipeH=Math.max(120,H-(builtIn?300:180)),pipeZ=z+(builtIn?275:150);
+ const pipeMat=steelMat.clone();pipeMat.userData.owned=true;
+ const pipe=new THREE.Mesh(new THREE.CylinderGeometry(48,48,pipeH,20),pipeMat);
+ const runCenter=wall==='A'?roomToWorld(room,x+W/2,y+D*.55,pipeZ+pipeH/2):roomToWorld(room,x+W*.5,y+D/2,pipeZ+pipeH/2);
+ pipe.position.copy(runCenter);pipe.userData={cat:'hood-duct',moduleId:m.id,visualizationProxy:true};hardwareGroup.add(pipe);
+}
 function addAppliance(room,m){
  const c=colors(),steel=ownMat({color:'#9ea3a6',roughness:.28,metalness:.68}),dark=ownMat({color:'#17191b',roughness:.12,metalness:.18}),wall=m.wall||'A';
  const front=frontVector(wall);
  if(m.kind==='FRIDGE'&&m.freestanding){const main={...m};const mm=meshBox(room,main,steel.clone(),furnitureGroup,'appliance',m.id);mm.material.userData.owned=true;selectable.push(mm)}
- if(m.kind==='DISHWASHER'){const mm=meshBox(room,m,steel.clone(),furnitureGroup,'appliance',m.id);mm.material.userData.owned=true;selectable.push(mm)}
+ if(m.kind==='DISHWASHER'){
+   const inner={...m};if((m.wall||'A')==='A'){inner.x=+m.x+18;inner.w=Math.max(80,+m.w-36);inner.y=+m.y+18;inner.d=Math.max(100,+m.d-36)}else{inner.x=+m.x+18;inner.w=Math.max(100,+m.w-36);inner.y=+m.y+18;inner.d=Math.max(80,+m.d-36)}
+   const mm=meshBox(room,inner,steel.clone(),furnitureGroup,'dishwasher-appliance',m.id);mm.material.userData.owned=true;mm.userData.visualizationProxy=true;selectable.push(mm);
+   addDishwasherFacade(room,m,ownMat({color:colors().front,roughness:.5}));
+ }
  if(m.kind==='COOKTOP'){
    const top={...m,z:+m.z+ +m.h+39,h:8,x:+m.x+(+m.w)*.08,w:(+m.w)*.84,y:+m.y+(+m.d)*.15,d:(+m.d)*.7};
    const plate=meshBox(room,top,dark.clone(),hardwareGroup,'cooktop',m.id);plate.material.userData.owned=true;plate.userData.productionProxy=false;
@@ -325,8 +421,9 @@ function addAppliance(room,m){
    const stem=new THREE.Mesh(new THREE.CylinderGeometry(10,12,190,16),faucetMat.clone());stem.material.userData.owned=true;stem.position.copy(roomToWorld(room,X+W*.72,Y+D*.84,Z+95));stem.userData={cat:'faucet-proxy',visualizationProxy:true};hardwareGroup.add(stem);
    const spout=new THREE.Mesh(new THREE.CylinderGeometry(8,8,150,14),faucetMat.clone());spout.material.userData.owned=true;spout.rotation.x=Math.PI/2;spout.position.copy(roomToWorld(room,X+W*.72,Y+D*.70,Z+172));spout.userData={cat:'faucet-proxy',visualizationProxy:true};hardwareGroup.add(spout);faucetMat.dispose();
  }
+ if(m.kind==='COOKTOP'&&m.oven_appliance_present)addBaseOvenAssembly(room,m,dark,steel);
  if(m.kind==='TALL_OVEN')addTallOvenVisual(room,m,dark,steel);
- if(m.kind==='UPPER_HOOD'){const hood={...m,z:+m.z-65,h:60};const q=meshBox(room,hood,steel.clone(),hardwareGroup,'appliance',m.id);q.material.userData.owned=true}
+ if(m.kind==='UPPER_HOOD')addHoodVisual(room,m,steel,dark)
  steel.dispose();dark.dispose();
 }
 
@@ -343,39 +440,43 @@ function addEndPanels(room,m,bodyMat,frontMat){
 
 function lowerRuns(modules){const out=[];['A','B','C'].forEach(wall=>{const list=modules.filter(m=>(m.wall||'A')===wall&&m.level!=='upper'&&!m.tall&&!m.freestanding&&m.kind!=='FILLER').sort((a,b)=>wall==='A'?(+a.x-+b.x):(+a.y-+b.y));if(list.length)out.push([wall,list])});return out}
 function segmentBy4100(wall,list){
- const pos=m=>wall==='A'?+m.x:+m.y,run=m=>wall==='A'?+m.w:+m.d,out=[];let i=0;
- while(i<list.length){
-   const start=pos(list[i]);let best=i,bestEnd=pos(list[i])+run(list[i]);
-   // 4100 mm is a hard maximum. Among valid module boundaries, the closest
-   // boundary to 4100 from below is therefore the last boundary <= 4100.
-   for(let j=i;j<list.length;j++){
-     const end=pos(list[j])+run(list[j]),span=end-start;
-     if(span<=4100+.001){best=j;bestEnd=end;continue}
-     break;
-   }
-   // A single oversize module cannot be split at a module joint; keep it intact
-   // and let engineering validation flag that exceptional case.
-   if(best===i&&bestEnd-start>4100)best=i;
-   out.push(list.slice(i,best+1));i=best+1;
+ const plan=window.BizetR10Rules?.worktopRunPlan?.(list,{enforceCriticalZones:true});
+ if(plan?.segments?.length){
+   const pos=m=>wall==='A'?+m.x:+m.y,run=m=>wall==='A'?+m.w:+m.d;
+   return plan.segments.map(seg=>list.filter(m=>{
+     const s=pos(m),e=s+run(m);return s>=seg.start-.5&&e<=seg.end+.5
+   })).filter(seg=>seg.length);
  }
+ const out=[];let i=0,pos=m=>wall==='A'?+m.x:+m.y,run=m=>wall==='A'?+m.w:+m.d;
+ while(i<list.length){const start=pos(list[i]);let best=i;for(let j=i;j<list.length;j++){const end=pos(list[j])+run(list[j]);if(end-start<=4100+.001)best=j;else break}out.push(list.slice(i,best+1));i=best+1}
  return out;
 }
 function addWorktopAndPlinth(room,modules){
- const c=colors(),wm=ownMat({color:c.worktop,roughness:.42}),pm=ownMat({color:c.body,roughness:.6}),seamMat=ownMat({color:'#292929',roughness:.75}),recess=plinthRecess();
+ const c=colors(),wm=ownMat({color:c.worktop,roughness:.42}),pm=ownMat({color:c.body,roughness:.6}),seamMat=ownMat({color:'#292929',roughness:.75}),recess=plinthRecess(),wt=worktopThickness();
  lowerRuns(modules).forEach(([wall,list])=>{
    const segments=segmentBy4100(wall,list);
    segments.forEach((seg,si)=>{const first=seg[0],last=seg.at(-1),topZ=Math.max(...seg.map(m=>+m.z+ +m.h))+1;
      if(wall==='A'){
        const x=+first.x-2,w=(+last.x+ +last.w)-+first.x+4,y=Math.min(...seg.map(m=>+m.y))-20,d=Math.max(...seg.map(m=>+m.y+ +m.d))-y;
-       const top=meshBox(room,{x,y,z:topZ,w,d,h:38},wm.clone(),furnitureGroup,'worktop','WORKTOP-'+wall+'-'+si);top.material.userData.owned=true;
-       if(si>0){const seamX=+first.x;const seam=meshBox(room,{x:seamX-1.5,y,z:topZ+38,w:3,d,h:1.6},seamMat.clone(),hardwareGroup,'worktop-seam','SEAM-'+wall+'-'+si);seam.material.userData.owned=true}
+       const top=meshBox(room,{x,y,z:topZ,w,d,h:wt},wm.clone(),furnitureGroup,'worktop','WORKTOP-'+wall+'-'+si);top.material.userData.owned=true;
+       if(si>0){const seamX=+first.x;const seam=meshBox(room,{x:seamX-1.5,y,z:topZ+wt,w:3,d,h:1.6},seamMat.clone(),hardwareGroup,'worktop-seam','SEAM-'+wall+'-'+si);seam.material.userData.owned=true}
        seg.forEach(m=>{const ph=Math.max(60,+m.z||100),pl=meshBox(room,{x:+m.x,y:+m.y+recess,z:0,w:+m.w,d:12,h:ph},pm.clone(),furnitureGroup,'plinth','PLINTH-'+m.id);pl.material.userData.owned=true;pl.userData.recess_mm=recess});
      }else{
        const y=+first.y-2,d=(+last.y+ +last.d)-+first.y+4,x=wall==='B'?Math.min(...seg.map(m=>+m.x))-20:Math.min(...seg.map(m=>+m.x)),w=Math.max(...seg.map(m=>+m.x+ +m.w))-x+(wall==='C'?20:0);
-       const top=meshBox(room,{x,y,z:topZ,w,d,h:38},wm.clone(),furnitureGroup,'worktop','WORKTOP-'+wall+'-'+si);top.material.userData.owned=true;
-       if(si>0){const seamY=+first.y;const seam=meshBox(room,{x,y:seamY-1.5,z:topZ+38,w,d:3,h:1.6},seamMat.clone(),hardwareGroup,'worktop-seam','SEAM-'+wall+'-'+si);seam.material.userData.owned=true}
+       const top=meshBox(room,{x,y,z:topZ,w,d,h:wt},wm.clone(),furnitureGroup,'worktop','WORKTOP-'+wall+'-'+si);top.material.userData.owned=true;
+       if(si>0){const seamY=+first.y;const seam=meshBox(room,{x,y:seamY-1.5,z:topZ+wt,w,d:3,h:1.6},seamMat.clone(),hardwareGroup,'worktop-seam','SEAM-'+wall+'-'+si);seam.material.userData.owned=true}
        seg.forEach(m=>{const ph=Math.max(60,+m.z||100),front=wall==='B'?+m.x+ +m.w:+m.x,px=wall==='B'?front-recess-12:front+recess,pl=meshBox(room,{x:px,y:+m.y,z:0,w:12,d:+m.d,h:ph},pm.clone(),furnitureGroup,'plinth','PLINTH-'+m.id);pl.material.userData.owned=true;pl.userData.recess_mm=recess});
      }
+   });
+ });
+ lowerRuns(modules).forEach(([wall,list])=>{
+   const plan=window.BizetR10Rules?.plinthRunPlan?.(list);if(!plan?.joints?.length)return;
+   plan.joints.forEach((joint,i)=>{
+     const first=list[0],ph=Math.max(60,...list.map(m=>+m.z||100));
+     let seam;
+     if(wall==='A')seam={x:joint-1.5,y:+first.y+recess-1,z:0,w:3,d:14,h:ph};
+     else{const front=wall==='B'?+first.x+ +first.w:+first.x,px=wall==='B'?front-recess-13:front+recess-1;seam={x:px,y:joint-1.5,z:0,w:14,d:3,h:ph}}
+     const s=meshBox(room,seam,seamMat.clone(),hardwareGroup,'plinth-seam','PLINTH-SEAM-'+wall+'-'+i);s.material.userData.owned=true;s.renderOrder=9;
    });
  });
  wm.dispose();pm.dispose();seamMat.dispose();
@@ -416,11 +517,12 @@ function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareG
    if(m.kind==='FRIDGE'&&!m.freestanding){addBuiltInFridge(room,m,body,front);addEndPanels(room,m,body,front);if(options.showNumbers!==false&&!focus)addNumber(room,m);return}
    if(m.kind==='FRIDGE'&&m.freestanding){addAppliance(room,m);if(options.showNumbers!==false&&!focus)addNumber(room,m);return}
    if(m.kind==='DISHWASHER'){addAppliance(room,m);if(options.showNumbers!==false&&!focus)addNumber(room,m);return}
+   if(m.kind==='UPPER_HOOD'&&m.hood_type==='FREESTANDING'){addAppliance(room,m);if(options.showNumbers!==false&&!focus)addNumber(room,m);return}
    addCarcass(room,m,body);
    const count=Math.max(1,Math.min(5,Number(m.kind==='DRAWERS'?m.drawer_count:m.facade_count)||1));
    const localFront=front.clone();localFront.userData.owned=true;
    if(focus){localFront.transparent=true;localFront.opacity=.58;localFront.depthWrite=false}
-   if(!m.freestanding&&!['COOKTOP','SINK','TALL_OVEN'].includes(m.kind))for(let i=0;i<count;i++)makeFront(room,m,i,count,localFront.clone());
+   if(!m.freestanding&&!['COOKTOP','TALL_OVEN'].includes(m.kind))for(let i=0;i<count;i++)makeFront(room,m,i,count,localFront.clone());
    localFront.dispose();
    addLegs(room,m);addHinges(room,m,count);addLiftHardware(room,m);addEndPanels(room,m,body,front);addAppliance(room,m);
    if(options.showNumbers!==false&&!focus)addNumber(room,m);
@@ -445,7 +547,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
  if(window.BIZET_KITCHEN_UI_MODE==='VIEW'&&id){const mv=movables.find(x=>x.id===id);if(mv){mv.target=mv.target>.5?0:1;openState.set(mv.id,mv.target>0);return}}
  if(window.BIZET_KITCHEN_UI_MODE!=='VIEW'&&!lastOptions?.focusMode&&id){document.querySelector('#moduleStrip [data-module="'+CSS.escape(String(id).split(':')[0])+'"]')?.click()}
 });
-function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
+function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?1:-1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
 window.BizetPilot3D.drawKitchenScene=(canvas,options={})=>{const legacy=legacyDraw(canvas,options);try{draw(options)}catch(e){console.error('R10.5.1 kitchen WebGL fallback',e);host.style.display='none';canvas.style.opacity='1'}return legacy};
 window.BizetKitchenWebGL={version:'R10.5.1+FURNITURE-INTERACTION-PILOT-20261011',renderer,scene,camera,controls,host,composer,saoPass,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
 })();
