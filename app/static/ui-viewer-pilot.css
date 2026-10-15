@@ -164,3 +164,11 @@ html[data-theme="dark"] #pointBFinalActions .r8-final-price *,
 html[data-theme="dark"] #pointBFinalActions .r104-price-currency *{color:#fff!important}
 html[data-theme="light"] #pointBFinalActions .r104-price-line *,
 html[data-theme="light"] #pointBFinalActions .r8-final-price *{color:#111214!important}
+
+/* Pilot #14 — future appliance model chooser is visible but intentionally inactive. */
+.r1053-model-choice{
+  width:100%;min-height:40px;border:1px dashed var(--r8-line);border-radius:12px;
+  background:transparent;color:var(--r8-muted);opacity:.58;cursor:not-allowed;
+  font:700 11px/1.2 inherit;letter-spacing:.02em
+}
+.r1053-rule-note{margin:4px 0 0;font-size:11px;line-height:1.4;color:var(--r8-muted)}
