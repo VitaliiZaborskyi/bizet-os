@@ -296,12 +296,16 @@ def test_r1041_focus_hardware_scales_with_model_and_uses_compact_square_legs():
     assert "Math.hypot(edge[0]-cup[0],edge[1]-cup[1])" in hinge
     assert "Ø35 is projected from model space" in hinge
 
-def test_r101_dishwasher_is_optional_by_default():
+def test_current_template_requires_dishwasher_but_custom_can_turn_it_off():
     workspace = read("workspace-r8.js")
     model = read("model.js")
-    assert "['NO','Нет']" in workspace
-    assert "dishwasher_type:'NO'" in workspace
-    assert "inputs.dishwasher_type!=='NO'" in model
+    assert "const templateKitchen=rt.getConfiguration()!=='CUSTOM'" in workspace
+    assert "dishChoices=templateKitchen?" in workspace
+    assert "patch.dishwasher_type='BUILT_IN'" in workspace
+    assert "state.inputs.dishwasher_type='BUILT_IN'" in workspace
+    assert "state.inputs.dishwasher_width_mm=i%2?450:600" in workspace
+    assert "const templateKitchen=configuration()!=='CUSTOM'" in model
+    assert "effectiveDishType=templateKitchen&&requestedDish==='NO'?'BUILT_IN':requestedDish" in model
 
 def test_r103_constraint_warning_is_compact_button_not_permanent_banner():
     html = read("workspace-r8.html")
@@ -849,15 +853,16 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
     assert "pointer" not in scheduler.lower()
 
 
-def test_r1045_workspace_cache_busts_renderer_assets():
+def test_current_workspace_cache_busts_rules_and_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=20261011b" in html
+    assert "/static/model.js?v=20261015" in html
+    assert "/static/kitchen-webgl-r1050.js?v=20261015" in html
+    assert "/static/r10-domain-rules.js?v=20261015" in html
+    assert "/static/workspace-r8.js?v=20261015" in html
+    assert "/static/point-b.js?v=20261015" in html
     assert "/static/pilot-3d.js?v=1051" in html
     assert "/static/workspace-r8.css?v=1051" in html
     assert "/static/model-r5.js?v=175" in html
-    assert "/static/workspace-r8.js?v=1051" in html
-    assert "/static/point-b.js?v=175" in html
-
 
 def test_r1037_focus_transition_forces_new_canvas_backing_store():
     renderer = read("pilot-3d.js")
@@ -1020,20 +1025,21 @@ def test_r1040_ordinary_lower_has_two_ribs_and_upper_has_no_generic_ribs():
     assert "'Rail Back'" not in upper
 
 
-def test_r1045_plinth_variant_a_preserves_selected_lower_total_height_and_recalculates_bom():
+def test_current_lower_body_height_uses_variable_worktop_and_support_height():
     model = read("model.js")
     pointb = read("point-b.js")
     workspace = read("workspace-r8.js")
     assert "DEFAULT_LOWER_TOTAL_H=900" in model
-    assert "function lowerTotalHeight()" in model
-    assert "lowerBodyHeight(){return Math.max(300,lowerTotalHeight()-plinthHeight()-WORKTOP_H)}" in model
-    assert "visibleTallDrawerLimit(){return lowerTotalHeight()-WORKTOP_H}" in model
+    assert "DEFAULT_WORKTOP_H=38" in model
+    assert "function worktopThickness()" in model
+    assert "lowerBodyHeight(){return Math.max(300,lowerTotalHeight()-plinthHeight()-worktopThickness())}" in model
+    assert "visibleTallDrawerLimit(){return lowerTotalHeight()-worktopThickness()}" in model
     assert "plinth_height_mm:100" in workspace
+    assert "worktop_thickness_mm:38" in workspace
     assert "lower_total_height_mm:900" in workspace
     assert "areas.PLINTH" in pointb
     assert "Ножка H " in pointb
     assert "legHeight" in pointb
-
 
 def test_r1040_room_and_furniture_material_picker_has_presets_and_upload():
     html = read("workspace-r8.html")
@@ -1473,38 +1479,36 @@ def test_r1044_live_language_switch_rerenders_workspace_isolation_materials_offe
     assert "showThinkFlow().then" in business
 
 
-def test_r1043_lower_oven_category_i_no_gola_support_shelf_is_body_top_minus_600():
+def test_current_lower_oven_is_parameterized_and_has_mandatory_drawer():
     model = read("model.js")
     pointb = read("point-b.js")
-    renderer = read("pilot-3d.js")
-    assert "function categoryOneNoGola" in model
-    assert "category==='I'" in model
-    assert "oven_support_shelf_offset_from_top_mm:ovenShelf" in model
-    assert "ovenShelf=lowerOven&&categoryOneNoGola()?600:null" in model
+    viewer = read("kitchen-webgl-r1050.js")
+    rules = read("r10-domain-rules.js")
+    assert "DEFAULT_APPLIANCE_HEIGHT_MM:600" in rules
+    assert "DRAWER_BOX_REDUCTION_FROM_FACADE_MM:50" in rules
+    assert "ovenH=Math.max(300,Number(inputs.oven_height_mm)" in model
+    assert "ovenDrawerFacadeH=lowerOven?Math.max(0,lowerBodyHeight()-ovenH-ovenGap):0" in model
+    assert "ovenDrawerBoxH=Math.max(0,ovenDrawerFacadeH-(Number(ovenRules.DRAWER_BOX_REDUCTION_FROM_FACADE_MM)||50))" in model
     ordinary = pointb[pointb.index("function ordinaryBase"):pointb.index("function sinkBase")]
-    assert "const lowerOven=module.kind==='COOKTOP'&&module.oven_appliance_present" in ordinary
-    assert "Number(module.oven_support_shelf_offset_from_top_mm)===600" in ordinary
-    assert "Oven Support Shelf" in ordinary
-    assert "верх корпуса − 600 мм" in ordinary
-    focus = renderer[renderer.index("function drawTechnicalFocus"):renderer.index("// Phase 8 drawer internals")]
-    assert "const frozenShelf=Number(module.oven_support_shelf_offset_from_top_mm)===600" in focus
-    assert "const shelfTop=frozenShelf?z+h-600:z+70" in focus
-    assert "!(module.kind==='COOKTOP'&&module.oven_appliance_present)" in focus
+    assert "'Facade Drawer Oven'" in ordinary
+    assert "drawerParts(module,1,drawerFacadeH" in ordinary
+    assert "function addBaseOvenAssembly" in viewer
+    assert "makeFront(room,drawerModule,0,1" in viewer
 
-
-def test_r1043_sink_uses_exactly_two_vertical_facade_parallel_ribs_with_rear_top_minus_150():
+def test_current_sink_3d_matches_three_rail_rule_and_default_tray():
     pointb = read("point-b.js")
-    renderer = read("pilot-3d.js")
+    viewer = read("kitchen-webgl-r1050.js")
+    rules = read("r10-domain-rules.js")
     sink = pointb[pointb.index("function sinkBase"):pointb.index("function drawerParts")]
-    assert sink.count("'Rail Front'") == 1
-    assert sink.count("'Rail Back Lower'") == 1
-    assert "Rail Additional" not in sink
-    assert "плоскость параллельна фасаду" in sink
-    assert "верх ребра на 150 мм ниже верха корпуса" in sink
-    focus = renderer[renderer.index("if(module.kind==='SINK')"):renderer.index("}else if(!ordinaryOven)")]
-    assert "y:y,z:z+h-railH" in focus
-    assert "y:y+d-railT,z:z+h-150-railH" in focus
-
+    assert "'Rail Front Top'" in sink
+    assert "'Rail Rear Bottom'" in sink
+    assert "'Rail Rear Upper'" in sink
+    assert "REAR_UPPER_RAIL_FROM_TOP_MM:150" in rules
+    assert "function addSinkCarcass" in viewer
+    sink3d = viewer[viewer.index("function addSinkCarcass"):viewer.index("function addCarcassShelves")]
+    for role in ["FRONT_TOP_RAIL","REAR_BOTTOM_RAIL","REAR_UPPER_RAIL"]:
+        assert role in sink3d
+    assert "'sink-tray'" in sink3d
 
 def test_r1043_checkpoint_keeps_first_tap_isolation_closed_and_freezes_qa_pack():
     checkpoint = (ROOT / "R10_4_0_MUST_HAVE_CHECKPOINT.md").read_text(encoding="utf-8")
@@ -1557,32 +1561,30 @@ def test_r1044_three_hinged_doors_are_disabled_below_900_and_middle_sides_follow
     assert "cuts=boundaries.length?[0,...boundaries,facadeCount]" in renderer
 
 
-def test_r1044_sink_base_has_shelf_and_two_frozen_vertical_rails():
+def test_current_sink_base_has_facade_and_three_on_edge_tie_rails():
     pointb = read("point-b.js")
     sink = pointb[pointb.index("function sinkBase"):pointb.index("function drawerParts")]
-    assert "'Sink Shelf'" in sink
-    assert "Сервисный вырез сзади под коммуникации мойки" in sink
-    assert sink.count("'Rail Front'") == 1
-    assert sink.count("'Rail Back Lower'") == 1
-    assert "Rail Additional" not in sink
+    assert "'Sink Shelf'" not in sink
+    assert "'Rail Front Top'" in sink
+    assert "'Rail Rear Bottom'" in sink
+    assert "'Rail Rear Upper'" in sink
+    assert sink.count("На ребро; вертикальная позиция") == 3
+    assert "стыкуется с дном" in sink
+    assert "150 мм ниже верхнего края корпуса" in sink
+    assert "'Facade Sink'" in sink
 
-
-def test_r1044_board_worktop_joint_cannot_touch_sink_and_3d_uses_same_plan():
+def test_current_worktop_joint_cannot_touch_sink_or_cooktop_and_viewer_uses_same_plan():
     rules = read("r10-domain-rules.js")
     pointb = read("point-b.js")
-    model = read("model.js")
-    renderer = read("pilot-3d.js")
-    assert "SINK_ADJACENT_JOINT_FORBIDDEN_CATEGORIES" in rules
-    assert "NO_JOINT_ON_EITHER_BOUNDARY_TOUCHING_SINK_FOR_BOARD_WORKTOPS" in rules
+    viewer = read("kitchen-webgl-r1050.js")
+    assert "JOINT_FORBIDDEN_ADJACENT_KINDS:Object.freeze(['SINK','COOKTOP'])" in rules
+    assert "NO_JOINT_ON_EITHER_BOUNDARY_TOUCHING_SINK_OR_COOKTOP" in rules
     plan = rules[rules.index("function worktopRunPlan"):rules.index("window.BizetR10Rules")]
-    assert "x.left?.kind==='SINK'||x.right?.kind==='SINK'" in plan
-    assert "allowedBoundaries" in plan
-    assert "worktopBlockedBySink" in pointb
-    assert "['I','II'].includes(category)&&worktopType!=='STONE'" in pointb
-    assert "function worktopAvoidSinkJoint" in model
-    assert "worktopAvoidSinkJoint:worktopAvoidSinkJoint()" in model
-    assert "worktopRunPlan?.(base,{avoidSinkJoint})" in renderer
-
+    assert "forbiddenKinds.has(x.left?.kind)||forbiddenKinds.has(x.right?.kind)" in plan
+    assert "blockedByCriticalZone" in plan
+    assert "worktopBlockedByCriticalZone" in pointb
+    segment = viewer[viewer.index("function segmentBy4100"):viewer.index("function addWorktopAndPlinth")]
+    assert "worktopRunPlan?.(list,{enforceCriticalZones:true})" in segment
 
 def test_r1044_end_panels_are_default_between_walls_module_height_and_editable():
     model = read("model.js")
