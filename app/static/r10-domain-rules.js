@@ -44,12 +44,45 @@
     skipWhenCommunicationsConfirmed:true,
     classification:'PILOT_COMPOSITION_SCORE'
   });
+  const OVEN_RULES=Object.freeze({
+    DEFAULT_APPLIANCE_HEIGHT_MM:600,
+    TECHNICAL_GAP_MM:3,
+    DRAWER_BOX_REDUCTION_FROM_FACADE_MM:50,
+    BODY_HEIGHT_FORMULA:'LOWER_OVERALL_MINUS_WORKTOP_MINUS_SUPPORTS',
+    classification:'HARD'
+  });
+  const DISHWASHER_RULES=Object.freeze({
+    TEMPLATE_REQUIRED:true,
+    ALLOWED_WIDTHS_MM:Object.freeze([450,600]),
+    PLACEMENT_PRIORITY:'IMMEDIATELY_AFTER_SINK_ELSE_NEAREST',
+    OPENING:'FLAP_DOWN',
+    HANDLE_ORIENTATION:'HORIZONTAL',
+    HANDLE_TOP_OFFSET_MM:40,
+    classification:'HARD_TEMPLATE'
+  });
+  const SINK_BASE_RULES=Object.freeze({
+    RAIL_COUNT:3,
+    RAIL_ORIENTATION:'VERTICAL_ON_EDGE',
+    FRONT_RAIL:'UNDER_TOP_AT_FRONT_EDGE',
+    REAR_LOWER_RAIL:'JOINS_BOTTOM_AT_BACK',
+    REAR_UPPER_RAIL_FROM_TOP_MM:150,
+    DEFAULT_TRAY:true,
+    TRAY_SUPPLIER:'KRONAS',
+    TRAY_FAMILY:'VOLPATO_ALUMINIUM',
+    TRAYS_BY_FACADE_WIDTH_MM:Object.freeze({
+      600:Object.freeze({article:'08773',name:'Volpato L=600 aluminium'}),
+      800:Object.freeze({article:'08774',name:'Volpato L=800 aluminium'}),
+      900:Object.freeze({article:'08775',name:'Volpato L=900 aluminium'}),
+      1000:Object.freeze({article:'110433',name:'Volpato L=1000 aluminium'})
+    }),
+    classification:'HARD_WITH_SUPPLIER_PROFILE'
+  });
   const WORKTOP_RULES=Object.freeze({
     MAX_UNSPLICED_MM:4100,
     JOINT_POLICY:'NEAREST_ALLOWED_MODULE_BOUNDARY_NOT_EXCEEDING_MAX',
-    SINK_ADJACENT_JOINT_FORBIDDEN_CATEGORIES:Object.freeze(['I','II']),
-    SINK_ZONE_POLICY:'NO_JOINT_ON_EITHER_BOUNDARY_TOUCHING_SINK_FOR_BOARD_WORKTOPS',
-    classification:'HARD_CATEGORY_I_II_BOARD_WORKTOP'
+    JOINT_FORBIDDEN_ADJACENT_KINDS:Object.freeze(['SINK','COOKTOP']),
+    ZONE_POLICY:'NO_JOINT_ON_EITHER_BOUNDARY_TOUCHING_SINK_OR_COOKTOP',
+    classification:'HARD'
   });
   const PLINTH_RULES=Object.freeze({
     MAX_UNSPLICED_MM:4100,
@@ -96,18 +129,19 @@
       left,
       right:ordered[i+1]
     })).filter(x=>x.value>start+.5&&x.value<end-.5);
-    const avoidSinkJoint=options.avoidSinkJoint===true;
-    const forbiddenBoundaries=avoidSinkJoint?descriptors.filter(x=>x.left?.kind==='SINK'||x.right?.kind==='SINK').map(x=>x.value):[];
+    const forbiddenKinds=new Set(WORKTOP_RULES.JOINT_FORBIDDEN_ADJACENT_KINDS);
+    const enforceCriticalZones=options.enforceCriticalZones!==false;
+    const forbiddenBoundaries=enforceCriticalZones?descriptors.filter(x=>forbiddenKinds.has(x.left?.kind)||forbiddenKinds.has(x.right?.kind)).map(x=>x.value):[];
     const forbiddenSet=new Set(forbiddenBoundaries);
     const boundaries=[...new Set(descriptors.map(x=>x.value))].sort((a,b)=>a-b);
     const allowedBoundaries=boundaries.filter(v=>!forbiddenSet.has(v));
     const joints=[],MAX=WORKTOP_RULES.MAX_UNSPLICED_MM;
-    let cursor=start,guard=0,blockedBySink=false;
+    let cursor=start,guard=0,blockedByCriticalZone=false;
     while(end-cursor>MAX+.5&&guard++<100){
       const target=cursor+MAX;
       const eligible=allowedBoundaries.filter(v=>v>cursor+.5&&v<=target+.5);
       if(!eligible.length){
-        blockedBySink=avoidSinkJoint&&boundaries.some(v=>v>cursor+.5&&v<=target+.5&&forbiddenSet.has(v));
+        blockedByCriticalZone=enforceCriticalZones&&boundaries.some(v=>v>cursor+.5&&v<=target+.5&&forbiddenSet.has(v));
         break;
       }
       const joint=eligible[eligible.length-1];
@@ -115,7 +149,7 @@
     }
     const cuts=[start,...joints,end],segments=[];
     for(let i=0;i<cuts.length-1;i++)segments.push({start:cuts[i],end:cuts[i+1],length:cuts[i+1]-cuts[i]});
-    return{wall,start,end,span,boundaries,allowedBoundaries,forbiddenBoundaries,joints,segments,blockedBySink};
+    return{wall,start,end,span,boundaries,allowedBoundaries,forbiddenBoundaries,joints,segments,blockedByCriticalZone};
   }
   window.BizetR10Rules=Object.freeze({
     hingeVerticalMm:HINGE_VERTICAL_MM,
@@ -124,6 +158,9 @@
     handleRules:HANDLE_RULES,
     cornerRules:CORNER_RULES,
     compositionRules:COMPOSITION_RULES,
+    ovenRules:OVEN_RULES,
+    dishwasherRules:DISHWASHER_RULES,
+    sinkBaseRules:SINK_BASE_RULES,
     worktopRules:WORKTOP_RULES,
     worktopRunPlan,
     plinthRules:PLINTH_RULES,
