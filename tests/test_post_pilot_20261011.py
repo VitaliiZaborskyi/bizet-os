@@ -104,7 +104,7 @@ def test_new_pilot_assets_are_cache_busted():
     for asset in [
         "/static/model.js?v=20261015",
         "/static/kitchen-webgl-r1050.js?v=20261015",
-        "/static/r10-domain-rules.js?v=20261011b",
+        "/static/r10-domain-rules.js?v=20261015",
         "/static/ui-viewer-pilot.css?v=20261015",
     ]:
         assert asset in workspace
