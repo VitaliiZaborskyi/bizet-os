@@ -1442,7 +1442,8 @@ def test_r1043_plinth_segments_like_worktop_includes_builtins_and_prices_connect
     assert "PLINTH_CONNECTOR:50" in pointb
     assert "Соединитель цоколя универсальный" in pointb
     assert "plinthConnectors" in pointb
-    assert "m.level!=='upper'&&!m.freestanding&&Number(m.z)>0" in pointb
+    assert "m.level!=='upper'&&!m.freestanding&&m.kind!=='FRIDGE'&&Number(m.z)>0" in pointb
+    assert "встроенный холодильник обходится" in pointb
     plinth = renderer[renderer.index("function drawPlinth"):renderer.index("function drawTopAppliance")]
     assert "plinthRunPlan" in plinth
     assert "!m.freestanding&&Number(m.z)>0" in plinth
