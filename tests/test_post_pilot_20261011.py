@@ -85,7 +85,7 @@ def test_fix_08_rod_anchor_is_a_hard_core_rule_and_grande_consumes_it():
     assert "BizetR10Rules?.clothesRodCenterFromUpperShelf" in grande
     assert "upperShelfCenter-t/2-80" in grande
     assert "80 мм" in grande
-    assert "/static/r10-domain-rules.js?v=20261011b" in html
+    assert "/static/r10-domain-rules.js?v=20261015" in html
 
 def test_fix_09_header_and_price_use_surface_contrast_not_only_theme():
     css=read("ui-viewer-pilot.css")
@@ -102,13 +102,13 @@ def test_new_pilot_assets_are_cache_busted():
     index=read("index.html")
     grande=read("grande-r1046.html")
     for asset in [
-        "/static/model.js?v=20261011b",
-        "/static/kitchen-webgl-r1050.js?v=20261011b",
+        "/static/model.js?v=20261015",
+        "/static/kitchen-webgl-r1050.js?v=20261015",
         "/static/r10-domain-rules.js?v=20261011b",
-        "/static/ui-viewer-pilot.css?v=20261011b",
+        "/static/ui-viewer-pilot.css?v=20261015",
     ]:
         assert asset in workspace
-    assert "/static/ui-viewer-pilot.css?v=20261011b" in index
+    assert "/static/ui-viewer-pilot.css?v=20261015" in index
     for asset in [
         "/static/grande-r1048.js?v=20261011b",
         "/static/grande-r1050.js?v=20261011b",
