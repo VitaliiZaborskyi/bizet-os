@@ -16,7 +16,7 @@ def test_r1050_kitchen_uses_current_shared_webgl_viewer_without_default_fog():
     js = read("kitchen-webgl-r1050.js")
     assert "three@0.128.0/build/three.min.js" in html
     assert "OrbitControls.js" in html
-    assert "/static/kitchen-webgl-r1050.js?v=20261011b" in html
+    assert "/static/kitchen-webgl-r1050.js?v=20261015" in html
     assert "new THREE.WebGLRenderer" in js
     assert "new THREE.OrbitControls" in js
     assert "scene.background=new THREE.Color(0x34383d)" in js
