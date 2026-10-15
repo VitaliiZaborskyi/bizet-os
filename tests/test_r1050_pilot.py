@@ -19,7 +19,7 @@ def test_r1050_app_and_current_assets_are_wired():
     for asset in [
         "/static/r1050.css?v=1051",
         "/static/production-r1050.js?v=1051",
-        "/static/kitchen-webgl-r1050.js?v=20261011b",
+        "/static/kitchen-webgl-r1050.js?v=20261015",
         "/static/workspace-r1050.js?v=20261011",
         "/static/ua-ui-r1050.js?v=1051",
     ]:
@@ -151,15 +151,16 @@ def test_r1050_material_presets_reach_actual_webgl_room_materials():
     assert "wall:pick('walls','wallPreset'" in viewer
 
 
-def test_r1050_worktop_and_plinth_keep_4100_max_and_worktop_overhang():
+def test_r1050_worktop_and_plinth_use_core_safe_segmentation_and_overhang():
     viewer = read("kitchen-webgl-r1050.js")
     segment = viewer[viewer.index("function segmentBy4100"):viewer.index("function addWorktopAndPlinth")]
-    assert "span<=4100+.001" in segment
-    assert "last boundary <= 4100" in segment
+    assert "worktopRunPlan?.(list,{enforceCriticalZones:true})" in segment
+    assert "plan?.segments?.length" in segment
     worktop = viewer[viewer.index("function addWorktopAndPlinth"):viewer.index("function textSprite")]
     assert "Math.min(...seg.map(m=>+m.y))-20" in worktop
     assert "'plinth'" in worktop
     assert "'worktop'" in worktop
+    assert "'plinth-seam'" in worktop
 
 
 def test_r1050_menu_three_contains_handles_and_menu_seven_is_export():
