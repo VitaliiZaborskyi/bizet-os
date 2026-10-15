@@ -113,7 +113,7 @@ def test_new_pilot_assets_are_cache_busted():
         "/static/grande-r1048.js?v=20261011b",
         "/static/grande-r1050.js?v=20261011b",
         "/static/grande-r1050.css?v=20261011b",
-        "/static/r10-domain-rules.js?v=20261011b",
+        "/static/r10-domain-rules.js?v=20261015",
     ]:
         assert asset in grande
 
