@@ -161,6 +161,7 @@
  function option(value,label){return '<option value="'+esc(value)+'">'+esc(ui(label))+'</option>'}
  function field(label,key,choices){const current=rt.getInputs()[key];return '<label class="r8-field" data-setting-key="'+key+'"><span>'+esc(ui(label))+'</span><select data-input="'+key+'">'+choices.map(x=>option(x[0],x[1])).join('')+'</select></label>'}
  function numberField(label,key,def,min){const current=Number(rt.getInputs()[key]??def);return '<label class="r8-field" data-setting-key="'+key+'"><span>'+esc(ui(label))+'</span><input type="number" min="'+(min||0)+'" step="1" value="'+current+'" data-number="'+key+'"></label>'}
+ function modelChoiceButton(label){return '<button type="button" class="r1053-model-choice" disabled aria-disabled="true">'+esc(ui(label))+' · '+esc(ui('Скоро'))+'</button>'}
  function propagateLockedValue(key,value){
    if(variantSlots.length!==5)return;
    variantSlots.forEach(slot=>{slot.inputs={...(slot.inputs||{}),[key]:value}});
@@ -349,10 +350,11 @@
      html+='<section class="r8-section"><h3>Потолок</h3>'+field('Тип потолка','ceiling',[['STRETCH_A','Натяжной — подготовленное основание'],['STRETCH_B','Готовый натяжной'],['GYPSUM','Гипсокартон'],['OPEN_GAP','Открытый зазор']])+'</section>';
    }
    if(panel==='appliances'){
-     html='<section class="r8-section"><h3>Холодильник</h3>'+field('Наличие','fridge_present',[['YES','Да'],['NO','Нет']])+field('Сторона','fridge_side',[['LEFT','Слева'],['RIGHT','Справа']])+field('Тип','fridge_type',[['BUILT_IN','Встраиваемый'],['FREESTANDING','Отдельностоящий']])+field('Ширина','fridge_width_mm',[[600,'600 мм'],[900,'900 мм'],[1200,'1200 мм']])+'</section>';
+     const templateKitchen=rt.getConfiguration()!=='CUSTOM',dishChoices=templateKitchen?[['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']]:[['NO','Нет'],['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']];
+     html='<section class="r8-section"><h3>Холодильник</h3>'+field('Наличие','fridge_present',[['YES','Да'],['NO','Нет']])+field('Сторона','fridge_side',[['LEFT','Слева'],['RIGHT','Справа']])+field('Тип','fridge_type',[['BUILT_IN','Встраиваемый'],['FREESTANDING','Отдельностоящий']])+field('Ширина','fridge_width_mm',[[600,'600 мм'],[900,'900 мм'],[1200,'1200 мм']])+modelChoiceButton('Выбор модели холодильника')+'</section>';
      html+='<section class="r8-section"><h3>Мойка</h3>'+field('Сторона','sink_side',[['LEFT','Слева'],['RIGHT','Справа']])+field('Монтаж','sink_mount_type',[['TOP_MOUNT','Накладная'],['FLUSH','Вровень'],['UNDERMOUNT','Под столешницей']])+field('Чаш','sink_bowl_count',[[1,'1'],[2,'2']])+field('Измельчитель','sink_disposer',[['NO','Нет'],['YES','Да']])+field('Фильтры','sink_filters',[['NO','Нет'],['YES','Да']])+'</section>';
-     html+='<section class="r8-section"><h3>Варочная / ПММ</h3>'+field('Варочная','cooktop_type',[['INDUCTION','Индукционная'],['ELECTRIC','Электрическая'],['GAS','Газовая'],['COMBINED','Комбинированная']])+field('Ширина варочной','cooktop_width_mm',[[600,'600 мм'],[300,'300 мм']])+field('Посудомоечная машина','dishwasher_type',[['NO','Нет'],['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']])+field('Ширина ПММ','dishwasher_width_mm',[[450,'450 мм'],[600,'600 мм']])+'</section>';
-     html+='<section class="r8-section"><h3>Вытяжка / духовка</h3>'+field('Вытяжка','hood_type',[['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']])+field('Ширина вытяжки','hood_width_mm',[[500,'500 мм'],[600,'600 мм'],[800,'800 мм'],[900,'900 мм'],[1000,'1000 мм']])+field('Духовка','oven_location',[['NO','Нет'],['LOWER','В нижнем модуле'],['TALL','В пенале']])+field('Ширина духовки','oven_width_mm',[[600,'600 мм'],[900,'900 мм']])+field('Микроволновка','microwave_present',[['NO','Нет'],['YES','Да']])+field('Кофемашина','coffee_present',[['NO','Нет'],['YES','Да']])+'</section>';
+     html+='<section class="r8-section"><h3>Варочная / ПММ</h3>'+field('Варочная','cooktop_type',[['INDUCTION','Индукционная'],['ELECTRIC','Электрическая'],['GAS','Газовая'],['COMBINED','Комбинированная']])+field('Ширина варочной','cooktop_width_mm',[[600,'600 мм'],[300,'300 мм']])+modelChoiceButton('Выбор модели варочной')+field('Посудомоечная машина','dishwasher_type',dishChoices)+field('Ширина ПММ','dishwasher_width_mm',[[450,'450 мм'],[600,'600 мм']])+modelChoiceButton('Выбор модели ПММ')+(templateKitchen?'<p class="r1053-rule-note">'+ui('В шаблонной конфигурации ПММ обязательна и ставится рядом с мойкой.')+'</p>':'')+'</section>';
+     html+='<section class="r8-section"><h3>Вытяжка / духовка</h3>'+field('Вытяжка','hood_type',[['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']])+field('Ширина вытяжки','hood_width_mm',[[500,'500 мм'],[600,'600 мм'],[800,'800 мм'],[900,'900 мм'],[1000,'1000 мм']])+modelChoiceButton('Выбор модели вытяжки')+field('Духовка','oven_location',[['NO','Нет'],['LOWER','В нижнем модуле'],['TALL','В пенале']])+field('Ширина духовки','oven_width_mm',[[600,'600 мм'],[900,'900 мм']])+numberField('Высота духовки, мм','oven_height_mm',600,300)+modelChoiceButton('Выбор модели духовки')+field('Микроволновка','microwave_present',[['NO','Нет'],['YES','Да']])+field('Кофемашина','coffee_present',[['NO','Нет'],['YES','Да']])+'</section>';
      const walls=rt.getConfiguration()==='L_LEFT'?[['A','Стена A'],['B','Стена B']]:rt.getConfiguration()==='L_RIGHT'?[['A','Стена A'],['C','Стена C']]:rt.getConfiguration()==='U_SHAPE'?[['A','Стена A'],['B','Стена B'],['C','Стена C']]:[['A','Стена A']];
      html+='<section class="r8-section"><h3>Дополнительные настройки техники</h3>'+field('Наполнение холодильника','fridge_content',[['FRIDGE_ONLY','Только холодильник'],['FREEZER_ONLY','Только морозильник'],['FRIDGE_FREEZER','Холодильник + морозильник']])+field('Положение мойки','sink_placement',[['AT_CORNER','От угла'],['OFFSET','Со смещением'],['LINEAR_PENDING','На прямом участке']])+numberField('Смещение мойки от угла, мм','sink_offset_mm',300,0)+field('Стена варочной панели','cooktop_wall',[['AUTO','Авто'],...walls])+field('Стена ПММ','dishwasher_wall',walls)+field('Тип встраиваемой вытяжки','hood_integrated_subtype',[['FULL','Полновстраиваемая'],['TELESCOPIC','Телескопическая']])+field('Стена духового шкафа','oven_wall',[['AUTO','Авто'],...walls])+'</section>';
      html+='<section class="r8-section"><h3>СВЧ / кофемашина</h3>'+field('Тип СВЧ','microwave_type',[['BUILT_IN','Встраиваемая 600×450'],['FREESTANDING','Отдельностоящая']])+field('Тип кофемашины','coffee_type',[['BUILT_IN','Встраиваемая 600×450'],['FREESTANDING','Отдельностоящая']])+field('Опора кофемашины','coffee_support',[['FIXED_SHELF','Обычная полка'],['PULLOUT_LOCKING','Выдвижная полка с фиксатором']])+field('Отделение кофемашины','coffee_compartment',[['OPEN','Открытое'],['CLOSED','Закрытое']])+field('Открывание фасада','coffee_front_opening',[['HINGED_LEFT','Петли слева'],['HINGED_RIGHT','Петли справа'],['LIFT_UP_HL','Вертикально вверх']])+'</section>';
@@ -366,7 +368,8 @@
        +numberField('Глубина нижних модулей, мм','lower_depth_mm',560,300)
        +numberField('Глубина верхних модулей, мм','upper_depth_mm',320,200)
        +numberField('Высота цоколя, мм','plinth_height_mm',100,0)
-       +'</div><p>Высота цоколя меняет высоту корпуса, сохраняя общую высоту нижнего ряда.</p></section>';
+       +numberField('Толщина столешницы, мм','worktop_thickness_mm',38,10)
+       +'</div><p>Высота корпуса = габарит нижнего ряда − толщина столешницы − высота опор.</p></section>';
      html+='<section class="r8-section"><h3>Ручки</h3><p>Распашные фасады: вертикально, 40 мм от бокового края и 40 мм от верхнего/нижнего края. Ящики и подъёмные фасады: горизонтально по центру.</p><div class="r104-general-grid">'
        +field('Распашные модули','hinged_handle_orientation',[['VERTICAL','Вертикальные ручки'],['HORIZONTAL','Горизонтальные ручки']])
        +field('Ящики','drawer_handle_orientation',[['HORIZONTAL','Горизонтальные ручки'],['VERTICAL','Вертикальные ручки']])
@@ -492,8 +495,10 @@
  function updateReadiness(){ /* R10.3.4: no visible project-readiness UI. */ }
  async function ensureTemplate(){
    const I=rt.getInputs(),patch={};
-   const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,lower_total_height_mm:900,upper_height_mm:1000,lower_depth_mm:560,upper_depth_mm:320,hinged_handle_orientation:'VERTICAL',drawer_handle_orientation:'HORIZONTAL',display_currency:'UAH',oven_width_mm:600,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600,lighting_enabled:'NO',lighting_plinth:'NO',lighting_worktop:'NO',lighting_upper_inside:'NO',lighting_lower_inside:'NO'};
-   Object.keys(defaults).forEach(k=>{if(I[k]===undefined||I[k]===null||I[k]==='')patch[k]=defaults[k]});if(Object.keys(patch).length)await rt.patchInputs(patch,'R8 base template');
+   const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,worktop_thickness_mm:38,lower_total_height_mm:900,upper_height_mm:1000,lower_depth_mm:560,upper_depth_mm:320,hinged_handle_orientation:'VERTICAL',drawer_handle_orientation:'HORIZONTAL',display_currency:'UAH',oven_width_mm:600,oven_height_mm:600,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600,lighting_enabled:'NO',lighting_plinth:'NO',lighting_worktop:'NO',lighting_upper_inside:'NO',lighting_lower_inside:'NO'};
+   Object.keys(defaults).forEach(k=>{if(I[k]===undefined||I[k]===null||I[k]==='')patch[k]=defaults[k]});
+   if(rt.getConfiguration()!=='CUSTOM'&&String(I.dishwasher_type||patch.dishwasher_type||'NO')==='NO')patch.dishwasher_type='BUILT_IN';
+   if(Object.keys(patch).length)await rt.patchInputs(patch,'R8 base template');
  }
  function renderVariantDots(){
    const host=$('variantDots');if(!host)return;
@@ -512,6 +517,10 @@
      state.inputs={...(state.inputs||{})};
      if(!locks.has('fridge_side'))state.inputs.fridge_side=i%2?'RIGHT':'LEFT';
      if(!locks.has('sink_side')&&rt.getConfiguration().startsWith('L_'))state.inputs.sink_side=i%2?'RIGHT':'LEFT';
+     if(rt.getConfiguration()!=='CUSTOM'){
+       state.inputs.dishwasher_type='BUILT_IN';
+       if(!locks.has('dishwasher_width_mm'))state.inputs.dishwasher_width_mm=i%2?450:600;
+     }
      return state;
    });
  }
