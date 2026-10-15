@@ -18,14 +18,15 @@
   const COMPOSITION=window.BizetR10Rules?.compositionRules||{centerPrimaryApplianceOnLongRun:true,skipWhenCommunicationsConfirmed:true};
 
   // Visual pilot proportions only. Furniture hard rules remain in the backend engine.
-  const DEFAULT_LOWER_DEPTH=560,DEFAULT_PLINTH_H=100,WORKTOP_H=38,DEFAULT_LOWER_TOTAL_H=900;
+  const DEFAULT_LOWER_DEPTH=560,DEFAULT_PLINTH_H=100,DEFAULT_WORKTOP_H=38,DEFAULT_LOWER_TOTAL_H=900;
   const DEFAULT_UPPER_DEPTH=320,UPPER_HOOD_DEPTH=350,DEFAULT_UPPER_H=1000,CUTLERY_W=400;
   function plinthHeight(){return clamp(Math.round(Number(inputs.plinth_height_mm??DEFAULT_PLINTH_H)||DEFAULT_PLINTH_H),0,300)}
+  function worktopThickness(){return clamp(Math.round(Number(inputs.worktop_thickness_mm??DEFAULT_WORKTOP_H)||DEFAULT_WORKTOP_H),10,120)}
   function lowerTotalHeight(){return clamp(Math.round(Number(inputs.lower_total_height_mm??DEFAULT_LOWER_TOTAL_H)||DEFAULT_LOWER_TOTAL_H),650,1200)}
   function lowerDepth(){return clamp(Math.round(Number(inputs.lower_depth_mm??DEFAULT_LOWER_DEPTH)||DEFAULT_LOWER_DEPTH),300,800)}
   function upperDepth(){return clamp(Math.round(Number(inputs.upper_depth_mm??DEFAULT_UPPER_DEPTH)||DEFAULT_UPPER_DEPTH),200,650)}
   function upperConfiguredHeight(){return clamp(Math.round(Number(inputs.upper_height_mm??DEFAULT_UPPER_H)||DEFAULT_UPPER_H),220,1500)}
-  function lowerBodyHeight(){return Math.max(300,lowerTotalHeight()-plinthHeight()-WORKTOP_H)}
+  function lowerBodyHeight(){return Math.max(300,lowerTotalHeight()-plinthHeight()-worktopThickness())}
   function kitchenTopZ(){
     const room=roomValues(),gap=Math.max(300,Number(inputs.upper_gap_mm)||600),upperBottom=lowerTotalHeight()+gap;
     const upperH=Math.min(upperConfiguredHeight(),room.heightMm-upperBottom-50);
@@ -36,7 +37,7 @@
     const gola=String(inputs.gola_system||inputs.handle_system||'NO').toUpperCase();
     return category==='I'&&!['YES','TRUE','GOLA'].includes(gola);
   }
-  function visibleTallDrawerLimit(){return lowerTotalHeight()-WORKTOP_H}
+  function visibleTallDrawerLimit(){return lowerTotalHeight()-worktopThickness()}
   function moduleDisplayName(m){
     if(!m)return tr('Модуль','Module');
     if(uiLang()!=='en')return m.label||'Модуль';
@@ -314,17 +315,33 @@
         list.push(baseModule('fridge','Холодильник',runWidth,'FRIDGE',fWall,fridgeExtra));
       }
     }
-    list.push(baseModule('sink','Мойка',600,'SINK',sinkWall(),{widthStatus:'PILOT_VISUAL_PLACEHOLDER',sink_mount_type:inputs.sink_mount_type,sink_bowl_count:inputs.sink_bowl_count,sink_disposer:inputs.sink_disposer,sink_filters:inputs.sink_filters}));
-    if(inputs.dishwasher_type&&inputs.dishwasher_type!=='NO'){
-      const wall=walls.includes(inputs.dishwasher_wall)?inputs.dishwasher_wall:'A';
-      const applianceWidth=Number(inputs.dishwasher_width_mm)||600;
-      const free=inputs.dishwasher_type==='FREESTANDING';
+    const sinkRules=window.BizetR10Rules?.sinkBaseRules||{},sinkWidth=600,sinkTray=sinkRules.TRAYS_BY_FACADE_WIDTH_MM?.[sinkWidth]||null;
+    list.push(baseModule('sink','Мойка',sinkWidth,'SINK',sinkWall(),{
+      widthStatus:'PILOT_VISUAL_PLACEHOLDER',sink_mount_type:inputs.sink_mount_type,sink_bowl_count:inputs.sink_bowl_count,sink_disposer:inputs.sink_disposer,sink_filters:inputs.sink_filters,
+      sink_rail_count:3,sink_rail_orientation:'VERTICAL_ON_EDGE',sink_rear_upper_rail_from_top_mm:Number(sinkRules.REAR_UPPER_RAIL_FROM_TOP_MM)||150,
+      sink_tray_default:true,sink_tray_supplier:'KRONAS',sink_tray_article:sinkTray?.article||'',sink_tray_name:sinkTray?.name||''
+    }));
+    const templateKitchen=configuration()!=='CUSTOM',dishRules=window.BizetR10Rules?.dishwasherRules||{},requestedDish=String(inputs.dishwasher_type||'NO');
+    const effectiveDishType=templateKitchen&&requestedDish==='NO'?'BUILT_IN':requestedDish;
+    if(effectiveDishType&&effectiveDishType!=='NO'){
+      const wall=templateKitchen?sinkWall():(walls.includes(inputs.dishwasher_wall)?inputs.dishwasher_wall:'A');
+      const requestedWidth=Number(inputs.dishwasher_width_mm),applianceWidth=[450,600].includes(requestedWidth)?requestedWidth:600;
+      const free=effectiveDishType==='FREESTANDING';
       const sidePanel=free?18:0,clearance=free?freestandingGap(applianceWidth):0;
-      list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2+clearance*2,'DISHWASHER',wall,{freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel,appliance_clearance_mm:clearance}));
+      list.push(baseModule('dishwasher','Посудомоечная машина',applianceWidth+sidePanel*2+clearance*2,'DISHWASHER',wall,{
+        freestanding:free,appliance_width_mm:applianceWidth,side_panel_mm:sidePanel,appliance_clearance_mm:clearance,
+        template_required:templateKitchen,dishwasher_opening:'FLAP_DOWN',handle_orientation:'HORIZONTAL',handle_offset_mm:Number(dishRules.HANDLE_TOP_OFFSET_MM)||40
+      }));
     }
     const cooktopWall=resolvedCooktopWall(),ovenWidth=[600,900].includes(Number(inputs.oven_width_mm))?Number(inputs.oven_width_mm):600;
-    const lowerOven=inputs.oven_location==='LOWER',ovenShelf=lowerOven&&categoryOneNoGola()?600:null;
-    list.push(baseModule('cooktop',lowerOven?'Варочная + духовка':'Варочная панель',lowerOven?ovenWidth:(Number(inputs.cooktop_width_mm)||600),'COOKTOP',cooktopWall,{widthStatus:'USER_SELECTED',oven_appliance_present:lowerOven,oven_width_mm:ovenWidth,corner_forbidden:lowerOven,oven_support_shelf_offset_from_top_mm:ovenShelf,oven_support_shelf_rule:ovenShelf===600?'CATEGORY_I_NO_GOLA_BODY_TOP_MINUS_600':'DEFERRED_GOLA_OR_OTHER_CATEGORY'}));
+    const lowerOven=inputs.oven_location==='LOWER',ovenRules=window.BizetR10Rules?.ovenRules||{},ovenH=Math.max(300,Number(inputs.oven_height_mm)||Number(ovenRules.DEFAULT_APPLIANCE_HEIGHT_MM)||600),ovenGap=Math.max(0,Number(ovenRules.TECHNICAL_GAP_MM)||3);
+    const ovenDrawerFacadeH=lowerOven?Math.max(0,lowerBodyHeight()-ovenH-ovenGap):0,ovenDrawerBoxH=Math.max(0,ovenDrawerFacadeH-(Number(ovenRules.DRAWER_BOX_REDUCTION_FROM_FACADE_MM)||50));
+    if(lowerOven&&ovenDrawerFacadeH<80)pushWarning('OVEN_DRAWER_HEIGHT_CONFLICT',`После духовки ${ovenH} мм и технологического зазора ${ovenGap} мм остаётся только ${Math.round(ovenDrawerFacadeH)} мм на фасад нижнего ящика. Требуется изменить габарит нижнего ряда, столешницу, опоры или духовку.`);
+    list.push(baseModule('cooktop',lowerOven?'Варочная + духовка':'Варочная панель',lowerOven?ovenWidth:(Number(inputs.cooktop_width_mm)||600),'COOKTOP',cooktopWall,{
+      widthStatus:'USER_SELECTED',oven_appliance_present:lowerOven,oven_width_mm:ovenWidth,oven_appliance_height_mm:ovenH,corner_forbidden:lowerOven,
+      oven_technical_gap_mm:ovenGap,oven_drawer_facade_height_mm:ovenDrawerFacadeH,oven_drawer_box_height_mm:ovenDrawerBoxH,mandatory_lower_drawer:lowerOven,
+      oven_support_shelf_offset_from_top_mm:lowerOven?ovenH:null,oven_support_shelf_rule:lowerOven?'BODY_TOP_MINUS_OVEN_HEIGHT':'NONE'
+    }));
     if(inputs.oven_location==='TALL'){
       const wall=resolvedOvenWall();
       const tallHeight=Math.max(900,Math.min(roomValues().heightMm-140,2100));
@@ -368,6 +385,16 @@
     const rankEnd={COOKTOP:10,DRAWERS:30,HINGED:30,DISHWASHER:40,SINK:50};
     const rank=edge==='END'?rankEnd:rankStart;
     return list.map((m,i)=>({m,i,r:rank[m.kind]??30})).sort((a,b)=>a.r-b.r||a.i-b.i).map(x=>x.m);
+  }
+  function ensureDishwasherNearSink(ordered,edge){
+    const sinkIndex=ordered.findIndex(m=>m.kind==='SINK'),dishIndex=ordered.findIndex(m=>m.kind==='DISHWASHER');
+    if(sinkIndex<0||dishIndex<0)return ordered;
+    const dish=ordered[dishIndex];ordered.splice(dishIndex,1);
+    const si=ordered.findIndex(m=>m.kind==='SINK');
+    const insertAt=edge==='END'&&si===ordered.length-1?si:si+1;
+    ordered.splice(Math.max(0,insertAt),0,dish);
+    dish.placement_rule=edge==='END'&&si===ordered.length-1?'NEAREST_BEFORE_SINK':'IMMEDIATELY_AFTER_SINK';
+    return ordered;
   }
   function separationBetween(list,aIndex,bIndex){
     const lo=Math.min(aIndex,bIndex),hi=Math.max(aIndex,bIndex);
@@ -514,7 +541,7 @@
       const n=Number(variant.module_shift)%regular.length;
       regular=regular.slice(n).concat(regular.slice(0,n));
     }
-    regular=ergonomicRegularOrder(regular,edge);
+    regular=ensureDishwasherNearSink(ergonomicRegularOrder(regular,edge),edge);
 
     if(tall.length){
       const fridge=tall.filter(m=>m.kind==='FRIDGE'),otherTall=tall.filter(m=>m.kind!=='FRIDGE');
@@ -555,6 +582,7 @@
 
     ordered=promoteDrawerCadence(ordered);
     ordered=ensureCornerZones(ordered,wall);
+    ordered=ensureDishwasherNearSink(ordered,edge);
     ordered=centerCompositionAnchor(ordered,wall,bounds);
     ordered=enforceFridgeEdgeInvariant(ordered,edge);
     let cursor=bounds.start;
@@ -617,8 +645,8 @@
     const uDepth=upperDepth(),result=[],hoodWidth=Number(inputs.hood_width_mm)||600,hoodDepth=inputs.hood_type==='BUILT_IN'?Math.max(UPPER_HOOD_DEPTH,uDepth):uDepth;
     lower.filter(m=>!m.tall&&m.level==='lower'&&m.kind!=='FILLER').forEach(m=>{
       if(m.kind==='COOKTOP'){
-        if(m.wall==='A'){const center=m.x+m.w/2,x=clamp(center-hoodWidth/2,0,room.lengthMm-hoodWidth);result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y:room.depthMm-hoodDepth,z:bottom,w:hoodWidth,d:hoodDepth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth})}
-        else{const center=m.y+m.d/2,y=clamp(center-hoodWidth/2,0,room.depthMm-hoodWidth),x=m.wall==='B'?0:room.lengthMm-hoodDepth;result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y,z:bottom,w:hoodDepth,d:hoodWidth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth})}
+        if(m.wall==='A'){const center=m.x+m.w/2,x=clamp(center-hoodWidth/2,0,room.lengthMm-hoodWidth);result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y:room.depthMm-hoodDepth,z:bottom,w:hoodWidth,d:hoodDepth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth,appliance_model_selection_enabled:false})}
+        else{const center=m.y+m.d/2,y=clamp(center-hoodWidth/2,0,room.depthMm-hoodWidth),x=m.wall==='B'?0:room.lengthMm-hoodDepth;result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y,z:bottom,w:hoodDepth,d:hoodWidth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth,appliance_model_selection_enabled:false})}
         return;
       }
       if(m.wall==='A')result.push({id:`upper-${m.id}`,label:'Верхний модуль',kind:'UPPER',wall:'A',x:m.x,y:room.depthMm-uDepth,z:bottom,w:m.w,d:uDepth,h:height,level:'upper',anchor:false,system:true,pending:m.pending,source_kind:m.kind,source_id:m.id});
