@@ -3,6 +3,7 @@
   const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
   const uiLang=()=>String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ru').toLowerCase().startsWith('en')?'en':'ru';
   const tr=(ru,en)=>uiLang()==='en'?en:ru;
+  const tr1054=(ru,en,ua)=>{const lang=String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ru').toLowerCase();return /^(ua|uk)/.test(lang)?ua:tr(ru,en)};
   const projectId=params.get('project')||sessionStorage.getItem(PROJECT_KEY)||localStorage.getItem(PROJECT_KEY)||'';
   if(projectId){sessionStorage.setItem(PROJECT_KEY,projectId);localStorage.setItem(PROJECT_KEY,projectId)}
   const VIEW_NORMAL='NORMAL_KITCHEN_VIEW',VIEW_FOCUS='MODULE_FOCUS_MODE';
@@ -946,22 +947,22 @@
     // Owner #18: ordinary applied handle is never on the hinge side.
     // Owner #19: a local handle system replaces (never stacks over) the kitchen-wide system.
     if(!module.freestanding&&!['DRAWERS','FILLER'].includes(module.kind)&&d.facade_orientation!=='HORIZONTAL'){
-      html+=editField(tr('Расположение накладной ручки','Applied handle position'),'handle_placement',d.handle_placement,'select',[
-        ['OPPOSITE_HINGES',tr('Противоположно петлям','Opposite hinges')],
-        ['CENTER',tr('По центру','Centered')]
+      html+=editField(tr1054('Расположение накладной ручки','Applied handle position','Розташування накладної ручки'),'handle_placement',d.handle_placement,'select',[
+        ['OPPOSITE_HINGES',tr1054('Противоположно петлям','Opposite hinges','Протилежно завісам')],
+        ['CENTER',tr1054('По центру','Centered','По центру')]
       ]);
     }
     if((module.tall||module.kind==='FRIDGE')&&!module.freestanding){
-      html+=editField(tr('Система ручек модуля','Module handle system'),'handle_override_mode',d.handle_override_mode,'select',[
-        ['INHERIT',tr('Как у всей кухни','Inherit global')],
-        ['INDIVIDUAL',tr('Индивидуальная','Individual')]
+      html+=editField(tr1054('Система ручек модуля','Module handle system','Система ручок модуля'),'handle_override_mode',d.handle_override_mode,'select',[
+        ['INHERIT',tr1054('Как у всей кухни','Inherit global','Як у всієї кухні')],
+        ['INDIVIDUAL',tr1054('Индивидуальная','Individual','Індивідуальна')]
       ]);
       if(d.handle_override_mode==='INDIVIDUAL'){
-        html+=editField(tr('Индивидуальный тип ручки','Individual handle type'),'individual_handle_system',d.individual_handle_system,'select',[
-          ['STANDARD',tr('Обычная накладная','Applied handle')],
+        html+=editField(tr1054('Индивидуальный тип ручки','Individual handle type','Індивідуальний тип ручки'),'individual_handle_system',d.individual_handle_system,'select',[
+          ['STANDARD',tr1054('Обычная накладная','Applied handle','Звичайна накладна')],
           ['GOLA','Gola'],
-          ['EDGE',tr('Торцевой профиль','Edge profile')],
-          ['PROFILE',tr('Профильная ручка','Profile handle')],
+          ['EDGE',tr1054('Торцевой профиль','Edge profile','Торцевий профіль')],
+          ['PROFILE',tr1054('Профильная ручка','Profile handle','Профільна ручка')],
           ['PUSH','Push-to-open']
         ]);
       }
