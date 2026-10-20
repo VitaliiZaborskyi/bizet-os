@@ -20,7 +20,7 @@ def test_r1051_current_version_and_assets():
     assert '/static/r1051.css?v=1051' in grande
     for asset in ["production-r1050.js?v=20261020r1055","kitchen-webgl-r1050.js?v=20261020r1055","workspace-r1050.js?v=20261011","ua-ui-r1050.js?v=1051"]:
         assert asset in workspace
-    assert '<link rel="stylesheet" href="/static/r1050.css?v=1051">' in workspace
+    assert '<link rel="stylesheet" href="/static/r1050.css?v=1056">' in workspace
 
 def test_r1051_room_source_is_native_ua_and_desktop_cards_do_not_overlap():
     handoff=read("start-room-handoff.js")
@@ -82,7 +82,7 @@ def test_r1051_handles_face_facade_and_stay_inside_hinged_front():
     viewer=read("kitchen-webgl-r1050.js")
     handle=viewer[viewer.index("function addHandleBar"):viewer.index("function frontVector")]
     front=viewer[viewer.index("function makeFront"):viewer.index("function addLegs")]
-    assert "post.position.set(vertical?0:s*52,vertical?s*42:0,10)" in handle
+    assert "new THREE.BoxGeometry(railLength,railHeight,railDepth)" in handle\n    assert "oriented.rotation.y=yaw" in handle
     assert "const handleHalf=62.5" in front
     assert "spec.h/2-40-handleHalf" in front
 
