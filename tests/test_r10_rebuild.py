@@ -855,9 +855,9 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
 
 def test_current_workspace_cache_busts_rules_and_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=20261015" in html
-    assert "/static/kitchen-webgl-r1050.js?v=20261015" in html
-    assert "/static/r10-domain-rules.js?v=20261015" in html
+    assert "/static/model.js?v=20261020r1054" in html
+    assert "/static/kitchen-webgl-r1050.js?v=20261020r1054" in html
+    assert "/static/r10-domain-rules.js?v=20261020r1054" in html
     assert "/static/workspace-r8.js?v=20261015" in html
     assert "/static/point-b.js?v=20261015" in html
     assert "/static/pilot-3d.js?v=1051" in html
@@ -1443,7 +1443,7 @@ def test_r1043_plinth_segments_like_worktop_includes_builtins_and_prices_connect
     assert "Соединитель цоколя универсальный" in pointb
     assert "plinthConnectors" in pointb
     assert "m.level!=='upper'&&!m.freestanding&&m.kind!=='FRIDGE'&&Number(m.z)>0" in pointb
-    assert "встроенный холодильник обходится" in pointb
+    assert "включая встроенный холодильник" in pointb
     plinth = renderer[renderer.index("function drawPlinth"):renderer.index("function drawTopAppliance")]
     assert "plinthRunPlan" in plinth
     assert "!m.freestanding&&Number(m.z)>0" in plinth
