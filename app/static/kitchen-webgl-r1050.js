@@ -360,17 +360,32 @@ function addCarcassShelves(room,m,mat){
 function addCarcass(room,m,mat){
  if(m.kind==='SINK'){addSinkCarcass(room,m,mat);return}
  const wall=m.wall||'A',t=18,x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h,parts=[];
- if(wall==='A')parts.push(
-  {x,y,z,w:t,d:D,h:H},{x:x+W-t,y,z,w:t,d:D,h:H},
-  {x:x+t,y,z,w:Math.max(20,W-2*t),d:D,h:t},{x:x+t,y,z:z+H-t,w:Math.max(20,W-2*t),d:D,h:t},
-  {x:x+t,y:y+D-4,z:z+t,w:Math.max(20,W-2*t),d:4,h:Math.max(20,H-2*t)}
- );
- else parts.push(
-  {x,y,z,w:W,d:t,h:H},{x,y:y+D-t,z,w:W,d:t,h:H},
-  {x,y:y+t,z,w:W,d:Math.max(20,D-2*t),h:t},{x,y:y+t,z:z+H-t,w:W,d:Math.max(20,D-2*t),h:t},
-  {x:wall==='B'?x:x+W-4,y:y+t,z:z+t,w:4,d:Math.max(20,D-2*t),h:Math.max(20,H-2*t)}
- );
- const made=parts.map((p,i)=>{const q=meshBox(room,p,mat.clone(),furnitureGroup,'carcass-part',m.id);q.material.userData.owned=true;q.userData.partRole=['SIDE_A','SIDE_B','BOTTOM','TOP','BACK'][i];return q});
+ const ordinaryBase=m.level!=='upper'&&!m.tall&&!(m.kind==='COOKTOP'&&m.oven_appliance_present);
+ const explicitTop=m.top_panel_override==='YES'; // manual engineering override only
+ const hasTop=!ordinaryBase||explicitTop;
+ const push=(spec,role)=>parts.push({spec,role});
+ if(wall==='A'){
+   push({x,y,z,w:t,d:D,h:H},'SIDE_A');push({x:x+W-t,y,z,w:t,d:D,h:H},'SIDE_B');
+   push({x:x+t,y,z,w:Math.max(20,W-2*t),d:D,h:t},'BOTTOM');
+   if(hasTop)push({x:x+t,y,z:z+H-t,w:Math.max(20,W-2*t),d:D,h:t},'TOP');
+   else{
+     // #26: FLAT 100 mm horizontal stretchers, not upright vertical rails.
+     push({x:x+t,y:y+4,z:z+H-t,w:Math.max(20,W-2*t),d:100,h:t},'FRONT_STRETCHER');
+     push({x:x+t,y:y+D-104,z:z+H-t,w:Math.max(20,W-2*t),d:100,h:t},'REAR_STRETCHER');
+   }
+   push({x:x+t,y:y+D-4,z:z+t,w:Math.max(20,W-2*t),d:4,h:Math.max(20,H-2*t)},'BACK');
+ }else{
+   push({x,y,z,w:W,d:t,h:H},'SIDE_A');push({x,y:y+D-t,z,w:W,d:t,h:H},'SIDE_B');
+   push({x,y:y+t,z,w:W,d:Math.max(20,D-2*t),h:t},'BOTTOM');
+   if(hasTop)push({x,y:y+t,z:z+H-t,w:W,d:Math.max(20,D-2*t),h:t},'TOP');
+   else{
+     const isB=wall==='B';
+     push({x:isB?x+W-104:x+4,y:y+t,z:z+H-t,w:100,d:Math.max(20,D-2*t),h:t},'FRONT_STRETCHER');
+     push({x:isB?x+4:x+W-104,y:y+t,z:z+H-t,w:100,d:Math.max(20,D-2*t),h:t},'REAR_STRETCHER');
+   }
+   push({x:wall==='B'?x:x+W-4,y:y+t,z:z+t,w:4,d:Math.max(20,D-2*t),h:Math.max(20,H-2*t)},'BACK');
+ }
+ const made=parts.map(p=>{const q=meshBox(room,p.spec,mat.clone(),furnitureGroup,'carcass-part',m.id);q.material.userData.owned=true;q.userData.partRole=p.role;return q});
  addCarcassShelves(room,m,mat);
  return made;
 }
