@@ -200,11 +200,11 @@ function addLegs(room,m){
  if(!(window.BizetR10Rules?.requiresFloorSupports?.(m)??(m.level!=='upper'&&!m.freestanding&&m.kind!=='FILLER'&&Number(m.z)>0)))return;
  const h=Math.max(40,+m.z||100),recess=plinthRecess(),wall=m.wall||'A';
  if(wall==='A'){
-   const ys=[+m.y+recess+14,Math.max(+m.y+recess+14,+m.y+ +m.d-56)];
+   const ys=[+m.y+recess+38,Math.max(+m.y+recess+38,+m.y+ +m.d-56)]; // leg front >= plinth back + cylinder radius + clearance
    [0.16,0.84].forEach(ax=>ys.forEach(y=>addSupportLeg(room,+m.x+(+m.w)*ax,y,h,m.id,recess)));
  }else{
    const front=wall==='B'?+m.x+ +m.w:+m.x;
-   const xs=wall==='B'?[front-recess-14,+m.x+28]:[front+recess+14,+m.x+ +m.w-28];
+   const xs=wall==='B'?[front-recess-38,+m.x+28]:[front+recess+38,+m.x+ +m.w-28]; // keep physical cylinder behind plinth
    [0.16,0.84].forEach(ay=>xs.forEach(x=>addSupportLeg(room,x,+m.y+(+m.d)*ay,h,m.id,recess)));
  }
 }
