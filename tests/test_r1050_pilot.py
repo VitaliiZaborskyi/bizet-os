@@ -19,7 +19,7 @@ def test_r1050_app_and_current_assets_are_wired():
     for asset in [
         "/static/r1050.css?v=1051",
         "/static/production-r1050.js?v=1051",
-        "/static/kitchen-webgl-r1050.js?v=20261015",
+        "/static/kitchen-webgl-r1050.js?v=20261020r1054",
         "/static/workspace-r1050.js?v=20261011",
         "/static/ua-ui-r1050.js?v=1051",
     ]:
@@ -27,7 +27,7 @@ def test_r1050_app_and_current_assets_are_wired():
     for asset in [
         "/static/production-r1050.js?v=1051",
         "/static/grande-r1050.css?v=20261011b",
-        "/static/grande-r1050.js?v=20261011b",
+        "/static/grande-r1050.js?v=20261020r1054",
         "/static/ua-ui-r1050.js?v=1051",
     ]:
         assert asset in grande
