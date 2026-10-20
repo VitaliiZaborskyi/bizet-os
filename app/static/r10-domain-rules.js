@@ -133,6 +133,53 @@
     return m.level!=='upper'&&!m.freestanding&&m.kind!=='FILLER'&&!m.wall_mounted&&!m.suspended&&!m.console_mount&&Number(m.z)>0;
   }
   function requiresCommonPlinth(m={}){return requiresFloorSupports(m)}
+  // R10.5.5 #27–#28: conservative PILOT geometry guard, NOT a BLUM catalogue profile.
+  // Approved hardware series, plate projections and bore templates remain HUMAN OPEN.
+  const R1055_SHELF_RULES=Object.freeze({
+    STEP_MM:64,SHELF_THICKNESS_MM:18,EDGE_CLEARANCE_MM:38,
+    HINGE_CLEARANCE_PROXY_MM:60,MIN_HINGE_SPACING_PROXY_MM:120,
+    classification:'PILOT_NO_MANUFACTURING_CERTIFICATION'
+  });
+  function fixedShelfCenters(m={}){
+    const h=Number(m.h)||0,z=Number(m.z)||0,t=18;
+    const count=Math.max(0,Math.min(4,Number(m.shelf_count??(m.level==='upper'?1:1))||0));
+    const overrides=Array.isArray(m.shelf_z_overrides_mm)?m.shelf_z_overrides_mm:[];
+    return Array.from({length:count},(_,i)=>{
+      const natural=z+t+(h-2*t)*(i+1)/(count+1);
+      return Number.isFinite(Number(overrides[i]))&&overrides[i]!==null?Number(overrides[i]):natural;
+    });
+  }
+  function planHingePositions(m={},shelfCenters=fixedShelfCenters(m)){
+    const z=Number(m.z)||0,h=Number(m.h)||0;
+    const manual=Number(m.hinge_count),nominal=manual>=2&&manual<=6?manual:h>1100?3:2;
+    const ends=Number(m.kind==='SINK'?150:100),minGap=R1055_SHELF_RULES.MIN_HINGE_SPACING_PROXY_MM;
+    if(h<=2*ends||!Number.isFinite(h))return{ok:false,positions:[],count:nominal,reason:'HARD_GEOMETRY_INVALID'};
+    const min=z+ends,max=z+h-ends,placed=[];
+    for(let i=0;i<nominal;i++){
+      const target=min+(max-min)*i/Math.max(1,nominal-1),candidates=[];
+      for(let d=0;d<=max-min;d+=16){candidates.push(target+d);if(d)candidates.push(target-d)}
+      const valid=candidates.find(y=>y>=min&&y<=max&&shelfCenters.every(sz=>Math.abs(y-sz)>=R1055_SHELF_RULES.HINGE_CLEARANCE_PROXY_MM)&&placed.every(py=>Math.abs(y-py)>=minGap));
+      if(valid===undefined)return{ok:false,positions:placed,count:nominal,reason:'HINGE_SHELF_COLLISION_STOP',catalog:'UNCONFIRMED'};
+      placed.push(Math.round(valid));
+    }
+    return{ok:true,positions:placed,count:nominal,catalog:'UNCONFIRMED_PROXY',classification:'PILOT'};
+  }
+  function allowedShelfPositions(m={},index=0){
+    const current=fixedShelfCenters(m),z=Number(m.z)||0,h=Number(m.h)||0,t=R1055_SHELF_RULES.SHELF_THICKNESS_MM;
+    if(index<0||index>=current.length||m.shelf_type!=='FIXED')return[];
+    const lo=z+t+R1055_SHELF_RULES.EDGE_CLEARANCE_MM,hi=z+h-t-R1055_SHELF_RULES.EDGE_CLEARANCE_MM;
+    const prev=index>0?current[index-1]+t+R1055_SHELF_RULES.EDGE_CLEARANCE_MM:lo;
+    const next=index<current.length-1?current[index+1]-t-R1055_SHELF_RULES.EDGE_CLEARANCE_MM:hi;
+    const result=[];
+    for(let n=-12;n<=12;n++){
+      const proposed=Math.round(current[index]+n*R1055_SHELF_RULES.STEP_MM);
+      if(proposed<Math.max(lo,prev)||proposed>Math.min(hi,next))continue;
+      const centers=current.map((v,i)=>i===index?proposed:v);
+      if(!planHingePositions(m,centers).ok)continue;
+      result.push({z_mm:proposed,delta_mm:n*R1055_SHELF_RULES.STEP_MM});
+    }
+    return result;
+  }
   const CLOTHES_ROD_RULES=Object.freeze({
     CENTER_BELOW_UPPER_SHELF_MM:80,
     ANCHOR:'NEAREST_UPPER_SHELF_UNDERSIDE',
@@ -207,6 +254,10 @@
     appliedHandleOffset,
     requiresFloorSupports,
     requiresCommonPlinth,
+    r1055ShelfRules:R1055_SHELF_RULES,
+    fixedShelfCenters,
+    planHingePositions,
+    allowedShelfPositions,
     cornerRules:CORNER_RULES,
     compositionRules:COMPOSITION_RULES,
     ovenRules:OVEN_RULES,
