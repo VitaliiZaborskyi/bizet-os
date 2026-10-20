@@ -15,7 +15,7 @@ const T={
 ru:{
  room:'Помещение',size:'Габариты + материалы',drawers:'Ящики',shelves:'Полки',equipment:'Оснащение',lighting:'Освещение',production:'Производство',
  add:'＋ Добавить ещё изделие',price:'Стоимость',position:'Позиция',view:'VIEW',edit:'EDIT',
- hint:'Обертання за рухом пальця · pinch — масштаб · утримання виробу — рух уздовж стіни',
+ hint:'Один палец — вращение камеры · двумя — масштаб · ⇆ в EDIT — движение изделия',
  move:'Перемещение вдоль стены',carcass:'Корпус',fronts:'Фасады',drawerLayer:'Ящики',shelfLayer:'Полки',hardware:'Фурнитура',fasteners:'Крепёж',holes:'Сверловка',lightLayer:'Освещение',dimensions:'Размеры',
  wallWidth:'Ширина стены, мм',roomDepth:'Глубина помещения, мм',roomHeight:'Высота помещения, мм',
  width:'Ширина, мм',height:'Высота, мм',depth:'Глубина, мм',materials:'Материалы',bodyMat:'Корпус · скандинавское белое дерево',accentMat:'Фасад / акцент · сумеречный голубой',thickness:'Толщина основных деталей: 18 мм',
@@ -35,7 +35,7 @@ ru:{
 en:{
  room:'Room',size:'Dimensions + materials',drawers:'Drawers',shelves:'Shelves',equipment:'Equipment',lighting:'Lighting',production:'Production',
  add:'＋ Add another product',price:'Price',position:'Position',view:'VIEW',edit:'EDIT',
- hint:'Rotation follows the pointer · pinch to zoom · hold product to move along wall',
+ hint:'One finger orbits the camera · pinch zooms · ⇆ in EDIT moves the product',
  move:'Move along wall',carcass:'Carcass',fronts:'Fronts',drawerLayer:'Drawers',shelfLayer:'Shelves',hardware:'Hardware',fasteners:'Fasteners',holes:'Drilling',lightLayer:'Lighting',dimensions:'Dimensions',
  wallWidth:'Wall width, mm',roomDepth:'Room depth, mm',roomHeight:'Room height, mm',
  width:'Width, mm',height:'Height, mm',depth:'Depth, mm',materials:'Materials',bodyMat:'Carcass · Scandinavian white wood',accentMat:'Front / accent · twilight blue',thickness:'Main part thickness: 18 mm',
@@ -54,7 +54,7 @@ en:{
 ua:{
  room:'Приміщення',size:'Габарити + матеріали',drawers:'Шухляди',shelves:'Полиці',equipment:'Оснащення',lighting:'Освітлення',production:'Виробництво',
  add:'＋ Додати ще виріб',price:'Вартість',position:'Позиція',view:'VIEW',edit:'EDIT',
- hint:'Обертання за рухом пальця · pinch — масштаб · утримання виробу — рух уздовж стіни',
+ hint:'Один палець — обертання камери · два — масштаб · ⇆ в EDIT — переміщення виробу',
  move:'Рух уздовж стіни',carcass:'Корпус',fronts:'Фасади',drawerLayer:'Шухляди',shelfLayer:'Полиці',hardware:'Фурнітура',fasteners:'Кріплення',holes:'Свердління',lightLayer:'Освітлення',dimensions:'Розміри',
  wallWidth:'Ширина стіни, мм',roomDepth:'Глибина приміщення, мм',roomHeight:'Висота приміщення, мм',
  width:'Ширина, мм',height:'Висота, мм',depth:'Глибина, мм',materials:'Матеріали',bodyMat:'Корпус · скандинавське біле дерево',accentMat:'Фасад / акцент · сутінковий блакитний',thickness:'Товщина основних деталей: 18 мм',
@@ -667,7 +667,9 @@ function applyLanguage(){
  const names=['room','size','drawers','shelves','equipment','lighting','production'];
  [...$('tools').children].forEach((b,i)=>b.querySelector('span').textContent=tr(names[i]));
  $('addProduct').textContent=tr('add');$('hint').textContent=tr('hint');$('priceLabel').textContent=tr('price');
- $('viewMode').textContent=tr('view');$('editMode').textContent=tr('edit');layerPanel();
+ $('viewMode').textContent=tr('view');$('editMode').textContent=tr('edit');
+ const dragBtn=$('dragObject');if(dragBtn){dragBtn.title=lang==='ua'?'Явний режим переміщення виробу':lang==='en'?'Explicit product movement mode':'Явный режим перемещения изделия';dragBtn.setAttribute('aria-label',dragBtn.title)}
+ layerPanel();
  if(activePanel)openPanel(activePanel);updatePrice();
 }
 
