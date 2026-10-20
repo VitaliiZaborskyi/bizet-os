@@ -15,7 +15,7 @@ def test_r1050_app_and_current_assets_are_wired():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
     workspace = read("workspace-r8.html")
     grande = read("grande-r1046.html")
-    assert 'version="R10.5.1"' in main
+    assert 'version="R10.5.6"' in main
     for asset in [
         "/static/r1050.css?v=1056",
         "/static/production-r1050.js?v=20261021r1056",
