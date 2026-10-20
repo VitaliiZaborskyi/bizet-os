@@ -42,6 +42,7 @@ if(THREE.EffectComposer&&THREE.RenderPass&&THREE.SAOPass){
 }
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
 let selectable=[],movables=[],lastOptions=null,lastMode='',lastRoomKey='',down=null,motionEnabled=true,deepShadow=false;
+let r1056LightingVisible=true;
 const openState=new Map();
 
 function ownMat(p){const m=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,...p});m.userData.owned=true;return m}
@@ -699,6 +700,37 @@ function addDimension(room,a,b,label,pos,focus=false){const g=new THREE.BufferGe
 function lightingRgb(k){
  return k===2700?'#ffce91':k===4000?'#f3f5ff':'#ffe1b2';
 }
+// Controlled near-source light falloff from selected Kelvin to full transparency.
+// Diffuser and glow remain inside the carcass and obey depth testing.
+const r1056GlowTextures=new Map();
+function makeR1056Glow(kelvin,reverse=false){
+ const key=kelvin+'_'+reverse;if(r1056GlowTextures.has(key))return r1056GlowTextures.get(key);
+ const c=document.createElement('canvas');c.width=256;c.height=32;const x=c.getContext('2d');
+ const hex=lightingRgb(kelvin),r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+ const gradient=x.createLinearGradient(reverse?256:0,0,reverse?0:256,0);
+ gradient.addColorStop(0,'rgba('+r+','+g+','+b+',0.52)');
+ gradient.addColorStop(.35,'rgba('+r+','+g+','+b+',0.20)');
+ gradient.addColorStop(1,'rgba('+r+','+g+','+b+',0)');
+ x.fillStyle=gradient;x.fillRect(0,0,256,32);
+ const texture=new THREE.CanvasTexture(c);texture.encoding=THREE.sRGBEncoding;
+ r1056GlowTextures.set(key,texture);return texture;
+}
+function addR1056Glow(room,spec,module,kelvin,partKey){
+ const wall=module.wall||'A',reverse=String(module.facade_openings?.[0]||'LEFT').toUpperCase()==='RIGHT';
+ const glowLength=Math.max(70,Math.min(180,(wall==='A'?+module.w:+module.d)*.42));
+ const height=Math.max(20,spec.h-10);
+ const mat=new THREE.MeshBasicMaterial({map:makeR1056Glow(kelvin,reverse),transparent:true,depthTest:true,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1});
+ mat.userData.owned=true;
+ const mesh=new THREE.Mesh(new THREE.PlaneGeometry(glowLength,height),mat);
+ const start=wall==='A'?+spec.x:+spec.y;
+ const runCenter=start+(reverse?-glowLength/2:glowLength/2);
+ const pos=wall==='A'
+   ?roomToWorld(room,runCenter,+module.y+(+module.d)/2, +spec.z+spec.h/2)
+   :roomToWorld(room,+module.x+(+module.w)/2,runCenter,+spec.z+spec.h/2);
+ mesh.position.copy(pos);if(wall!=='A')mesh.rotation.y=Math.PI/2;
+ mesh.userData={cat:'led-gradient',moduleId:module.id,partRole:'R1056_KELVIN_GLOW_'+partKey,visualizationProxy:true,productionProxy:false};
+ lightingGroup.add(mesh);
+}
 function addInternalLED(room,spec,module,kelvin,partKey){
  const led=ownMat({color:lightingRgb(kelvin),emissive:lightingRgb(kelvin),emissiveIntensity:.65,roughness:.48,metalness:0,depthTest:true,depthWrite:true});
  const aluminum=ownMat({color:'#899094',roughness:.4,metalness:.6,depthTest:true,depthWrite:true});
@@ -707,6 +739,7 @@ function addInternalLED(room,spec,module,kelvin,partKey){
  if(module.wall==='A'){line.x+=3;line.w=Math.max(3,line.w-6);line.d=4;line.y+=3}
  else{line.y+=3;line.d=Math.max(3,line.d-6);line.w=4;line.x+=3}
  const l=meshBox(room,line,led,lightingGroup,'led-diffuser',module.id);l.userData.visualizationProxy=true;l.userData.kelvin=kelvin;l.userData.partRole='LED_DIFFUSER_'+partKey;
+ addR1056Glow(room,spec,module,kelvin,partKey);
 }
 function buildLighting(room,mods){
  clearGroup(lightingGroup);
@@ -760,6 +793,7 @@ function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareG
  mods.forEach(buildOne);
  if(!focus){addWorktopAndPlinth(room,mods)}
  buildLighting(room,mods); // hidden behind solid front in VIEW, exposed in isolation
+ lightingGroup.visible=r1056LightingVisible;
  if(options.showDimensions!==false){if(focus&&mods[0]){const m=mods[0],safe=360;addDimension(room,[m.x,+m.y+ +m.d+safe,m.z+m.h+100],[+m.x+ +m.w,+m.y+ +m.d+safe,+m.z+ +m.h+100],Math.round(+m.w)+' mm',[+m.x+ +m.w/2,+m.y+ +m.d+safe+140,+m.z+ +m.h+220],true);addDimension(room,[+m.x+ +m.w+safe,+m.y+ +m.d+120,m.z],[+m.x+ +m.w+safe,+m.y+ +m.d+120,+m.z+ +m.h],Math.round(+m.h)+' mm',[+m.x+ +m.w+safe+160,+m.y+ +m.d+120,+m.z+ +m.h/2],true)}
  else{const L=+room.lengthMm||6000,D=+room.depthMm||4200,H=+room.heightMm||2800,safe=520;addDimension(room,[0,D+safe,80],[L,D+safe,80],Math.round(L)+' mm',[L/2,D+safe+180,180]);addDimension(room,[L+safe,D+safe*.35,0],[L+safe,D+safe*.35,H],Math.round(H)+' mm',[L+safe+200,D+safe*.35,H/2])}}
  body.dispose();front.dispose();
@@ -804,5 +838,5 @@ renderer.domElement.addEventListener('pointerup',e=>{
 });
 function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
 window.BizetPilot3D.drawKitchenScene=(canvas,options={})=>{const legacy=legacyDraw(canvas,options);try{draw(options)}catch(e){console.error('R10.5.1 kitchen WebGL fallback',e);host.style.display='none';canvas.style.opacity='1'}return legacy};
-window.BizetKitchenWebGL={version:'R10.5.1+FURNITURE-INTERACTION-PILOT-20261011',renderer,scene,camera,controls,host,composer,saoPass,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
+window.BizetKitchenWebGL={version:'R10.5.6',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
 })();
