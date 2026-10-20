@@ -120,8 +120,26 @@ const key=new THREE.DirectionalLight(0xffffff,.52);key.position.set(-1800,3300,2
 key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-2600;key.shadow.camera.right=2600;key.shadow.camera.top=3200;key.shadow.camera.bottom=-500;key.shadow.camera.near=100;key.shadow.camera.far=8500;scene.add(key);
 const fill=new THREE.DirectionalLight(0xd9e5ff,.20);fill.position.set(2600,1800,1200);scene.add(fill);
 
-const roomGroup=new THREE.Group(), modelGroup=new THREE.Group(), dimensionGroup=new THREE.Group(), techGroup=new THREE.Group(), ledGroup=new THREE.Group();
-scene.add(roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup);
+const roomGroup=new THREE.Group(), modelGroup=new THREE.Group(), dimensionGroup=new THREE.Group(), techGroup=new THREE.Group(), ledGroup=new THREE.Group(), sceneCopiesGroup=new THREE.Group();
+scene.add(roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,sceneCopiesGroup);
+const GRANDE_COPIES_KEY='bizet_grande_scene_copies_r1056';
+let extraGrandeCount=Math.min(1,Math.max(0,Number(localStorage.getItem(GRANDE_COPIES_KEY))||0));
+function clearSecondaryScene(){while(sceneCopiesGroup.children.length)sceneCopiesGroup.remove(sceneCopiesGroup.children[0])}
+function syncSecondaryScene(){
+ clearSecondaryScene();
+ if(!extraGrandeCount)return;
+ const safe=Number(S.roomD)>=Number(S.d)*2+120;
+ if(!safe){console.warn('R10.5.6: second Grande cannot fit room depth');return}
+ const clone=modelGroup.clone(true);
+ // Reuse exact same generated parametric geometry, without sharing mutable transforms.
+ // Geometry is shared: remove clones BEFORE main mesh disposals on next rebuild.
+ clone.rotation.y=Math.PI;
+ clone.position.set(Number(S.w)/2,0,Number(S.roomD)/2-50);
+ clone.userData={cat:'spatial-instance',instanceId:'GRANDE-2',
+   engineeringStatus:'SCENE_ONLY_EXPORT_BLOCKED',layoutSource:'EXACT_GENERATED_GRANDE'};
+ sceneCopiesGroup.add(clone);
+}
+
 
 const bodyMat=new THREE.MeshStandardMaterial({color:S.bodyColor,roughness:.58,metalness:0,transparent:false,depthTest:true,depthWrite:true});
 const accentMat=new THREE.MeshStandardMaterial({color:S.accentColor,roughness:.48,metalness:0,transparent:false,depthTest:true,depthWrite:true});
@@ -234,6 +252,7 @@ function makeDetail(code,name,length,width,thick,material,materialId,klass='18',
  return{code,name,length:Math.round(length*10)/10,width:Math.round(width*10)/10,thick,material,materialId,klass,qty,group,drillings};
 }
 function buildModel(){
+ clearSecondaryScene();
  disposeGroup(modelGroup);disposeGroup(ledGroup);disposeGroup(dimensionGroup);
  furnitureMeshes=[];categoryMeshes={};drillOps=[];fastenerOps=[];
  bodyMat.color.set(S.bodyColor);accentMat.color.set(S.accentColor);
@@ -363,6 +382,7 @@ function buildModel(){
  buildDimensions();
  updateGrandePlacement();
  applyVisibility();
+ syncSecondaryScene();
  updatePrice();
 }
 
@@ -607,7 +627,8 @@ function openPanel(name){
 }
 function bindPanel(){
  $('panelBody').querySelectorAll('[data-key]').forEach(el=>{
-   const event=el.type==='color'||el.type==='number'?'input':'change';
+   // iPhone: never replace an actively edited numeric input. Commit only on change/blur.
+   const event=el.type==='color'?'input':'change';
    el.addEventListener(event,()=>{
      const k=el.dataset.key;let v=el.type==='number'?Number(el.value):el.type==='checkbox'?el.checked:el.value;
      if(k==='rodEnabled'||k==='ledEnabled'||k==='lowerZoneEnabled')v=v==='1'||v===1||v===true;
@@ -710,6 +731,7 @@ function projectXml(){
 }
 function toast(msg){const e=document.createElement('div');e.className='toast';e.textContent=msg;$('stage').appendChild(e);setTimeout(()=>e.remove(),2400)}
 function downloadExport(){
+ if(extraGrandeCount){toast(lang==='ua'?'STOP: експорт двох виробів ще не верифіковано.':lang==='en'?'STOP: two-item manufacturing export is not verified.':'STOP: экспорт сцены с двумя шкафами ещё не проверен.');return}
  if(S.exportFormat==='PROJECT'&&window.BizetProductionR1050?.exportGrande){window.BizetProductionR1050.exportGrande();return}
  if(S.exportFormat==='PROJECT'){download('Grande_BIZET_PILOT.project','application/xml;charset=utf-8',projectXml());return}
  toast(tr('otherPending'));
@@ -740,7 +762,14 @@ $('viewMode').onclick=()=>{stopObjectDrag(false);pauseIdleOrbit();document.body.
 $('editMode').onclick=()=>{pauseIdleOrbit();document.body.classList.remove('view-mode');$('editMode').classList.add('active');$('viewMode').classList.remove('active');syncObjectDragButton()};
 [...$('tools').children].forEach(b=>b.onclick=()=>openPanel(b.dataset.panel));
 $('panelClose').onclick=closePanel;
-$('addProduct').onclick=()=>location.href='/wardrobes?manufacturer=treeart&add=1';
+$('addProduct').onclick=()=>{
+ if(extraGrandeCount>=1){toast(lang==='ua'?'У сцені вже два вироби. Багатооб’єктне редагування — у наступному етапі.':lang==='en'?'This pilot supports two products in one room. Multi-item editing is next.':'В сцене уже два изделия. Редактирование нескольких объектов — следующий этап.');return}
+ if(Number(S.roomD)<Number(S.d)*2+120){
+   toast(lang==='ua'?'Для другої шафи збільште глибину приміщення.':lang==='en'?'Increase room depth to fit a second cabinet.':'Увеличьте глубину комнаты для второго шкафа.');return
+ }
+ extraGrandeCount=1;localStorage.setItem(GRANDE_COPIES_KEY,'1');
+ syncSecondaryScene();toast(lang==='ua'?'Друга шафа додана в кімнату (експорт заблоковано).':lang==='en'?'Second cabinet added to room (production export blocked).':'Второй шкаф добавлен в комнату (производственный экспорт заблокирован).');
+};
 $('back').onclick=()=>location.href='/wardrobes?manufacturer=treeart';
 // Language selection is centralized in shared three-dot menu.
 window.addEventListener('bizet:languagechange',e=>{const next=e.detail?.language;if(['ua','ru','en'].includes(next)){lang=next;applyLanguage()}});
@@ -749,7 +778,7 @@ $('currencySelect').onchange=e=>{S.currency=e.target.value;updatePrice()};
 $('orderClose').onclick=()=>$('orderDialog').close();
 
 buildRoom();buildModel();resize();frameModel();layerPanel();applyLanguage();syncObjectDragButton();loadFx();
-window.BizetGrandeR1050Bridge={version:'R10.5.5',state:S,scene,renderer,camera,controls,roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,hemi,key,fill,
+window.BizetGrandeR1050Bridge={version:'R10.5.6',state:S,scene,renderer,camera,controls,roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,hemi,key,fill,
  getDetails:()=>detailsCache,getDrills:()=>drillOps,getFasteners:()=>fastenerOps,getFurniture:()=>furnitureMeshes,getCategories:()=>categoryMeshes,
  buildModel,buildRoom,buildDimensions,applyVisibility,frameModel,renderTechnical,openPanel,closePanel,toast};
 })();
