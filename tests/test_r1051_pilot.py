@@ -82,7 +82,8 @@ def test_r1051_handles_face_facade_and_stay_inside_hinged_front():
     viewer=read("kitchen-webgl-r1050.js")
     handle=viewer[viewer.index("function addHandleBar"):viewer.index("function frontVector")]
     front=viewer[viewer.index("function makeFront"):viewer.index("function addLegs")]
-    assert "new THREE.BoxGeometry(railLength,railHeight,railDepth)" in handle\n    assert "oriented.rotation.y=yaw" in handle
+    assert "new THREE.BoxGeometry(railLength,railHeight,railDepth)" in handle
+    assert "oriented.rotation.y=yaw" in handle
     assert "const handleHalf=62.5" in front
     assert "spec.h/2-40-handleHalf" in front
 
