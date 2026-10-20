@@ -14,7 +14,7 @@ def test_r1051_current_version_and_assets():
     workspace=read("workspace-r8.html")
     index=read("index.html")
     grande=read("grande-r1046.html")
-    assert 'version="R10.5.1"' in main
+    assert 'version="R10.5.6"' in main
     assert '/static/r1051.css?v=1051' in workspace
     assert '/static/r1051.css?v=1051' in index
     assert '/static/r1051.css?v=1051' in grande
