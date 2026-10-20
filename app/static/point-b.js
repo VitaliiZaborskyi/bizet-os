@@ -319,7 +319,7 @@
   }
 
   function countHardware(modules,details){
-    const H={CONFIRMAT:0,MINIFIX:0,DOWEL:0,RAFIX:0,SCREW:0,HINGE:0,HINGE_CUP:0,LEG:0,LEG_CLIP:0,HANDLE:0,SHELF_SUPPORT:0,DRAWER_SLIDE:0,METAL_DRAWER:0,EURO_SCREW:0,LIFT_MECH:0,HOLE:0,GROOVE_M:0,HANGER:0,HANGER_PLATE:0,WALL_DOWEL:0};
+    const H={CONFIRMAT:0,MINIFIX:0,DOWEL:0,RAFIX:0,SCREW:0,HINGE:0,HINGE_CUP:0,LEG:0,LEG_CLIP:0,HANDLE:0,SHELF_SUPPORT:0,DRAWER_SLIDE:0,METAL_DRAWER:0,EURO_SCREW:0,LIFT_MECH:0,HOLE:0,GROOVE_M:0,HANGER:0,HANGER_PLATE:0,WALL_DOWEL:0,PROFILE_HANDLE:0};
     modules.filter(m=>m.wall==='A').forEach(m=>{
       const D=depth(m),perSide=fastenersPerSide(D);
       if(m.level!=='upper'&&!m.tall&&!['DISHWASHER','FRIDGE','FILLER'].includes(m.kind)){
@@ -330,6 +330,11 @@
         else addedConfirmats=4*perSide+4;
         H.CONFIRMAT+=addedConfirmats;H.HOLE+=addedConfirmats;
         const legs=runW(m)>700?6:4;H.LEG+=legs;H.LEG_CLIP+=Math.ceil(legs/2);H.SCREW+=legs*4+Math.ceil(legs/2)*2;
+      }
+      // Owner #20: include supports and clips for tall floor furniture, incl. built-in fridge.
+      if(m.tall&&(window.BizetR10Rules?.requiresFloorSupports?.(m)??(!m.freestanding&&Number(m.z)>0))){
+        const legs=runW(m)>700?6:4;H.LEG+=legs;H.LEG_CLIP+=Math.ceil(legs/2);
+        H.SCREW+=legs*4+Math.ceil(legs/2)*2;
       }
       if(m.level==='upper'){
         const hangerSets=(m.kind!=='UPPER_TOP'&&Number(m.h)>900)?2:1;
@@ -358,7 +363,10 @@
       }else if(!drawerFront&&!dishwasher){
         const each=Math.max(h,w)>900?4:2;H.HINGE+=each*qty;H.HINGE_CUP+=each*qty;
       }
-      H.HANDLE+=qty;
+      const owner=modules.find(m=>String(m.number)===String(d.code).split('.')[0]);
+      const policy=window.BizetR10Rules?.resolveModuleHandle?.(owner||{},window.BizetModelRuntime?.getInputs?.()||{});
+      if(!policy||policy.applied)H.HANDLE+=qty;
+      else if(policy.profile)H.PROFILE_HANDLE+=qty; // supplier profile remains unresolved
     });
     const adjustable=details.filter(d=>/Shelf/i.test(d.name)&&/регули/i.test((d.processing||'')+(d.note||'')));
     H.SHELF_SUPPORT+=adjustable.reduce((sum,d)=>sum+d.qty*4,0);
@@ -381,7 +389,7 @@
       else areas.CARCAS+=a;
     });
     const plinthGroups={};
-    modules.filter(m=>m.level!=='upper'&&!m.freestanding&&m.kind!=='FRIDGE'&&Number(m.z)>0).forEach(m=>{
+    modules.filter(m=>window.BizetR10Rules?.requiresCommonPlinth?.(m)??(m.level!=='upper'&&!m.freestanding&&m.kind!=='FILLER'&&Number(m.z)>0)).forEach(m=>{
       const wall=m.wall||'A';(plinthGroups[wall]||(plinthGroups[wall]=[])).push(m);
     });
     const plinthPlans=includePlinth?Object.values(plinthGroups).map(group=>window.BizetR10Rules?.plinthRunPlan?.(group)||{span:0,segments:[],joints:[]}):[];
@@ -411,7 +419,7 @@
     add('Материалы','ЛДСП 18 Drawer',areas.DRAWER,'м²',PRICES.CARCAS_M2);
     add('Материалы','ЛДСП 18 Facade',areas.FACADE,'м²',PRICES.FACADE_M2);
     add('Материалы','HDF 3 mm',areas.HDF,'м²',PRICES.HDF_M2);
-    if(areas.PLINTH>0)add('Материалы','Цоколь',areas.PLINTH,'м²',PRICES.CARCAS_M2,`Высота по проекту: ${plinthHeight} мм · сегментов: ${plinthPieces}; встроенный холодильник обходится`);
+    if(areas.PLINTH>0)add('Материалы','Цоколь',areas.PLINTH,'м²',PRICES.CARCAS_M2,`Высота по проекту: ${plinthHeight} мм · сегментов: ${plinthPieces}; включая встроенный холодильник`);
     if(plinthConnectors>0)add('Фурнитура','Соединитель цоколя универсальный',plinthConnectors,'шт',PRICES.PLINTH_CONNECTOR,'Один тип для прямого и углового стыка; 1 шт на стык');
     add('Материалы','PVC 22×0.8',edgeM,'п.м',PRICES.EDGE_MATERIAL_M,'Эмпирика: площадь плит × 6 + 20%');
     modules.filter(m=>m.kind==='SINK'&&m.sink_tray_default).forEach(m=>{
@@ -426,10 +434,13 @@
     add('Работы','Чашка петли',hw.HINGE_CUP,'шт',PRICES.HINGE_CUP);
     add('Работы','Пазование',hw.GROOVE_M,'п.м',PRICES.GROOVE_M);
     add('Фурнитура','Петля BLUM + ответная планка',hw.HINGE,'компл',PRICES.HINGE_BLUM);
-    const legHeight=Math.max(0,...modules.filter(m=>m.level!=='upper'&&!m.tall).map(m=>Math.round(Number(m.z)||0)));
+    const legHeight=Math.max(0,...modules.filter(m=>window.BizetR10Rules?.requiresFloorSupports?.(m)??(m.level!=='upper'&&!m.freestanding)).map(m=>Math.round(Number(m.z)||0)));
     add('Фурнитура',`Ножка H ${legHeight||100} мм`,hw.LEG,'шт',PRICES.LEG,'Высота выбирается от цоколя проекта');
     add('Фурнитура','Клипса цоколя',hw.LEG_CLIP,'шт',PRICES.LEG_CLIP);
-    add('Фурнитура','Ручка',hw.HANDLE,'шт',PRICES.HANDLE);
+    add('Фурнитура','Ручка накладная',hw.HANDLE,'шт',PRICES.HANDLE,'Только STANDARD; петли противоположно ручке или ручка по центру');
+    if(hw.PROFILE_HANDLE)add('Фурнитура','Профильная система ручки / Gola',hw.PROFILE_HANDLE,'зона',0,'OPEN: система/длина/артикул по supplier profile, не рассчитывать как накладную ручку');
+    const integratedGrilles=modules.filter(m=>m.kind==='FRIDGE'&&!m.freestanding).length;
+    if(integratedGrilles)add('Фурнитура','Вентиляционная решётка цоколя 460×60 мм',integratedGrilles,'шт',0,'HARD геометрия; поставщик/артикул/цена OPEN');
     if(hw.M4_HANDLE)add('Крепёж','Винт ручки M4×25',hw.M4_HANDLE,'шт',0,'OPEN — цена расходника не заморожена; 2 шт на ручку');
     add('Фурнитура','Полкодержатель',hw.SHELF_SUPPORT,'шт',PRICES.SHELF_SUPPORT);
     add('Крепёж','Конфирмат',hw.CONFIRMAT,'шт',PRICES.CONFIRMAT);
