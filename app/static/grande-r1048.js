@@ -15,7 +15,7 @@ const T={
 ru:{
  room:'Помещение',size:'Габариты + материалы',drawers:'Ящики',shelves:'Полки',equipment:'Оснащение',lighting:'Освещение',production:'Производство',
  add:'＋ Добавить ещё изделие',price:'Стоимость',position:'Позиция',view:'VIEW',edit:'EDIT',
- hint:'Один палец — вращение камеры · двумя — масштаб · ⇆ в EDIT — движение изделия',
+ hint:'Один палец — камера · удержание шкафа в EDIT — перемещение · стрелки — поворот 45°',
  move:'Перемещение вдоль стены',carcass:'Корпус',fronts:'Фасады',drawerLayer:'Ящики',shelfLayer:'Полки',hardware:'Фурнитура',fasteners:'Крепёж',holes:'Сверловка',lightLayer:'Освещение',dimensions:'Размеры',
  wallWidth:'Ширина стены, мм',roomDepth:'Глубина помещения, мм',roomHeight:'Высота помещения, мм',
  width:'Ширина, мм',height:'Высота, мм',depth:'Глубина, мм',materials:'Материалы',bodyMat:'Корпус · скандинавское белое дерево',accentMat:'Фасад / акцент · сумеречный голубой',thickness:'Толщина основных деталей: 18 мм',
@@ -35,7 +35,7 @@ ru:{
 en:{
  room:'Room',size:'Dimensions + materials',drawers:'Drawers',shelves:'Shelves',equipment:'Equipment',lighting:'Lighting',production:'Production',
  add:'＋ Add another product',price:'Price',position:'Position',view:'VIEW',edit:'EDIT',
- hint:'One finger orbits the camera · pinch zooms · ⇆ in EDIT moves the product',
+ hint:'One finger orbits camera · hold cabinet in EDIT to move · arrows rotate 45°',
  move:'Move along wall',carcass:'Carcass',fronts:'Fronts',drawerLayer:'Drawers',shelfLayer:'Shelves',hardware:'Hardware',fasteners:'Fasteners',holes:'Drilling',lightLayer:'Lighting',dimensions:'Dimensions',
  wallWidth:'Wall width, mm',roomDepth:'Room depth, mm',roomHeight:'Room height, mm',
  width:'Width, mm',height:'Height, mm',depth:'Depth, mm',materials:'Materials',bodyMat:'Carcass · Scandinavian white wood',accentMat:'Front / accent · twilight blue',thickness:'Main part thickness: 18 mm',
@@ -54,7 +54,7 @@ en:{
 ua:{
  room:'Приміщення',size:'Габарити + матеріали',drawers:'Шухляди',shelves:'Полиці',equipment:'Оснащення',lighting:'Освітлення',production:'Виробництво',
  add:'＋ Додати ще виріб',price:'Вартість',position:'Позиція',view:'VIEW',edit:'EDIT',
- hint:'Один палець — обертання камери · два — масштаб · ⇆ в EDIT — переміщення виробу',
+ hint:'Один палець — камера · утримання шафи в EDIT — рух · стрілки — поворот 45°',
  move:'Рух уздовж стіни',carcass:'Корпус',fronts:'Фасади',drawerLayer:'Шухляди',shelfLayer:'Полиці',hardware:'Фурнітура',fasteners:'Кріплення',holes:'Свердління',lightLayer:'Освітлення',dimensions:'Розміри',
  wallWidth:'Ширина стіни, мм',roomDepth:'Глибина приміщення, мм',roomHeight:'Висота приміщення, мм',
  width:'Ширина, мм',height:'Висота, мм',depth:'Глибина, мм',materials:'Матеріали',bodyMat:'Корпус · скандинавське біле дерево',accentMat:'Фасад / акцент · сутінковий блакитний',thickness:'Товщина основних деталей: 18 мм',
@@ -74,6 +74,7 @@ const tr=k=>T[lang]?.[k]||T.ru[k]||k;
 
 const S={
  roomW:3000,roomD:2600,roomH:2800,
+ angleDeg:0,
  w:1100,h:1900,d:500,
  x:placement==='left'?70:placement==='right'?1830:950,
  t:18,drawerT:16.2,backT:3,
@@ -360,6 +361,7 @@ function buildModel(){
  ledGroup.position.copy(modelGroup.position);
  renderTechnical();
  buildDimensions();
+ updateGrandePlacement();
  applyVisibility();
  updatePrice();
 }
@@ -437,23 +439,59 @@ function resize(){
 const ro=new ResizeObserver(resize);ro.observe(host);
 
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-// Pilot #16–#17: a camera drag is never a furniture drag.
-let objectDragMode=false,objectMove=null,activePointers=new Set(),lastUserActivity=performance.now(),idleYawCenter=null;
-const initialFrontYaw=Math.atan2(.72,.95),IDLE_WAIT_MS=4500,IDLE_SWEEP_RAD=.075; // provisional ~4.3 degrees, screenshot limits OPEN
+// #21 Spatial interaction pilot: camera is the default; press-and-hold on a
+// real furniture mesh temporarily arms object translation, plus ±45° controls.
+const PLACEMENT_KEY='bizet_grande_placement_r1055';
+try {const saved=JSON.parse(localStorage.getItem(PLACEMENT_KEY)||'null');if(saved){S.x=Number(saved.x)||S.x;S.angleDeg=Number(saved.angleDeg)||0}} catch(_){}
+const HOLD_MS=460,DRAG_THRESHOLD_PX=9;
+let objectDragMode=false,objectMove=null,holdTimer=null,armedPointer=null,activePointers=new Set(),lastUserActivity=performance.now(),idleYawCenter=null;
+const initialFrontYaw=Math.atan2(.72,.95),IDLE_WAIT_MS=4500,IDLE_SWEEP_RAD=.075;
 function pauseIdleOrbit(){lastUserActivity=performance.now();idleYawCenter=null}
-function syncObjectDragButton(){
- const b=$('dragObject');
- if(!b)return;
- const edit=!document.body.classList.contains('view-mode');
- if(!edit&&objectDragMode){objectDragMode=false;objectMove=null}
- b.hidden=!edit;b.classList.toggle('active',edit&&objectDragMode);b.setAttribute('aria-pressed',String(edit&&objectDragMode));
- controls.enabled=!objectDragMode;
+function rotatedFootprint(deg=S.angleDeg){
+ const rad=deg*Math.PI/180,c=Math.abs(Math.cos(rad)),sn=Math.abs(Math.sin(rad));
+ return {w:S.w*c+S.d*sn,d:S.w*sn+S.d*c};
 }
-$('dragObject')?.addEventListener('click',()=>{
- if(document.body.classList.contains('view-mode'))return;
- objectDragMode=!objectDragMode;objectMove=null;pauseIdleOrbit();syncObjectDragButton();
- $('hint').textContent=objectDragMode?tr('move'):tr('hint');
-});
+function saveGrandePlacement(){
+ localStorage.setItem(PLACEMENT_KEY,JSON.stringify({x:S.x,angleDeg:S.angleDeg}));
+ window.dispatchEvent(new CustomEvent('bizet:spatialchange',{detail:{product:'GRANDE',wall:'A',positionMm:S.x,angleDeg:S.angleDeg,source:'PILOT_LOCAL_PLACEMENT'}}));
+}
+function updateGrandePlacement(){
+ const span=rotatedFootprint(),angle=S.angleDeg*Math.PI/180,cos=Math.cos(angle),sin=Math.sin(angle);
+ S.x=Math.max(0,Math.min(S.x,Math.max(0,S.roomW-span.w)));
+ // Align the rotated bounding footprint to the wall; never push behind its plane.
+ const localX=S.w/2,localZ=S.d/2;
+ const x0=S.x+(span.w-S.w)/2;
+ const worldCenterX=S.x+span.w/2-S.roomW/2;
+ const worldCenterZ=-S.roomD/2+12+span.d/2;
+ const rotatedLocalX=cos*localX+sin*localZ,rotatedLocalZ=-sin*localX+cos*localZ;
+ [modelGroup,dimensionGroup,techGroup,ledGroup].forEach(g=>{
+   g.rotation.y=angle;g.position.set(worldCenterX-rotatedLocalX,0,worldCenterZ-rotatedLocalZ);
+ });
+ const label=$('positionLabel');if(label)label.textContent=tr('position')+': '+Math.round(S.x)+' mm · '+S.angleDeg+'°';
+}
+function rotationAllowed(deg){
+ const bounds=rotatedFootprint(deg);
+ return bounds.w<=S.roomW+0.001&&bounds.d<=S.roomD+0.001;
+}
+function rotateGrande(direction){
+ if(!objectDragMode)return;
+ const deg=((S.angleDeg+direction*45)%360+360)%360;
+ if(!rotationAllowed(deg)){toast(lang==='ua'?'Поворот виходить за межі приміщення':lang==='en'?'Rotation exceeds room clearance':'Поворот выходит за пределы комнаты');return}
+ S.angleDeg=deg;updateGrandePlacement();saveGrandePlacement();
+}
+function showRotationControls(show){
+ const el=$('objectRotationControls');if(el)el.hidden=!show;
+}
+function stopObjectDrag(persist=true){
+ clearTimeout(holdTimer);holdTimer=null;armedPointer=null;objectMove=null;
+ if(objectDragMode&&persist)saveGrandePlacement();
+ objectDragMode=false;controls.enabled=true;showRotationControls(false);pauseIdleOrbit();
+}
+function syncObjectDragButton(){
+ // Compatibility button is deliberately hidden: activation is now by hold on mesh.
+ const b=$('dragObject');if(b)b.hidden=true;
+ if(document.body.classList.contains('view-mode'))stopObjectDrag(false);
+}
 function hitFurniture(clientX,clientY){
  const r=renderer.domElement.getBoundingClientRect();pointer.x=((clientX-r.left)/r.width)*2-1;pointer.y=-((clientY-r.top)/r.height)*2+1;
  raycaster.setFromCamera(pointer,camera);
@@ -462,25 +500,38 @@ function hitFurniture(clientX,clientY){
 renderer.domElement.style.touchAction='none';
 renderer.domElement.addEventListener('pointerdown',e=>{
  pauseIdleOrbit();activePointers.add(e.pointerId);
- if(!objectDragMode||document.body.classList.contains('view-mode')||activePointers.size>1||e.button>0)return;
+ if(document.body.classList.contains('view-mode')||e.button>0||activePointers.size!==1)return;
  if(!hitFurniture(e.clientX,e.clientY))return;
- objectMove={pointerId:e.pointerId,clientX:e.clientX,x:S.x};
- renderer.domElement.setPointerCapture?.(e.pointerId);
+ armedPointer={id:e.pointerId,x:e.clientX,y:e.clientY,at:performance.now()};
+ holdTimer=window.setTimeout(()=>{
+   if(!armedPointer||armedPointer.id!==e.pointerId||activePointers.size!==1)return;
+   objectDragMode=true;objectMove={pointerId:e.pointerId,startX:armedPointer.x,x:S.x};controls.enabled=false;
+   showRotationControls(true);pauseIdleOrbit();
+   navigator.vibrate?.(18);
+ },HOLD_MS);
 });
 renderer.domElement.addEventListener('pointermove',e=>{
  if(activePointers.has(e.pointerId))pauseIdleOrbit();
+ if(armedPointer?.id===e.pointerId&&!objectDragMode&&Math.hypot(e.clientX-armedPointer.x,e.clientY-armedPointer.y)>DRAG_THRESHOLD_PX){
+   clearTimeout(holdTimer);holdTimer=null;armedPointer=null;
+ }
  if(!objectDragMode||!objectMove||objectMove.pointerId!==e.pointerId||activePointers.size!==1)return;
  const mmPerPx=Math.max(1.5,S.roomW/Math.max(500,renderer.domElement.clientWidth)*.68);
- S.x=Math.max(0,Math.min(S.roomW-S.w,objectMove.x+(e.clientX-objectMove.clientX)*mmPerPx));
- modelGroup.position.x=S.x-S.roomW/2;techGroup.position.x=modelGroup.position.x;
- dimensionGroup.position.x=modelGroup.position.x;ledGroup.position.x=modelGroup.position.x;
- $('positionLabel').textContent=tr('position')+': '+Math.round(S.x)+' mm';
+ S.x=Math.max(0,Math.min(S.roomW-rotatedFootprint().w,objectMove.x+(e.clientX-objectMove.startX)*mmPerPx));
+ updateGrandePlacement();
 });
-function finishPointer(e){activePointers.delete(e.pointerId);if(objectMove?.pointerId===e.pointerId)objectMove=null;pauseIdleOrbit()}
+function finishPointer(e){
+ activePointers.delete(e.pointerId);
+ if(objectMove?.pointerId===e.pointerId)stopObjectDrag();
+ else if(armedPointer?.id===e.pointerId){clearTimeout(holdTimer);holdTimer=null;armedPointer=null}
+ pauseIdleOrbit();
+}
 renderer.domElement.addEventListener('pointerup',finishPointer);
 renderer.domElement.addEventListener('pointercancel',finishPointer);
 renderer.domElement.addEventListener('lostpointercapture',finishPointer);
 renderer.domElement.addEventListener('wheel',pauseIdleOrbit,{passive:true});
+$('rotateObjectLeft')?.addEventListener('click',()=>{objectDragMode=true;rotateGrande(-1);objectDragMode=false;});
+$('rotateObjectRight')?.addEventListener('click',()=>{objectDragMode=true;rotateGrande(1);objectDragMode=false;});
 function idleEditOrbit(){
  if(objectDragMode||activePointers.size||document.body.classList.contains('view-mode')||performance.now()-lastUserActivity<IDLE_WAIT_MS){idleYawCenter=null;return}
  const offset=camera.position.clone().sub(controls.target),yaw=Math.atan2(offset.x,offset.z);
@@ -670,7 +721,7 @@ function showOrder(){
 }
 
 function applyLanguage(){
- document.documentElement.lang=lang==='ua'?'uk':lang;$('lang').value=lang;
+ document.documentElement.lang=lang==='ua'?'uk':lang;void 0;
  const names=['room','size','drawers','shelves','equipment','lighting','production'];
  [...$('tools').children].forEach((b,i)=>b.querySelector('span').textContent=tr(names[i]));
  $('addProduct').textContent=tr('add');$('hint').textContent=tr('hint');$('priceLabel').textContent=tr('price');
@@ -691,14 +742,14 @@ $('editMode').onclick=()=>{pauseIdleOrbit();document.body.classList.remove('view
 $('panelClose').onclick=closePanel;
 $('addProduct').onclick=()=>location.href='/wardrobes?manufacturer=treeart&add=1';
 $('back').onclick=()=>location.href='/wardrobes?manufacturer=treeart';
-$('lang').onchange=e=>{lang=e.target.value;localStorage.setItem(LANG_KEY,lang);applyLanguage()};
+// Language selection is centralized in shared three-dot menu.
 window.addEventListener('bizet:languagechange',e=>{const next=e.detail?.language;if(['ua','ru','en'].includes(next)){lang=next;applyLanguage()}});
 window.addEventListener('bizet:themechange',()=>{renderer.domElement.style.filter=document.documentElement.dataset.theme==='dark'?'none':'brightness(1.03)'});
 $('currencySelect').onchange=e=>{S.currency=e.target.value;updatePrice()};
 $('orderClose').onclick=()=>$('orderDialog').close();
 
 buildRoom();buildModel();resize();frameModel();layerPanel();applyLanguage();syncObjectDragButton();loadFx();
-window.BizetGrandeR1050Bridge={version:'R10.5.4',state:S,scene,renderer,camera,controls,roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,hemi,key,fill,
+window.BizetGrandeR1050Bridge={version:'R10.5.5',state:S,scene,renderer,camera,controls,roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,hemi,key,fill,
  getDetails:()=>detailsCache,getDrills:()=>drillOps,getFasteners:()=>fastenerOps,getFurniture:()=>furnitureMeshes,getCategories:()=>categoryMeshes,
  buildModel,buildRoom,buildDimensions,applyVisibility,frameModel,renderTechnical,openPanel,closePanel,toast};
 })();
