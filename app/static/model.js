@@ -745,7 +745,10 @@
         let count=Math.max(1,Math.round(Number(m.facade_count)||1));const run=moduleRunLength(m),start=moduleRunStart(m);
         if(m.level==='upper'&&m.source_kind==='SINK'&&run>600){count=2;m.facade_count=2;m.facade_count_user=true;m.facade_openings=['LEFT','RIGHT'];m.template_opening_locked=true;m.template_opening_rule='SINK_UPPER_DOUBLE_OVER_600';return}
         const gap=4,cell=Math.max(1,(run-gap*(count-1))/count);
-        m.facade_openings=Array.from({length:count},(_,i)=>(start+i*(cell+gap)+cell/2)<=axis?'LEFT':'RIGHT');
+        // R10.5.6: a two-door hinged cabinet ALWAYS starts left + right,
+        // independent of the composition centerline. Explicit manual overrides remain separate.
+        m.facade_openings=(count===2&&m.kind==='HINGED')?['LEFT','RIGHT']:
+          Array.from({length:count},(_,i)=>(start+i*(cell+gap)+cell/2)<=axis?'LEFT':'RIGHT');
         m.template_opening_locked=true;m.template_opening_axis_mm=Math.round(axis);m.template_opening_rule='TEMPLATE_CENTER_LEFT_RIGHT';
       });
     });
