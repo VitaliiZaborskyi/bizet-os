@@ -90,6 +90,49 @@
     CONNECTOR_POLICY:'ONE_UNIVERSAL_CONNECTOR_PER_JOINT_STRAIGHT_OR_CORNER',
     classification:'HARD_CATEGORY_I'
   });
+  // R10.5.4: shared policy for face hardware and floor-standing modules.
+  const R1054_HANDLE_POLICY=Object.freeze({
+    APPLIED_ALLOWED_PLACEMENTS:Object.freeze(['CENTER','OPPOSITE_HINGES']),
+    LOCAL_OVERRIDE_KINDS:Object.freeze(['FRIDGE','TALL_OVEN']),
+    LOCAL_OVERRIDE_MODES:Object.freeze(['INHERIT','INDIVIDUAL']),
+    INDIVIDUAL_SYSTEMS:Object.freeze(['STANDARD','GOLA','EDGE','PROFILE','PUSH']),
+    EXCLUSIVE_APPLIED_AND_PROFILE:true,
+    classification:'HARD_OWNER_2026_10_20'
+  });
+  const R1054_FRIDGE_POLICY=Object.freeze({
+    SUPPORTS_REQUIRED:true,
+    COMMON_PLINTH_REQUIRED:true,
+    PLINTH_GRILLE_WIDTH_MM:460,
+    PLINTH_GRILLE_HEIGHT_MM:60,
+    BOTTOM_VENT_DIAMETER_MM:250,
+    classification:'HARD_OWNER_2026_10_20'
+  });
+  function normalizeHandleSystem(value){
+    const v=String(value??'STANDARD').trim().toUpperCase();
+    if(['YES','TRUE','GOLA','HANDLELESS_PROFILE'].includes(v))return'GOLA';
+    if(['NO','FALSE','STANDARD','HANDLE','APPLIED'].includes(v))return'STANDARD';
+    if(['PUSH','PUSH_TO_OPEN','HANDLELESS'].includes(v))return'PUSH';
+    return ['EDGE','PROFILE'].includes(v)?v:'STANDARD';
+  }
+  function permitsLocalHandleOverride(m={}){
+    return !!m.tall||R1054_HANDLE_POLICY.LOCAL_OVERRIDE_KINDS.includes(m.kind);
+  }
+  function resolveModuleHandle(m={},inputs={}){
+    const mode=permitsLocalHandleOverride(m)&&String(m.handle_override_mode||'INHERIT').toUpperCase()==='INDIVIDUAL'?'INDIVIDUAL':'INHERIT';
+    const globalRaw=inputs.handle_system==='GOLA'||String(inputs.gola_system||'').toUpperCase()==='YES'?'GOLA':inputs.handle_system;
+    const system=normalizeHandleSystem(mode==='INDIVIDUAL'?m.individual_handle_system:(globalRaw||'STANDARD'));
+    const placement=String(m.handle_placement||'OPPOSITE_HINGES').toUpperCase()==='CENTER'?'CENTER':'OPPOSITE_HINGES';
+    return {mode,system,placement,applied:system==='STANDARD',profile:['GOLA','EDGE','PROFILE'].includes(system)};
+  }
+  function appliedHandleOffset(hingeSide='LEFT',placement='OPPOSITE_HINGES',halfSpanMm=250,edgeOffsetMm=40){
+    if(String(placement).toUpperCase()==='CENTER')return 0;
+    const available=Math.max(0,(Number(halfSpanMm)||0)-(Number(edgeOffsetMm)||0));
+    return String(hingeSide).toUpperCase()==='RIGHT'?-available:available;
+  }
+  function requiresFloorSupports(m={}){
+    return m.level!=='upper'&&!m.freestanding&&m.kind!=='FILLER'&&!m.wall_mounted&&!m.suspended&&!m.console_mount&&Number(m.z)>0;
+  }
+  function requiresCommonPlinth(m={}){return requiresFloorSupports(m)}
   const CLOTHES_ROD_RULES=Object.freeze({
     CENTER_BELOW_UPPER_SHELF_MM:80,
     ANCHOR:'NEAREST_UPPER_SHELF_UNDERSIDE',
@@ -156,6 +199,14 @@
     moduleLimitsMm:MODULE_LIMITS_MM,
     ergonomicsMm:ERGONOMICS_MM,
     handleRules:HANDLE_RULES,
+    r1054HandlePolicy:R1054_HANDLE_POLICY,
+    r1054FridgePolicy:R1054_FRIDGE_POLICY,
+    normalizeHandleSystem,
+    permitsLocalHandleOverride,
+    resolveModuleHandle,
+    appliedHandleOffset,
+    requiresFloorSupports,
+    requiresCommonPlinth,
     cornerRules:CORNER_RULES,
     compositionRules:COMPOSITION_RULES,
     ovenRules:OVEN_RULES,
