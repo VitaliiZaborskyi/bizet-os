@@ -369,6 +369,14 @@
       const end=clamp(full-right,left,full);
       return{start:left,end,span:Math.max(0,end-left)};
     }
+    // R10.5.6: perpendicular arms start beyond wall A's physical carcass depth.
+    // Side modules must NOT occupy the same corner volume as wall-A furniture.
+    const cfg=configuration(),perpendicular=(wall==='B'&&(cfg==='L_LEFT'||cfg==='U_SHAPE'))||
+      (wall==='C'&&(cfg==='L_RIGHT'||cfg==='U_SHAPE'));
+    if(perpendicular){
+      const cornerReserve=Math.min(full,lowerDepth());
+      return{start:cornerReserve,end:full,span:Math.max(0,full-cornerReserve),cornerReserveMm:cornerReserve};
+    }
     return{start:0,end:full,span:full};
   }
 
@@ -769,7 +777,26 @@
 
   function buildModules(){
     layoutWarnings=[];
+  function inspectPhysicalIntersections(list){
+    const collision=[],touch=.8;
+    const boxes=list.filter(m=>m.level!=='upper'||m.kind==='UPPER').map(m=>({
+      id:m.id,wall:m.wall,level:m.level,kind:m.kind,
+      x:Number(m.x)||0,y:Number(m.y)||0,z:Number(m.z)||0,
+      w:Number(m.w)||0,d:Number(m.d)||0,h:Number(m.h)||0
+    }));
+    for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){
+      const a=boxes[i],b=boxes[j];
+      if(a.level!==b.level||a.level==='upper'&&a.id.includes('top-')!==b.id.includes('top-'))continue;
+      const dx=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
+      const dy=Math.min(a.y+a.d,b.y+b.d)-Math.max(a.y,b.y);
+      const dz=Math.min(a.z+a.h,b.z+b.h)-Math.max(a.z,b.z);
+      if(dx>touch&&dy>touch&&dz>touch)collision.push({first:a.id,second:b.id,x_mm:dx,y_mm:dy,z_mm:dz});
+    }
+    window.BizetR1056Collisions=collision;
+    if(collision.length)pushWarning('HARD_MODULE_INTERSECTION_STOP','STOP: физические пересечения модулей: '+collision.slice(0,4).map(c=>c.first+' / '+c.second).join('; ')+'. Экспорт недоступен.');
+  }
     const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(applyEndPanelRules(applyTemplateOpeningRules(lower.concat(upper))));
+    inspectPhysicalIntersections(all);
     evaluateErgonomics(all);
     const standardPackageH=lowerTotalHeight()+Math.max(300,Number(inputs.upper_gap_mm)||600)+upperConfiguredHeight();
     if(room.heightMm<standardPackageH&&upper.length){
