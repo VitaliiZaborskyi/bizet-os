@@ -215,6 +215,12 @@
       module.filler_shape=edit.filler_shape||module.filler_shape||'FLAT';
       module.filler_material=edit.filler_material||module.filler_material||'CARCASS';
     }
+    // Owner #18–#19: handle placement is a per-front rule; only tall/fridge may override the global system.
+    if(edit.handle_placement)module.handle_placement=edit.handle_placement==='CENTER'?'CENTER':'OPPOSITE_HINGES';
+    if(window.BizetR10Rules?.permitsLocalHandleOverride?.(module)){
+      module.handle_override_mode=edit.handle_override_mode==='INDIVIDUAL'?'INDIVIDUAL':'INHERIT';
+      module.individual_handle_system=window.BizetR10Rules?.normalizeHandleSystem?.(edit.individual_handle_system||'STANDARD')||'STANDARD';
+    }
     if(edit.end_panel_shape)module.end_panel_shape=edit.end_panel_shape;
     if(edit.end_panel_material)module.end_panel_material=edit.end_panel_material;
     module.module_edit_status=moduleDraft?.id===module.id?'DRAFT_PREVIEW':'SAVED';
@@ -617,6 +623,11 @@
     const out=list.map(m=>({...m}));
     out.filter(m=>m.kind==='FRIDGE'&&!m.freestanding).forEach(fridge=>{
       fridge.fridge_bottom_vent_diameter_mm=250;
+      // Owner #20 overrides historic bypass: a built-in fridge is a supported floor cabinet.
+      fridge.floor_support_required=true;
+      fridge.fridge_common_plinth=true;
+      fridge.fridge_grille_in_plinth=true;
+      fridge.fridge_plinth_bypass=false;
       fridge.fridge_plinth_grille_width_mm=460;
       fridge.fridge_plinth_grille_height_mm=60;
       fridge.max_part_length_mm=2780;fridge.max_part_width_mm=2060;
@@ -828,7 +839,10 @@
       filler_shape:module.filler_shape||'FLAT',
       filler_material:module.filler_material||'CARCASS',
       end_panel_shape:module.end_panel_shape||'FLAT',
-      end_panel_material:module.end_panel_material||'CARCASS'
+      end_panel_material:module.end_panel_material||'CARCASS',
+      handle_placement:module.handle_placement||'OPPOSITE_HINGES',
+      handle_override_mode:module.handle_override_mode||'INHERIT',
+      individual_handle_system:module.individual_handle_system||'STANDARD'
     };
   }
   function validateModuleDraft(draft,module){
@@ -929,6 +943,29 @@
     }else{
       html+=`<div class="r104-module-info">${tr('Для специализированного модуля сейчас меняется только разрешённая ширина. Пеналы с техникой, вытяжка и сушка остаются по библиотечной логике.','For this specialized module only the permitted width is editable for now. Appliance tall cabinets, hood and dish dryer remain library-driven.')}</div>`;
     }
+    // Owner #18: ordinary applied handle is never on the hinge side.
+    // Owner #19: a local handle system replaces (never stacks over) the kitchen-wide system.
+    if(!module.freestanding&&!['DRAWERS','FILLER'].includes(module.kind)&&d.facade_orientation!=='HORIZONTAL'){
+      html+=editField(tr('Расположение накладной ручки','Applied handle position'),'handle_placement',d.handle_placement,'select',[
+        ['OPPOSITE_HINGES',tr('Противоположно петлям','Opposite hinges')],
+        ['CENTER',tr('По центру','Centered')]
+      ]);
+    }
+    if((module.tall||module.kind==='FRIDGE')&&!module.freestanding){
+      html+=editField(tr('Система ручек модуля','Module handle system'),'handle_override_mode',d.handle_override_mode,'select',[
+        ['INHERIT',tr('Как у всей кухни','Inherit global')],
+        ['INDIVIDUAL',tr('Индивидуальная','Individual')]
+      ]);
+      if(d.handle_override_mode==='INDIVIDUAL'){
+        html+=editField(tr('Индивидуальный тип ручки','Individual handle type'),'individual_handle_system',d.individual_handle_system,'select',[
+          ['STANDARD',tr('Обычная накладная','Applied handle')],
+          ['GOLA','Gola'],
+          ['EDGE',tr('Торцевой профиль','Edge profile')],
+          ['PROFILE',tr('Профильная ручка','Profile handle')],
+          ['PUSH','Push-to-open']
+        ]);
+      }
+    }
     if(module.end_panel_side){
       html+=`<div class="r104-module-info">${tr('Торцевая панель','End panel')} · ${module.end_panel_side==='BOTH'?tr('с двух сторон','both sides'):module.end_panel_side==='LEFT'?tr('слева','left'):tr('справа','right')}</div>`;
       html+=editField(tr('Торец у стены','Wall end'),'end_panel_shape',d.end_panel_shape,'select',[['FLAT',tr('Торцевая панель','End panel')],['L_SHAPE',tr('Г-образный филлер 40 мм','L-shaped filler 40 mm')]]);
@@ -940,7 +977,7 @@
     if(cancel)cancel.textContent=tr('Отменить','Cancel');
     const error=validateModuleDraft(d,module);rule.hidden=!error;rule.textContent=error;if(save)save.disabled=!!error;
     body.querySelectorAll('[data-module-edit]').forEach(el=>{
-      const structural=['configuration','facade_count','facade_orientation','tall_facade_count','tall_drawer_mode'];
+      const structural=['configuration','facade_count','facade_orientation','tall_facade_count','tall_drawer_mode','handle_override_mode','individual_handle_system'];
       const eventName=el.tagName==='INPUT'?'input':'change';let timer=0;
       el.addEventListener(eventName,()=>{clearTimeout(timer);timer=window.setTimeout(()=>readModuleEditor(structural.includes(el.dataset.moduleEdit)),el.tagName==='INPUT'?90:0)});
     });
