@@ -92,7 +92,11 @@ function generatedConnectionsFromModules(modules,parts){
     const related=parts.filter(p=>String(p.code||'').startsWith(prefix+'.')||String(p.code||'').startsWith('M'+prefix+'.'));
     const left=related.find(p=>/Left/i.test(p.name)),right=related.find(p=>/Right/i.test(p.name));
     const bottom=related.find(p=>/Bottom/i.test(p.name)&&!/Drawer/i.test(p.name)),top=related.find(p=>/^Top$| Top$/i.test(p.name));
-    [[left,bottom,'LB'],[right,bottom,'RB'],[left,top,'LT'],[right,top,'RT']].forEach(([facePart,edgePart,suffix])=>{
+    // #26: when no top is specified, actual flat stretchers are connected
+    // to left/right sides using the same Connection -> Machining pipeline.
+    const frontRail=related.find(p=>/^Rail Front$/i.test(p.name)),rearRail=related.find(p=>/^Rail Back$/i.test(p.name));
+    [[left,bottom,'LB'],[right,bottom,'RB'],[left,top,'LT'],[right,top,'RT'],
+     [left,frontRail,'LFR'],[right,frontRail,'RFR'],[left,rearRail,'LRR'],[right,rearRail,'RRR']].forEach(([facePart,edgePart,suffix])=>{
       if(!facePart||!edgePart)return;
       [30,70].forEach((offset,j)=>{
         const id='CN-'+String(seq++).padStart(5,'0');
