@@ -106,8 +106,11 @@
       out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Oven Support Shelf',inner,partD,1,EDGE,2,2,'Опорная полка духовки',`Верхняя зона рассчитывается от фактической высоты духовки ${ovenH} мм; корпус = габарит нижнего ряда − столешница − опоры`));
     }
     if(!lowerOven){
-      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Rail Front',inner,100));
-      out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Rail Back',inner,100));
+      if(module.top_panel_override==='YES')out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Top',inner,partD,1,EDGE,2,2,'MANUAL: roof override'));
+      else{
+        out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Rail Front',inner,100,1,EDGE,2,2,'Flat 100 mm front stretcher'));
+        out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Rail Back',inner,100,1,EDGE,2,2,'Flat 100 mm rear stretcher'));
+      }
     }
     (module.middle_side_boundaries||[]).forEach((boundary,i)=>{
       out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Middle Side '+(i+1),H,partD,1,EDGE,2,2,'Вертикальная перегородка','Граница фасадов '+boundary));
