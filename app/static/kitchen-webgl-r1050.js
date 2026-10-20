@@ -96,7 +96,26 @@ function buildRoom(options){clearGroup(roomGroup);const focus=!!options.focusMod
  if(active.has('C')){const w=new THREE.Mesh(new THREE.PlaneGeometry(D,H),wm.clone());w.material.userData.owned=true;w.rotation.y=-Math.PI/2;w.position.set(L/2,H/2,0);w.receiveShadow=true;roomGroup.add(w)}
  wm.dispose();
 }
-function addHandleBar(pos,vertical=true,parent=hardwareGroup){const c=colors(),mat=ownMat({color:c.metal,roughness:.25,metalness:.7}),g=new THREE.Group(),bar=new THREE.Mesh(new THREE.CylinderGeometry(5,5,vertical?125:150,12),mat.clone());bar.material.userData.owned=true;if(!vertical)bar.rotation.z=Math.PI/2;g.add(bar);[-1,1].forEach(s=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(4,4,18,10),mat.clone());post.material.userData.owned=true;post.rotation.x=Math.PI/2;/* posts face back toward the facade */post.position.set(vertical?0:s*52,vertical?s*42:0,10);g.add(post)});g.position.copy(pos);g.userData.visualization='HANDLE';parent.add(g);mat.dispose();return g}
+// R10.5.6 owner-supplied reference: rectangular black matte bridge with two end feet.
+// World-space alignment is based on facade normal, never on mobile viewport width.
+function addHandleBar(pos,vertical=true,parent=hardwareGroup,wall='A'){
+ const dark=ownMat({color:'#292a2a',roughness:.76,metalness:.12});
+ const g=new THREE.Group(),railLength=154,railHeight=13,railDepth=13;
+ const rail=new THREE.Mesh(new THREE.BoxGeometry(railLength,railHeight,railDepth),dark.clone());
+ rail.material.userData.owned=true;rail.position.z=14;rail.castShadow=true;g.add(rail);
+ [-1,1].forEach(sign=>{
+   const foot=new THREE.Mesh(new THREE.BoxGeometry(23,railHeight+17,27),dark.clone());
+   foot.material.userData.owned=true;foot.position.set(sign*(railLength/2-11.5),-8,-2);foot.castShadow=true;g.add(foot);
+ });
+ if(vertical)g.rotation.z=Math.PI/2;
+ // Local face normal is +Z; rotate toward real cabinet front.
+ const yaw=wall==='A'?Math.PI:wall==='B'?Math.PI/2:-Math.PI/2;
+ g.rotation.order='YXZ';
+ const oriented=new THREE.Group();oriented.rotation.y=yaw;oriented.add(g);
+ oriented.position.copy(pos);oriented.userData.visualization='HANDLE_REFERENCE_20261020';
+ oriented.userData.canonicalNormal=wall;parent.add(oriented);
+ dark.dispose();return oriented;
+}
 function frontVector(wall){return wall==='A'?new THREE.Vector3(0,0,-1):wall==='B'?new THREE.Vector3(1,0,0):new THREE.Vector3(-1,0,0)}
 function doorOpenSign(wall,side){
  const base=side==='left'?1:-1;
@@ -159,14 +178,14 @@ function makeFront(room,m,index,count,mat){
  const handlePolicy=window.BizetR10Rules?.resolveModuleHandle?.(m,viewerInputs())||{system:viewerInputs().handle_system==='GOLA'?'GOLA':'STANDARD',placement:'OPPOSITE_HINGES',applied:viewerInputs().handle_system!=='GOLA'};
  if(handlePolicy.applied){
    const fv=frontVector(wall),p=center(room,spec);
-   if(type==='drawer'){p.y+=(spec.h/2)-40;p.add(fv.clone().multiplyScalar(18));const h=addHandleBar(p,false);h.userData.movableId=id;mover.group?.attach(h)}
+   if(type==='drawer'){p.y+=(spec.h/2)-40;p.add(fv.clone().multiplyScalar(18));const h=addHandleBar(p,false,hardwareGroup,wall);h.userData.movableId=id;mover.group?.attach(h)}
    else if(type==='lift'){p.y-=spec.h/2-40;p.add(fv.clone().multiplyScalar(18));const h=addHandleBar(p,false);h.userData.movableId=id;mover.pivot?.attach(h)}
    else{
      const handleHalf=62.5;
      if(m.tall||(+m.z<100&&+m.h>1500))p.y=1000;else p.y+=(m.level==='upper'?(-spec.h/2+40+handleHalf):(spec.h/2-40-handleHalf));
      const sideOffset=window.BizetR10Rules?.appliedHandleOffset?.(side,handlePolicy.placement,(wall==='A'?spec.w:spec.d)/2,40)??(side==='left'?spec.w/2-40:-spec.w/2+40);
      if(wall==='A')p.x+=sideOffset;else p.z+=sideOffset;
-     p.add(fv.clone().multiplyScalar(18));const h=addHandleBar(p,true);h.userData.movableId=id;mover.pivot?.attach(h)
+     p.add(fv.clone().multiplyScalar(18));const h=addHandleBar(p,true,hardwareGroup,wall);h.userData.movableId=id;mover.pivot?.attach(h)
    }
  }else if(handlePolicy.profile){
    addProfileHandle(room,spec,mover,handlePolicy,id);
@@ -264,7 +283,7 @@ function addFridgeFacade(room,m,z,h,index,mat){
    const fv=frontVector(wall),p=center(room,spec);p.y=index===0?z+h-135:z+135;
    const sideOffset=window.BizetR10Rules?.appliedHandleOffset?.(side,handlePolicy.placement,(wall==='A'?spec.w:spec.d)/2,40)??(side==='left'?spec.w/2-40:-spec.w/2+40);
    if(wall==='A')p.x+=sideOffset;else p.z+=sideOffset;
-   p.add(fv.clone().multiplyScalar(18));const handle=addHandleBar(p,true);handle.userData.movableId=id;pivot.attach(handle);
+   p.add(fv.clone().multiplyScalar(18));const handle=addHandleBar(p,true,hardwareGroup,wall);handle.userData.movableId=id;pivot.attach(handle);
  }else if(handlePolicy.profile){addProfileHandle(room,spec,{pivot},handlePolicy,id)}
 }
 function addFridgeHinges(room,m){
