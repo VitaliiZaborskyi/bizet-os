@@ -87,7 +87,7 @@ def test_20_fridge_common_plinth_grille_and_bom():
                   "fridge.fridge_grille_in_plinth=true","fridge.fridge_plinth_bypass=false"]:
         assert token in model
     for token in ["addBuiltInFridge(room,m,body,front);addLegs(room,m)",
-                  "function plinthRuns(modules)","list.filter(m=>m.tall).forEach",
+                  "function plinthRuns(modules)","list.filter(m=>m.tall||m.kind==='FILLER').forEach",
                   "function addFloorPlinth","function addFridgeHinges","addFridgeHinges(room,m)","'fridge-plinth-grille'",
                   "gw=Number(m.fridge_plinth_grille_width_mm)||460",
                   "gh=Number(m.fridge_plinth_grille_height_mm)||60"]:
