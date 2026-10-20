@@ -211,7 +211,8 @@ function addLegs(room,m){
 
 function addHinges(room,m,count){
  if(m.kind==='DRAWERS'||m.kind==='FILLER'||(m.level==='upper'&&(m.opening==='LIFT'||m.facade_orientation==='HORIZONTAL')))return;
- const mat=ownMat({color:'#858b8f',roughness:.3,metalness:.7}),ys=[.18,.5,.82],wall=m.wall||'A',run=wall==='A'?+m.w:+m.d;
+ const mat=ownMat({color:'#858b8f',roughness:.3,metalness:.7}),plan=window.BizetR10Rules?.planHingePositions?.(m),ys=plan?.positions?.length?plan.positions.map(v=>(v-(Number(m.z)||0))/Math.max(1,Number(m.h)||1)):[.18,.5,.82],wall=m.wall||'A',run=wall==='A'?+m.w:+m.d;
+ if(plan&&!plan.ok){m.hinge_layout_conflict=plan.reason;window.dispatchEvent(new CustomEvent('bizet:engineering-stop',{detail:{module_id:m.id,reason:plan.reason}}));return}
  ys.forEach(fr=>{for(let i=0;i<count;i++){
    const requested=String(m.facade_openings?.[i]||'').toUpperCase();
    const side=requested==='RIGHT'?'right':requested==='LEFT'?'left':i%2===0?'left':'right';
@@ -352,7 +353,7 @@ function addCarcassShelves(room,m,mat){
  const defaultCount=m.level==='upper'?(H<=750?1:H<=1100?2:Math.max(2,Math.ceil(H/400)-1)):1;
  const count=Math.max(0,Math.min(4,Number.isFinite(Number(m.shelf_count))?Number(m.shelf_count):defaultCount));
  for(let i=1;i<=count;i++){
-   const sz=z+t+(H-2*t)*i/(count+1);
+   const sz=window.BizetR10Rules?.fixedShelfCenters?.(m)?.[i-1]??(z+t+(H-2*t)*i/(count+1));
    const s=wall==='A'?{x:x+t,y:y+8,z:sz,w:Math.max(40,W-2*t),d:Math.max(80,D-16),h:t}:{x:x+8,y:y+t,z:sz,w:Math.max(80,W-16),d:Math.max(40,D-2*t),h:t};
    const q=meshBox(room,s,mat.clone(),furnitureGroup,'shelf',m.id);q.material.userData.owned=true;q.userData.partRole='SHELF_'+i;
  }
