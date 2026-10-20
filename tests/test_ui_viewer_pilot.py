@@ -41,15 +41,18 @@ def test_conditional_settings_disable_impossible_appliance_fields():
     ]:
         assert token in ws
 
-def test_module_lighting_is_multiselect_and_has_visualization_only_contract():
+def test_module_lighting_is_multiselect_and_has_opaque_internal_profile():
     ws=read("workspace-r8.js")
     viewer=read("kitchen-webgl-r1050.js")
     for token in ["lighting_enabled","lighting_plinth","lighting_worktop","lighting_upper_inside","lighting_lower_inside","data-lighting-zone"]:
         assert token in ws
-        assert token in viewer or token == "data-lighting-zone"
     assert "Multiple zones can be active at once" in ws
-    assert "visualizationProxy:true,productionProxy:false" in viewer
-    assert "makeLightingGradient" in viewer
+    assert "function addInternalLED" in viewer
+    assert "function buildLighting" in viewer
+    assert "depthTest:true,depthWrite:true" in viewer
+    assert "'led-profile'" in viewer
+    assert "'led-diffuser'" in viewer
+
 
 def test_viewer_uses_visible_edges_and_disables_unstable_ao():
     viewer=read("kitchen-webgl-r1050.js")
