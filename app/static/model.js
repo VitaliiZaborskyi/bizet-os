@@ -202,6 +202,7 @@
     }
     if(edit.shelf_count!==undefined)module.shelf_count=clamp(Math.round(Number(edit.shelf_count)||0),0,module.tall?3:2);
     if(edit.shelf_type)module.shelf_type=edit.shelf_type;
+    if(Array.isArray(edit.shelf_z_overrides_mm))module.shelf_z_overrides_mm=[...edit.shelf_z_overrides_mm];
     if(edit.drawer_count!==undefined)module.drawer_count=clamp(Math.round(Number(edit.drawer_count)||2),2,5);
     if(module.tall&&!['TALL_OVEN','FRIDGE'].includes(module.kind)){
       module.tall_facade_count=clamp(Math.round(Number(edit.tall_facade_count)||module.facade_count||1),1,3);
@@ -773,6 +774,40 @@
     if(prev){prev.disabled=index<=0;prev.title=tr('Предыдущий модуль','Previous module')}
     if(next){next.disabled=index<0||index>=ordered.length-1;next.title=tr('Следующий модуль','Next module')}
   }
+  function removeShelfMoveUI(){document.getElementById('r1055ShelfMoves')?.remove()}
+  async function commitShelfMove(moduleId,index,newZ){
+    const module=modules.find(m=>m.id===moduleId),policy=window.BizetR10Rules;
+    if(!module||viewMode!==VIEW_FOCUS||module.shelf_type!=='FIXED')return;
+    const candidates=policy?.allowedShelfPositions?.(module,index)||[];
+    if(!candidates.some(p=>p.z_mm===newZ)){setValidation('STOP: shelf movement not permitted by collision rules.');return}
+    const old=policy.fixedShelfCenters(module),values=[...old];values[index]=newZ;
+    const overrides=moduleEditOverrides(),edit={...(overrides[moduleId]||{})};
+    edit.shelf_z_overrides_mm=values;overrides[moduleId]=edit;
+    await saveVisual({...visual,module_edit_overrides:overrides,shelf_manufacturing_status:'STOP_PROFILE_REQUIRED'},'R10.5.5 movable fixed shelf +64 mm');
+    removeShelfMoveUI();renderScene(false);
+    window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'fixed-shelf-move',module_id:moduleId}}));
+  }
+  window.addEventListener('bizet:shelfhold',event=>{
+    const {module_id,shelf_index}=event.detail||{};
+    if(viewMode!==VIEW_FOCUS||module_id!==activeModule?.id||window.BIZET_KITCHEN_UI_MODE!=='EDIT')return;
+    const m=modules.find(x=>x.id===module_id),idx=Number(shelf_index);
+    if(!m||m.shelf_type!=='FIXED')return;
+    const candidates=window.BizetR10Rules?.allowedShelfPositions?.(m,idx)||[];
+    removeShelfMoveUI();
+    const stage=$('modelStage');if(!stage)return;
+    const panel=document.createElement('div');panel.id='r1055ShelfMoves';
+    panel.style.cssText='position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:130;background:rgba(16,18,21,.94);padding:12px;border:1px solid #888;border-radius:12px;max-width:min(440px,92vw);display:flex;gap:8px;flex-wrap:wrap;justify-content:center;box-shadow:0 12px 35px #0009';
+    const caption=document.createElement('div');caption.style.cssText='width:100%;color:white;text-align:center;font-size:12px';
+    caption.textContent='Shelf '+(idx+1)+' · 64 mm pilot positions · machining export blocked pending approval';panel.appendChild(caption);
+    for(const p of candidates){
+      const btn=document.createElement('button');btn.type='button';btn.title='Z '+p.z_mm+' mm';
+      btn.textContent='● '+(p.delta_mm>0?'+':'')+p.delta_mm+' mm';
+      btn.style.cssText='border:1px solid #e66;border-radius:12px;color:#fff;background:#7a1d22;padding:8px;min-width:80px;cursor:pointer';
+      btn.onclick=()=>commitShelfMove(module_id,idx,p.z_mm).catch(e=>console.error(e));
+      panel.appendChild(btn);
+    }
+    const close=document.createElement('button');close.textContent='×';close.style.cssText='background:#444;color:#fff;border:1px solid #888;border-radius:8px;padding:8px';close.onclick=removeShelfMoveUI;panel.appendChild(close);stage.appendChild(panel);
+  });
   function switchFocusModule(delta){
     if(viewMode!==VIEW_FOCUS||!activeModule)return;
     const ordered=focusModuleOrder(),index=ordered.findIndex(m=>m.id===activeModule.id),target=ordered[index+delta];
@@ -831,6 +866,7 @@
       facade_openings:normalizeOpenings(facades,module.facade_openings),
       shelf_count:module.shelf_count!==undefined?Number(module.shelf_count):(kind==='TALL_PLAIN'?3:1),
       shelf_type:module.shelf_type||'ADJUSTABLE',
+      shelf_z_overrides_mm:Array.isArray(module.shelf_z_overrides_mm)?[...module.shelf_z_overrides_mm]:[],
       drawer_count:clamp(Math.round(Number(module.drawer_count)||2),2,5),
       lift_mechanism:module.lift_mechanism||'LIFT_ONLY',
       tall_facade_count:clamp(Math.round(Number(module.tall_facade_count)||facades),1,3),
@@ -1129,6 +1165,7 @@
     const el=$('moduleValidation');if(!el)return;el.textContent=message;el.hidden=!message;
   }
   function openModule(id){
+    removeShelfMoveUI();
     const selected=modules.find(m=>m.id===id)||null;if(!selected)return;
     if(viewMode===VIEW_FOCUS&&activeModule?.id&&moduleDraft)focusDraftCache.set(activeModule.id,{...moduleDraft,facade_openings:[...(moduleDraft.facade_openings||[])]});
     if(!enterModuleFocus(selected))return;
@@ -1367,6 +1404,7 @@
     cancelModuleDraft();
   });
   function exitModuleFocus(){
+    removeShelfMoveUI();
     moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;
     enterNormalKitchenView();syncFocusControls();renderScene(false);
   }
