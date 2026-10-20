@@ -108,7 +108,7 @@
         select.addEventListener('change',()=>{document.documentElement.dataset.theme=select.value;localStorage.setItem(THEME_KEY,select.value);window.dispatchEvent(new CustomEvent('bizet:themechange',{detail:{theme:select.value,source:'settings'}}))});
       }
       const button=document.getElementById('settingsButton');
-      if(button&&!button.dataset.bizetSettingsBound){
+      if(button&&!window.BizetUnifiedMenuEnabled&&!button.dataset.bizetSettingsBound){
         button.dataset.bizetSettingsBound='1';
         button.addEventListener('click',event=>{event.stopPropagation();const open=workspacePanel.hidden;workspacePanel.hidden=!open;button.setAttribute('aria-expanded',String(open))});
         workspacePanel.addEventListener('click',event=>event.stopPropagation());
