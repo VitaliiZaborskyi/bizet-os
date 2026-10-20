@@ -1060,7 +1060,20 @@
       html+=editField(tr('Торец у стены','Wall end'),'end_panel_shape',d.end_panel_shape,'select',[['FLAT',tr('Торцевая панель','End panel')],['L_SHAPE',tr('Г-образный филлер 40 мм','L-shaped filler 40 mm')]]);
       html+=editField(tr('Материал торца','End material'),'end_panel_material',d.end_panel_material,'select',[['CARCASS',tr('Материал корпуса','Carcass material')],['FACADE',tr('Материал фасада','Facade material')]]);
     }
+    if(d.shelf_type==='FIXED'&&Number(d.shelf_count)>0&&kind!=='FILLER'){
+      html+='<div class="r1056-shelf-controls" style="grid-column:1/-1;border:1px solid #af5858;border-radius:12px;padding:10px"><strong>'+
+        tr1054('Положение жёстких полок · шаг 64 мм','Fixed shelf positions · 64 mm','Положення жорстких полиць · крок 64 мм')+
+        '</strong><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">'+
+        Array.from({length:Number(d.shelf_count)},(_,idx)=>'<button type="button" data-r1056-shelf-index="'+idx+'" style="padding:9px 13px;border-radius:10px;border:1px solid #e04b57;background:#84242d;color:#fff">● '+
+          tr1054('Полка ','Shelf ','Полиця ')+(idx+1)+' · ±64 мм</button>').join('')+'</div></div>';
+    }
     body.innerHTML=html;
+    body.querySelectorAll('[data-r1056-shelf-index]').forEach(btn=>btn.onclick=()=>{
+      if(module.shelf_type!=='FIXED'){
+        rule.hidden=false;rule.textContent=tr1054('Сначала сохраните модуль с типом «Жёсткая полка».','Save fixed shelf type first.','Спочатку збережіть модуль із жорсткою полицею.');return
+      }
+      window.dispatchEvent(new CustomEvent('bizet:shelfhold',{detail:{module_id:module.id,shelf_index:Number(btn.dataset.r1056ShelfIndex)}}));
+    });
     const save=$('moduleEditSave'),cancel=$('moduleEditCancel');
     if(save)save.textContent=tr('Сохранить модуль','Save module');
     if(cancel)cancel.textContent=tr('Отменить','Cancel');
