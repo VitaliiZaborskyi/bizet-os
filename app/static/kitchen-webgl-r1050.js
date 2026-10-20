@@ -578,31 +578,45 @@ function addWorktopAndPlinth(room,modules){
 function textSprite(text,scale=2.4){const c=document.createElement('canvas');c.width=420;c.height=120;const x=c.getContext('2d');x.fillStyle='rgba(255,255,252,.96)';x.beginPath();x.roundRect?.(6,12,408,96,22);x.fill();x.fillStyle='#111';x.font='800 42px -apple-system,BlinkMacSystemFont,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(String(text),210,60);const tex=new THREE.CanvasTexture(c);tex.encoding=THREE.sRGBEncoding;const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});mat.userData.owned=true;const s=new THREE.Sprite(mat);s.scale.set(420*scale,120*scale,1);return s}
 function addNumber(room,m){const s=textSprite(m.number,.62),p=center(room,m);p.y+=+m.h*.12;if((m.wall||'A')==='A')p.z-=+m.d/2+90;else p.x+=(m.wall==='B'?1:-1)*(+m.w/2+90);s.position.copy(p);annotationGroup.add(s)}
 function addDimension(room,a,b,label,pos,focus=false){const g=new THREE.BufferGeometry().setFromPoints([roomToWorld(room,...a),roomToWorld(room,...b)]),mat=new THREE.LineBasicMaterial({color:0x161616,transparent:true,opacity:.9});mat.userData.owned=true;annotationGroup.add(new THREE.Line(g,mat));const s=textSprite(label,focus?2.8:2.35);s.position.copy(roomToWorld(room,...pos));annotationGroup.add(s)}
-function makeLightingGradient(){
- const c=document.createElement('canvas');c.width=128;c.height=8;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,128,0);
- g.addColorStop(0,'rgba(255,201,92,.88)');g.addColorStop(.52,'rgba(255,239,196,.96)');g.addColorStop(1,'rgba(255,255,255,.92)');x.fillStyle=g;x.fillRect(0,0,128,8);
- const tex=new THREE.CanvasTexture(c);tex.encoding=THREE.sRGBEncoding;return tex;
+// 10.5.5 #24: standard opaque, depth-tested physical profile + diffuser,
+// behind the closed facade; never additive foreground billboards.
+function lightingRgb(k){
+ return k===2700?'#ffce91':k===4000?'#f3f5ff':'#ffe1b2';
 }
-function addLightingStrip(room,spec,id){
- const mat=new THREE.MeshBasicMaterial({map:makeLightingGradient(),transparent:true,opacity:.92,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});mat.userData.owned=true;
- const mesh=new THREE.Mesh(new THREE.BoxGeometry(Math.max(2,+spec.w||2),Math.max(2,+spec.h||2),Math.max(2,+spec.d||2)),mat);mesh.position.copy(center(room,spec));mesh.renderOrder=6;mesh.userData={cat:'lighting-proxy',moduleId:id||'',visualizationProxy:true,productionProxy:false};lightingGroup.add(mesh);
+function addInternalLED(room,spec,module,kelvin,partKey){
+ const led=ownMat({color:lightingRgb(kelvin),emissive:lightingRgb(kelvin),emissiveIntensity:.65,roughness:.48,metalness:0,depthTest:true,depthWrite:true});
+ const aluminum=ownMat({color:'#899094',roughness:.4,metalness:.6,depthTest:true,depthWrite:true});
+ const q=meshBox(room,spec,aluminum,lightingGroup,'led-profile',module.id);q.userData.visualizationProxy=true;q.userData.partRole='LED_PROFILE_'+partKey;
+ const line={...spec};
+ if(module.wall==='A'){line.x+=3;line.w=Math.max(3,line.w-6);line.d=4;line.y+=3}
+ else{line.y+=3;line.d=Math.max(3,line.d-6);line.w=4;line.x+=3}
+ const l=meshBox(room,line,led,lightingGroup,'led-diffuser',module.id);l.userData.visualizationProxy=true;l.userData.kelvin=kelvin;l.userData.partRole='LED_DIFFUSER_'+partKey;
 }
 function buildLighting(room,mods){
  clearGroup(lightingGroup);
- const I=window.BizetModelRuntime?.getInputs?.()||{};if(I.lighting_enabled!=='YES')return;
+ const I=viewerInputs();if(I.lighting_enabled!=='YES')return;
+ const kelvin=[2700,3000,4000].includes(Number(I.lighting_kelvin))?Number(I.lighting_kelvin):3000;
  mods.forEach(m=>{
-   if(m.kind==='FILLER'||m.freestanding)return;
-   const wall=String(m.wall||'A'),front=frontVector(wall),isUpper=m.level==='upper',isLower=!isUpper&&!m.tall;
-   const run=wall==='A'?+m.w:+m.d,th=10,depth=10;
-   const strip=(z,offset,zone)=>{
-     let s;if(wall==='A')s={x:+m.x,y:+m.y+(front.z<0?-offset:+m.d+offset),z,w:run,d:depth,h:th};
-     else s={x:+m.x+(front.x<0?-offset:+m.w+offset),y:+m.y,z,w:depth,d:run,h:th};
-     addLightingStrip(room,s,m.id+':'+zone);
-   };
-   if(I.lighting_plinth==='YES'&&isLower)strip(Math.max(12,(+m.z||100)*.24),10,'plinth');
-   if(I.lighting_worktop==='YES'&&isUpper)strip(+m.z-18,12,'worktop');
-   if(I.lighting_upper_inside==='YES'&&isUpper)strip(+m.z+ +m.h-45,20,'upper-inside');
-   if(I.lighting_lower_inside==='YES'&&isLower)strip(+m.z+ +m.h-55,20,'lower-inside');
+   if(m.kind==='FILLER'||m.freestanding||m.kind==='DISHWASHER')return;
+   const wall=m.wall||'A',upper=m.level==='upper',lower=!upper&&!m.tall;
+   if(!((upper&&I.lighting_upper_inside==='YES')||(lower&&I.lighting_lower_inside==='YES')))return;
+   const t=18,base=Number(m.z)||0,H=Number(m.h)||0;if(H<95)return;
+   const front=String(m.facade_openings?.[0]||'LEFT').toUpperCase()==='RIGHT'?'RIGHT':'LEFT';
+   const count=Math.max(0,Math.min(4,Number(m.shelf_count??(upper?1:1))||0));
+   const boundaries=[base+t+15],stops=[];
+   for(let index=1;index<=count;index++){
+     const center=base+t+(H-2*t)*index/(count+1);
+     stops.push([center-12,center+12]); // shelf must not intersect LED profile
+   }
+   const end=base+H-t-15,intervals=[];
+   let cur=boundaries[0];stops.forEach(([a,b])=>{if(a-cur>=35)intervals.push([cur,a]);cur=Math.max(cur,b)});
+   if(end-cur>=35)intervals.push([cur,end]);
+   intervals.forEach(([lo,hi],index)=>{
+     const height=hi-lo,run=wall==='A'?+m.w:+m.d,place=front==='LEFT'?t+8:run-t-20;
+     const spec=wall==='A'?{x:+m.x+place,y:+m.y+(+m.d)/2-7,z:lo,w:12,d:14,h:height}
+       :{x:+m.x+(+m.w)/2-7,y:+m.y+place,z:lo,w:14,d:12,h:height};
+     addInternalLED(room,spec,m,kelvin,index);
+   });
  });
 }
 function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareGroup);clearGroup(annotationGroup);clearGroup(lightingGroup);selectable=[];movables=[];const room=options.room||{},mods=options.modules||[],c=colors(),body=ownMat({color:c.body,roughness:.58}),front=ownMat({color:c.front,roughness:.5}),focus=!!options.focusMode;
@@ -627,7 +641,8 @@ function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareG
    if(options.showNumbers!==false&&!focus)addNumber(room,m);
  };
  mods.forEach(buildOne);
- if(!focus){addWorktopAndPlinth(room,mods);buildLighting(room,mods)}
+ if(!focus){addWorktopAndPlinth(room,mods)}
+ buildLighting(room,mods); // hidden behind solid front in VIEW, exposed in isolation
  if(options.showDimensions!==false){if(focus&&mods[0]){const m=mods[0],safe=360;addDimension(room,[m.x,+m.y+ +m.d+safe,m.z+m.h+100],[+m.x+ +m.w,+m.y+ +m.d+safe,+m.z+ +m.h+100],Math.round(+m.w)+' mm',[+m.x+ +m.w/2,+m.y+ +m.d+safe+140,+m.z+ +m.h+220],true);addDimension(room,[+m.x+ +m.w+safe,+m.y+ +m.d+120,m.z],[+m.x+ +m.w+safe,+m.y+ +m.d+120,+m.z+ +m.h],Math.round(+m.h)+' mm',[+m.x+ +m.w+safe+160,+m.y+ +m.d+120,+m.z+ +m.h/2],true)}
  else{const L=+room.lengthMm||6000,D=+room.depthMm||4200,H=+room.heightMm||2800,safe=520;addDimension(room,[0,D+safe,80],[L,D+safe,80],Math.round(L)+' mm',[L/2,D+safe+180,180]);addDimension(room,[L+safe,D+safe*.35,0],[L+safe,D+safe*.35,H],Math.round(H)+' mm',[L+safe+200,D+safe*.35,H/2])}}
  body.dispose();front.dispose();
