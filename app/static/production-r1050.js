@@ -256,10 +256,15 @@ function exportEngineering(model,filename,options={}){
  if(!model)return false;
  const customShelves=(model.modules||[]).filter(m=>Array.isArray(m.shelf_z_overrides_mm)&&m.shelf_z_overrides_mm.length);
  const invalidHinges=(model.modules||[]).filter(m=>m.hinge_layout_conflict||window.BizetR10Rules?.planHingePositions?.(m)?.ok===false);
- if(customShelves.length||invalidHinges.length){
+ const unresolvedGrilles=(model.modules||[]).filter(m=>['FRIDGE','TALL_OVEN'].includes(m.kind)&&!m.freestanding);
+ const collisions=window.BizetR1056Collisions||[],trimCount=Number(window.BizetR1056WorktopClips)||0;
+ if(customShelves.length||invalidHinges.length||unresolvedGrilles.length||collisions.length||trimCount>0){
    const errors=[
      ...customShelves.map(m=>'STOP_UNVERIFIED_SHELF_CONNECTION_MACHINING:'+m.id),
-     ...invalidHinges.map(m=>'STOP_HINGE_SHELF_COLLISION:'+m.id)
+     ...invalidHinges.map(m=>'STOP_HINGE_SHELF_COLLISION:'+m.id),
+     ...unresolvedGrilles.map(m=>'STOP_UNVERIFIED_PLINTH_GRILLE_CUTOUT_460X60:'+m.id),
+     ...collisions.map(c=>'STOP_MODULE_INTERSECTION:'+c.first+':'+c.second),
+     ...(trimCount?['STOP_UNAPPROVED_WORKTOP_CORNER_CLIP']:[])
    ];
    const report={ok:false,errors,warnings:[],status:'HUMAN_REVIEW_REQUIRED'};
    window.dispatchEvent(new CustomEvent('bizet:export-preflight',{detail:{profile:profile().id,report,model:model.name}}));
