@@ -395,7 +395,7 @@
       else areas.CARCAS+=a;
     });
     const plinthGroups={};
-    modules.filter(m=>window.BizetR10Rules?.requiresCommonPlinth?.(m)??(m.level!=='upper'&&!m.freestanding&&m.kind!=='FILLER'&&Number(m.z)>0)).forEach(m=>{
+    modules.filter(m=>(m.kind==='FILLER'&&m.level!=='upper'&&!m.freestanding&&Number(m.z)>0)||(window.BizetR10Rules?.requiresCommonPlinth?.(m)??(m.level!=='upper'&&!m.freestanding&&m.kind!=='FILLER'&&Number(m.z)>0))).forEach(m=>{
       const wall=m.wall||'A';(plinthGroups[wall]||(plinthGroups[wall]=[])).push(m);
     });
     const plinthPlans=includePlinth?Object.values(plinthGroups).map(group=>window.BizetR10Rules?.plinthRunPlan?.(group)||{span:0,segments:[],joints:[]}):[];
