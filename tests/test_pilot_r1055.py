@@ -68,6 +68,18 @@ def test_26_no_default_base_roof_and_two_horizontal_100mm_rails():
     assert "top_panel_override:module.top_panel_override||'NO'" in model
     assert "frontRail,'LFR'" in prod and "rearRail,'LRR'" in prod
 
+def test_26_30_drawer_base_and_filler_closure_are_consistent():
+    pb=read("point-b.js")
+    three=read("kitchen-webgl-r1050.js")
+    assert "'Rail Front',inner,100" in pb
+    assert "'Rail Back',inner,100" in pb
+    assert "module.top_panel_override==='YES'" in pb
+    assert "frontRail,'LFR'" in read("production-r1050.js")
+    assert "m.kind==='FILLER'&&m.level!=='upper'" in pb
+    assert "m.kind==='FILLER'&&m.level!=='upper'" in three
+    assert "m.tall||m.kind==='FILLER'" in three
+
+
 def test_27_fixed_shelf_only_with_64mm_and_manufacturing_block():
     rules=read("r10-domain-rules.js"); model=read("model.js");viewer=read("kitchen-webgl-r1050.js");p=read("production-r1050.js")
     assert "STEP_MM:64" in rules
