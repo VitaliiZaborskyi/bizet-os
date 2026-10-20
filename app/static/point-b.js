@@ -455,7 +455,9 @@
     add('Фурнитура','Клипса цоколя',hw.LEG_CLIP,'шт',PRICES.LEG_CLIP);
     add('Фурнитура','Ручка накладная',hw.HANDLE,'шт',PRICES.HANDLE,'Только STANDARD; петли противоположно ручке или ручка по центру');
     if(hw.PROFILE_HANDLE)add('Фурнитура','Профильная система ручки / Gola',hw.PROFILE_HANDLE,'зона',0,'OPEN: система/длина/артикул по supplier profile, не рассчитывать как накладную ручку');
-    const integratedGrilles=modules.filter(m=>m.kind==='FRIDGE'&&!m.freestanding).length;
+    const integratedGrilles=modules.filter(m=>['FRIDGE','TALL_OVEN'].includes(m.kind)&&!m.freestanding).length;
+    const plinthCutouts=modules.filter(m=>['FRIDGE','TALL_OVEN'].includes(m.kind)&&!m.freestanding);
+    plinthCutouts.forEach(m=>add('Обработка / OPEN','Вырез под решётку 460×60 мм · центр модуля '+m.id,1,'шт',0,'R10.5.6: 3D реальный; точные координаты и CNC профиль требуют производственного утверждения'));
     if(integratedGrilles)add('Фурнитура','Вентиляционная решётка цоколя 460×60 мм',integratedGrilles,'шт',0,'HARD геометрия; поставщик/артикул/цена OPEN');
     if(hw.M4_HANDLE)add('Крепёж','Винт ручки M4×25',hw.M4_HANDLE,'шт',0,'OPEN — цена расходника не заморожена; 2 шт на ручку');
     add('Фурнитура','Полкодержатель',hw.SHELF_SUPPORT,'шт',PRICES.SHELF_SUPPORT);
