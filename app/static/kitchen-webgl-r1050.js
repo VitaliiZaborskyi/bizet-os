@@ -655,20 +655,46 @@ function segmentBy4100(wall,list){
  while(i<list.length){const start=pos(list[i]);let best=i;for(let j=i;j<list.length;j++){const end=pos(list[j])+run(list[j]);if(end-start<=4100+.001)best=j;else break}out.push(list.slice(i,best+1));i=best+1}
  return out;
 }
+function r1056SubtractRect(a,b){
+ const left=Math.max(a.x,b.x),right=Math.min(a.x+a.w,b.x+b.w),
+   front=Math.max(a.y,b.y),back=Math.min(a.y+a.d,b.y+b.d);
+ if(right-left<=.4||back-front<=.4)return[a];
+ const out=[],push=(x,y,w,d)=>{if(w>1&&d>1)out.push({...a,x,y,w,d})};
+ push(a.x,a.y,a.w,front-a.y);
+ push(a.x,back,a.w,a.y+a.d-back);
+ push(a.x,front,left-a.x,back-front);
+ push(right,front,a.x+a.w-right,back-front);
+ return out;
+}
+function r1056WorktopMesh(room,spec,mat,occupied,id){
+ let pieces=[spec];
+ for(const previous of occupied)pieces=pieces.flatMap(p=>r1056SubtractRect(p,previous));
+ pieces.forEach((p,i)=>{
+   const mesh=meshBox(room,p,mat.clone(),furnitureGroup,'worktop','WORKTOP-'+id+'-'+i);
+   mesh.material.userData.owned=true;mesh.userData.partRole='VISUAL_WORKTOP_CLIP';
+ });
+ occupied.push(...pieces.map(({x,y,w,d})=>({x,y,w,d})));
+ if(pieces.length!==1||Math.abs(pieces[0].w-spec.w)>.4||Math.abs(pieces[0].d-spec.d)>.4){
+   window.BizetR1056WorktopClips=(window.BizetR1056WorktopClips||0)+1;
+   window.dispatchEvent(new CustomEvent('bizet:engineering-stop',
+     {detail:{reason:'WORKTOP_CORNER_TRIM_REQUIRES_APPROVED_PART_GEOMETRY',subject:id}}));
+ }
+}
 function addWorktopAndPlinth(room,modules){
  const c=colors(),wm=ownMat({color:c.worktop,roughness:.42}),pm=ownMat({color:c.body,roughness:.6}),seamMat=ownMat({color:'#292929',roughness:.75}),recess=plinthRecess(),wt=worktopThickness();
+ const worktopOccupied=[];window.BizetR1056WorktopClips=0;
  r1056MaterialTexture(wm,'worktop',c.worktop);r1056MaterialTexture(pm,'carcass',c.body);
  lowerRuns(modules).forEach(([wall,list])=>{
    const segments=segmentBy4100(wall,list);
    segments.forEach((seg,si)=>{const first=seg[0],last=seg.at(-1),topZ=Math.max(...seg.map(m=>+m.z+ +m.h))+1;
      if(wall==='A'){
        const x=+first.x-2,w=(+last.x+ +last.w)-+first.x+4,y=Math.min(...seg.map(m=>+m.y))-20,d=Math.max(...seg.map(m=>+m.y+ +m.d))-y;
-       const top=meshBox(room,{x,y,z:topZ,w,d,h:wt},wm.clone(),furnitureGroup,'worktop','WORKTOP-'+wall+'-'+si);top.material.userData.owned=true;
+       r1056WorktopMesh(room,{x,y,z:topZ,w,d,h:wt},wm,worktopOccupied,wall+'-'+si);
        if(si>0){const seamX=+first.x;const seam=meshBox(room,{x:seamX-1.5,y,z:topZ+wt,w:3,d,h:1.6},seamMat.clone(),hardwareGroup,'worktop-seam','SEAM-'+wall+'-'+si);seam.material.userData.owned=true}
        seg.forEach(m=>{const ph=Math.max(60,+m.z||100),pl=meshBox(room,{x:+m.x,y:+m.y+recess,z:0,w:+m.w,d:12,h:ph},pm.clone(),furnitureGroup,'plinth','PLINTH-'+m.id);pl.material.userData.owned=true;pl.userData.recess_mm=recess});
      }else{
        const y=+first.y-2,d=(+last.y+ +last.d)-+first.y+4,x=wall==='B'?Math.min(...seg.map(m=>+m.x))-20:Math.min(...seg.map(m=>+m.x)),w=Math.max(...seg.map(m=>+m.x+ +m.w))-x+(wall==='C'?20:0);
-       const top=meshBox(room,{x,y,z:topZ,w,d,h:wt},wm.clone(),furnitureGroup,'worktop','WORKTOP-'+wall+'-'+si);top.material.userData.owned=true;
+       r1056WorktopMesh(room,{x,y,z:topZ,w,d,h:wt},wm,worktopOccupied,wall+'-'+si);
        if(si>0){const seamY=+first.y;const seam=meshBox(room,{x,y:seamY-1.5,z:topZ+wt,w,d:3,h:1.6},seamMat.clone(),hardwareGroup,'worktop-seam','SEAM-'+wall+'-'+si);seam.material.userData.owned=true}
        seg.forEach(m=>{const ph=Math.max(60,+m.z||100),front=wall==='B'?+m.x+ +m.w:+m.x,px=wall==='B'?front-recess-12:front+recess,pl=meshBox(room,{x:px,y:+m.y,z:0,w:12,d:+m.d,h:ph},pm.clone(),furnitureGroup,'plinth','PLINTH-'+m.id);pl.material.userData.owned=true;pl.userData.recess_mm=recess});
      }
