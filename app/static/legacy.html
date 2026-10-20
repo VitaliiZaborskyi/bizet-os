@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BIZET OS 1.0 — Testable Prototype</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+<div class="shell">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">BIZET OS 1.0 • TESTABLE PROTOTYPE • PILOT.6</span>
+      <h1>Помещение сначала.<br><span>Мебель — следствие.</span></h1>
+      <p>Ручной ввод геометрии → конфигурация → потолок → препятствия → коммуникации → Decision Engine.</p>
+    </div>
+    <div class="status-pill" id="health">ENGINE…</div>
+  </header>
+
+  <main class="grid">
+    <section class="panel controls">
+      <div class="step"><b>01</b><span>Тип объекта</span></div>
+      <div class="cards four" id="objectCards">
+        <button class="card active" data-value="NEW_BUILD">🏙️<span>Новострой</span></button>
+        <button class="card" data-value="OLD_STOCK">🏢<span>Старый фонд</span></button>
+        <button class="card" data-value="PRIVATE_HOUSE">🏠<span>Частный дом</span></button>
+        <button class="card disabled" data-value="COMMERCIAL_PLACEHOLDER">🏨<span>Коммерция</span><small>позже</small></button>
+      </div>
+
+      <div class="step"><b>02</b><span>Прямая конфигурация</span></div>
+      <div class="cards three" id="configCards">
+        <button class="card active" data-value="LEFT_WALL"><span class="mini-diagram wall-left"></span><span>Стена слева</span></button>
+        <button class="card" data-value="RIGHT_WALL"><span class="mini-diagram wall-right"></span><span>Стена справа</span></button>
+        <button class="card" data-value="BETWEEN_WALLS"><span class="mini-diagram walls-both"></span><span>Между стен</span></button>
+      </div>
+
+      <div class="step"><b>03</b><span>Геометрия, мм</span></div>
+      <div class="form-row three-col">
+        <label>Длина стены<input id="wallLength" type="number" value="3000" min="1000" max="12000" step="10"></label>
+        <label>Высота<input id="roomHeight" type="number" value="2700" min="1800" max="6000" step="10"></label>
+        <label>Глубина зоны<input id="wallDepth" type="number" value="600" min="100" max="5000" step="10"></label>
+      </div>
+      <div class="form-row three-col source-row">
+        <label>Источник длины<select id="wallSource" class="source"></select></label>
+        <label>Источник высоты<select id="heightSource" class="source"></select></label>
+        <label>Источник глубины<select id="depthSource" class="source"></select></label>
+      </div>
+      <div class="form-row">
+        <label>Левая стена: глубина<input id="leftDepth" type="number" value="600" min="0" step="10"></label>
+        <label>Правая стена: глубина<input id="rightDepth" type="number" value="0" min="0" step="10"></label>
+      </div>
+      <div class="form-row">
+        <label>Кривизна слева<input id="leftDeviation" type="number" value="0" min="0" max="150"></label>
+        <label>Кривизна справа<input id="rightDeviation" type="number" value="0" min="0" max="150"></label>
+      </div>
+      <div class="form-row">
+        <label>Отклонение горизонтали<input id="horizontalDeviation" type="number" value="0" min="0" max="150"></label>
+        <label>Отклонение вертикали<input id="verticalDeviation" type="number" value="0" min="0" max="150"></label>
+      </div>
+
+      <div class="step"><b>04</b><span>Потолок и отделка</span></div>
+      <div class="form-row">
+        <label>Тип потолка<select id="ceilingType"><option value="STRETCH_A">Натяжной A — фальш до перекрытия</option><option value="STRETCH_B">Натяжной B — готовый потолок</option><option value="GYPSUM">Гипсокартон</option><option value="OPEN_GAP" selected>Не подходим к потолку</option></select></label>
+        <label>Зазор сверху, мм<input id="ceilingGap" type="number" value="100" min="0" step="10"></label>
+      </div>
+      <div class="inline-checks">
+        <label class="check"><input type="checkbox" id="finishedFloor" checked><span>Финишный пол готов</span></label>
+        <label class="check"><input type="checkbox" id="skirtingPresent"><span>Есть плинтус</span></label>
+      </div>
+
+      <details class="editor" open>
+        <summary><span><b>05</b> Препятствия</span><small>выступы, окна, радиаторы…</small></summary>
+        <div id="obstacleRows" class="rows"></div>
+        <button class="mini-btn" id="addObstacle" type="button">+ Добавить препятствие</button>
+      </details>
+
+      <details class="editor" open>
+        <summary><span><b>06</b> Коммуникации</span><small>координаты + источник</small></summary>
+        <div id="communicationRows" class="rows"></div>
+        <button class="mini-btn" id="addCommunication" type="button">+ Добавить вывод</button>
+      </details>
+
+      <details class="editor">
+        <summary><span><b>07</b> Техника для теста</span><small>оставлена компактно</small></summary>
+        <div class="form-row">
+          <label>Открывание<select id="openingSystem"><option value="HANDLE">Накладная ручка</option><option value="PUSH" selected>Push-to-open</option><option value="GOLA">GOLA</option></select></label>
+          <label>Пользователей<input id="usersCount" type="number" value="2" min="1" max="10"></label>
+        </div>
+        <div class="appliance-grid">
+          <label class="check"><input type="checkbox" id="fridgeOn" checked><span>Холодильник</span></label>
+          <label>Тип<select id="fridgeType"><option value="FRIDGE_BUILTIN">Встраиваемый</option><option value="FRIDGE_FREESTANDING">Отдельностоящий</option></select></label>
+          <label>Сторона<select id="fridgeSide"><option value="LEFT">Слева</option><option value="RIGHT">Справа</option></select></label>
+          <label>Ширина<input id="fridgeWidth" type="number" value="600" step="10"></label>
+          <label class="check"><input type="checkbox" id="sinkOn" checked><span>Мойка</span></label><label>Ширина<input id="sinkWidth" type="number" value="500" step="50"></label>
+          <label class="check"><input type="checkbox" id="dwOn" checked><span>ПММ</span></label><label>Ширина<select id="dwWidth"><option value="450">450</option><option value="600">600</option></select></label>
+          <label class="check"><input type="checkbox" id="cookOn" checked><span>Варочная</span></label><label>Ширина<input id="cookWidth" type="number" value="600" step="50"></label>
+          <label class="check"><input type="checkbox" id="ovenOn" checked><span>Духовка</span></label><label class="check"><input type="checkbox" id="cutleryOn" checked><span>Лоток приборов</span></label>
+        </div>
+      </details>
+
+      <div class="actions"><button class="primary" id="generateBtn">Собрать конфигурацию</button><button class="ghost" id="loadExampleBtn">Сбросить пример</button></div>
+    </section>
+
+    <section class="panel stage">
+      <div class="stage-head"><div><span class="eyebrow">LIVE ROOM + KITCHEN SKELETON</span><h2 id="layoutTitle">Ожидаю расчёт</h2></div><span class="validation neutral" id="validationBadge">—</span></div>
+      <div class="view-toolbar" aria-label="Вид скелета"><button type="button" class="view-btn active" data-view="PERSPECTIVE">Перспектива</button><button type="button" class="view-btn" data-view="FRONT">Фронт</button><button type="button" class="view-btn" data-view="PLAN">План</button><span>обновляется автоматически</span></div>
+      <div class="canvas-wrap"><svg id="kitchenSvg" viewBox="0 0 1000 500" role="img" aria-label="Интерактивный визуальный скелет помещения и прямой кухни"></svg></div>
+      <div class="skeleton-legend"><span><i class="lg-module"></i>Модуль</span><span><i class="lg-appliance"></i>Техника</span><span><i class="lg-tall"></i>Пенал / холодильник</span><span><i class="lg-filler"></i>Филлер</span><span><i class="lg-comm"></i>Коммуникация</span></div>
+      <div class="room-summary" id="roomSummary"></div>
+      <div class="metrics" id="metrics"></div>
+      <div class="candidate-strip" id="candidateList"></div>
+      <div class="message-stack" id="messages"></div>
+      <details class="trace"><summary>Rule trace / debug</summary><pre id="ruleTrace">—</pre></details>
+    </section>
+
+    <section class="panel result-screen" id="resultScreen" hidden>
+      <div class="result-head">
+        <div><span class="eyebrow">BIZET OS • RESULT</span><h2>Заявка <span id="resultApplicationNo">—</span></h2><p id="resultMeta"></p></div>
+        <div><div id="resultStatus" class="result-status">—</div><button id="printResultBtn" class="ghost" type="button">Печать / PDF</button></div>
+      </div>
+      <div class="watermark">BIZET</div>
+      <div class="result-views">
+        <figure><svg id="resultPerspective" viewBox="0 0 1000 500"></svg><figcaption>Перспектива</figcaption></figure>
+        <figure><svg id="resultFront" viewBox="0 0 1000 500"></svg><figcaption>Фронт</figcaption></figure>
+        <figure><svg id="resultPlan" viewBox="0 0 1000 500"></svg><figcaption>План</figcaption></figure>
+      </div>
+      <div class="result-grid">
+        <div><h3>Список модулей</h3><div class="table-wrap"><table><thead><tr><th>Элемент</th><th>Тип</th><th>Ширина</th><th>X</th><th>Класс</th></tr></thead><tbody id="resultModules"></tbody></table></div></div>
+        <div><h3>Проверка</h3><ul id="resultNotes" class="result-notes"></ul></div>
+      </div>
+      <p class="result-disclaimer">Схематичный пилот BIZET OS 1.0. Вертикальная производственная геометрия остаётся ограниченной открытыми вопросами спецификации. Экспорт/печать содержит водяной знак BIZET.</p>
+    </section>
+  </main>
+</div>
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>

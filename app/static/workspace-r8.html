@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f5f2">
+  <script>try{if(sessionStorage.getItem("bizet_route_splash")==="1")document.documentElement.classList.add("r10-route-loading")}catch(_){}</script>
+  <title>BIZET OS R10.5.1 — Робоча модель</title>
+  <link rel="stylesheet" href="/static/start.css">
+  <link rel="stylesheet" href="/static/model.css">
+  <link rel="stylesheet" href="/static/model-r5.css">
+  <link rel="stylesheet" href="/static/pilot-shell.css">
+<link rel="stylesheet" href="/static/visualization-r1055.css?v=1055">
+  <link rel="stylesheet" href="/static/workspace-r8.css?v=1051">
+  <link rel="stylesheet" href="/static/r1050.css?v=1051">
+  <link rel="stylesheet" href="/static/r1051.css?v=1051">
+  <link rel="stylesheet" href="/static/ui-viewer-pilot.css?v=20261015">
+  <link rel="stylesheet" href="/static/point-b.css?v=175">
+  <link rel="stylesheet" href="/static/owner-qa-business.css?v=175">
+</head>
+<body class="r8-workspace-body">
+  <div class="r8-shell">
+    <header class="r8-topbar">
+      <button class="r8-icon" id="backButton" type="button" aria-label="Назад">←</button>
+      <a class="r8-brand" href="/"><span class="r8-master">ZABORSKY</span><strong>BIZET <i>OS</i></strong></a>
+      <div class="r8-project-state">
+        <span>Базовый вариант</span>
+        <span class="r10-order-badge" id="orderIdentityBadge" hidden></span>
+        <button class="r8-info" id="baseInfoButton" type="button" aria-label="О базовом варианте">i</button>
+      </div>
+      <div class="settings-wrap r10-workspace-settings-wrap">
+        <button class="r8-icon" id="settingsButton" type="button" aria-label="Настройки" aria-expanded="false">•••</button>
+        <div class="settings-panel r10-workspace-settings-panel" id="workspaceSettingsPanel" hidden>
+          <div class="settings-title">Настройки</div>
+          <label class="settings-field"><span>Тема</span><select id="workspaceThemeSelect"><option value="light">Світла</option><option value="dark">Темна</option></select></label>
+          <label class="settings-field"><span>Мова</span><select id="workspaceLanguageSelect"><option value="ua">Українська</option><option value="ru">Русский</option><option value="en">English</option></select></label>
+          <div id="workspaceBackgroundHost"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="r8-main">
+      <nav class="r8-tools" id="workspaceTools" aria-label="Настройки проекта">
+        <div class="r8-tools-label">Настройки проекта</div>
+        <button data-panel="room" type="button"><span>01</span>Помещение</button>
+        <button data-panel="appliances" type="button"><span>02</span>Техника</button>
+        <button data-panel="upper" type="button"><span>03</span>Настройка модулей</button>
+        <button data-panel="communications" type="button"><span>04</span>Коммуникации</button>
+        <button data-panel="elements" type="button"><span>05</span>Элементы стен</button>
+        <button data-panel="materials" type="button"><span>06</span>Материалы</button>
+        <button data-panel="general" type="button"><span>07</span>Экспорт</button>
+      </nav>
+
+      <section class="r8-canvas-column">
+        <div class="r8-stage" id="modelStage">
+          <canvas id="modelCanvas" class="model-canvas r10-kitchen-canvas" aria-label="Интерактивная модель кухни"></canvas>
+          <canvas id="focusCanvas" class="model-canvas r10-focus-canvas" aria-label="Изолированный модуль" aria-hidden="true"></canvas>
+          <div class="r8-stage-top">
+            <div class="r1049-viewer-mode" aria-label="Режим 3D">
+              <button id="kitchenViewMode" type="button" class="active">VIEW</button>
+              <button id="kitchenEditMode" type="button">EDIT</button>
+            </div>
+            <button class="r8-pill r10-focus-back" id="focusBackButton" type="button" hidden>← Назад</button>
+            <button class="r8-pill r10-dimensions-icon" id="modelDimensionsToggle" type="button" aria-pressed="true" aria-label="Скрыть размеры" title="Скрыть размеры">📏</button>
+            <button class="r8-pill r104-number-toggle" id="moduleNumbersToggle" type="button" aria-pressed="true" aria-label="Скрыть номера модулей" title="Скрыть номера модулей">#</button>
+            <button class="r8-pill r10-warning-button" id="constraintButton" type="button" hidden aria-expanded="false" title="Предупреждения проекта">!</button>
+          </div>
+          <div class="r10-constraint-banner" id="constraintBanner" hidden></div>
+          <div class="r104-focus-module-nav" id="focusModuleNav" hidden>
+            <button class="r104-focus-step" id="focusPrevModule" type="button" aria-label="Предыдущий модуль">‹</button>
+            <button class="r10-focus-module-label" id="focusModuleLabel" type="button" aria-haspopup="listbox" aria-expanded="false"></button>
+            <button class="r104-focus-step" id="focusNextModule" type="button" aria-label="Следующий модуль">›</button>
+            <div class="r104-focus-module-menu" id="focusModuleMenu" role="listbox" hidden></div>
+          </div>
+          <div class="r8-variant-controls" aria-label="Варианты кухни">
+            <div class="r8-variant-dots" id="variantDots" aria-label="Пять сохранённых вариантов"></div>
+            <button class="r8-random" id="randomVariant" type="button">Другой вариант</button>
+          </div>
+        </div>
+
+        <section class="r10-focus-variants" id="focusVariantRibbon" hidden aria-label="Варианты модуля">
+          <div class="r10-focus-variants-head">Варианты модуля</div>
+          <div class="r10-focus-variant-track" id="focusVariantOptions"></div>
+          <p class="r10-focus-variant-status" id="focusVariantStatus" hidden></p>
+        </section>
+
+        <section class="r104-module-editor" id="moduleEditPanel" hidden aria-label="Правка модуля">
+          <div class="r104-module-editor-head">
+            <div>
+              <small>ПРАВКА МОДУЛЯ</small>
+              <strong id="moduleEditTitle">Модуль</strong>
+            </div>
+            <div class="r104-module-price">
+              <span>Цена модуля</span>
+              <strong id="moduleDraftPrice">—</strong>
+              <small id="moduleDraftDelta"></small>
+            </div>
+          </div>
+          <div class="r104-module-editor-body" id="moduleEditBody"></div>
+          <p class="r104-module-rule" id="moduleEditRule" hidden></p>
+          <div class="r104-module-editor-actions">
+            <button class="r8-secondary" id="moduleEditCancel" type="button">Отменить</button>
+            <button class="r8-save" id="moduleEditSave" type="button">Сохранить модуль</button>
+          </div>
+        </section>
+
+        <div class="r8-module-strip-label">Список модулей</div>
+        <div class="module-strip r8-module-strip" id="moduleStrip" aria-label="Модули кухни"></div>
+        <p class="model-status r8-status" id="modelStatus" hidden aria-live="polite">Формируем базовый вариант…</p>
+      </section>
+
+      <aside class="r8-panel" id="editorPanel" hidden>
+        <div class="r8-panel-head">
+          <div><small id="panelKicker">01 · ПОМЕЩЕНИЕ</small><h2 id="panelTitle">Уточните проект</h2></div>
+          <button class="r8-panel-close" id="panelClose" type="button" aria-label="Свернуть">×</button>
+        </div>
+        <div class="r8-panel-body" id="panelBody"></div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="r8-popover" id="baseInfoPopover" hidden>
+    <button type="button" id="baseInfoClose">×</button>
+    <strong>Базовый вариант</strong>
+    <p>Сформирован автоматически по выбранной конфигурации, размерам помещения и уже известным системе данным. Уточняйте параметры — модель будет перестраиваться.</p>
+  </div>
+
+  <dialog class="module-dialog" id="moduleDialog">
+    <div class="module-card r8-module-card">
+      <div class="r10-module-nav">
+        <button class="r8-secondary r10-focus-inline" id="focusBackInline" type="button">← Назад</button>
+        <button class="dialog-close" id="moduleClose" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <p class="r8-module-kicker">MODULE CUSTOMIZATION</p>
+      <h2 id="moduleTitle">Модуль</h2><p id="moduleCopy"></p>
+      <div class="r8-module-grid">
+        <label><span>Ширина W, мм</span><input id="moduleWidth" type="number" inputmode="numeric" step="10"></label>
+        <label><span>Высота H, мм</span><input id="moduleHeight" type="number" inputmode="numeric" step="10"></label>
+        <label><span>Глубина D, мм</span><input id="moduleDepth" type="number" inputmode="numeric" step="10"></label>
+        <label><span>Открывание</span><select id="moduleOpening"><option value="AUTO">Авто</option><option value="HINGED_LEFT">Петли слева</option><option value="HINGED_RIGHT">Петли справа</option><option value="LIFT">Подъёмный</option><option value="DRAWERS">Ящики</option></select></label>
+      </div>
+      <div class="coordinate-box">
+        <span>Положение вдоль ряда, мм</span>
+        <input id="moduleOffsetInput" type="number" inputmode="numeric" step="10" value="0">
+      </div>
+      <p class="r8-module-validation" id="moduleValidation" hidden></p>
+      <div class="r8-module-actions">
+        <button class="r8-secondary" id="moduleReset" type="button">Сбросить модуль</button>
+        <button class="r8-save" id="moduleApply" type="button">Применить и перестроить 3D</button>
+      </div>
+    </div>
+  </dialog>
+
+  <button id="materialsButton" type="button" hidden>Материалы</button>
+
+  <dialog class="r104-material-dialog" id="surfaceMaterialDialog">
+    <div class="r104-material-card">
+      <button class="r104-material-close" id="surfaceMaterialClose" type="button" aria-label="Закрыть">×</button>
+      <p class="r104-material-kicker">BIZET OS · MATERIAL PICKER</p>
+      <h2 id="surfaceMaterialTitle">Материал поверхности</h2>
+      <label class="r8-field"><span>Тип</span><select id="surfaceMaterialType"></select></label>
+      <div class="r104-material-swatches" id="surfaceMaterialSwatches"></div>
+      <label class="r104-upload-texture">
+        <span>Своя текстура</span>
+        <input id="surfaceTextureInput" type="file" accept="image/*">
+        <small id="surfaceTextureStatus">JPG / PNG / WEBP</small>
+      </label>
+      <div class="r104-material-actions">
+        <button class="r8-secondary" id="surfaceMaterialCancel" type="button">Отмена</button>
+        <button class="r8-save" id="surfaceMaterialApply" type="button">Применить</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>window.BizetUnifiedMenuEnabled=true;</script>
+  <script src="/static/pilot-r8-shell.js?v=20261020r1055"></script>
+  <script src="/static/pilot-shell.js?v=20261020r1055"></script>
+  <script src="/static/r10-domain-rules.js?v=20261020r1055"></script>
+  <script src="/static/r10-hardware-assets.js?v=175"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SAOShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/DepthLimitedBlurShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/UnpackDepthRGBAShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SAOPass.js"></script>
+  <script src="/static/pilot-3d.js?v=1051"></script>
+  <script src="/static/production-r1050.js?v=20261020r1055"></script>
+  <script src="/static/kitchen-webgl-r1050.js?v=20261020r1055"></script>
+  <script src="/static/model-r5-pre.js"></script>
+  <script src="/static/model-r6-dimensions.js?v=175"></script>
+  <script src="/static/model.js?v=20261020r1055"></script>
+  <script src="/static/model-r5.js?v=175"></script>
+  <script src="/static/pilot-r6.js"></script>
+  <script src="/static/workspace-r8.js?v=20261020r1055"></script>
+  <script src="/static/point-b.js?v=20261020r1055"></script>
+<script src="/static/visualization-r1055.js?v=1055"></script>
+  <script src="/static/owner-qa-business.js?v=175"></script>
+  <script src="/static/workspace-r1050.js?v=20261011"></script>
+  <script src="/static/ua-ui-r1050.js?v=1051"></script>
+</body>
+</html>
