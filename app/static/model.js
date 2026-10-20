@@ -223,6 +223,7 @@
       module.handle_override_mode=edit.handle_override_mode==='INDIVIDUAL'?'INDIVIDUAL':'INHERIT';
       module.individual_handle_system=window.BizetR10Rules?.normalizeHandleSystem?.(edit.individual_handle_system||'STANDARD')||'STANDARD';
     }
+    if(edit.top_panel_override&&module.level!=='upper'&&!module.tall&&!['SINK','TALL_OVEN'].includes(module.kind))module.top_panel_override=edit.top_panel_override;
     if(edit.end_panel_shape)module.end_panel_shape=edit.end_panel_shape;
     if(edit.end_panel_material)module.end_panel_material=edit.end_panel_material;
     module.module_edit_status=moduleDraft?.id===module.id?'DRAFT_PREVIEW':'SAVED';
@@ -877,6 +878,7 @@
       filler_material:module.filler_material||'CARCASS',
       end_panel_shape:module.end_panel_shape||'FLAT',
       end_panel_material:module.end_panel_material||'CARCASS',
+      top_panel_override:module.top_panel_override||'NO',
       handle_placement:module.handle_placement||'OPPOSITE_HINGES',
       handle_override_mode:module.handle_override_mode||'INHERIT',
       individual_handle_system:module.individual_handle_system||'STANDARD'
@@ -947,6 +949,7 @@
       :editField(tr('Ширина, мм','Width, mm'),'run_mm',d.run_mm);
     if(locked&&!ovenOnly)html=html.replace('data-module-edit="run_mm"','data-module-edit="run_mm" disabled');
     if(kind==='LOWER'){
+      html+=editField(tr1054('Верхняя крышка — особый ручной случай','Top panel — manual exception','Верхня кришка — ручний виняток'),'top_panel_override',d.top_panel_override,'select', [['NO',tr1054('Без крышки (2×100 мм)','No top (2×100 mm rails)','Без кришки (2×100 мм)')],['YES',tr1054('С крышкой (ручной выбор)','With top (manual)','З кришкою (вручну)')]]);
       html+=editField(tr('Конфигурация','Configuration'),'configuration',d.configuration,'select',[['HINGED',tr('Распашной','Hinged')],['DRAWERS',tr('Ящики','Drawers')]]);
       if(d.configuration==='DRAWERS'){
         html+=editField(tr('Ящиков','Drawers'),'drawer_count',d.drawer_count,'select',[[2,'2'],[3,'3'],[4,'4'],[5,'5']]);
