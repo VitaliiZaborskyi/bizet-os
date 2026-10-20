@@ -250,6 +250,17 @@ function materialIdFor(p){
 }
 function exportEngineering(model,filename,options={}){
  if(!model)return false;
+ const customShelves=(model.modules||[]).filter(m=>Array.isArray(m.shelf_z_overrides_mm)&&m.shelf_z_overrides_mm.length);
+ const invalidHinges=(model.modules||[]).filter(m=>m.hinge_layout_conflict||window.BizetR10Rules?.planHingePositions?.(m)?.ok===false);
+ if(customShelves.length||invalidHinges.length){
+   const errors=[
+     ...customShelves.map(m=>'STOP_UNVERIFIED_SHELF_CONNECTION_MACHINING:'+m.id),
+     ...invalidHinges.map(m=>'STOP_HINGE_SHELF_COLLISION:'+m.id)
+   ];
+   const report={ok:false,errors,warnings:[],status:'HUMAN_REVIEW_REQUIRED'};
+   window.dispatchEvent(new CustomEvent('bizet:export-preflight',{detail:{profile:profile().id,report,model:model.name}}));
+   console.warn('R10.5.5 export blocked: unverified shelf/hinge data',report);return false;
+ }
  const p=profile();if(!p.active||!p.project3dc)return false;
  const report=preflight(model,{allowUnresolved:!!options.allowUnresolved});
  window.dispatchEvent(new CustomEvent('bizet:export-preflight',{detail:{profile:p.id,report,model:model.name}}));
