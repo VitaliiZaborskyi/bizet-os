@@ -13,6 +13,12 @@ def test_health():
 def test_index_served():
     r=client.get('/')
     assert r.status_code==200
+    assert 'BIZET OS — Start Experience' in r.text
+
+
+def test_legacy_index_served():
+    r=client.get('/legacy')
+    assert r.status_code==200
     assert 'BIZET OS 1.0' in r.text
 
 

@@ -1,0 +1,467 @@
+:root{--r8-bg:#f4f4f1;--r8-panel:#fbfbf8;--r8-ink:#171717;--r8-muted:#777872;--r8-line:#d9d9d3;--r8-blue:#2f7cff;--r8-shadow:0 24px 70px rgba(20,20,18,.10)}*{box-sizing:border-box}body.r8-workspace-body{margin:0;background:var(--r8-bg);color:var(--r8-ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}.r8-shell{min-height:100vh}.r8-topbar{height:72px;display:grid;grid-template-columns:48px 1fr auto 48px;gap:12px;align-items:center;padding:0 22px;border-bottom:1px solid var(--r8-line);background:rgba(244,244,241,.94);backdrop-filter:blur(18px);position:sticky;top:0;z-index:50}.r8-icon{width:42px;height:42px;border:0;border-radius:14px;background:transparent;font-size:20px;cursor:pointer}.r8-brand{text-decoration:none;color:inherit;display:flex;gap:12px;align-items:baseline}.r8-brand strong{font-size:22px;letter-spacing:-.04em}.r8-brand i{font-style:normal;font-weight:500;color:var(--r8-blue)}.r8-master{font-size:10px;letter-spacing:.18em;color:var(--r8-muted)}.r8-project-state{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--r8-muted)}.r8-info{width:22px;height:22px;border:1px solid var(--r8-line);border-radius:50%;background:white;font-weight:700;cursor:pointer}.r8-main{display:grid;grid-template-columns:190px minmax(0,1fr) 350px;min-height:calc(100vh - 72px)}.r8-tools{padding:26px 14px;border-right:1px solid var(--r8-line);display:flex;flex-direction:column;gap:4px}.r8-tools button{border:0;background:transparent;text-align:left;padding:12px 10px;border-radius:12px;color:var(--r8-muted);font-size:13px;cursor:pointer}.r8-tools button span{display:inline-block;width:28px;font-size:10px;color:#aaa}.r8-tools button.is-active{background:#fff;color:var(--r8-ink);box-shadow:0 4px 18px rgba(0,0,0,.04)}.r8-canvas-column{padding:22px;min-width:0}.r8-stage{height:min(62vh,650px);min-height:410px;background:#ebeae5;border:1px solid var(--r8-line);border-radius:24px;overflow:hidden;position:relative;box-shadow:var(--r8-shadow)}.r8-stage canvas{width:100%;height:100%}.r8-stage-top{position:absolute;top:14px;left:14px;display:flex;gap:8px}.r8-pill,.r8-arrow,.r8-random{border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border-radius:999px;padding:9px 13px;font-size:12px;cursor:pointer}.r8-undo{font-size:18px;padding:6px 12px}.r8-variant-controls{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.82);padding:7px 7px 7px 11px;border-radius:999px;backdrop-filter:blur(14px)}.r8-random{background:#f3f1ec;color:#171716;border-color:rgba(23,23,22,.10);padding-inline:16px}.r8-module-strip{margin-top:12px}.r8-status{margin:10px 4px 0;color:var(--r8-muted);font-size:12px}.r8-panel{border-left:1px solid var(--r8-line);background:var(--r8-panel);padding:24px 20px;overflow:auto;overscroll-behavior:contain}.r8-panel-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:20px}.r8-panel-head small{font-size:10px;letter-spacing:.12em;color:var(--r8-muted)}.r8-panel-head h2{font-size:22px;margin:5px 0 0;letter-spacing:-.03em}.r8-panel-close{border:0;background:transparent;font-size:22px;cursor:pointer}.r8-section{padding:0 0 18px;margin-bottom:18px;border-bottom:1px solid var(--r8-line)}.r8-section h3{font-size:13px;margin:0 0 10px}.r8-field{display:block;margin:10px 0}.r8-field span{display:block;font-size:11px;color:var(--r8-muted);margin-bottom:6px}.r8-field select,.r8-field input{width:100%;border:1px solid var(--r8-line);background:white;border-radius:12px;padding:11px 12px;font:inherit}.r8-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.r8-choice-row{display:flex;flex-wrap:wrap;gap:6px}.r8-choice-row button{border:1px solid var(--r8-line);background:#fff;border-radius:999px;padding:8px 11px;font-size:12px;cursor:pointer}.r8-choice-row button.is-selected{background:var(--r8-ink);color:white;border-color:var(--r8-ink)}.r8-save{width:100%;margin-top:10px;border:0;background:var(--r8-blue);color:white;border-radius:12px;padding:11px;font-weight:650;cursor:pointer}.r8-popover{position:fixed;top:82px;right:82px;z-index:100;background:#161616;color:white;width:min(360px,calc(100vw - 32px));padding:18px;border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.28)}.r8-popover button{float:right;border:0;background:transparent;color:white;font-size:20px}.r8-popover p{font-size:13px;line-height:1.5;color:#d4d4d0}.r8-splash{position:fixed;inset:0;z-index:9999;background:#111;display:grid;place-items:center;opacity:1;transition:opacity .35s ease}.r8-splash.is-leaving{opacity:0;pointer-events:none}.r8-splash-inner{text-align:center;color:white;animation:r8Reveal 1s ease both}.r8-splash-master{font-size:12px;letter-spacing:.42em;opacity:.64;margin-bottom:10px}.r8-splash-logo{font-size:42px;font-weight:760;letter-spacing:-.05em}.r8-splash-logo span{color:#2f7cff;font-weight:520}@keyframes r8Reveal{0%{opacity:0;transform:scale(.96);filter:blur(10px)}60%{opacity:1;filter:blur(0)}100%{transform:scale(1)}}html[data-theme="dark"]{--r8-bg:#171716;--r8-panel:#20201e;--r8-ink:#f4f2ed;--r8-muted:#a9a69e;--r8-line:rgba(255,255,255,.12)}html[data-theme="dark"] .r8-topbar{background:rgba(23,23,22,.94)}html[data-theme="dark"] .r8-tools button.is-active,html[data-theme="dark"] .r8-field select,html[data-theme="dark"] .r8-field input,html[data-theme="dark"] .r8-choice-row button{background:#282825;color:#f4f2ed}html[data-theme="dark"] .r8-info{background:#282825;color:#fff}@media(max-width:1050px){.r8-main{grid-template-columns:72px minmax(0,1fr) 300px}.r8-tools button{font-size:0}.r8-tools button span{font-size:10px;width:auto}.r8-tools{align-items:center}}@media(max-width:820px){.r8-topbar{padding:0 12px;grid-template-columns:42px 1fr auto 42px}.r8-master{display:none}.r8-project-state span{display:none}.r8-main{display:block}.r8-tools{position:fixed;left:10px;right:10px;bottom:10px;z-index:90;flex-direction:row;border:0;background:rgba(255,255,255,.88);backdrop-filter:blur(14px);border-radius:18px;padding:7px;overflow-x:auto;box-shadow:0 14px 50px rgba(0,0,0,.16)}.r8-tools button{font-size:0;min-width:42px;text-align:center}.r8-tools button span{font-size:10px}.r8-canvas-column{padding:8px 12px calc(84px + env(safe-area-inset-bottom))}.r8-stage{height:clamp(300px,50svh,430px);min-height:300px;border-radius:18px}.r8-panel{position:fixed;left:8px;right:8px;bottom:72px;z-index:80;max-height:56vh;border:1px solid var(--r8-line);border-radius:22px;background:var(--r8-panel);box-shadow:0 25px 70px rgba(0,0,0,.24)}.r8-panel[hidden]{display:none}.r8-variant-controls{bottom:12px}.r8-random{padding-inline:12px}.r8-popover{right:16px;top:76px}}
+.r8-variant-dots{display:flex;align-items:center;gap:7px;padding:0 2px}
+.r8-variant-dot{width:7px;height:7px;border:0;border-radius:999px;background:rgba(23,23,22,.22);padding:0;cursor:pointer;transition:transform .16s ease,background .16s ease}
+.r8-variant-dot.is-active{background:var(--r8-ink);transform:scale(1.18)}
+.r8-variant-dot:focus-visible{outline:2px solid var(--r8-blue);outline-offset:3px}
+html[data-theme="dark"] .r8-variant-controls{background:rgba(36,36,34,.88)}
+html[data-theme="dark"] .r8-variant-dot{background:rgba(255,255,255,.24)}
+html[data-theme="dark"] .r8-variant-dot.is-active{background:#f4f2ed}
+
+.r8-module-card{width:min(620px,calc(100vw - 28px))}
+.r8-module-kicker{margin:0 0 6px;color:var(--r8-muted);font-size:10px;letter-spacing:.14em}
+.r8-module-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}
+.r8-module-grid label,.coordinate-box{display:block}
+.r8-module-grid label span,.coordinate-box>span{display:block;margin:0 0 6px;color:var(--r8-muted);font-size:11px}
+.r8-module-grid input,.r8-module-grid select,.coordinate-box input{width:100%;border:1px solid var(--r8-line);background:#fff;color:#171717;border-radius:12px;padding:11px 12px;font:inherit}
+html[data-theme="dark"] .r8-module-grid input,html[data-theme="dark"] .r8-module-grid select,html[data-theme="dark"] .coordinate-box input{background:#282825;color:#f4f2ed}
+.r8-module-validation{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:#fff4e5;color:#7b4d00;font-size:12px;line-height:1.4}
+.r8-module-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:14px}
+.r8-secondary{border:1px solid var(--r8-line);background:transparent;color:inherit;border-radius:12px;padding:11px;font-weight:650;cursor:pointer}
+
+@media(min-width:821px){
+  body.r8-workspace-body{height:100vh;overflow:hidden}
+  .r8-shell{height:100vh;min-height:0}
+  .r8-main{height:calc(100vh - 72px);min-height:0;overflow:hidden}
+  .r8-tools{height:100%;overflow-y:auto;overscroll-behavior:contain}
+  .r8-canvas-column{height:100%;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+  .r8-stage{flex:1 1 auto;height:auto;min-height:330px}
+  .r8-panel{height:100%;min-height:0;overflow-y:auto}
+  .r8-module-strip{flex:0 0 auto}
+  .r8-status{flex:0 0 auto}
+}
+@media(max-width:820px){
+  .r8-module-grid{grid-template-columns:1fr}
+  .r8-module-actions{grid-template-columns:1fr}
+}
+
+/* R10 phase 2: iPhone/Pointer camera gesture owns the 3D canvas. */
+#modelCanvas,#focusCanvas{touch-action:none;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+
+/* R10 contrast: light pill surfaces always use dark ink. */
+.r8-pill,.r8-arrow{color:#171716}
+
+/* R10.1 focus/navigation and room-constraint feedback */
+.r10-focus-back{font-weight:700}
+.r10-constraint-banner{position:absolute;left:14px;right:14px;top:62px;z-index:12;padding:10px 12px;border-radius:14px;background:rgba(255,244,214,.94);color:#382700;border:1px solid rgba(120,83,0,.2);font-size:11px;line-height:1.35;backdrop-filter:blur(8px)}
+.r10-constraint-banner strong{display:block;font-size:10px;letter-spacing:.08em;margin-bottom:3px}
+html[data-theme="dark"] .r10-constraint-banner{background:rgba(64,46,10,.94);color:#ffe8a3;border-color:rgba(255,220,125,.2)}
+@media(max-width:820px){.r10-constraint-banner{left:10px;right:10px;top:58px;font-size:10px}}
+
+.r10-module-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.r10-focus-inline{width:auto;padding:8px 11px;background:#fff;color:#171716}
+html[data-theme="dark"] .r10-focus-inline{background:#f4f2ed;color:#171716}
+.r10-module-nav .dialog-close{position:static;margin-left:auto}
+
+/* R10.2 order identity */
+.r10-order-badge{display:inline-flex;align-items:center;padding:4px 8px;border:1px solid var(--r8-line);border-radius:999px;background:#fff;color:#171716;font-size:10px;font-weight:750;letter-spacing:.04em;white-space:nowrap}
+html[data-theme="dark"] .r10-order-badge{background:#f4f2ed;color:#171716}
+@media(max-width:820px){.r10-order-badge{font-size:9px;padding:3px 6px}.r8-project-state>span:first-child{display:none}}
+
+/* R10.3 routed splash cover */
+html.r10-route-loading{background:#07111f}
+html.r10-route-loading .r8-shell{visibility:hidden}
+
+/* R10.3 compact warning and strict light-surface contrast */
+.r10-warning-button{min-width:38px;font-weight:900}
+.r10-warning-button.is-warning{background:#d92d20!important;color:#fff!important;border-color:#d92d20!important;box-shadow:0 6px 18px rgba(217,45,32,.28)}
+.r10-constraint-banner{left:14px;right:auto;top:62px;max-width:min(520px,calc(100% - 28px));padding:12px 14px;background:rgba(20,20,20,.94)!important;color:#fff!important;border:1px solid rgba(255,255,255,.16)!important}
+.r10-constraint-banner p{margin:5px 0 0}
+@media(max-width:820px){
+  .r8-tools{background:rgba(245,245,242,.94)!important}
+  .r8-tools button,.r8-tools button span{color:#171716!important}
+  .r8-tools button.is-active{background:#fff!important;color:#171716!important}
+  .r10-constraint-banner{left:10px;right:10px;top:58px;max-width:none}
+}
+
+/* R10.3 room acquisition */
+.r10-room-source button{background:#fff!important;color:#171716!important;border-color:rgba(23,23,22,.12)!important}
+.r10-room-import-status{font-size:11px;line-height:1.45;color:var(--r8-muted);margin:10px 0 0}
+.r10-file-calibration[hidden]{display:none!important}
+html[data-theme="dark"] .r10-room-source button{background:#f3f1ec!important;color:#171716!important}
+
+/* R10.3.1 interface labels and touch intent */
+.r8-tools-label{font-size:10px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:var(--r8-muted);padding:0 10px 10px}
+.r8-module-strip-label{margin:13px 4px 5px;font-size:11px;font-weight:750;letter-spacing:.04em;color:var(--r8-muted)}
+.r10-dimensions-icon{font-size:19px!important;line-height:1;min-width:42px;padding:7px 10px!important}
+.r8-random{color:#171716!important}
+@media(max-width:820px){
+  .r8-tools{overflow:visible!important}
+  .r8-tools-label{position:fixed;left:20px;bottom:70px;z-index:91;padding:0;font-size:9px;color:var(--r8-muted);white-space:nowrap}
+  .r8-tools>button{flex:0 0 auto}
+  .r8-tools{overflow-x:auto!important}
+  .r8-module-strip-label{margin-top:14px}
+}
+
+
+/* R10.3.4: mobile workspace targets one-screen use; page scroll remains available outside the 3D canvas. */
+@media(max-width:820px){
+  .r8-module-strip-label{margin-top:8px}
+  .r8-module-strip{margin-top:4px}
+  .r8-status{margin-top:4px}
+  html[data-theme="dark"] .r8-tools-label{color:#d7d7d2}
+  .r10-workspace-settings-panel{z-index:130}
+}
+@media(max-width:820px) and (max-height:700px){
+  .r8-stage{height:46svh;min-height:270px}
+}
+
+
+/* R10.3.5 — tighter mobile workspace + dedicated module-focus surface. */
+.r10-focus-module-label{
+  position:absolute;top:14px;right:14px;z-index:14;
+  max-width:min(52%,340px);padding:9px 12px;border-radius:14px;
+  background:rgba(20,20,20,.82);color:#fff;font-size:12px;font-weight:780;
+  line-height:1.2;letter-spacing:.01em;backdrop-filter:blur(12px);
+  box-shadow:0 7px 24px rgba(0,0,0,.16)
+}
+.r10-focus-variants{margin:6px 0 0;padding:0 2px}
+.r10-focus-variants-head{margin:0 2px 5px;font-size:12px;font-weight:800;color:var(--r8-ink)}
+.r10-focus-variant-track{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;padding:2px 1px 5px;scrollbar-width:none}
+.r10-focus-variant-track::-webkit-scrollbar{display:none}
+.r10-focus-variant-card{
+  flex:0 0 94px;border:1px solid var(--r8-line);border-radius:14px;background:var(--r8-panel);color:var(--r8-ink);
+  padding:7px;cursor:pointer;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.06)
+}
+.r10-focus-variant-card[disabled]{opacity:.42;cursor:not-allowed}
+.r10-focus-variant-card.is-selected{outline:2px solid var(--r8-blue);outline-offset:1px}
+.r10-focus-variant-card strong{display:block;margin-top:5px;font-size:10px;line-height:1.15}
+.r10-module-thumb{
+  position:relative;height:64px;border:1px solid color-mix(in srgb,var(--r8-ink) 25%,transparent);border-radius:7px;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--r8-panel) 86%,#fff),color-mix(in srgb,var(--r8-bg) 88%,#9aa7b6));
+  overflow:hidden;transform:perspective(130px) rotateY(-7deg)
+}
+.r10-module-thumb::before,.r10-module-thumb::after{content:'';position:absolute;left:7px;right:7px;border-top:1px solid color-mix(in srgb,var(--r8-ink) 55%,transparent)}
+.r10-module-thumb.drawers-2::before{top:50%}.r10-module-thumb.drawers-2::after{display:none}
+.r10-module-thumb.drawers-3::before{top:33.33%}.r10-module-thumb.drawers-3::after{top:66.66%}
+.r10-module-thumb.drawers-4{background:
+  linear-gradient(to bottom,transparent 24.4%,color-mix(in srgb,var(--r8-ink) 55%,transparent) 24.4% 25.6%,transparent 25.6% 49.4%,color-mix(in srgb,var(--r8-ink) 55%,transparent) 49.4% 50.6%,transparent 50.6% 74.4%,color-mix(in srgb,var(--r8-ink) 55%,transparent) 74.4% 75.6%,transparent 75.6%),
+  linear-gradient(145deg,color-mix(in srgb,var(--r8-panel) 86%,#fff),color-mix(in srgb,var(--r8-bg) 88%,#9aa7b6))}
+.r10-module-thumb.drawers-4::before,.r10-module-thumb.drawers-4::after,.r10-module-thumb.drawers-5::before,.r10-module-thumb.drawers-5::after{display:none}
+.r10-module-thumb.drawers-5{background:
+  repeating-linear-gradient(to bottom,transparent 0 19%,color-mix(in srgb,var(--r8-ink) 55%,transparent) 19% 20%),
+  linear-gradient(145deg,color-mix(in srgb,var(--r8-panel) 86%,#fff),color-mix(in srgb,var(--r8-bg) 88%,#9aa7b6))}
+.r10-module-thumb.hinged-2::before{left:50%;right:auto;top:5px;bottom:5px;border-top:0;border-left:1px solid color-mix(in srgb,var(--r8-ink) 55%,transparent)}
+.r10-module-thumb.hinged-2::after{display:none}
+.r10-focus-variant-status{margin:2px 2px 0;font-size:10px;color:var(--r8-muted)}
+
+body.r10-module-focus .r8-variant-controls,
+body.r10-module-focus #workspaceTools,
+body.r10-module-focus #pointBFinalActions,
+body.r10-module-focus .r8-module-strip-label,
+body.r10-module-focus #moduleStrip{display:none!important}
+
+@media(max-width:820px){
+  .r8-canvas-column{padding:6px 12px calc(78px + env(safe-area-inset-bottom))}
+  .r8-stage{height:clamp(280px,47svh,400px);min-height:280px}
+  .r8-module-strip-label{margin:5px 4px 2px;font-size:13px;font-weight:820;letter-spacing:.01em;text-transform:none}
+  .r8-module-strip{margin-top:0!important;padding:3px 2px 3px!important;gap:7px}
+  .r8-module-strip .module-strip-button{min-height:43px;padding:5px 11px 5px 6px}
+  .r8-tools{bottom:calc(8px + env(safe-area-inset-bottom));padding:6px}
+  .r8-tools-label{
+    bottom:calc(70px + env(safe-area-inset-bottom));left:20px;
+    font-size:11px;font-weight:820;letter-spacing:.02em;text-transform:none;color:var(--r8-ink)
+  }
+  html[data-theme="dark"] .r8-tools-label{color:var(--r8-ink)}
+  .r10-focus-module-label{top:10px;right:10px;max-width:55%;font-size:11px;padding:8px 10px}
+  .r10-focus-variants{margin-top:5px}
+  .r10-focus-variant-track{gap:6px}
+  .r10-focus-variant-card{flex-basis:82px;padding:6px}
+  .r10-module-thumb{height:56px}
+  body.r10-module-focus .r8-stage{height:clamp(330px,58svh,490px);min-height:330px}
+  body.r10-module-focus .r8-canvas-column{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+}
+@media(max-width:820px) and (max-height:700px){
+  .r8-stage{height:43svh;min-height:250px}
+  body.r10-module-focus .r8-stage{height:54svh;min-height:300px}
+}
+
+/* R10.3.7 — keep the 2D canvas on its own WebKit compositor layer during focus repaint. */
+#modelCanvas{-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden}
+
+/* R10.3.8 — separate render surfaces for full kitchen and module isolation.
+   Both stay laid out at full stage size; only visibility/pointer ownership changes. */
+.r10-kitchen-canvas,.r10-focus-canvas{
+  position:absolute;inset:0;width:100%;height:100%;display:block;
+  transition:none!important;
+}
+.r10-kitchen-canvas{opacity:1;visibility:visible;pointer-events:auto;z-index:1}
+.r10-focus-canvas{opacity:0;visibility:hidden;pointer-events:none;z-index:2}
+body.r10-module-focus .r10-kitchen-canvas{opacity:0;visibility:hidden;pointer-events:none}
+body.r10-module-focus .r10-focus-canvas{opacity:1;visibility:visible;pointer-events:auto}
+.r8-stage-top,.r10-constraint-banner,.r10-focus-module-label,.r8-variant-controls{z-index:10}
+
+
+/* R10.4.0 — integrated module editor, visible mobile project settings and reclaimed 3D viewport. */
+.r104-module-editor{
+  margin:8px 0 0;padding:12px;border:1px solid var(--r8-line);border-radius:18px;
+  background:var(--r8-panel);box-shadow:0 10px 28px rgba(0,0,0,.07)
+}
+.r104-module-editor[hidden]{display:none!important}
+.r104-module-editor-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:10px}
+.r104-module-editor-head small{display:block;font-size:9px;letter-spacing:.12em;color:var(--r8-muted);margin-bottom:3px}
+.r104-module-editor-head>div>strong{font-size:15px;line-height:1.15}
+.r104-module-price{text-align:right;min-width:126px}
+.r104-module-price span{display:block;font-size:9px;color:var(--r8-muted)}
+.r104-module-price strong{display:block;font-size:19px;line-height:1.08;margin-top:2px}
+.r104-module-price small{display:block;font-size:9px;color:var(--r8-muted);margin-top:2px}
+.r104-module-editor-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.r104-edit-field{display:grid;gap:4px;min-width:0}
+.r104-edit-field>span{font-size:9px;line-height:1.15;color:var(--r8-muted)}
+.r104-edit-field input,.r104-edit-field select{
+  width:100%;min-width:0;border:1px solid var(--r8-line);background:#fff;color:#171716;
+  border-radius:10px;padding:9px 9px;font:inherit;font-size:12px
+}
+.r104-edit-field.r104-wide{grid-column:span 2}
+.r104-facade-openings{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.r104-facade-openings .r104-edit-field{flex:1 1 110px}
+.r104-module-info{
+  grid-column:1/-1;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--r8-blue) 8%,var(--r8-panel));
+  font-size:10px;line-height:1.35;color:var(--r8-muted)
+}
+.r104-module-rule{margin:8px 0 0;padding:8px 10px;border-radius:10px;background:#fff1ee;color:#8a241d;font-size:10px;line-height:1.35}
+.r104-module-editor-actions{display:grid;grid-template-columns:.8fr 1.2fr;gap:8px;margin-top:9px}
+.r104-module-editor-actions .r8-save{margin-top:0}
+html[data-theme="dark"] .r104-edit-field input,
+html[data-theme="dark"] .r104-edit-field select{background:#282825;color:#f4f2ed}
+
+.r104-material-dialog{border:0;padding:0;background:transparent;color:inherit;width:min(620px,calc(100vw - 24px))}
+.r104-material-dialog::backdrop{background:rgba(0,0,0,.58);backdrop-filter:blur(7px)}
+.r104-material-card{
+  position:relative;background:var(--r8-panel);color:var(--r8-ink);border:1px solid var(--r8-line);
+  border-radius:24px;padding:22px;box-shadow:0 30px 100px rgba(0,0,0,.32)
+}
+.r104-material-close{position:absolute;right:13px;top:11px;width:36px;height:36px;border:0;border-radius:50%;background:#f3f1ec;color:#171716;font-size:22px}
+.r104-material-kicker{margin:0 0 7px;font-size:9px;letter-spacing:.13em;color:var(--r8-muted)}
+.r104-material-card h2{margin:0 42px 14px 0;font-size:24px;letter-spacing:-.035em}
+.r104-material-swatches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.r104-material-swatch{
+  min-height:72px;border:1px solid var(--r8-line);border-radius:14px;background:var(--swatch,#ddd);
+  color:#171716;position:relative;overflow:hidden;cursor:pointer;padding:8px;text-align:left
+}
+.r104-material-swatch::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(255,255,255,.72),transparent 62%)}
+.r104-material-swatch strong{position:absolute;left:8px;right:8px;bottom:7px;z-index:2;font-size:10px}
+.r104-material-swatch.is-selected{outline:3px solid var(--r8-blue);outline-offset:1px}
+.r104-upload-texture{display:grid;gap:5px;padding:11px;border:1px dashed var(--r8-line);border-radius:14px;font-size:11px}
+.r104-upload-texture input{font-size:10px}
+.r104-upload-texture small{color:var(--r8-muted)}
+.r104-material-actions{display:grid;grid-template-columns:1fr 1.3fr;gap:8px;margin-top:12px}
+.r104-material-actions .r8-save{margin:0}
+.r104-surface-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.r104-surface-buttons button{border:1px solid var(--r8-line);background:#fff;color:#171716;border-radius:12px;padding:10px 8px;font-size:11px;cursor:pointer}
+.r104-surface-buttons button strong{display:block;margin-top:3px;font-size:9px;color:#6f706b;font-weight:600}
+
+@media(max-width:820px){
+  /* Reclaim the blank area visible in owner QA for the actual model. */
+  .r8-stage{height:clamp(350px,58svh,520px);min-height:350px}
+  .r8-canvas-column{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+  .r8-tools{
+    min-height:66px;
+    padding:22px 6px 6px!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+  }
+  .r8-tools-label{
+    position:absolute!important;left:14px!important;top:5px!important;bottom:auto!important;
+    z-index:2!important;font-size:10px!important;font-weight:820!important;color:#171716!important;
+  }
+  .r8-tools>button{padding:8px 9px!important;min-width:44px!important}
+  body.r10-module-focus .r8-stage{height:clamp(300px,42svh,390px);min-height:300px}
+  body.r10-module-focus .r8-canvas-column{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .r104-module-editor{margin-top:6px;padding:10px;border-radius:16px}
+  .r104-module-editor-head{margin-bottom:8px}
+  .r104-module-editor-body{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .r104-edit-field.r104-wide{grid-column:span 2}
+  .r104-module-editor-actions{grid-template-columns:1fr 1.2fr}
+  .r104-module-editor-actions button{padding:10px 8px;font-size:12px}
+  .r10-focus-variants{display:none!important}
+  .r104-material-card{padding:19px 13px 14px;border-radius:21px}
+  .r104-material-swatches{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .r104-material-swatch{min-height:66px}
+}
+@media(max-width:820px) and (max-height:700px){
+  .r8-stage{height:52svh;min-height:300px}
+  body.r10-module-focus .r8-stage{height:37svh;min-height:260px}
+  .r104-module-price strong{font-size:17px}
+  .r104-edit-field input,.r104-edit-field select{padding:7px 8px}
+}
+
+/* Keep the randomizer from visually owning the kitchen: camera uses a safe area, control stays compact. */
+@media(max-width:820px){
+  .r8-variant-controls{bottom:9px;transform:translateX(-50%) scale(.94);transform-origin:center bottom}
+}
+
+
+/* R10.4.1 — stable focus UX, module navigation and number visibility. */
+.r104-number-toggle{
+  min-width:42px!important;
+  font-size:18px!important;
+  font-weight:850!important;
+  line-height:1!important;
+}
+.r104-number-toggle[aria-pressed="false"]{opacity:.46}
+
+.r104-focus-module-nav{
+  position:absolute;top:10px;right:10px;z-index:15;
+  display:grid;grid-template-columns:34px minmax(110px,auto) 34px;gap:5px;align-items:center;
+  max-width:min(72%,420px)
+}
+.r104-focus-module-nav[hidden]{display:none!important}
+.r104-focus-module-nav .r10-focus-module-label{
+  position:static!important;top:auto!important;right:auto!important;z-index:auto!important;
+  max-width:none!important;width:100%;min-width:0;margin:0;
+  border:0;cursor:pointer;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.r104-focus-step{
+  width:34px;height:34px;padding:0;border:0;border-radius:12px;
+  background:rgba(20,20,20,.82);color:#fff;font-size:24px;line-height:1;
+  box-shadow:0 7px 24px rgba(0,0,0,.16);backdrop-filter:blur(12px);cursor:pointer
+}
+.r104-focus-step:disabled{opacity:.34}
+.r104-focus-module-menu{
+  position:absolute;right:0;top:42px;width:min(310px,78vw);max-height:min(48vh,360px);
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  padding:6px;border:1px solid rgba(0,0,0,.10);border-radius:16px;
+  background:rgba(250,249,246,.97);box-shadow:0 18px 54px rgba(0,0,0,.22);backdrop-filter:blur(14px)
+}
+.r104-focus-module-menu[hidden]{display:none!important}
+.r104-focus-module-menu button{
+  width:100%;display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:center;
+  border:0;border-radius:11px;background:transparent;color:#171716;padding:7px 9px;text-align:left;cursor:pointer
+}
+.r104-focus-module-menu button:hover,.r104-focus-module-menu button.is-active{background:#eceae4}
+.r104-focus-module-menu button strong{
+  display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#171716;color:#fff;font-size:12px
+}
+.r104-focus-module-menu button span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:720}
+
+html[data-theme="dark"] .r104-focus-module-menu{background:rgba(35,35,32,.98);border-color:rgba(255,255,255,.12)}
+html[data-theme="dark"] .r104-focus-module-menu button{color:#f4f2ed}
+html[data-theme="dark"] .r104-focus-module-menu button:hover,
+html[data-theme="dark"] .r104-focus-module-menu button.is-active{background:#454540}
+
+@media(max-width:820px){
+  body.r10-module-focus{
+    height:100dvh;max-height:100dvh;overflow:hidden!important;overscroll-behavior:none
+  }
+  body.r10-module-focus .r8-shell{
+    height:100dvh;min-height:0;overflow:hidden!important
+  }
+  body.r10-module-focus .r8-main{
+    height:calc(100dvh - 72px);min-height:0;overflow:hidden!important
+  }
+  body.r10-module-focus .r8-canvas-column{
+    height:100%;min-height:0;overflow:hidden!important;
+    display:flex;flex-direction:column;
+    padding:6px 12px calc(8px + env(safe-area-inset-bottom))!important
+  }
+  body.r10-module-focus .r8-stage{
+    flex:0 0 clamp(290px,43dvh,370px);
+    height:auto!important;min-height:0!important
+  }
+  body.r10-module-focus .r104-module-editor{
+    flex:1 1 auto;min-height:0;max-height:none;
+    overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    margin-bottom:0
+  }
+  .r104-focus-module-nav{top:9px;right:9px;max-width:72%;grid-template-columns:31px minmax(92px,1fr) 31px;gap:4px}
+  .r104-focus-step{width:31px;height:31px;border-radius:11px;font-size:21px}
+  .r104-focus-module-nav .r10-focus-module-label{font-size:11px;padding:8px 9px!important}
+  .r104-focus-module-menu{top:38px;width:min(300px,84vw);max-height:42dvh}
+}
+
+
+/* R10.4.2 — currency + general project settings. */
+.r104-module-editor-head{
+  grid-template-columns:minmax(0,1fr) auto auto!important;
+  align-items:end!important;
+}
+.r104-currency-inline{
+  display:grid;gap:4px;align-self:end;
+  min-width:86px
+}
+.r104-currency-inline span{
+  font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#777)
+}
+.r104-currency-inline select{
+  height:36px;border:1px solid rgba(0,0,0,.12);border-radius:11px;
+  background:#fff;color:#171716;padding:0 28px 0 10px;font:700 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+html[data-theme="dark"] .r104-currency-inline select{
+  background:#262625;color:#f3f1ec;border-color:rgba(255,255,255,.14)
+}
+.r104-general-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r104-test-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r104-test-actions button{min-height:44px}
+@media(max-width:820px){
+  .r104-module-editor-head{grid-template-columns:minmax(0,1fr) 82px auto!important;gap:8px}
+  .r104-currency-inline{min-width:0}
+  .r104-currency-inline select{width:82px}
+  .r104-general-grid,.r104-test-actions{grid-template-columns:1fr}
+  #workspaceTools{grid-template-columns:repeat(7,minmax(0,1fr))}
+}
+
+
+/* R10.4.3 — global project currency is visible in the normal workspace. */
+.r104-project-currency{
+  min-width:74px!important;height:38px!important;padding:0 6px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important
+}
+.r104-project-currency select{
+  width:62px;height:30px;border:0;background:transparent;color:inherit;
+  font:800 11px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  appearance:auto;cursor:pointer;text-align:center
+}
+.r104-project-currency:has(select:focus-visible){outline:2px solid #2f7cff;outline-offset:2px}
+html[data-theme="dark"] .r104-project-currency select{color:#f4f2ed}
+@media(max-width:820px){
+  .r104-project-currency{min-width:62px!important;height:34px!important;padding:0 3px!important}
+  .r104-project-currency select{width:56px;height:28px;font-size:10px}
+}
+
+
+/* R10.4.4 — iOS must not zoom the page when module dimension inputs receive focus. */
+@media(max-width:820px){
+  .r104-edit-field input,.r104-edit-field select,
+  .r8-module-grid input,.r8-module-grid select,
+  .coordinate-box input{font-size:16px!important}
+}
+.r104-module-editor-head{grid-template-columns:minmax(0,1fr) auto!important}
+
+
+/* R10.4.5 — focus controls live in the lower-left safe area; module navigation owns the top-right. */
+body.r10-module-focus .r8-stage-top{
+  top:auto!important;
+  left:12px!important;
+  right:auto!important;
+  bottom:12px!important;
+  z-index:16;
+  align-items:center;
+}
+body.r10-module-focus #constraintButton{display:none!important}
+body.r10-module-focus .r10-focus-back,
+body.r10-module-focus .r10-dimensions-icon{
+  box-shadow:0 7px 24px rgba(0,0,0,.14)
+}
+@media(max-width:820px){
+  body.r10-module-focus .r8-stage-top{
+    left:10px!important;
+    bottom:10px!important;
+    gap:6px;
+  }
+}
+
+/* R10.4.9 — shared BIZET viewer contract */
+.r1049-viewer-mode{display:flex;align-items:center;padding:3px;border:1px solid rgba(127,127,127,.26);border-radius:999px;background:rgba(20,21,22,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.r1049-viewer-mode button{border:0;background:transparent;color:#bfc2c6;font:800 11px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;letter-spacing:.08em;padding:8px 11px;border-radius:999px;cursor:pointer}
+.r1049-viewer-mode button.active{background:#f2f1ed;color:#18191a;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+html[data-theme="light"] .r1049-viewer-mode{background:rgba(246,246,243,.82)}
+body.kitchen-view-mode #workspaceTools,
+body.kitchen-view-mode #editorPanel,
+body.kitchen-view-mode .r8-module-strip-label,
+body.kitchen-view-mode #moduleStrip,
+body.kitchen-view-mode #moduleEditPanel,
+body.kitchen-view-mode #focusVariantRibbon{display:none!important}
+body.kitchen-view-mode .r8-main{grid-template-columns:minmax(0,1fr)!important}
+body.kitchen-view-mode .r8-canvas-column{grid-column:1/-1!important}
+@media(max-width:820px){.r1049-viewer-mode button{padding:7px 9px}.r8-stage-top{gap:6px}}
