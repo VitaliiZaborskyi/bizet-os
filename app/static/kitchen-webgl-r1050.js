@@ -465,7 +465,7 @@ function addDishwasherFacade(room,m,mat){
  pivot.position.set(world.x,world.y-spec.h/2,world.z);pivot.attach(mesh);pivot.userData={movableId:id,type:'dishwasher',moduleId:m.id,wall};
  const mover={id,type:'dishwasher',pivot,mesh,wall,target:openState.get(id)?1:0,current:openState.get(id)?1:0};movables.push(mover);
  const fv=frontVector(wall),p=center(room,spec);p.y+=spec.h/2-40;p.add(fv.clone().multiplyScalar(18));
- const h=addHandleBar(p,false);h.userData.movableId=id;pivot.attach(h);
+ const h=addHandleBar(p,false,hardwareGroup,wall);h.userData.movableId=id;pivot.attach(h);
 }
 function addHoodVisual(room,m,steelMat,darkMat){
  const wall=m.wall||'A',builtIn=m.hood_type!=='FREESTANDING',x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h;
@@ -728,7 +728,7 @@ renderer.domElement.addEventListener('pointerup',e=>{
  if(window.BIZET_KITCHEN_UI_MODE==='VIEW'&&id){const mv=movables.find(x=>x.id===id);if(mv){mv.target=mv.target>.5?0:1;openState.set(mv.id,mv.target>0);return}}
  if(window.BIZET_KITCHEN_UI_MODE!=='VIEW'&&!lastOptions?.focusMode&&id){document.querySelector('#moduleStrip [data-module="'+CSS.escape(String(id).split(':')[0])+'"]')?.click()}
 });
-function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?1:-1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
+function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
 window.BizetPilot3D.drawKitchenScene=(canvas,options={})=>{const legacy=legacyDraw(canvas,options);try{draw(options)}catch(e){console.error('R10.5.1 kitchen WebGL fallback',e);host.style.display='none';canvas.style.opacity='1'}return legacy};
 window.BizetKitchenWebGL={version:'R10.5.1+FURNITURE-INTERACTION-PILOT-20261011',renderer,scene,camera,controls,host,composer,saoPass,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
 })();
