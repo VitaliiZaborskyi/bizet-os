@@ -13,7 +13,7 @@ html:not([data-theme="dark"]) .brand,html:not([data-theme="dark"]) .brand span,h
 .r1050-view-full #modelStage{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;min-height:100dvh!important;border:0!important;border-radius:0!important;box-shadow:none!important;transition:all .42s cubic-bezier(.2,.8,.2,1)}
 .r1050-view-full #r1050KitchenWebGL{border-radius:0!important}
 .r1050-view-full .r8-stage-top{position:fixed!important;top:max(12px,env(safe-area-inset-top));right:12px;left:auto!important;z-index:999!important;display:flex!important;gap:7px}
-.r1050-view-full .r8-stage-top>*:not(.r1049-viewer-mode):not(#deepShadowButton):not(#motionButton){display:none!important}
+.r1050-view-full .r8-stage-top>*:not(.r1049-viewer-mode):not(#deepShadowButton):not(#motionButton):not(#r1056ViewLighting):not(#openVisualizationTop){display:none!important}
 .r1050-view-full .r1049-viewer-mode{display:flex!important;background:rgba(255,255,255,.94);border-radius:999px;padding:4px;box-shadow:0 8px 28px rgba(0,0,0,.14)}
 #deepShadowButton,#motionButton{min-width:42px;height:40px;border:1px solid rgba(0,0,0,.1);border-radius:12px;background:rgba(255,255,255,.94);color:#111;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.12)}
 #deepShadowButton.active,#motionButton.active{background:#171716;color:#fff}
@@ -36,3 +36,12 @@ html:not([data-theme="dark"]) .brand,html:not([data-theme="dark"]) .brand span,h
   .r1050-view-full .r8-stage-top{top:max(9px,env(safe-area-inset-top));right:9px}
   .r1050-export-actions{grid-template-columns:1fr}
 }
+/* Owner R10.5.6: 3D tools remain visible in VIEW; desktop isolation never inherits mobile width. */
+.r1050-view-full #r1056ViewLighting,.r1050-view-full #openVisualizationTop{display:inline-flex!important;align-items:center;justify-content:center}
+@media(min-width:821px){
+ body.r1056-edit-mode .r8-stage{min-width:0;width:100%!important;max-width:none!important}
+ body.r10-module-focus .r8-stage{min-width:0;width:100%!important;max-width:none!important}
+ body.r10-module-focus .r8-main{grid-template-columns:190px minmax(0,1fr) minmax(260px,350px)!important}
+ body.r1056-edit-mode .r8-main{grid-template-columns:190px minmax(0,1fr) minmax(260px,350px)!important}
+}
+@media(max-width:820px){#openVisualizationTop{font-size:12px;padding:7px 10px}}
