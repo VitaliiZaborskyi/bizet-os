@@ -23,7 +23,6 @@ def test_16_ready_furniture_drag_only_with_explicit_edit_mode():
     assert "holdTimer" not in js
     assert 'id="dragObject"' in html
     assert 'hidden title="Явный режим перемещения' in html
-    assert "one" not in ''  # no hidden global turn for furniture movement
 
 def test_17_edit_idle_orbit_remains_bounded_and_interaction_interrupts():
     js=read("grande-r1048.js")
@@ -85,7 +84,7 @@ def test_20_fridge_common_plinth_grille_and_bom():
         assert token in model
     for token in ["addBuiltInFridge(room,m,body,front);addLegs(room,m)",
                   "function plinthRuns(modules)","list.filter(m=>m.tall).forEach",
-                  "function addFloorPlinth","'fridge-plinth-grille'",
+                  "function addFloorPlinth","function addFridgeHinges","addFridgeHinges(room,m)","'fridge-plinth-grille'",
                   "gw=Number(m.fridge_plinth_grille_width_mm)||460",
                   "gh=Number(m.fridge_plinth_grille_height_mm)||60"]:
         assert token in viewer
