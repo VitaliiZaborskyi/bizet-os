@@ -764,7 +764,7 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
 
 def test_r1049_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.5.1"' in main
+    assert 'version="R10.5.6"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
