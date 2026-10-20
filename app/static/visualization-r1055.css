@@ -1,0 +1,16 @@
+.r1055-visualization{width:min(980px,95vw);max-width:95vw;max-height:95dvh;border:0;border-radius:20px;background:var(--surface,#252525);color:var(--ink,#f6f3eb);padding:0;box-shadow:0 22px 80px #0008}
+.r1055-visualization::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(6px)}
+.r1055-visual-card{display:flex;flex-direction:column;gap:12px;padding:18px;max-height:95dvh;min-height:min(720px,85dvh);box-sizing:border-box}
+.r1055-visual-card header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.r1055-visual-card header h2{font-size:clamp(17px,2.5vw,22px);margin:0}
+.r1055-visual-card header button{border:1px solid #8f949a;border-radius:9px;background:#27292c;color:white;padding:7px 12px}
+.r1055-visual-preview{flex:1;min-height:210px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border:1px dashed #8a8e94;border-radius:15px;padding:18px;line-height:1.55;background:linear-gradient(145deg,#22282f,#14171a);color:#eae9e3}
+.r1055-visual-prompt{flex:0 0 auto;display:flex;flex-direction:column;gap:7px;max-height:49dvh;overflow-y:auto}
+.r1055-visual-prompt textarea{width:100%;min-height:68px;box-sizing:border-box;padding:10px;border:1px solid #7b7d82;border-radius:10px;background:var(--surface,#353535);color:var(--ink,#fff);resize:vertical}
+#r1055LockedPrompt{min-height:90px;font-size:12px;line-height:1.4;opacity:.84}
+#r1055Addendum{min-height:68px;font-size:14px}
+#r1055Generate{min-height:43px;border-radius:10px;padding:11px;background:#42516c;color:white;opacity:1}
+#r1055Generate:disabled{opacity:.64;cursor:not-allowed}
+#r1055Snapshot{opacity:.68;font-size:11px;overflow-wrap:anywhere}
+#r1055RenderStale{color:#ffad78;font-weight:700}
+@media(max-width:700px){.r1055-visual-card{padding:12px;min-height:90dvh}.r1055-visual-preview{min-height:170px}.r1055-visual-prompt{max-height:53dvh}}
