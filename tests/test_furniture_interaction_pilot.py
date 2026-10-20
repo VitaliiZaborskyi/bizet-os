@@ -24,7 +24,7 @@ def test_built_in_fridge_has_two_fronts_neighbor_alignment_vent_and_grille_contr
     for token in ["facade_count:freeFridge?0:2","fridge_bottom_vent_diameter_mm:freeFridge?0:250","fridge_plinth_grille_width_mm:freeFridge?0:460","fridge_plinth_grille_height_mm:freeFridge?0:60","fridge_appliance_height_mm:freeFridge?tallHeight:1800"]:
         assert token in model
     assert "fridge.lower_facade_height_mm=Math.min(totalH-260,neighborFacadeH)" in model
-    for token in ["function addBuiltInFridge","function addFridgeFacade","'fridge-bottom-vent-cutout'","'fridge-plinth-grille'","addFridgeFacade(room,m,z,lowerH,0","addFridgeFacade(room,m,z+lowerH+4,upperFacadeH,1"]:
+    for token in ["function addBuiltInFridge","function addFridgeFacade","'fridge-bottom-vent-cutout'","'PLINTH_GRILLE_LEFT'","addFridgeFacade(room,m,z,lowerH,0","addFridgeFacade(room,m,z+lowerH+4,upperFacadeH,1"]:
         assert token in viewer
 
 def test_drawer_and_horizontal_fronts_stack_vertically_not_diagonally():
