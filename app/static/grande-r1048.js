@@ -275,6 +275,13 @@ function buildModel(){
    }
  }
  const drawerTop=Math.min(1200,drawerBase+S.drawerCount*S.drawerHeight);
+ // 10.5.5 #22: invariant structural rigid shelf separates drawer block from doors.
+ // It is NOT included in shelvesRight, therefore neither user nor generator can delete it.
+ const mandatoryShelfY=Math.min(H-2*t-25,drawerTop+t+12);
+ if(mandatoryShelfY<drawerTop+t/2+4)console.warn('GRANDE: insufficient space for required shelf; STOP manufacturing');
+ box('Required rigid shelf above drawers',rightInner,t,D-28,split+t/2+rightInner/2,mandatoryShelfY,D/2-4,bodyMat,'shelves','STRUCTURAL_REQUIRED_SHELF');
+ addRigidShelfHoles(mandatoryShelfY,'RIGHT');
+ detail.push(makeDetail('GR.RS-LOCK','Required rigid shelf above drawers',rightInner,D-28,t,'Chipboard 18 mm','202:2','18',1,'CARCASS'));
  for(let i=1;i<=S.shelvesRight;i++){
    const low=Math.max(drawerTop+90,H*.54),high=H-t-90;
    const y=low+(high-low)*i/(S.shelvesRight+1);rightShelfCenters.push(y);
