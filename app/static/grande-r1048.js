@@ -522,7 +522,7 @@ renderer.domElement.addEventListener('pointermove',e=>{
 });
 function finishPointer(e){
  activePointers.delete(e.pointerId);
- if(objectMove?.pointerId===e.pointerId)stopObjectDrag();
+ if(objectMove?.pointerId===e.pointerId){stopObjectDrag();showRotationControls(true)} // keep ±45° handles after release
  else if(armedPointer?.id===e.pointerId){clearTimeout(holdTimer);holdTimer=null;armedPointer=null}
  pauseIdleOrbit();
 }
@@ -736,7 +736,7 @@ $('dims').onclick=()=>{showDimensions=!showDimensions;$('dims').classList.toggle
 $('xray').onclick=()=>{xray=!xray;$('xray').classList.toggle('active',xray);applyVisibility();toast(xray?tr('xrayOn'):tr('xrayOff'))};
 $('reset').onclick=frameModel;
 $('isolate').onclick=()=>{isolated=!isolated;$('isolate').classList.toggle('active',isolated);applyVisibility()};
-$('viewMode').onclick=()=>{pauseIdleOrbit();document.body.classList.add('view-mode');$('viewMode').classList.add('active');$('editMode').classList.remove('active');syncObjectDragButton();closePanel()};
+$('viewMode').onclick=()=>{stopObjectDrag(false);pauseIdleOrbit();document.body.classList.add('view-mode');$('viewMode').classList.add('active');$('editMode').classList.remove('active');syncObjectDragButton();closePanel()};
 $('editMode').onclick=()=>{pauseIdleOrbit();document.body.classList.remove('view-mode');$('editMode').classList.add('active');$('viewMode').classList.remove('active');syncObjectDragButton()};
 [...$('tools').children].forEach(b=>b.onclick=()=>openPanel(b.dataset.panel));
 $('panelClose').onclick=closePanel;
