@@ -12,17 +12,21 @@ import pytest
 STATIC=Path(__file__).resolve().parents[1]/"app"/"static"
 def read(name): return (STATIC/name).read_text(encoding="utf-8")
 
-def test_16_ready_furniture_drag_only_with_explicit_edit_mode():
+def test_16_21_grande_camera_orbit_and_owner_superseding_long_hold_movement():
     js=read("grande-r1048.js")
     html=read("grande-r1046.html")
     assert "let objectDragMode=false" in js
-    assert "if(!objectDragMode||document.body.classList.contains('view-mode')" in js
-    assert "controls.enabled=!objectDragMode" in js
+    assert "HOLD_MS=460" in js
+    assert "document.body.classList.contains('view-mode')" in js
+    assert "if(!hitFurniture(e.clientX,e.clientY))return" in js
+    assert "controls.enabled=false" in js
+    assert "controls.enabled=true" in js
     assert "renderer.domElement.style.touchAction='none'" in js
+    assert "activePointers.size!==1" in js
     assert "syncObjectDragButton()" in js
-    assert "holdTimer" not in js
-    assert 'id="dragObject"' in html
-    assert 'hidden title="Явный режим перемещения' in html
+    assert 'id="objectRotationControls"' in html
+    assert 'id="settingsButton"' in html
+
 
 def test_17_edit_idle_orbit_remains_bounded_and_interaction_interrupts():
     js=read("grande-r1048.js")
