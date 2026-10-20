@@ -44,7 +44,8 @@
 
   applyTheme();
   document.documentElement.lang = language === 'ua' ? 'uk' : language;
-  if (document.getElementById('workspaceSettingsPanel')) return;
+  // R10.5.5: the same GlobalSettingsMenu runs on workspace, Grande and auxiliary routes.
+  document.getElementById('workspaceSettingsPanel')?.setAttribute('hidden','');
   if (!button) {
     const style=document.createElement('style');
     style.id='bizetGlobalSettingsStyle';
