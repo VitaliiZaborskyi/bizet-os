@@ -18,7 +18,7 @@ def test_r1051_current_version_and_assets():
     assert '/static/r1051.css?v=1051' in workspace
     assert '/static/r1051.css?v=1051' in index
     assert '/static/r1051.css?v=1051' in grande
-    for asset in ["production-r1050.js?v=1051","kitchen-webgl-r1050.js?v=20261020r1054","workspace-r1050.js?v=20261011","ua-ui-r1050.js?v=1051"]:
+    for asset in ["production-r1050.js?v=20261020r1055","kitchen-webgl-r1050.js?v=20261020r1055","workspace-r1050.js?v=20261011","ua-ui-r1050.js?v=1051"]:
         assert asset in workspace
     assert '<link rel="stylesheet" href="/static/r1050.css?v=1051">' in workspace
 
