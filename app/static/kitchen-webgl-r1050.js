@@ -266,6 +266,24 @@ function addFridgeFacade(room,m,z,h,index,mat){
    p.add(fv.clone().multiplyScalar(18));const handle=addHandleBar(p,true);handle.userData.movableId=id;pivot.attach(handle);
  }else if(handlePolicy.profile){addProfileHandle(room,spec,{pivot},handlePolicy,id)}
 }
+function addFridgeHinges(room,m){
+ // Fridge facades are stacked vertically: hinge cups follow the facade opening side.
+ const wall=m.wall||'A',x=+m.x,y=+m.y,z=+m.z,h=+m.h,lower=Math.max(100,Number(m.lower_facade_height_mm)||700);
+ const zones=[{bottom:z,height:lower},{bottom:z+lower+4,height:Math.max(120,h-lower-4)}];
+ const metal=ownMat({color:'#858b8f',roughness:.3,metalness:.7});
+ zones.forEach((zone,index)=>{
+   const side=String(m.facade_openings?.[index]||m.facade_openings?.[0]||'LEFT').toUpperCase()==='RIGHT'?'RIGHT':'LEFT';
+   [.20,.80].forEach(f=>{
+     const zz=zone.bottom+zone.height*f;
+     const p=wall==='A'
+       ?{x:side==='LEFT'?x+14:x+(+m.w)-36,y:y+8,z:zz,w:22,d:30,h:12}
+       :{x:x+8,y:side==='LEFT'?y+14:y+(+m.d)-36,z:zz,w:30,d:22,h:12};
+     const q=meshBox(room,p,metal.clone(),hardwareGroup,'fridge-hinge',m.id);
+     q.material.userData.owned=true;q.userData.hingeSide=side;q.userData.frontZone=index;
+   });
+ });
+ metal.dispose();
+}
 function addBuiltInFridge(room,m,bodyMat,frontMat){
  const t=18,x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h,wall=m.wall||'A',parts=[];
  if(wall==='A')parts.push({x,y,z,w:t,d:D,h:H},{x:x+W-t,y,z,w:t,d:D,h:H},{x:x+t,y,z:z+H-t,w:W-2*t,d:D,h:t});
@@ -575,7 +593,7 @@ function buildLighting(room,mods){
 function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareGroup);clearGroup(annotationGroup);clearGroup(lightingGroup);selectable=[];movables=[];const room=options.room||{},mods=options.modules||[],c=colors(),body=ownMat({color:c.body,roughness:.58}),front=ownMat({color:c.front,roughness:.5}),focus=!!options.focusMode;
  const buildOne=m=>{
    if(m.kind==='FRIDGE'&&!m.freestanding){
-     addBuiltInFridge(room,m,body,front);addLegs(room,m);
+     addBuiltInFridge(room,m,body,front);addLegs(room,m);addFridgeHinges(room,m);
      if(focus)addFloorPlinth(room,m,body);
      addEndPanels(room,m,body,front);if(options.showNumbers!==false&&!focus)addNumber(room,m);return
    }
