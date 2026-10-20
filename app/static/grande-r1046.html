@@ -9,7 +9,14 @@
 <link rel="stylesheet" href="/static/grande-r1048.css?v=1051">
 <link rel="stylesheet" href="/static/grande-r1050.css?v=20261011b">
 <link rel="stylesheet" href="/static/r1051.css?v=1051">
-</head>
+<style>
+/* Pilot 10.5.5: one settings skin; hide old competing language controls. */
+#lang{display:none!important}
+header #settingsButton{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:40px;padding:0 10px;border-radius:12px;background:#252525;color:white;border:1px solid #777;font-weight:800}
+.r1055-object-rotation{position:absolute;right:18px;top:92px;z-index:25;display:flex;gap:8px}
+.r1055-object-rotation[hidden]{display:none!important}
+.r1055-object-rotation button{background:#20242a;color:#fff;padding:11px 15px;border:1px solid #aeb3b6;border-radius:11px;font-size:15px;font-weight:700;touch-action:manipulation}
+</style></head>
 <body class="view-mode">
 <header>
   <button id="back" class="icon" aria-label="Назад">←</button>
@@ -20,9 +27,6 @@
     <button id="viewMode" class="active">VIEW</button>
     <button id="editMode">EDIT</button>
   </div>
-  <select id="lang" aria-label="Язык">
-    <option value="ru">RU</option><option value="en">EN</option><option value="ua">UA</option>
-  </select>
 </header>
 
 <main>
@@ -46,12 +50,13 @@
         <button id="xray" title="Прозрачность">◒</button>
         <button id="reset" title="Сбросить камеру">↺</button>
         <button id="isolate" title="Изоляция">◎</button>
-        <button id="dragObject" type="button" aria-pressed="false" hidden title="Явный режим перемещения / Move object">⇆</button>
+        <button id="dragObject" type="button" hidden aria-hidden="true">⇆</button>
       </div>
 
+      <div id="objectRotationControls" class="r1055-object-rotation" hidden><button id="rotateObjectLeft" type="button" aria-label="Rotate left 45 degrees">↶ 45°</button><button id="rotateObjectRight" type="button" aria-label="Rotate right 45 degrees">45° ↷</button></div>
       <div class="status">
         <strong>Grande</strong>
-        <span>Tree Art · WebGL 3D · R10.5.4 PILOT</span>
+        <span>Tree Art · WebGL 3D · R10.5.5 PILOT</span>
       </div>
 
       <div class="priceHud" id="priceHud">
@@ -61,7 +66,7 @@
         </select>
       </div>
 
-      <div class="hint" id="hint">Один палець — камера · два — масштаб · переміщення тільки кнопкою ⇆ в EDIT</div>
+      <div class="hint" id="hint">Один палець — камера · утримання шафи в EDIT — рух · поворот 45°</div>
       <div class="layerPanel" id="layerPanel" hidden></div>
 
       <button class="add" id="addProduct">＋ Добавить ещё изделие</button>
@@ -99,7 +104,7 @@
 <script src="/static/pilot-shell.js?v=1051"></script>
 <script src="/static/production-r1050.js?v=1051"></script>
 <script src="/static/r10-domain-rules.js?v=20261020r1054"></script>
-<script src="/static/grande-r1048.js?v=20261020r1054"></script>
+<script src="/static/grande-r1048.js?v=20261020r1055"></script>
 <script src="/static/grande-r1050.js?v=20261020r1054"></script>
 <script src="/static/ua-ui-r1050.js?v=1051"></script>
 </body>
