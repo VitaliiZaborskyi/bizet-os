@@ -529,6 +529,28 @@ function addFloorPlinth(room,m,material){
    p={x:px,y:+m.y,z:0,w:12,d:+m.d,h:ph};}
  const q=meshBox(room,p,material.clone(),furnitureGroup,'plinth','PLINTH-'+m.id);q.material.userData.owned=true;q.userData.recess_mm=recess;return q;
 }
+function addPlinthEndReturns(room,wall,list,material){
+ // #30: finish every visible plinth end by returning to the back wall / end panel.
+ // A return is an actual panel mesh, never a hidden "floating" surface.
+ const sorted=[...list].sort((a,b)=>wall==='A'?(+a.x-+b.x):(+a.y-+b.y));
+ const ends=[{module:sorted[0],end:'START'},{module:sorted.at(-1),end:'END'}];
+ const recess=plinthRecess(),th=12;
+ ends.forEach(({module:m,end})=>{
+   const ph=Math.max(60,+m.z||100);
+   let spec;
+   if(wall==='A'){
+     const xx=end==='START'?+m.x:+m.x+ +m.w-th;
+     spec={x:xx,y:+m.y+recess,z:0,w:th,d:Math.max(12,+m.d-recess),h:ph};
+   }else{
+     const yy=end==='START'?+m.y:+m.y+ +m.d-th;
+     const front=wall==='B'?+m.x+ +m.w:+m.x;
+     const start=wall==='B'?+m.x:front+recess;
+     spec={x:start,y:yy,z:0,w:Math.max(12,+m.w-recess),d:th,h:ph};
+   }
+   const q=meshBox(room,spec,material.clone(),furnitureGroup,'plinth-end-return','PLINTH-RETURN-'+wall+'-'+end);
+   q.material.userData.owned=true;q.userData.partRole='PLINTH_END_RETURN';q.userData.visualizationProxy=false;
+ });
+}
 function segmentBy4100(wall,list){
  const plan=window.BizetR10Rules?.worktopRunPlan?.(list,{enforceCriticalZones:true});
  if(plan?.segments?.length){
@@ -562,6 +584,7 @@ function addWorktopAndPlinth(room,modules){
  // Tall floor modules, including the built-in fridge, have continuous frontage on the same recess.
  plinthRuns(modules).forEach(([wall,list])=>{
    list.filter(m=>m.tall).forEach(m=>addFloorPlinth(room,m,pm));
+   addPlinthEndReturns(room,wall,list,pm);
  });
  plinthRuns(modules).forEach(([wall,list])=>{
    const plan=window.BizetR10Rules?.plinthRunPlan?.(list);if(!plan?.joints?.length)return;
