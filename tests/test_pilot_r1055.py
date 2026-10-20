@@ -127,15 +127,16 @@ def test_31_corner_reserve_avoids_dropping_fridge_and_upper_runs_align():
     assert "MANDATORY_RUN_OVERFLOW_" in m
     assert "lower.filter(m=>!m.tall&&m.level==='lower').forEach" in m
 
-def test_32_locked_scene_prompt_with_addendum_and_no_fake_provider():
-    js=read("visualization-r1055.js");html=read("workspace-r8.html");workspace=read("workspace-r8.js")
-    for x in ["function snapshot()","CANONICAL_SCENE_DESCRIPTOR_JSON",
-              "readOnly", "source_version:'R10.5.5'","room_elements:",
-              "custom_texture_data_url","crypto.subtle.digest","providerStatus:'NOT_CONFIGURED'"]:
-        if x=="readOnly": assert 'readonly aria-readonly="true"' in js
-        else: assert x in js
-    assert 'id="openVisualizationR1055"' in workspace
-    assert "visualization-r1055.js?v=1055" in html
+def test_32_superseded_real_provider_with_readonly_engineering_prompt():
+    js=read("visualization-r1055.js");html=read("workspace-r8.html")
+    for token in ["function snapshot()","function promptFor(scene)","CANONICAL SCENE (read only)",
+                  "room_elements:","crypto.subtle.digest","referenceCapture()","/api/v1.1/visualization/generate",
+                  "window.BizetVisualizationR1056"]:
+        assert token in js
+    assert 'readonly aria-readonly="true"' in js
+    assert 'id="openVisualizationR1056"' in html
+    assert "visualization-r1055.js?v=1056" in html
+
 
 def test_r1055_js_syntax():
     node=shutil.which("node")
