@@ -652,6 +652,30 @@ function frame(options,force=false){const room=options.room||{},mods=options.mod
 function resize(){const r=host.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(r.width,r.height,false);composer?.setSize(r.width,r.height);camera.aspect=r.width/r.height;camera.updateProjectionMatrix()}
 new ResizeObserver(resize).observe(host);addEventListener('resize',resize);
 function draw(options){lastOptions=options;setDeepShadow(false);buildRoom(options);buildFurniture(options);frame(options,false);resize();normalCanvas.style.opacity='0';focusCanvas.style.opacity='0'}
+// #27: the viewer only starts shelf editing after a hold in EDIT/isolation.
+let shelfHoldTimer=0,shelfHoldDown=null;
+renderer.domElement.addEventListener('pointerdown',e=>{
+ if(window.BIZET_KITCHEN_UI_MODE!=='EDIT'||!lastOptions?.focusMode)return;
+ const r=renderer.domElement.getBoundingClientRect();
+ pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;
+ raycaster.setFromCamera(pointer,camera);
+ const shelves=[];furnitureGroup.traverse(o=>{if(o.isMesh&&o.userData?.cat==='shelf')shelves.push(o)});
+ const hit=raycaster.intersectObjects(shelves,false)[0];
+ if(!hit)return;
+ const role=String(hit.object.userData.partRole||''),index=Math.max(0,(Number(role.replace(/\D/g,''))||1)-1);
+ shelfHoldDown={id:e.pointerId,x:e.clientX,y:e.clientY,partRole:role,moduleId:hit.object.userData.moduleId,index};
+ clearTimeout(shelfHoldTimer);
+ shelfHoldTimer=window.setTimeout(()=>{
+   if(!shelfHoldDown)return;
+   window.dispatchEvent(new CustomEvent('bizet:shelfhold',{detail:{module_id:shelfHoldDown.moduleId,shelf_index:shelfHoldDown.index}}));
+   shelfHoldDown=null;
+ },480);
+});
+renderer.domElement.addEventListener('pointermove',e=>{
+ if(shelfHoldDown?.id===e.pointerId&&Math.hypot(e.clientX-shelfHoldDown.x,e.clientY-shelfHoldDown.y)>9){clearTimeout(shelfHoldTimer);shelfHoldDown=null}
+});
+renderer.domElement.addEventListener('pointerup',()=>{clearTimeout(shelfHoldTimer);shelfHoldDown=null});
+renderer.domElement.addEventListener('pointercancel',()=>{clearTimeout(shelfHoldTimer);shelfHoldDown=null});
 renderer.domElement.addEventListener('pointerdown',e=>down={x:e.clientX,y:e.clientY,id:e.pointerId});
 renderer.domElement.addEventListener('pointercancel',()=>down=null);
 renderer.domElement.addEventListener('pointerup',e=>{
