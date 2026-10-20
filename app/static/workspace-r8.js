@@ -111,7 +111,7 @@
    const pick=pair=>en?pair[1]:lang==='ua'?(UA_I18N[pair[0]]||pair[0]):pair[0];
    const nav={
      room:['Помещение','Room'],appliances:['Техника','Appliances'],upper:['Настройка модулей','Module settings'],
-     communications:['Коммуникации','Utilities'],elements:['Элементы стен','Wall elements'],materials:['Материалы','Materials'],general:['Экспорт','Export']
+     communications:['Коммуникации','Utilities'],elements:['Элементы стен','Wall elements'],materials:['Материалы','Materials'],general:['Экспорт','Export'],visualization:['Визуализация','Visualization']
    };
    document.querySelectorAll('#workspaceTools [data-panel]').forEach(btn=>{
      const pair=nav[btn.dataset.panel];if(!pair)return;
@@ -143,12 +143,28 @@
    if($('surfaceMaterialCancel'))$('surfaceMaterialCancel').textContent=tr('Отмена','Cancel');
    if($('surfaceMaterialApply'))$('surfaceMaterialApply').textContent=tr('Применить','Apply');
  }
+ let r1056LightingToggle=true;
+ function updateR1056LightingToggle(){
+   const button=$('r1056ViewLighting');if(!button)return;
+   const data=rt?.getInputs?.()||{},enabled=data.lighting_enabled==='YES';
+   button.disabled=!enabled;button.setAttribute('aria-disabled',String(!enabled));
+   const visible=enabled&&r1056LightingToggle;
+   button.setAttribute('aria-pressed',String(visible));button.classList.toggle('is-on',visible);
+   window.BizetKitchenWebGL?.setLightingVisible?.(visible);
+ }
+ $('r1056ViewLighting')?.addEventListener('click',()=>{
+   const enabled=(rt?.getInputs?.().lighting_enabled)==='YES';
+   if(!enabled)return;r1056LightingToggle=!r1056LightingToggle;updateR1056LightingToggle();
+ });
+ window.addEventListener('bizet:modelchange',()=>updateR1056LightingToggle());
  const KITCHEN_MODE_KEY='bizet_kitchen_view_mode';
  function setKitchenUiMode(mode){
    const next=mode==='EDIT'?'EDIT':'VIEW';
    window.BIZET_KITCHEN_UI_MODE=next;
    localStorage.setItem(KITCHEN_MODE_KEY,next);
    document.body.classList.toggle('kitchen-view-mode',next==='VIEW');
+   document.body.classList.toggle('r1056-edit-mode',next==='EDIT');
+   updateR1056LightingToggle();
    $('kitchenViewMode')?.classList.toggle('active',next==='VIEW');
    $('kitchenEditMode')?.classList.toggle('active',next==='EDIT');
    if(next==='VIEW'){$('editorPanel')?.setAttribute('hidden','');}
@@ -246,7 +262,7 @@
    });
    document.querySelectorAll('[data-action]').forEach(el=>el.onclick=()=>runAction(el.dataset.action));
  }
- async function commitInputs(patch,reason){const top=$('editorPanel').scrollTop;pushUndo();await rt.patchInputs(patch,reason);updateReadiness();refreshPanel();requestAnimationFrame(()=>{$('editorPanel').scrollTop=top});saveCurrentVariantSlot();}
+ async function commitInputs(patch,reason){const top=$('editorPanel').scrollTop;pushUndo();await rt.patchInputs(patch,reason);updateReadiness();refreshPanel();updateR1056LightingToggle();requestAnimationFrame(()=>{$('editorPanel').scrollTop=top});saveCurrentVariantSlot();}
  async function commitVariant(patch){pushUndo();await rt.patchVariant(patch);updateReadiness();saveCurrentVariantSlot();}
  function pushUndo(){
    if(!rt)return;
@@ -395,6 +411,8 @@
      const dir=rt.getVisual().r8_palette||C.visual_direction||'LIGHT';
      html='<section class="r8-section"><h3>Визуальное направление</h3><p>Выбрано на стартовом экране: <strong>'+esc(dir==='DARK'?'Тёмное':dir==='OTHER'?'Другое':'Светлое')+'</strong>.</p><div class="r8-choice-row"><button data-action="palette-light">Светлое</button><button data-action="palette-dark">Тёмное</button><button data-action="palette-other">Другое</button></div></section>';
      html+='<section class="r8-section"><h3>Материалы мебели</h3><p>Тестовый набор для связки модель → спецификация → будущая визуализация.</p><div class="r104-surface-buttons">'+materialButton('facade')+materialButton('carcass')+materialButton('worktop')+'</div></section>';
+     html+='<section class="r8-section"><h3>'+(uiLang()==='en'?'Room materials':uiLang()==='ua'?'Матеріали приміщення':'Материалы помещения')+'</h3><div class="r104-surface-buttons">'+materialButton('floor')+materialButton('walls')+materialButton('ceiling')+'</div></section>';
+     html+='<section class="r8-section"><h3>'+(uiLang()==='en'?'Lighting color':uiLang()==='ua'?'Температура підсвітки':'Температура подсветки')+'</h3><label class="r8-field"><span>Kelvin</span><select data-input="lighting_kelvin"><option value="2700">2700 K</option><option value="3000">3000 K</option><option value="4000">4000 K</option></select></label></section>';
      html+='<section class="r8-section"><h3>Подтверждение</h3><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
    }
    if(panel==='general'){
