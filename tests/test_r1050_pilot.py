@@ -17,15 +17,15 @@ def test_r1050_app_and_current_assets_are_wired():
     grande = read("grande-r1046.html")
     assert 'version="R10.5.1"' in main
     for asset in [
-        "/static/r1050.css?v=1051",
-        "/static/production-r1050.js?v=20261020r1055",
-        "/static/kitchen-webgl-r1050.js?v=20261020r1055",
+        "/static/r1050.css?v=1056",
+        "/static/production-r1050.js?v=20261021r1056",
+        "/static/kitchen-webgl-r1050.js?v=20261021r1056",
         "/static/workspace-r1050.js?v=20261011",
         "/static/ua-ui-r1050.js?v=1051",
     ]:
         assert asset in workspace
     for asset in [
-        "/static/production-r1050.js?v=20261020r1055",
+        "/static/production-r1050.js?v=20261021r1056",
         "/static/grande-r1050.css?v=20261011b",
         "/static/grande-r1050.js?v=20261020r1054",
         "/static/ua-ui-r1050.js?v=1051",
@@ -132,7 +132,7 @@ def test_r1050_handle_rules_and_simplified_hardware_are_visible():
     assert "p.y=1000" in viewer
     assert "spec.h/2)-40" in viewer
     assert "addHandleBar(p,false)" in viewer
-    assert "addHandleBar(p,true)" in viewer
+    assert "addHandleBar(p,true,hardwareGroup,wall)" in viewer
     assert "addLegs(room,m)" in viewer
     assert "addHinges(room,m,count)" in viewer
     assert "doorHandleY=Math.min(H-120,1000)" in grande
