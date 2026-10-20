@@ -398,7 +398,7 @@
      html+='<section class="r8-section"><h3>Подтверждение</h3><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
    }
    if(panel==='general'){
-     html='<section class="r8-section"><h3>Экспорт</h3><div class="r1050-production-grid">'
+     html='<section class="r8-section"><button class="r8-save r1055-visualize-entry" type="button" id="openVisualizationR1055">'+(uiLang()==='ua'?'Візуалізація':uiLang()==='en'?'Visualization':'Визуализация')+'</button><h3>Экспорт</h3><div class="r1050-production-grid">'
        +'<span class="r1050-source-badge">BIZET GENERATED</span>'
        +'<label><span>Производственный подрядчик</span><select id="productionProfileR1050"><option value="QUADRO">Quadro · active</option><option value="VIYAR" disabled>Viyar · soon</option><option value="KRONAS" disabled>Kronas · soon</option></select></label>'
        +'<p>Один инженерный BIZET Model → профиль производства → нужные артикулы и выходной формат.</p>'
@@ -408,6 +408,7 @@
      html+='<section class="r8-section"><h3>Дальнейшие выходы</h3><p>DWG / DXF / GLB / развёртки / визуализации подключаются как отдельные адаптеры без изменения инженерного ядра.</p></section>';
    }
    $('panelBody').innerHTML=html;localizePanelBody();bindInputs();bindMaterialTargets();bindLighting();applyConditionalSettings();
+   $('openVisualizationR1055')?.addEventListener('click',()=>window.BizetVisualizationR1055?.open?.());
    if(panel==='room')bindRoomImport();
    if(panel==='elements')renderElements();
    $('editorPanel').hidden=false;
