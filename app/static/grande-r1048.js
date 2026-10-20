@@ -430,33 +430,63 @@ function resize(){
 const ro=new ResizeObserver(resize);ro.observe(host);
 
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-let holdTimer=null,moving=false,moveStart=null,controlsWas=true;
+// Pilot #16–#17: a camera drag is never a furniture drag.
+let objectDragMode=false,objectMove=null,activePointers=new Set(),lastUserActivity=performance.now(),idleYawCenter=null;
+const initialFrontYaw=Math.atan2(.72,.95),IDLE_WAIT_MS=4500,IDLE_SWEEP_RAD=.075; // provisional ~4.3 degrees, screenshot limits OPEN
+function pauseIdleOrbit(){lastUserActivity=performance.now();idleYawCenter=null}
+function syncObjectDragButton(){
+ const b=$('dragObject');
+ if(!b)return;
+ const edit=!document.body.classList.contains('view-mode');
+ if(!edit&&objectDragMode){objectDragMode=false;objectMove=null}
+ b.hidden=!edit;b.classList.toggle('active',edit&&objectDragMode);b.setAttribute('aria-pressed',String(edit&&objectDragMode));
+ controls.enabled=!objectDragMode;
+}
+$('dragObject')?.addEventListener('click',()=>{
+ if(document.body.classList.contains('view-mode'))return;
+ objectDragMode=!objectDragMode;objectMove=null;pauseIdleOrbit();syncObjectDragButton();
+ $('hint').textContent=objectDragMode?tr('move'):tr('hint');
+});
 function hitFurniture(clientX,clientY){
  const r=renderer.domElement.getBoundingClientRect();pointer.x=((clientX-r.left)/r.width)*2-1;pointer.y=-((clientY-r.top)/r.height)*2+1;
  raycaster.setFromCamera(pointer,camera);
  return raycaster.intersectObjects(furnitureMeshes.filter(m=>m.visible),false)[0]||null;
 }
+renderer.domElement.style.touchAction='none';
 renderer.domElement.addEventListener('pointerdown',e=>{
- if(e.pointerType==='mouse'&&e.button!==0)return;
- const hit=hitFurniture(e.clientX,e.clientY);if(!hit)return;
- moveStart={clientX:e.clientX,x:S.x};
- holdTimer=setTimeout(()=>{moving=true;controlsWas=controls.enabled;controls.enabled=false;$('hint').textContent=tr('move')},420);
+ pauseIdleOrbit();activePointers.add(e.pointerId);
+ if(!objectDragMode||document.body.classList.contains('view-mode')||activePointers.size>1||e.button>0)return;
+ if(!hitFurniture(e.clientX,e.clientY))return;
+ objectMove={pointerId:e.pointerId,clientX:e.clientX,x:S.x};
+ renderer.domElement.setPointerCapture?.(e.pointerId);
 });
 renderer.domElement.addEventListener('pointermove',e=>{
- if(!moveStart)return;
- if(!moving && Math.abs(e.clientX-moveStart.clientX)>10){clearTimeout(holdTimer);holdTimer=null;return}
- if(moving){
-   const mmPerPx=Math.max(1.5,S.roomW/Math.max(500,renderer.domElement.clientWidth)*.68);
-   S.x=Math.max(0,Math.min(S.roomW-S.w,moveStart.x+(e.clientX-moveStart.clientX)*mmPerPx));
-   modelGroup.position.x=S.x-S.roomW/2;techGroup.position.x=modelGroup.position.x;dimensionGroup.position.x=modelGroup.position.x;ledGroup.position.x=modelGroup.position.x;
-   $('positionLabel').textContent=tr('position')+': '+Math.round(S.x)+' mm';
- }
+ if(activePointers.has(e.pointerId))pauseIdleOrbit();
+ if(!objectDragMode||!objectMove||objectMove.pointerId!==e.pointerId||activePointers.size!==1)return;
+ const mmPerPx=Math.max(1.5,S.roomW/Math.max(500,renderer.domElement.clientWidth)*.68);
+ S.x=Math.max(0,Math.min(S.roomW-S.w,objectMove.x+(e.clientX-objectMove.clientX)*mmPerPx));
+ modelGroup.position.x=S.x-S.roomW/2;techGroup.position.x=modelGroup.position.x;
+ dimensionGroup.position.x=modelGroup.position.x;ledGroup.position.x=modelGroup.position.x;
+ $('positionLabel').textContent=tr('position')+': '+Math.round(S.x)+' mm';
 });
-function endMove(){clearTimeout(holdTimer);holdTimer=null;moveStart=null;if(moving){moving=false;controls.enabled=controlsWas;$('hint').textContent=tr('hint')}}
-renderer.domElement.addEventListener('pointerup',endMove);renderer.domElement.addEventListener('pointercancel',endMove);
-
-function animate(){requestAnimationFrame(animate);controls.update();if(!window.BizetGrandeR1050Post?.render?.())renderer.render(scene,camera)}animate();
-
+function finishPointer(e){activePointers.delete(e.pointerId);if(objectMove?.pointerId===e.pointerId)objectMove=null;pauseIdleOrbit()}
+renderer.domElement.addEventListener('pointerup',finishPointer);
+renderer.domElement.addEventListener('pointercancel',finishPointer);
+renderer.domElement.addEventListener('lostpointercapture',finishPointer);
+renderer.domElement.addEventListener('wheel',pauseIdleOrbit,{passive:true});
+function idleEditOrbit(){
+ if(objectDragMode||activePointers.size||document.body.classList.contains('view-mode')||performance.now()-lastUserActivity<IDLE_WAIT_MS){idleYawCenter=null;return}
+ const offset=camera.position.clone().sub(controls.target),yaw=Math.atan2(offset.x,offset.z);
+ const diff=Math.atan2(Math.sin(yaw-initialFrontYaw),Math.cos(yaw-initialFrontYaw));
+ // An existing rear-view camera position is never automatically animated.
+ if(Math.abs(diff)>.72){idleYawCenter=null;return}
+ if(idleYawCenter===null)idleYawCenter=yaw;
+ const destination=idleYawCenter+Math.sin(performance.now()/2400)*IDLE_SWEEP_RAD;
+ const delta=Math.atan2(Math.sin(destination-yaw),Math.cos(destination-yaw));
+ offset.applyAxisAngle(new THREE.Vector3(0,1,0),Math.max(-.0018,Math.min(.0018,delta*.07)));
+ camera.position.copy(controls.target).add(offset);
+}
+function animate(){requestAnimationFrame(animate);controls.update();idleEditOrbit();if(!window.BizetGrandeR1050Post?.render?.())renderer.render(scene,camera)}animate();
 function field(label,key,value,min,max,step=10){
  return '<label class="field"><span>'+label+'</span><input data-key="'+key+'" type="number" value="'+value+'" min="'+min+'" max="'+max+'" step="'+step+'"></label>';
 }
@@ -646,8 +676,8 @@ $('dims').onclick=()=>{showDimensions=!showDimensions;$('dims').classList.toggle
 $('xray').onclick=()=>{xray=!xray;$('xray').classList.toggle('active',xray);applyVisibility();toast(xray?tr('xrayOn'):tr('xrayOff'))};
 $('reset').onclick=frameModel;
 $('isolate').onclick=()=>{isolated=!isolated;$('isolate').classList.toggle('active',isolated);applyVisibility()};
-$('viewMode').onclick=()=>{document.body.classList.add('view-mode');$('viewMode').classList.add('active');$('editMode').classList.remove('active');closePanel()};
-$('editMode').onclick=()=>{document.body.classList.remove('view-mode');$('editMode').classList.add('active');$('viewMode').classList.remove('active')};
+$('viewMode').onclick=()=>{pauseIdleOrbit();document.body.classList.add('view-mode');$('viewMode').classList.add('active');$('editMode').classList.remove('active');syncObjectDragButton();closePanel()};
+$('editMode').onclick=()=>{pauseIdleOrbit();document.body.classList.remove('view-mode');$('editMode').classList.add('active');$('viewMode').classList.remove('active');syncObjectDragButton()};
 [...$('tools').children].forEach(b=>b.onclick=()=>openPanel(b.dataset.panel));
 $('panelClose').onclick=closePanel;
 $('addProduct').onclick=()=>location.href='/wardrobes?manufacturer=treeart&add=1';
@@ -658,8 +688,8 @@ window.addEventListener('bizet:themechange',()=>{renderer.domElement.style.filte
 $('currencySelect').onchange=e=>{S.currency=e.target.value;updatePrice()};
 $('orderClose').onclick=()=>$('orderDialog').close();
 
-buildRoom();buildModel();resize();frameModel();layerPanel();applyLanguage();loadFx();
-window.BizetGrandeR1050Bridge={version:'R10.5.1',state:S,scene,renderer,camera,controls,roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,hemi,key,fill,
+buildRoom();buildModel();resize();frameModel();layerPanel();applyLanguage();syncObjectDragButton();loadFx();
+window.BizetGrandeR1050Bridge={version:'R10.5.4',state:S,scene,renderer,camera,controls,roomGroup,modelGroup,dimensionGroup,techGroup,ledGroup,hemi,key,fill,
  getDetails:()=>detailsCache,getDrills:()=>drillOps,getFasteners:()=>fastenerOps,getFurniture:()=>furnitureMeshes,getCategories:()=>categoryMeshes,
  buildModel,buildRoom,buildDimensions,applyVisibility,frameModel,renderTechnical,openPanel,closePanel,toast};
 })();
