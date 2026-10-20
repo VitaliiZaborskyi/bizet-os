@@ -518,7 +518,7 @@ function addEndPanels(room,m,bodyMat,frontMat){
 function lowerRuns(modules){const out=[];['A','B','C'].forEach(wall=>{const list=modules.filter(m=>(m.wall||'A')===wall&&m.level!=='upper'&&!m.tall&&!m.freestanding&&m.kind!=='FILLER').sort((a,b)=>wall==='A'?(+a.x-+b.x):(+a.y-+b.y));if(list.length)out.push([wall,list])});return out}
 function plinthRuns(modules){
  const out=[];['A','B','C'].forEach(wall=>{
-   const list=modules.filter(m=>(m.wall||'A')===wall&&(window.BizetR10Rules?.requiresCommonPlinth?.(m)??(m.level!=='upper'&&!m.freestanding&&m.kind!=='FILLER'))).sort((a,b)=>wall==='A'?(+a.x-+b.x):(+a.y-+b.y));
+   const list=modules.filter(m=>(m.wall||'A')===wall&&((m.kind==='FILLER'&&m.level!=='upper'&&!m.freestanding&&Number(m.z)>0)||(window.BizetR10Rules?.requiresCommonPlinth?.(m)??(m.level!=='upper'&&!m.freestanding&&m.kind!=='FILLER')))).sort((a,b)=>wall==='A'?(+a.x-+b.x):(+a.y-+b.y));
    if(list.length)out.push([wall,list]);
  });return out;
 }
@@ -583,7 +583,7 @@ function addWorktopAndPlinth(room,modules){
  });
  // Tall floor modules, including the built-in fridge, have continuous frontage on the same recess.
  plinthRuns(modules).forEach(([wall,list])=>{
-   list.filter(m=>m.tall).forEach(m=>addFloorPlinth(room,m,pm));
+   list.filter(m=>m.tall||m.kind==='FILLER').forEach(m=>addFloorPlinth(room,m,pm)); // reach wall through filler run
    addPlinthEndReturns(room,wall,list,pm);
  });
  plinthRuns(modules).forEach(([wall,list])=>{
