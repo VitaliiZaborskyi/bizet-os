@@ -397,7 +397,16 @@
     });
     const plinthPlans=includePlinth?Object.values(plinthGroups).map(group=>window.BizetR10Rules?.plinthRunPlan?.(group)||{span:0,segments:[],joints:[]}):[];
     const plinthHeight=Math.max(0,...modules.filter(m=>m.level!=='upper'&&!m.freestanding).map(m=>Number(m.z)||0));
-    if(includePlinth)areas.PLINTH=plinthPlans.reduce((sum,plan)=>sum+(Number(plan.span)||0)*plinthHeight/1e6,0);
+    const recess=window.BizetModelRuntime?.getInputs?.().dishwasher_type==='NO'?40:90;
+    const plinthEndReturns=includePlinth?Object.entries(plinthGroups).flatMap(([wall,group])=>{
+      const arranged=[...group].sort((a,b)=>wall==='A'?a.x-b.x:a.y-b.y);
+      if(!arranged.length)return[];
+      return[arranged[0],arranged[arranged.length-1]].map((m,i)=>({
+        wall,side:i===0?'START':'END',length_mm:Math.max(12,(wall==='A'?Number(m.d):Number(m.w))-recess),height_mm:Math.max(60,Number(m.z)||100)
+      }));
+    }):[];
+    if(includePlinth)areas.PLINTH=plinthPlans.reduce((sum,plan)=>sum+(Number(plan.span)||0)*plinthHeight/1e6,0)+
+      plinthEndReturns.reduce((sum,p)=>sum+p.length_mm*p.height_mm/1e6,0);
     const plinthPieces=includePlinth?plinthPlans.reduce((sum,plan)=>sum+(plan.segments?.length||0),0):0;
     const plinthConnectors=includePlinth?Math.max(0,plinthPieces-1):0;
     const plinthJointMap=Object.fromEntries(Object.entries(plinthGroups).map(([wall,group])=>[wall,(window.BizetR10Rules?.plinthRunPlan?.(group)?.joints||[]).map(v=>Math.round(v))]));
@@ -423,6 +432,7 @@
     add('Материалы','ЛДСП 18 Facade',areas.FACADE,'м²',PRICES.FACADE_M2);
     add('Материалы','HDF 3 mm',areas.HDF,'м²',PRICES.HDF_M2);
     if(areas.PLINTH>0)add('Материалы','Цоколь',areas.PLINTH,'м²',PRICES.CARCAS_M2,`Высота по проекту: ${plinthHeight} мм · сегментов: ${plinthPieces}; включая встроенный холодильник`);
+    if(plinthEndReturns.length)add('Материалы','Возврат цоколя к стене / панели',plinthEndReturns.length,'шт',0,'Размеры mm: '+plinthEndReturns.map(x=>x.wall+':'+x.side+' '+Math.round(x.length_mm)+'×'+Math.round(x.height_mm)).join('; ')+' · supplier cutting price OPEN');
     if(plinthConnectors>0)add('Фурнитура','Соединитель цоколя универсальный',plinthConnectors,'шт',PRICES.PLINTH_CONNECTOR,'Один тип для прямого и углового стыка; 1 шт на стык');
     add('Материалы','PVC 22×0.8',edgeM,'п.м',PRICES.EDGE_MATERIAL_M,'Эмпирика: площадь плит × 6 + 20%');
     modules.filter(m=>m.kind==='SINK'&&m.sink_tray_default).forEach(m=>{
@@ -460,7 +470,7 @@
     add('Работы','Упаковка',panelArea,'м²',PRICES.PACKING_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     add('Работы','Установка',panelArea,'м²',PRICES.INSTALL_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     const cost=rows.reduce((s,r)=>s+r.total,0),client=cost*2;
-    return{rows,cost,client,areas,cutM,edgeM,worktopSlabs,worktopJoints,worktopJointMap,worktopBlockedByCriticalZone,plinthPieces,plinthConnectors,plinthJointMap,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
+    return{rows,cost,client,areas,plinthEndReturns,cutM,edgeM,worktopSlabs,worktopJoints,worktopJointMap,worktopBlockedByCriticalZone,plinthPieces,plinthConnectors,plinthJointMap,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
   }
 
   function moduleDrawing(modules,room,orderRef=''){
