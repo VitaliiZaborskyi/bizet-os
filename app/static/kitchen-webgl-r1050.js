@@ -794,6 +794,17 @@ function buildLighting(room,mods){
    });
  });
 }
+function addR1056CornerFalseFront(room,m,frontMaterial){
+ // Geometry-visible 40 mm return where the perpendicular wall run meets wall A.
+ // Pilot only: section/profile needs owner's drawing before production machining.
+ if(!['B','C'].includes(m.wall)||m.level==='upper'&&m.kind==='UPPER_TOP'||m.corner_edge!=='START')return;
+ const t=18,returnLength=40,front=m.wall==='B'?+m.x+ +m.w:+m.x;
+ const spec={x:m.wall==='B'?front-returnLength:front,y:+m.y+ +m.d-t,z:+m.z,
+   w:returnLength,d:t,h:+m.h};
+ const strip=meshBox(room,spec,frontMaterial.clone(),furnitureGroup,'corner-false-front',m.id);
+ strip.material.userData.owned=true;strip.userData.partRole='CORNER_PERPENDICULAR_FALSE_40';
+ strip.userData.visualizationProxy=true;strip.userData.manufacturingStatus='OWNER_PROFILE_DRAWING_OPEN';
+}
 function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareGroup);clearGroup(annotationGroup);clearGroup(lightingGroup);selectable=[];movables=[];const room=options.room||{},mods=options.modules||[],c=colors(),body=ownMat({color:c.body,roughness:.58}),front=ownMat({color:c.front,roughness:.5}),focus=!!options.focusMode;
  r1056MaterialTexture(body,'carcass',c.body);r1056MaterialTexture(front,'facade',c.front);
  const buildOne=m=>{
@@ -813,7 +824,7 @@ function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareG
    localFront.dispose();
    addLegs(room,m);
    if(focus&&m.tall&&window.BizetR10Rules?.requiresCommonPlinth?.(m))addFloorPlinth(room,m,body);
-   addHinges(room,m,count);addLiftHardware(room,m);addEndPanels(room,m,body,front);addAppliance(room,m);
+   addHinges(room,m,count);addLiftHardware(room,m);addEndPanels(room,m,body,front);addR1056CornerFalseFront(room,m,front);addAppliance(room,m);
    if(options.showNumbers!==false&&!focus)addNumber(room,m);
  };
  mods.forEach(buildOne);
