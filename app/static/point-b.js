@@ -156,8 +156,11 @@
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Left',H,D));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Right',H,D));
     out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1)));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail',inner,100));
-    out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail',inner,100));
+    if(module.top_panel_override==='YES')out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-1),1,EDGE,2,2,'MANUAL top panel'));
+    else{
+      out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail Front',inner,100,1,EDGE,2,2,'Flat 100 mm front stretcher'));
+      out.push(detail(module,n++,s++,'ЛДСП 18 Carcas','Rail Back',inner,100,1,EDGE,2,2,'Flat 100 mm rear stretcher'));
+    }
     out.push(detail(module,n++,s++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз под заднюю стенку','PILOT: размер HDF требует финальной заморозки'));
     const facadeH=Math.floor((H-TOP_GAP-GAP*(count-1))/count);
     for(let i=0;i<count;i++)out.push(detail(module,n++,s++,'ЛДСП 18 Facade',`Facade Drawer ${i+1}`,facadeH,Math.max(100,W-GAP),1,EDGE,2,2,'Ручка'));
