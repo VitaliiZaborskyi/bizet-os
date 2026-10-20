@@ -73,7 +73,7 @@ def test_11_corner_overlap_detection_and_worktop_subtraction():
     model=read("model.js");scene=read("kitchen-webgl-r1050.js");p=read("production-r1050.js")
     for term in ["cornerReserve=Math.min(full,lowerDepth())","function inspectPhysicalIntersections","BizetR1056Collisions"]:
         assert term in model
-    for term in ["function r1056SubtractRect","function r1056WorktopMesh","r1056WorktopClips","CORNER_PERPENDICULAR_FALSE_40"]:
+    for term in ["function r1056SubtractRect","function r1056WorktopMesh","R1056WorktopClips","CORNER_PERPENDICULAR_FALSE_40"]:
         assert term in scene
     assert "STOP_MODULE_INTERSECTION" in p and "STOP_UNAPPROVED_WORKTOP_CORNER_CLIP" in p
 
