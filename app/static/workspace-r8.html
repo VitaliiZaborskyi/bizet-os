@@ -10,14 +10,31 @@
   <link rel="stylesheet" href="/static/model.css">
   <link rel="stylesheet" href="/static/model-r5.css">
   <link rel="stylesheet" href="/static/pilot-shell.css">
-<link rel="stylesheet" href="/static/visualization-r1055.css?v=1055">
+<link rel="stylesheet" href="/static/visualization-r1055.css?v=1056">
   <link rel="stylesheet" href="/static/workspace-r8.css?v=1051">
   <link rel="stylesheet" href="/static/r1050.css?v=1051">
   <link rel="stylesheet" href="/static/r1051.css?v=1051">
   <link rel="stylesheet" href="/static/ui-viewer-pilot.css?v=20261015">
   <link rel="stylesheet" href="/static/point-b.css?v=175">
   <link rel="stylesheet" href="/static/owner-qa-business.css?v=175">
-</head>
+<style>
+/* R10.5.6 desktop engineering canvas, not iPhone-width isolation. */
+@media(min-width:821px){
+ body.r10-module-focus .r8-main,body.r1056-edit-mode .r8-main{grid-template-columns:190px minmax(0,1fr) minmax(260px,350px)!important;width:100%!important;max-width:none!important}
+ body.r10-module-focus #modelStage,body.r1056-edit-mode #modelStage{width:100%!important;max-width:none!important;min-height:calc(100dvh - 215px)!important;height:auto!important}
+ body.r10-module-focus .r8-canvas-column,body.r1056-edit-mode .r8-canvas-column{width:100%!important;min-width:0!important;max-width:none!important}
+}
+#openVisualizationR1056{margin-top:6px;background:#262c35!important;color:#fff!important;font-weight:750;box-shadow:0 6px 18px #0002}
+#openVisualizationR1056 span{color:#b4d2ff!important}
+#openVisualizationTop{background:#24334c;color:white;font-weight:750}
+#r1056ViewLighting:disabled{opacity:.35;cursor:not-allowed}
+#r1056ViewLighting.is-on{background:#f8d785;color:#242424}
+.r1056-visualization .r1055-visual-preview img{max-width:100%;max-height:50vh;object-fit:contain;border-radius:12px}
+.r1056-visualization .r1055-visual-preview:has(img:not([hidden])){min-height:150px}
+.r1056-visualization .r1055-visual-prompt input{width:100%;padding:10px 12px;border:1px solid #8a8f92;border-radius:10px;background:var(--surface,#373737);color:var(--ink,#fff)}
+.r1056-error{color:#ff9b92}
+.r1056-visualization .r1055-visual-preview{overflow-y:auto}
+</style></head>
 <body class="r8-workspace-body">
   <div class="r8-shell">
     <header class="r8-topbar">
@@ -49,6 +66,7 @@
         <button data-panel="elements" type="button"><span>05</span>Элементы стен</button>
         <button data-panel="materials" type="button"><span>06</span>Материалы</button>
         <button data-panel="general" type="button"><span>07</span>Экспорт</button>
+        <button data-panel="visualization" id="openVisualizationR1056" type="button" class="r1056-visual-entry"><span>08</span>✨ Визуализация</button>
       </nav>
 
       <section class="r8-canvas-column">
@@ -61,6 +79,8 @@
               <button id="kitchenEditMode" type="button">EDIT</button>
             </div>
             <button class="r8-pill r10-focus-back" id="focusBackButton" type="button" hidden>← Назад</button>
+            <button class="r8-pill r1056-view-light" id="r1056ViewLighting" type="button" disabled aria-pressed="false" title="Подсветка" aria-label="Подсветка">☀</button>
+            <button class="r8-pill r1056-header-render" id="openVisualizationTop" type="button" title="Фотореалистичная визуализация">✨ Визуализация</button>
             <button class="r8-pill r10-dimensions-icon" id="modelDimensionsToggle" type="button" aria-pressed="true" aria-label="Скрыть размеры" title="Скрыть размеры">📏</button>
             <button class="r8-pill r104-number-toggle" id="moduleNumbersToggle" type="button" aria-pressed="true" aria-label="Скрыть номера модулей" title="Скрыть номера модулей">#</button>
             <button class="r8-pill r10-warning-button" id="constraintButton" type="button" hidden aria-expanded="false" title="Предупреждения проекта">!</button>
@@ -197,7 +217,7 @@
   <script src="/static/pilot-r6.js"></script>
   <script src="/static/workspace-r8.js?v=20261020r1055"></script>
   <script src="/static/point-b.js?v=20261020r1055"></script>
-<script src="/static/visualization-r1055.js?v=1055"></script>
+<script src="/static/visualization-r1055.js?v=1056"></script>
   <script src="/static/owner-qa-business.js?v=175"></script>
   <script src="/static/workspace-r1050.js?v=20261011"></script>
   <script src="/static/ua-ui-r1050.js?v=1051"></script>
