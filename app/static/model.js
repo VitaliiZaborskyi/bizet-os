@@ -562,6 +562,10 @@
     }
 
     let ordered=edge==='START'?tall.concat(regular):regular.concat(tall);
+    // #31: reserve the physical corner BEFORE fitting optional modules.
+    // The previous placement added corner guards after filling the full wall span,
+    // silently pushing mandatory fridges outside the available room envelope.
+    ordered=ensureCornerZones(ordered,wall);
     let used=totalRun(ordered);
 
     if(wall==='A'&&bounds.span-used>=CUTLERY_W){
@@ -577,7 +581,9 @@
     const remaining=bounds.span-used;
     if(remaining>0){
       const fills=systemFillModules(wall,remaining);
-      if(tall.length&&edge==='END'){
+      const endCornerIndex=ordered.findIndex(m=>m.corner_guard&&m.corner_edge==='END');
+      if(endCornerIndex>=0)ordered.splice(endCornerIndex,0,...fills);
+      else if(tall.length&&edge==='END'){
         const firstTall=ordered.findIndex(m=>m.tall);
         ordered.splice(firstTall<0?ordered.length:firstTall,0,...fills);
       }else if(tall.length&&edge==='START'){
@@ -594,6 +600,19 @@
     ordered=ensureDishwasherNearSink(ordered,edge);
     ordered=centerCompositionAnchor(ordered,wall,bounds);
     ordered=enforceFridgeEdgeInvariant(ordered,edge);
+    // Mandatory appliances always outrank disposable fill, even after composition.
+    let overflow=totalRun(ordered)-bounds.span;
+    if(overflow>.5){
+      for(let k=ordered.length-1;k>=0&&overflow>.5;k--){
+        const m=ordered[k],optional=m.system&&m.pending&&!m.corner_guard&&!m.tall;
+        if(!optional)continue;
+        const current=Math.max(0,Number(m.w)||0),minimum=m.kind==='FILLER'?0:300;
+        const shrink=Math.min(overflow,Math.max(0,current-minimum));
+        m.w=current-shrink;overflow-=shrink;
+        if(m.w<20){overflow-=m.w;ordered.splice(k,1)}
+      }
+      if(overflow>.5)pushWarning('MANDATORY_RUN_OVERFLOW_'+wall,'STOP: required modules cannot fit into wall '+wall+'; do not export or omit fridge silently.');
+    }
     let cursor=bounds.start;
     return ordered.map(m=>{
       const runSize=Math.min(m.w,maxRunFor(m)),offset=Number(offsetOverrides()[m.id])||0;
@@ -657,7 +676,7 @@
   function upperFromLower(lower){
     const room=roomValues(),gap=Math.max(300,Number(inputs.upper_gap_mm)||600),bottom=lowerTotalHeight()+gap,height=Math.min(upperConfiguredHeight(),room.heightMm-bottom-50);if(height<220)return[];
     const uDepth=upperDepth(),result=[],hoodWidth=Number(inputs.hood_width_mm)||600,hoodDepth=inputs.hood_type==='BUILT_IN'?Math.max(UPPER_HOOD_DEPTH,uDepth):uDepth;
-    lower.filter(m=>!m.tall&&m.level==='lower'&&m.kind!=='FILLER').forEach(m=>{
+    lower.filter(m=>!m.tall&&m.level==='lower').forEach(m=>{ // #31 preserve upper/lower segment endpoints including system fillers
       if(m.kind==='COOKTOP'){
         if(m.wall==='A'){const center=m.x+m.w/2,x=clamp(center-hoodWidth/2,0,room.lengthMm-hoodWidth);result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y:room.depthMm-hoodDepth,z:bottom,w:hoodWidth,d:hoodDepth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth,appliance_model_selection_enabled:false})}
         else{const center=m.y+m.d/2,y=clamp(center-hoodWidth/2,0,room.depthMm-hoodWidth),x=m.wall==='B'?0:room.lengthMm-hoodDepth;result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y,z:bottom,w:hoodDepth,d:hoodWidth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth,appliance_model_selection_enabled:false})}
