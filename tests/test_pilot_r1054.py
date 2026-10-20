@@ -88,9 +88,8 @@ def test_20_fridge_common_plinth_grille_and_bom():
         assert token in model
     for token in ["addBuiltInFridge(room,m,body,front);addLegs(room,m)",
                   "function plinthRuns(modules)","list.filter(m=>m.tall||m.kind==='FILLER').forEach",
-                  "function addFloorPlinth","function addFridgeHinges","addFridgeHinges(room,m)","'fridge-plinth-grille'",
-                  "gw=Number(m.fridge_plinth_grille_width_mm)||460",
-                  "gh=Number(m.fridge_plinth_grille_height_mm)||60"]:
+                  "function addFloorPlinth","function addFridgeHinges","addFridgeHinges(room,m)","'PLINTH_GRILLE_LEFT'",
+                  "const cutW=460,cutH=60"]:
         assert token in viewer
     assert "m.kind!=='FRIDGE'&&Number(m.z)>0" not in pointb
     assert "включая встроенный холодильник" in pointb
