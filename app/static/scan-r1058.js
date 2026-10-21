@@ -382,7 +382,15 @@ function renderMarks(){
   }else drawText(m.points[0],cfg.label.slice(0,8),cfg.color);
  }
  if(first)drawDisc(first,ROLE[activeRole].color);
- annotationsGroup.visible=mode==='TOP';
+ const m=activeWallMark();
+ if(m){
+  const [a,b]=m.points,height=Math.min(10,Math.max(.1,Number(m.wall_height_mm||2600)/1000));
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute([a[0],0,a[1],b[0],0,b[1],b[0],height,b[1],a[0],height,a[1]],3));
+  geo.setIndex([0,1,2,0,2,3]);geo.computeVertexNormals();
+  const plane=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0xe92e43,side:THREE.DoubleSide,transparent:true,opacity:.30,depthTest:false,depthWrite:false}));
+  plane.renderOrder=10;annotationsGroup.add(plane);
+ }annotationsGroup.visible=true;
 }
 function createWall(id=null,label=null,kind='PRIMARY_WALL'){
  if(!WALL_KINDS[kind])kind='OTHER_SURFACE';
@@ -433,7 +441,7 @@ function selectRole(role){
  document.querySelectorAll('[data-scan-anchor]').forEach(b=>b.classList.toggle('is-active',b.dataset.scanAnchor===role));
  const cfg=ROLE[role],isAnchor=cfg.kind.endsWith('ANCHOR');
  $('scanWallEditor').hidden=isAnchor;
- if(!isAnchor){$('scanWallLabel').value=cfg.label;$('scanWallKind').value=cfg.kind;}
+ if(!isAnchor){$('scanWallLabel').value=cfg.label;$('scanWallKind').value=cfg.kind;syncWallEditFields();}
  $('scanDrawingHint').textContent='Выбрано: '+cfg.label+' · '+cfg.description+'. '+(isAnchor
   ?'Нажми одну точку на плане сверху.'
   :'Коснись первой точки в начале стены, затем второй — в её конце. Между точками появится линия; повтори для следующих стен.');
