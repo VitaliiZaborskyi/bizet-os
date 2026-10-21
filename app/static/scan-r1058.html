@@ -21,13 +21,12 @@
  <span class="scan-preliminary">Предварительно · не для производства</span>
 </section>
 <section class="scan-entry" id="scanEntry">
- <button class="scan-method is-active" id="scanChooseImport" type="button" aria-pressed="true"><span class="scan-method-icon">↥</span><strong>Загрузить готовый скан</strong><small>ZIP из Polycam · GLB / GLTF / BIN / текстуры</small></button>
+ <button class="scan-method is-active" id="scanChooseImport" type="button" aria-pressed="true"><span class="scan-method-icon">↥</span><strong>Загрузить скан</strong><small>ZIP из Polycam · GLB / GLTF / BIN / текстуры</small></button>
  <button class="scan-method" id="scanChooseProvider" type="button" aria-pressed="false"><span class="scan-method-icon">◎</span><strong>Создать новый скан</strong><small>Открыть Polycam или SketchUp</small></button>
 </section>
 <section class="scan-section scan-input" id="scanImportPanel">
  <div class="scan-drop" id="scanDropZone">
   <div><strong>Загрузи ZIP из Polycam или готовый GLB / GLTF</strong><p>ZIP распаковывается автоматически прямо в браузере. Для GLTF можно выбрать BIN и изображения одновременно. Файлы не отправляются на сервер.</p></div>
-  <button class="scan-primary" id="scanOpenPicker" type="button">Выбрать файлы</button>
   <input id="scanFileInput" type="file" accept=".zip,.glb,.gltf,.bin,.jpg,.jpeg,.png,.webp,application/zip,model/gltf-binary,model/gltf+json" multiple hidden>
  </div>
  <label class="scan-archive-choice" id="scanArchiveChoice" for="scanArchiveModel" hidden>В архиве найдено несколько моделей. Выбери, какую открыть: <select id="scanArchiveModel"></select></label>
