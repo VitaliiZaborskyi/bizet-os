@@ -67,7 +67,9 @@
   <section class="scan-semantic">
    <div class="scan-sub-head"><div class="scan-eyebrow">ШАГ 2 · СМЫСЛОВАЯ ГЕОМЕТРИЯ</div><h2>Разметка стен</h2><p><b>1.</b> Выбери или добавь стену. <b>2.</b> На виде сверху коснись начала и конца линии. <b>3.</b> Укажи тип участка: основная стена, выступ или другая поверхность. Повторяй для любого количества стен; все размеры предварительные.</p></div>
    <div class="scan-role-grid" id="scanRoleGrid"></div>
-   <button class="scan-add-wall" id="scanAddWall" type="button">+ Добавить следующую стену</button>
+   <button class="scan-add-wall" id="scanAutoWalls" type="button">◎ Автоматически найти стены в скане</button>
+   <div class="scan-semantic-help" id="scanAutoStatus">Ищем крупные вертикальные плоскости; найденные элементы требуют проверки.</div>
+   <button class="scan-add-wall" id="scanAddWall" type="button">+ Добавить следующую стену вручную</button>
    <div class="scan-wall-editor" id="scanWallEditor">
     <label for="scanWallLabel">Обозначение выбранной стены</label>
     <input id="scanWallLabel" type="text" maxlength="24" placeholder="Например, 1, А или В">
@@ -78,6 +80,18 @@
      <option value="PARTITION">Перегородка</option>
      <option value="OTHER_SURFACE">Другая поверхность</option>
     </select>
+    <label for="scanWallLengthMm">Длина стены, мм</label>
+    <input id="scanWallLengthMm" type="number" min="100" max="100000" step="1" inputmode="numeric">
+    <label for="scanWallAngleDeg">Поворот стены, °</label>
+    <input id="scanWallAngleDeg" type="number" min="-360" max="360" step="1" inputmode="numeric">
+    <label for="scanWallMoveX">Положение X, мм</label>
+    <input id="scanWallMoveX" type="number" step="1" inputmode="numeric">
+    <label for="scanWallMoveZ">Положение Y на плане, мм</label>
+    <input id="scanWallMoveZ" type="number" step="1" inputmode="numeric">
+    <label for="scanWallHeightMm">Высота стены, мм</label>
+    <input id="scanWallHeightMm" type="number" min="100" max="10000" step="1" inputmode="numeric" value="2600">
+    <label for="scanWallCommunications">Коммуникации</label>
+    <input id="scanWallCommunications" type="text" maxlength="240" placeholder="Розетки, вода, канализация">
    </div>
    <div class="scan-addons"><button data-scan-anchor="ENTRY" type="button">+ Отметить вход / дверь (необязательно)</button></div>
    <div class="scan-semantic-help" id="scanDrawingHint">Выбери стену, коснись начала и конца её линии на виде сверху.</div>
