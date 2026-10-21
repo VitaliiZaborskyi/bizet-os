@@ -157,7 +157,8 @@ def test_r1050_worktop_and_plinth_use_core_safe_segmentation_and_overhang():
     assert "worktopRunPlan?.(list,{enforceCriticalZones:true})" in segment
     assert "plan?.segments?.length" in segment
     worktop = viewer[viewer.index("function addWorktopAndPlinth"):viewer.index("function textSprite")]
-    assert "Math.min(...seg.map(m=>+m.y))-20" in worktop
+    assert "Math.min(room.depthMm-600" in worktop
+    assert "Math.min(...seg.map(m=>+m.y))-40" in worktop
     assert "'plinth'" in worktop
     assert "'worktop'" in worktop
     assert "'plinth-seam'" in worktop
@@ -167,7 +168,7 @@ def test_r1050_menu_three_contains_handles_and_menu_seven_is_export():
     html = read("workspace-r8.html")
     workspace = read("workspace-r8.js")
     assert '<button data-panel="upper" type="button"><span>03</span>Настройка модулей</button>' in html
-    assert '<button data-panel="general" type="button"><span>07</span>Экспорт</button>' in html
+    assert '<button data-panel="general" type="button"><span>07</span>Визуализация / Экспорт</button>' in html
     upper = workspace[workspace.index("if(panel==='upper')"):workspace.index("if(panel==='communications')")]
     general = workspace[workspace.index("if(panel==='general')"):workspace.index("$('panelBody').innerHTML")]
     assert "<h3>Ручки</h3>" in upper
