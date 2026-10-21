@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#111c2a">
 <title>BIZET OS 10.5.8 · Скан помещения</title>
-<link rel="stylesheet" href="/static/scan-r1058.css?v=1058">
+<link rel="stylesheet" href="/static/scan-r1058.css?v=1058b">
 </head>
 <body>
 <header class="scan-top">
@@ -21,23 +21,24 @@
  <span class="scan-preliminary">Предварительно · не для производства</span>
 </section>
 <section class="scan-entry" id="scanEntry">
- <button class="scan-method is-active" id="scanChooseImport" type="button" aria-pressed="true"><span class="scan-method-icon">↥</span><strong>Загрузить готовый скан</strong><small>GLB / GLTF + связанные BIN и текстуры</small></button>
+ <button class="scan-method is-active" id="scanChooseImport" type="button" aria-pressed="true"><span class="scan-method-icon">↥</span><strong>Загрузить готовый скан</strong><small>ZIP из Polycam · GLB / GLTF / BIN / текстуры</small></button>
  <button class="scan-method" id="scanChooseProvider" type="button" aria-pressed="false"><span class="scan-method-icon">◎</span><strong>Создать новый скан</strong><small>Открыть Polycam или SketchUp</small></button>
 </section>
 <section class="scan-section scan-input" id="scanImportPanel">
  <div class="scan-drop" id="scanDropZone">
-  <div><strong>Выбери GLB или GLTF</strong><p>Можно выбрать сразу несколько файлов, если к GLTF прилагаются BIN и изображения. Файлы обрабатываются локально в браузере.</p></div>
+  <div><strong>Загрузи ZIP из Polycam или готовый GLB / GLTF</strong><p>ZIP распаковывается автоматически прямо в браузере. Для GLTF можно выбрать BIN и изображения одновременно. Файлы не отправляются на сервер.</p></div>
   <button class="scan-primary" id="scanOpenPicker" type="button">Выбрать файлы</button>
-  <input id="scanFileInput" type="file" accept=".glb,.gltf,.bin,.jpg,.jpeg,.png,.webp,model/gltf-binary,model/gltf+json" multiple hidden>
+  <input id="scanFileInput" type="file" accept=".zip,.glb,.gltf,.bin,.jpg,.jpeg,.png,.webp,application/zip,model/gltf-binary,model/gltf+json" multiple hidden>
  </div>
+ <label class="scan-archive-choice" id="scanArchiveChoice" for="scanArchiveModel" hidden>В архиве найдено несколько моделей. Выбери, какую открыть: <select id="scanArchiveModel"></select></label>
 </section>
 <section class="scan-section scan-providers" id="scanProviderPanel" hidden>
- <p>Эти программы пока внешние. BIZET OS откроет выбранный сервис; после экспорта вернись и загрузи GLB / GLTF. Прямой встроенный LiDAR-сканер — отдельный этап.</p>
+ <p>Приложения пока внешние. На iPhone попробуем открыть ссылку Polycam (она может открыть приложение, если Polycam поддерживает этот маршрут). Если откроется сайт, запусти установленное приложение обычным способом. Гарантированный deep-link не подтверждён. Экспортируй ZIP или GLB и вернись сюда. SketchUp — альтернативный редактор, а не эквивалент LiDAR-сканирования.</p>
  <div class="scan-provider-grid">
  <button type="button" id="scanOpenPolycam"><strong>Polycam</strong><small>3D-сканирование и экспорт</small><span>Открыть ↗</span></button>
  <button type="button" id="scanOpenSketchup"><strong>SketchUp</strong><small>Моделирование / доступные инструменты</small><span>Открыть ↗</span></button>
  </div>
- <button class="scan-outline" id="scanBackToImport" type="button">У меня уже есть файл скана</button>
+ <p><a href="https://apps.apple.com/app/id1532482376" target="_blank" rel="noopener noreferrer" class="scan-appstore">Polycam в App Store — только если приложение не установлено ↗</a></p><button class="scan-outline" id="scanBackToImport" type="button">У меня уже есть файл скана</button>
 </section>
 <div id="scanStatus" class="scan-status" role="status" aria-live="polite">Ожидаю файл скана. Для этого пилота можно использовать Polycam 13.08.2026.glb.</div>
 <section class="scan-workspace" id="scanWorkspace" hidden>
@@ -65,18 +66,22 @@
  </div>
  <div class="scan-work-bottom">
   <section class="scan-semantic">
-   <div class="scan-sub-head"><div class="scan-eyebrow">ШАГ 2 · СМЫСЛОВАЯ ГЕОМЕТРИЯ</div><h2>Разметка стен</h2><p>Выбери участок, затем отметь <b>две точки</b> вдоль его линии на виде сверху. Это предварительная разметка, а не автоматическое подтверждение размеров.</p></div>
-   <div class="scan-role-grid">
-    <button class="scan-role is-active" data-scan-role="A" type="button"><b>А</b><span>Выступ · грань A</span></button>
-    <button class="scan-role" data-scan-role="B" type="button"><b>Б</b><span>Выступ · грань Б</span></button>
-    <button class="scan-role" data-scan-role="V" type="button"><b>В</b><span>Основная стена В</span></button>
-    <button class="scan-role" data-scan-role="G" type="button"><b>Г</b><span>Основная стена Г</span></button>
+   <div class="scan-sub-head"><div class="scan-eyebrow">ШАГ 2 · СМЫСЛОВАЯ ГЕОМЕТРИЯ</div><h2>Разметка стен</h2><p><b>1.</b> Выбери или добавь стену. <b>2.</b> На виде сверху коснись начала и конца линии. <b>3.</b> Укажи тип участка: основная стена, выступ или другая поверхность. Повторяй для любого количества стен; все размеры предварительные.</p></div>
+   <div class="scan-role-grid" id="scanRoleGrid"></div>
+   <button class="scan-add-wall" id="scanAddWall" type="button">+ Добавить следующую стену</button>
+   <div class="scan-wall-editor" id="scanWallEditor">
+    <label for="scanWallLabel">Обозначение выбранной стены</label>
+    <input id="scanWallLabel" type="text" maxlength="24" placeholder="Например, 1, А или В">
+    <label for="scanWallKind">Какой это участок?</label>
+    <select id="scanWallKind">
+     <option value="PRIMARY_WALL">Основная стена</option>
+     <option value="PROTRUSION_FACE">Выступ / короб</option>
+     <option value="PARTITION">Перегородка</option>
+     <option value="OTHER_SURFACE">Другая поверхность</option>
+    </select>
    </div>
-   <div class="scan-addons">
-    <button data-scan-anchor="ENTRY" type="button">+ Вход / дверь</button>
-    <button data-scan-anchor="TURN_CABINET" type="button">+ Поворотный шкаф</button>
-   </div>
-   <div class="scan-semantic-help" id="scanDrawingHint">Выбрана А — выступ. На виде сверху нажми начало и конец линии.</div>
+   <div class="scan-addons"><button data-scan-anchor="ENTRY" type="button">+ Отметить вход / дверь (необязательно)</button></div>
+   <div class="scan-semantic-help" id="scanDrawingHint">Выбери стену, коснись начала и конца её линии на виде сверху.</div>
    <div class="scan-markup-list" id="scanMarkupList"></div>
    <div class="scan-action-footer"><button id="scanCancelMark" class="scan-outline" type="button">Сбросить текущие точки</button><button id="scanUndoMark" class="scan-outline" type="button">Удалить последнее</button></div>
   </section>
@@ -87,8 +92,8 @@
    <div class="scan-dimensions"><span>Габарит меша:</span><strong id="scanDimensions">—</strong><small>Включает мебель и лишнюю геометрию</small></div>
    <label class="scan-measure-label" for="scanKnownMm">Проверенный размер выбранной стены, мм (необязательно)</label>
    <input id="scanKnownMm" type="number" min="100" max="100000" step="1" inputmode="numeric" placeholder="Например, 4100">
-   <label class="scan-measure-label" for="scanKnownRole">Для какой стены</label>
-   <select id="scanKnownRole"><option value="V">В · основная</option><option value="G">Г · основная</option><option value="A">А · выступ</option><option value="B">Б · выступ</option></select>
+   <label class="scan-measure-label" for="scanKnownRole">Для какой размеченной стены</label>
+   <select id="scanKnownRole"></select>
    <div class="scan-registration-state" id="scanRegistrationState">Геометрия пока не подтверждена · экспорт производства запрещён</div>
    <button class="scan-primary" type="button" id="scanSaveRegistration">Сохранить предварительную разметку в проект</button>
    <button class="scan-outline" type="button" id="scanContinueToRoom">Открыть редактор помещения →</button>
@@ -100,6 +105,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="/static/scan-r1058.js?v=1058"></script>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.3/umd/index.js"></script>
+<script src="/static/scan-r1058.js?v=1058b"></script>
 </body>
 </html>
