@@ -115,7 +115,7 @@
     (module.middle_side_boundaries||[]).forEach((boundary,i)=>{
       out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Middle Side '+(i+1),H,partD,1,EDGE,2,2,'Вертикальная перегородка','Граница фасадов '+boundary));
     });
-    out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз под заднюю стенку','PILOT: размер HDF требует финальной заморозки'));
+    if(!lowerOven)out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз под заднюю стенку','PILOT: размер HDF требует финальной заморозки'));
     if(lowerOven){
       const drawerFacadeH=Math.max(1,round(module.oven_drawer_facade_height_mm||0));
       if(drawerFacadeH>0){
