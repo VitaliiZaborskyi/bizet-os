@@ -472,7 +472,10 @@
      await rt.patchVisual({room_import:{source:'TEMPLATE',status:'ACTIVE',target_model:'ROOM_MODEL',message:'Шаблон активен. Размеры уточняются в параметрах помещения.'}});refreshPanel();return;
    }
    if(a==='room-source-scan'){
-     const status=$('r10RoomImportStatus');if(status)status.textContent=tr('Скан — в стадии разработки.','Scan is in development.');return;
+     const id=new URLSearchParams(location.search).get('project')||
+       sessionStorage.getItem('bizet_os_project_id')||localStorage.getItem('bizet_os_project_id')||'';
+     window.location.assign('/scan'+(id?'?project='+encodeURIComponent(id):''));
+     return;
    }
    if(a==='room-source-file'){$('r10RoomFileInput')?.click();return}
    if(a==='calibrate-import'){
