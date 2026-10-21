@@ -181,7 +181,7 @@ def test_legacy_scan_paths_and_visualization_are_preserved():
     for token in ["function parseGlb", "function extractScanContour", "scanApplyDimensions", "POLYCAM", "SKETCHUP"]:
         assert token in room
     main=(ROOT/"app"/"main.py").read_text(encoding="utf-8")
-    assert 'version="R10.5.8"' in main
+    assert 'version="R10.5.9"' in main
     visual=read("visualization-r1055.js")
     assert "const API='/api/v1.1/visualization'" in visual
     assert "fetch(API+'/status'" in visual
