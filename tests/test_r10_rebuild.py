@@ -728,7 +728,7 @@ def test_r1034_room_source_screen_precedes_kitchen_configuration():
     assert "Шаблон" in source
     assert "Загрузить файл" in source
     assert "Скан" in source
-    assert "Скан — в стадии разработки." in source
+    assert "window.location.assign('/scan'" in source
     assert "startRoomFileInput" in source
     assert "bindStartRoomImport(screen)" in source
     build = handoff[handoff.index("function buildScreenFive"):handoff.index("function destroyScreenFive")]
@@ -739,7 +739,7 @@ def test_r1034_workspace_room_source_uses_template_and_scan_is_wip():
     js = read("workspace-r8.js")
     assert 'data-action="room-source-manual">Шаблон</button>' in js
     assert "source:'TEMPLATE'" in js
-    assert "Скан — в стадии разработки." in js
+    assert "window.location.assign('/scan'" in js
     assert "SCAN_CONNECTOR_REQUIRED" not in js
 
 
@@ -764,7 +764,7 @@ def test_r1035_mobile_workspace_targets_single_screen_but_keeps_page_fallback():
 
 def test_r1049_fastapi_reports_current_version():
     main = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
-    assert 'version="R10.5.7"' in main
+    assert 'version="R10.5.8"' in main
 
 
 def test_r1035_focus_overlay_labels_selected_module_and_hides_global_controls():
