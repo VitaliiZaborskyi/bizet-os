@@ -978,7 +978,13 @@ function bindCommunicationsRoute() {
 
 async function initialize() {
   applyPilotCopy();
-  buildScanPilot();
+  // One canonical scan entry at /scan. Legacy modal remains as historical
+  // source but is no longer wired into any navigation path.
+  document.getElementById('scanButton')?.addEventListener('click',event=>{
+    event.preventDefault();event.stopImmediatePropagation();
+    const id=sessionStorage.getItem('bizet_os_project_id')||localStorage.getItem('bizet_os_project_id')||'';
+    window.location.assign('/scan'+(id?'?project='+encodeURIComponent(id):''));
+  },true);
   bindCeilingPopupFix();
   bindCommunicationsRoute();
   try {
@@ -996,7 +1002,8 @@ async function initialize() {
   const inputMode = roomProject?.scene?.visual_settings?.geometry_input_mode;
   const needsConfirmation = params.get('scan') === 'confirm' || sessionStorage.getItem(SCAN_CONFIRM_KEY) === '1' || scanImport?.status === 'CONTOUR_CANDIDATE';
   if (needsConfirmation && scanImport?.contour_segments_m?.length) buildContourConfirmation();
-  else if (!['MANUAL', 'MANUAL_CORRECTION', 'SCAN_CONFIRMED'].includes(inputMode) && scanImport?.status !== 'CONFIRMED') buildGeometryInputQuestion();
+  // Legacy geometryInputQuestion must not reappear when returning from /scan.
+  else if (!['MANUAL', 'MANUAL_CORRECTION', 'SCAN_CONFIRMED'].includes(inputMode) && scanImport?.status !== 'CONFIRMED') document.getElementById('geometryInputQuestion')?.remove();
   setTimeout(() => { applyPilotCopy(); drawScanContour(); }, 450);
 }
 
