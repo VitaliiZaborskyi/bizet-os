@@ -13,7 +13,7 @@ def test_visualizer_is_separate_from_rule_engine():
 
 
 def test_three_live_views_are_present():
-    html = (ROOT / 'app/static/index.html').read_text(encoding='utf-8')
+    html = (ROOT / 'app/static/legacy.html').read_text(encoding='utf-8')
     assert 'data-view="PERSPECTIVE"' in html
     assert 'data-view="FRONT"' in html
     assert 'data-view="PLAN"' in html
