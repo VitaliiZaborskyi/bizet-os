@@ -528,7 +528,7 @@ async function saveRegistration(){
  }finally{$('scanSaveRegistration').disabled=false}
 }
 function bind(){
- $('scanChooseImport').onclick=()=>selectPath('IMPORT');
+ $('scanChooseImport').onclick=()=>{selectPath('IMPORT');$('scanFileInput').click()};
  $('scanChooseProvider').onclick=()=>selectPath('PROVIDER');
  $('scanBackToImport').onclick=()=>selectPath('IMPORT');
  $('scanOpenPolycam').onclick=()=>activateExternal('POLYCAM');
