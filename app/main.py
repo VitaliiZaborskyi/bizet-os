@@ -12,7 +12,7 @@ from app.api.visualization_r1056 import router as visualization_router
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
 
-app = FastAPI(title="BIZET OS 1.1", version="R10.5.7")
+app = FastAPI(title="BIZET OS 1.1", version="R10.5.8")
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.include_router(router)
 app.include_router(router_v11)
@@ -27,7 +27,7 @@ async def pilot_cache_headers(request: Request, call_next):
     path = request.url.path
     if path.startswith("/static/"):
         response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=86400"
-    elif path in {"/", "/room", "/room-setup", "/workspace", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/communications", "/materials", "/wardrobes", "/grande"}:
+    elif path in {"/", "/room", "/room-setup", "/workspace", "/room-elements", "/custom-configuration", "/linear-span", "/dimensions", "/guided", "/model", "/communications", "/materials", "/wardrobes", "/grande", "/scan"}:
         response.headers["Cache-Control"] = "no-cache"
     return response
 
@@ -107,6 +107,12 @@ def materials_pilot():
 def room_setup_r8():
     """Minimal room dimensions before the model-first workspace."""
     return FileResponse(STATIC / "room-setup-r8.html")
+
+
+@app.get("/scan", include_in_schema=False)
+def scan_registration_r1058():
+    """BIZET OS 10.5.8 local-source Polycam scan and spatial-registration pilot."""
+    return FileResponse(STATIC / "scan-r1058.html")
 
 
 @app.get("/room", include_in_schema=False)
