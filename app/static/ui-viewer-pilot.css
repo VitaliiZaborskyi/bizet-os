@@ -1,0 +1,174 @@
+/* BIZET OS — UI / Viewer Pilot 2026-10-09
+   Presentation-first, SketchUp-like edge readability, theme contrast and conditional settings. */
+
+html[data-theme="light"]{
+  --r1052-text:#111214;
+  --r1052-muted:#4b5056;
+}
+html[data-theme="dark"]{
+  --r1052-text:#f7f7f4;
+  --r1052-muted:#c2c5c8;
+}
+html[data-theme="light"] .r8-panel,
+html[data-theme="light"] .r8-section,
+html[data-theme="light"] .r8-final-actions,
+html[data-theme="light"] .r104-price-line,
+html[data-theme="light"] #pointBFinalActions{
+  color:var(--r1052-text)!important;
+}
+html[data-theme="light"] .r8-final-price strong,
+html[data-theme="light"] .r8-final-price span,
+html[data-theme="light"] .r104-price-line strong,
+html[data-theme="light"] .r104-price-line span,
+html[data-theme="light"] .r104-price-currency,
+html[data-theme="light"] .r104-price-currency span,
+html[data-theme="light"] .r8-section h3,
+html[data-theme="light"] .r8-section label,
+html[data-theme="light"] .r8-section p{
+  color:var(--r1052-text)!important;
+}
+html[data-theme="dark"] .r8-final-price strong,
+html[data-theme="dark"] .r104-price-line strong,
+html[data-theme="dark"] .r8-section h3{
+  color:var(--r1052-text)!important;
+}
+html[data-theme="dark"] .r8-final-price span,
+html[data-theme="dark"] .r104-price-line span,
+html[data-theme="dark"] .r8-section p{
+  color:var(--r1052-muted)!important;
+}
+
+/* Direction architecture screen: same visual language as the first screen, always one viewport. */
+body[data-start-kind="bizet_direction"]{height:100dvh;overflow:hidden}
+body[data-start-kind="bizet_direction"] .app-shell{height:100dvh;min-height:0;overflow:hidden}
+body[data-start-kind="bizet_direction"] .footer{display:none!important}
+body[data-start-kind="bizet_direction"] .experience{
+  flex:1 1 auto;margin:0 auto;padding:10px 0 16px;min-height:0;
+  display:grid;grid-template-rows:auto minmax(0,1fr);align-content:stretch
+}
+body[data-start-kind="bizet_direction"] .intro{margin:0 auto 14px}
+body[data-start-kind="bizet_direction"] .intro p{margin-top:9px}
+.choice-grid[data-kind="bizet_direction"]{
+  min-height:0;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:stretch
+}
+.bizet-direction-card{
+  min-height:0!important;height:min(58dvh,430px);color:#fff!important;
+  background:var(--card-fallback)!important
+}
+.bizet-direction-card::before{
+  background-image:var(--card-image),var(--card-fallback)!important;
+  background-size:cover!important;background-position:center!important
+}
+.bizet-direction-card .card-content{background:none!important}
+.bizet-direction-card .card-title{font-size:clamp(22px,2.2vw,32px)!important;text-shadow:0 2px 18px rgba(0,0,0,.42)}
+.choice-grid[data-kind="bizet_direction"] .pilot-disabled-choice{opacity:.68!important;filter:saturate(.55)!important;pointer-events:none!important}
+.bizet-design-placeholder{min-height:220px!important;background:linear-gradient(145deg,#2d3135,#17191b)!important;color:#f7f7f4!important}
+#deepShadowButton,#motionButton{display:none!important}
+
+@media(max-width:1050px){
+ body[data-start-kind="bizet_direction"] .experience{padding-top:6px}
+ .choice-grid[data-kind="bizet_direction"]{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .bizet-direction-card{height:clamp(150px,27dvh,250px)}
+}
+@media(max-width:700px){
+ body[data-start-kind="bizet_direction"] .topbar{height:58px}
+ body[data-start-kind="bizet_direction"] .experience{width:min(100% - 18px,620px);padding:4px 0 8px}
+ body[data-start-kind="bizet_direction"] .intro{margin-bottom:8px}
+ body[data-start-kind="bizet_direction"] .intro h1{font-size:clamp(28px,8vw,38px)}
+ body[data-start-kind="bizet_direction"] .intro p{font-size:12px;line-height:1.25;margin-top:6px}
+ .choice-grid[data-kind="bizet_direction"]{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ .bizet-direction-card{height:clamp(132px,28dvh,218px)!important;border-radius:18px!important}
+ .bizet-direction-card .card-content{padding:14px!important}
+ .bizet-direction-card .card-title{font-size:20px!important}
+ .bizet-direction-card .card-note{font-size:10px!important}
+}
+
+/* Logical dependencies remain in place but cannot be activated accidentally. */
+.r1052-disabled-setting{
+  opacity:.36!important;
+  filter:saturate(.35);
+}
+.r1052-disabled-setting select,
+.r1052-disabled-setting input{
+  pointer-events:none!important;
+  cursor:not-allowed!important;
+}
+.r1052-disabled-setting[data-disabled-reason]::after{
+  content:attr(data-disabled-reason);
+  display:block;
+  margin-top:4px;
+  font-size:10px;
+  color:var(--r8-muted);
+}
+
+/* Multi-zone lighting UI */
+.r1052-lighting-section{display:grid;gap:10px}
+.r1052-lighting-master,
+.r1052-lighting-option{
+  display:flex!important;
+  align-items:center;
+  gap:10px;
+  min-height:42px;
+  padding:9px 10px;
+  border:1px solid var(--r8-line);
+  border-radius:12px;
+  color:var(--r8-ink);
+  background:color-mix(in srgb,var(--r8-panel) 88%,transparent);
+}
+.r1052-lighting-master input,
+.r1052-lighting-option input{width:18px;height:18px;flex:0 0 auto;accent-color:#d8b45a}
+.r1052-lighting-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* Presentation viewer uses a dark neutral world; isolation gets light technical gray from WebGL. */
+.r1050-view-full .r8-stage,
+.r1050-view-full #r1050KitchenWebGL{background:#34383d!important}
+body:not(.r1050-view-full) #r1050KitchenWebGL{background:#34383d}
+body.kitchen-view-mode #modelDimensionsToggle,
+body.kitchen-view-mode #moduleNumbersToggle{display:none!important}
+
+@media(max-width:820px){
+  .choice-grid[data-kind="bizet_direction"]{grid-template-columns:1fr 1fr}
+  .r1052-lighting-grid{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .choice-grid[data-kind="bizet_direction"]{grid-template-columns:1fr}
+  .bizet-direction-card{min-height:104px!important}
+}
+
+/* Pilot #09 — contrast is owned by the actual surface, not only by global theme. */
+html[data-theme="light"] .r8-topbar{
+  background:rgba(244,244,241,.96)!important;
+  color:#111214!important;
+}
+html[data-theme="dark"] .r8-topbar{
+  background:rgba(25,26,28,.96)!important;
+  color:#f7f7f4!important;
+}
+html[data-theme="light"] .r8-topbar .r8-brand,
+html[data-theme="light"] .r8-topbar .r8-brand strong,
+html[data-theme="light"] .r8-topbar .r8-master,
+html[data-theme="light"] .r8-topbar .r8-project-state{color:#111214!important}
+html[data-theme="dark"] .r8-topbar .r8-brand,
+html[data-theme="dark"] .r8-topbar .r8-brand strong,
+html[data-theme="dark"] .r8-topbar .r8-master,
+html[data-theme="dark"] .r8-topbar .r8-project-state{color:#f7f7f4!important}
+.r10-constraint-banner,.r10-constraint-banner *{color:#fff!important}
+html[data-theme="light"] #pointBFinalActions .r104-price-line{
+  background:rgba(255,255,255,.94);color:#111214!important;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:8px 10px
+}
+html[data-theme="dark"] #pointBFinalActions .r104-price-line{
+  background:rgba(24,25,27,.94);color:#fff!important;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 10px
+}
+html[data-theme="dark"] #pointBFinalActions .r104-price-line *,
+html[data-theme="dark"] #pointBFinalActions .r8-final-price *,
+html[data-theme="dark"] #pointBFinalActions .r104-price-currency *{color:#fff!important}
+html[data-theme="light"] #pointBFinalActions .r104-price-line *,
+html[data-theme="light"] #pointBFinalActions .r8-final-price *{color:#111214!important}
+
+/* Pilot #14 — future appliance model chooser is visible but intentionally inactive. */
+.r1053-model-choice{
+  width:100%;min-height:40px;border:1px dashed var(--r8-line);border-radius:12px;
+  background:transparent;color:var(--r8-muted);opacity:.58;cursor:not-allowed;
+  font:700 11px/1.2 inherit;letter-spacing:.02em
+}
+.r1053-rule-note{margin:4px 0 0;font-size:11px;line-height:1.4;color:var(--r8-muted)}
