@@ -130,7 +130,7 @@ def test_31_corner_reserve_avoids_dropping_fridge_and_upper_runs_align():
 def test_32_superseded_real_provider_with_readonly_engineering_prompt():
     js=read("visualization-r1055.js");html=read("workspace-r8.html")
     for token in ["function snapshot()","function promptFor(scene)","CANONICAL SCENE (read only)",
-                  "room_elements:","crypto.subtle.digest","referenceCapture()","/api/v1.1/visualization/generate",
+                  "room_elements:","crypto.subtle.digest","referenceCapture()","const API=\'/api/v1.1/visualization\'","fetch(API+\'/generate\'",
                   "window.BizetVisualizationR1056"]:
         assert token in js
     assert 'readonly aria-readonly="true"' in js
