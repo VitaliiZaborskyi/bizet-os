@@ -71,7 +71,7 @@ def test_10_view_lighting_kelvin_gradient_and_disabled_when_not_configured():
 
 def test_11_corner_overlap_detection_and_worktop_subtraction():
     model=read("model.js");scene=read("kitchen-webgl-r1050.js");p=read("production-r1050.js")
-    for term in ["cornerReserve=Math.min(full,lowerDepth())","function inspectPhysicalIntersections","BizetR1056Collisions"]:
+    for term in ["cornerReserve=Math.min(full,lowerDepth()+lowerWallGap())","function inspectPhysicalIntersections","BizetR1056Collisions"]:
         assert term in model
     for term in ["function r1056SubtractRect","function r1056WorktopMesh","R1056WorktopClips","CORNER_PERPENDICULAR_FALSE_40"]:
         assert term in scene
@@ -101,7 +101,7 @@ def test_14_grande_left_rotation_keyboard_and_second_cabinet():
 def test_15_visualization_visible_and_provider_not_fake():
     html=read("workspace-r8.html");js=read("visualization-r1055.js")
     server=(ROOT/"app"/"api"/"visualization_r1056.py").read_text(encoding="utf-8")
-    assert 'id="openVisualizationR1056"' in html
+    assert 'data-panel="general"' in html  # only menu 07 entry
     assert 'id="openVisualizationTop"' in html
     assert "readonly aria-readonly" in js
     assert "referenceCapture()" in js and "const API=\'/api/v1.1/visualization\'" in js and "fetch(API+\'/generate\'" in js
