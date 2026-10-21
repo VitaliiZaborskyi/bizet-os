@@ -38,7 +38,8 @@ def test_fix_03_kitchen_motion_moves_complete_front_assemblies_outward():
 def test_fix_04_legs_and_plinth_do_not_share_coplanar_box_faces():
     viewer=read("kitchen-webgl-r1050.js")
     assert "function addSupportLeg" in viewer
-    assert "new THREE.CylinderGeometry(14,14" in viewer
+    assert "new THREE.CylinderGeometry(radTop,radBottom" in viewer
+    assert "foot-mounting-plate" in viewer
     assert "nominalFrontOffsetMm:recess" in viewer
     assert "d:12,h:ph" in viewer
     assert "w:12,d:+m.d,h:ph" in viewer
