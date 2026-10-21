@@ -1252,7 +1252,7 @@ def test_r1044_currency_selector_uses_nbu_rates_and_is_not_in_isolation():
 def test_r1050_project_settings_have_export_section_and_central_translation():
     html = read('workspace-r8.html')
     workspace = read('workspace-r8.js')
-    assert '<button data-panel="general" type="button"><span>07</span>Экспорт</button>' in html
+    assert '<button data-panel="general" type="button"><span>07</span>Визуализация / Экспорт</button>' in html
     assert "general:['Экспорт','Export']" in workspace
     assert 'const PROJECT_I18N=' in workspace
     for token in ['How to define the room','Room surfaces','Additional appliance settings','Integrated hood type','Required utility points','Wall elements','Furniture materials','Custom texture']:
@@ -1759,7 +1759,8 @@ def test_r1045_module_settings_defaults_preserve_current_dimensions_and_translat
     workspace = read("workspace-r8.js")
     assert "lower_total_height_mm:900" in workspace
     assert "upper_height_mm:1000" in workspace
-    assert "lower_depth_mm:560" in workspace
+    assert "lower_depth_mm:515" in workspace
+    assert "lower_wall_gap_mm:45" in workspace
     assert "upper_depth_mm:320" in workspace
     for token in [
         "'Настройка модулей':'Module settings'",
