@@ -29,8 +29,8 @@ def test_scan_route_is_live_and_contains_two_paths_and_real_full_glb_viewer():
         'id="scanTop"', 'id="scanOrbit"',
         'id="scanRotateLeft"', 'id="scanRotateRight"',
         'id="scanMirrorHorizontal"', 'id="scanSaveRegistration"',
-        '/static/scan-r1058.js?v=1058b',
-        '/static/scan-r1058.css?v=1058b',
+        '/static/scan-r1058.js?v=1059',
+        '/static/scan-r1058.css?v=1059',
         'examples/js/loaders/GLTFLoader.js'
     ]:
         assert item in html, item
