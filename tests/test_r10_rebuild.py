@@ -857,7 +857,7 @@ def test_current_workspace_cache_busts_rules_and_renderer_assets():
     html = read("workspace-r8.html")
     assert "/static/model.js?v=20261021r1059" in html
     assert "/static/kitchen-webgl-r1050.js?v=20261021r1059" in html
-    assert "/static/r10-domain-rules.js?v=20261020r1055" in html
+    assert "/static/r10-domain-rules.js?v=20261021r1059" in html
     assert "/static/workspace-r8.js?v=20261021r1059" in html
     assert "/static/point-b.js?v=20261021r1056" in html
     assert "/static/pilot-3d.js?v=1051" in html
