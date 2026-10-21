@@ -37,7 +37,7 @@ let bound={width:0,depth:0,height:0,center:[0,0,0],floor_y:0};
 let orient={quarter_turns:0,mirror_x:false};
 let mode='TOP',activeRole='W1',first=null,marks=[],textureOn=true,wireOn=false;
 let autoCandidates=[],autoStats=null;
-let pointerDown=null;
+let pointerDown=null,dragWallEnabled=false,dragWallData=null;
 const finite=n=>Number.isFinite(n);
 const clean=(n,k=5)=>Number(n.toFixed(k));
 const hashHex=buffer=>crypto.subtle.digest('SHA-256',buffer).then(v=>Array.from(new Uint8Array(v)).map(x=>x.toString(16).padStart(2,'0')).join(''));
@@ -532,6 +532,12 @@ function paintWallButtons(){
 }
 function selectRole(role){
  if(!ROLE[role])return;
+ if(dragWallEnabled){
+   dragWallEnabled=false;dragWallData=null;
+   if(engine)engine.controls.enabled=true;
+   $('scanDragWall').setAttribute('aria-pressed','false');
+   $('scanDragWall').textContent='✥ Переместить красную плоскость пальцем';
+ }
  activeRole=role;first=null;
  document.querySelectorAll('[data-scan-role]').forEach(b=>b.classList.toggle('is-active',b.dataset.scanRole===role));
  document.querySelectorAll('[data-scan-anchor]').forEach(b=>b.classList.toggle('is-active',b.dataset.scanAnchor===role));
@@ -574,14 +580,39 @@ function assignPoint(event){
 }
 function bindCanvasInteraction(){
  const canvas=engine.renderer.domElement;
- canvas.addEventListener('pointerdown',e=>{pointerDown={x:e.clientX,y:e.clientY,t:Date.now()}});
+ canvas.addEventListener('pointerdown',e=>{
+  const m=marks.find(v=>v.role===activeRole&&v.points?.length===2);
+  if(dragWallEnabled&&mode==='TOP'&&m){
+   const p=hitPlan(e);
+   if(p){
+    dragWallData={id:e.pointerId,from:p,points:m.points.map(q=>q.slice()),role:activeRole};
+    try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+    e.preventDefault();return;
+   }
+  }
+  pointerDown={x:e.clientX,y:e.clientY,t:Date.now()};
+ });
+ canvas.addEventListener('pointermove',e=>{
+  if(!dragWallData||e.pointerId!==dragWallData.id||mode!=='TOP')return;
+  const p=hitPlan(e),m=marks.find(v=>v.role===dragWallData.role&&v.points.length===2);
+  if(!p||!m)return;
+  const dx=p[0]-dragWallData.from[0],dz=p[1]-dragWallData.from[1];
+  m.points=dragWallData.points.map(q=>[clean(q[0]+dx),clean(q[1]+dz)]);
+  m.owner_reviewed=false;
+  renderMarks();e.preventDefault();
+ });
  canvas.addEventListener('pointerup',e=>{
+  if(dragWallData&&dragWallData.id===e.pointerId){
+   dragWallData=null;pointerDown=null;
+   $('scanDrawingHint').textContent='Красная плоскость перемещена. Проверь совмещение и подтверди предварительную стену.';
+   updateSelectedEditor();updateList();return;
+  }
   if(!pointerDown)return;
   const d=Math.hypot(e.clientX-pointerDown.x,e.clientY-pointerDown.y);
   if(d<8&&Date.now()-pointerDown.t<900)assignPoint(e);
   pointerDown=null;
  });
- canvas.addEventListener('pointercancel',()=>{pointerDown=null});
+ canvas.addEventListener('pointercancel',()=>{pointerDown=null;dragWallData=null});
 }
 function updateList(){
  const list=$('scanMarkupList');list.textContent='';
@@ -695,6 +726,18 @@ function bind(){
    try{runAutoDetection()}catch(error){text('Распознавание: '+error.message,true)}
  };
  $('scanApplyWallAdjust').onclick=applyWallAdjustment;
+ $('scanDragWall').onclick=()=>{
+   if(!marks.some(m=>m.role===activeRole&&m.points?.length===2))return text('Сначала выбери существующую размеченную стену.',true);
+   if(mode!=='TOP')setCamera('TOP');
+   dragWallEnabled=!dragWallEnabled;dragWallData=null;
+   engine.controls.enabled=!dragWallEnabled;
+   $('scanDragWall').setAttribute('aria-pressed',String(dragWallEnabled));
+   $('scanDragWall').textContent=dragWallEnabled?
+     '✓ Перемещение активно · проведи пальцем по плану':'✥ Переместить красную плоскость пальцем';
+   $('scanDrawingHint').textContent=dragWallEnabled?
+     'Коснись плана и веди пальцем — красная плоскость будет двигаться. Нажми кнопку ещё раз для обычного просмотра.':
+     'Режим перемещения завершён. Стена пока предварительная.';
+ };
  $('scanAcceptWall').onclick=()=>{
    const m=marks.find(v=>v.role===activeRole&&v.points.length===2);
    if(!m)return;
