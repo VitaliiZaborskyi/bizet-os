@@ -29,13 +29,13 @@ def test_scan_route_is_live_and_contains_two_paths_and_real_full_glb_viewer():
         'id="scanTop"', 'id="scanOrbit"',
         'id="scanRotateLeft"', 'id="scanRotateRight"',
         'id="scanMirrorHorizontal"', 'id="scanSaveRegistration"',
-        '/static/scan-r1058.js?v=1058',
-        '/static/scan-r1058.css?v=1058',
+        '/static/scan-r1058.js?v=1058b',
+        '/static/scan-r1058.css?v=1058b',
         'examples/js/loaders/GLTFLoader.js'
     ]:
         assert item in html, item
     assert response.headers.get("cache-control") == "no-cache"
-    assert 'Файлы обрабатываются локально в браузере' in html
+    assert 'Файлы не отправляются на сервер' in html
 
 
 def test_start_scan_button_now_opens_r1058_not_old_wip():
@@ -88,18 +88,42 @@ def test_up_axis_orientation_plan_rotation_and_user_mirror_are_explicit():
     assert "engineering_mapping:'PENDING_OWNER_CONFIRMATION'" in js
 
 
-def test_owner_roles_are_a_b_protrusion_v_g_primary_and_semantically_separate():
+def test_generic_wall_list_is_unbounded_and_preserves_legacy_example():
     js=read("scan-r1058.js")
     html=read("scan-r1058.html")
-    assert "PROTRUSION_FACE" in js
-    assert "PRIMARY_WALL" in js
-    assert "В · основная" in html
-    assert "Г · основная" in html
-    for role in ("A","B","V","G"):
-        assert 'data-scan-role="'+role+'"' in html
-    assert 'А/Б = one architectural protrusion; В/Г = two primary walls' in js
+    for token in [
+        "function createWall(", "function resetWallDefinitions(", "paintWallButtons()",
+        "wallIds.push(id)", "createWall();", "function selectRole(",
+        "wall_definitions:wallIds.map", "if(!marks.some(",
+        "PROTRUSION_FACE", "PRIMARY_WALL",
+        "OLD_SAMPLE_ROLES", "onchange=e=>",
+        "document.createElement('button')",
+    ]:
+        assert token in js, token
+    assert 'id="scanAddWall"' in html
+    assert 'id="scanRoleGrid"' in html
+    assert 'id="scanWallLabel"' in html
+    assert 'id="scanWallKind"' in html
     assert 'data-scan-anchor="ENTRY"' in html
-    assert 'data-scan-anchor="TURN_CABINET"' in html
+    assert 'data-scan-anchor="TURN_CABINET"' not in html
+    assert 'data-scan-role="A"' not in html  # no forced four walls
+    assert "Отметь основные стены В и Г" not in js
+
+def test_polycam_zip_is_direct_local_upload_with_archive_guardrails():
+    html=read("scan-r1058.html")
+    js=read("scan-r1058.js")
+    assert ".zip,.glb,.gltf" in html
+    assert 'id="scanArchiveModel"' in html
+    assert "fflate@0.8.3/umd/index.js" in html
+    for token in ["inspectZipCentralDirectory","MAX_UNPACKED_BYTES",
+                  "MAX_ZIP_ENTRIES","UNSAFE_ZIP_FILE_PATH","fflate.unzip(",
+                  "selectArchiveModel(", "archiveModels.length<2"]:
+        assert token in js, token
+    assert "Архив ZIP сначала распакуй" not in js
+    assert "https://poly.cam/" in js
+    assert "https://apps.apple.com/app/id1532482376" in html
+    assert "POLYCAM:{ios:'https://apps.apple.com" not in js
+    assert "Гарантированный deep-link не подтверждён" in html
 
 
 def test_client_storage_is_preview_only_with_no_production_geometry_mutation():
