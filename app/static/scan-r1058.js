@@ -313,7 +313,7 @@ async function onFiles(fileList,fromArchive=false){
   orient=existing.orientation||orient;
   resetWallDefinitions(existing.wall_definitions||existing.segments||[]);
   marks=(existing.segments||[]).filter(v=>ROLE[v.role]&&Array.isArray(v.points)).map(v=>({
-   role:v.role,points:v.points.map(p=>[+p[0],+p[1]]).filter(p=>p.every(finite)).slice(0,2)
+   role:v.role,points:v.points.map(p=>[+p[0],+p[1]]).filter(p=>p.every(finite)).slice(0,2),wall_height_mm:v.wall_height_mm||2600,communications:v.communications||'',detection:v.detection||'MANUAL',manual_changed:!!v.manual_changed
   })).filter(v=>v.points.length===(ROLE[v.role].kind.endsWith('ANCHOR')?1:2));
   const measure=existing.known_dimension||{};
   if(finite(+measure.mm)&&+measure.mm>0){
@@ -528,7 +528,7 @@ function registrationPayload(){
   orientation:{quarter_turns:orient.quarter_turns,mirror_x:orient.mirror_x},
   wall_definitions:wallIds.map(id=>({role:id,label:ROLE[id].label,kind:ROLE[id].kind})),
   segments:marks.map(m=>({role:m.role,label:ROLE[m.role].label,kind:ROLE[m.role].kind,
-    points:m.points.map(p=>[clean(p[0]),clean(p[1])]),unit:'M',confirmed:false})),
+    points:m.points.map(p=>[clean(p[0]),clean(p[1])]),unit:'M',confirmed:false,wall_height_mm:m.wall_height_mm||null,communications:m.communications||'',detection:m.detection||'MANUAL',manual_changed:!!m.manual_changed})),
   known_dimension:known,
   tentative_scale_ratio:ratio,
   production_ready:false,
@@ -560,7 +560,6 @@ function bind(){
  $('scanBackToImport').onclick=()=>selectPath('IMPORT');
  $('scanOpenPolycam').onclick=()=>activateExternal('POLYCAM');
  $('scanOpenSketchup').onclick=()=>activateExternal('SKETCHUP');
- $('scanOpenPicker').onclick=()=>$('scanFileInput').click();
  $('scanFileInput').onchange=e=>{
    if(!Array.from(e.target.files||[]).some(f=>/.zip$/i.test(f.name))){
      archiveModels=[];archiveFiles=[];archiveName='';$('scanArchiveChoice').hidden=true;
@@ -588,6 +587,8 @@ function bind(){
  document.querySelectorAll('[data-scan-role]').forEach(b=>b.onclick=()=>selectRole(b.dataset.scanRole));
  document.querySelectorAll('[data-scan-anchor]').forEach(b=>b.onclick=()=>selectRole(b.dataset.scanAnchor));
  $('scanCancelMark').onclick=()=>{first=null;renderMarks();$('scanDrawingHint').textContent='Первая точка сброшена. Укажи начало линии.'};
+ $('scanAutoWalls').onclick=()=>{$('scanAutoStatus').textContent='Предварительное выделение стен из меша проходит проверку. Пока добавь стену вручную.';};
+ ['scanWallLengthMm','scanWallAngleDeg','scanWallMoveX','scanWallMoveZ','scanWallHeightMm','scanWallCommunications'].forEach(id=>$(id).addEventListener('change',applyWallEditFields));
  $('scanAddWall').onclick=()=>{
    const id=createWall();
    paintWallButtons();selectRole(id);updateList();
