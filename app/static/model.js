@@ -25,6 +25,8 @@
   function worktopThickness(){return clamp(Math.round(Number(inputs.worktop_thickness_mm??DEFAULT_WORKTOP_H)||DEFAULT_WORKTOP_H),10,120)}
   function lowerTotalHeight(){return clamp(Math.round(Number(inputs.lower_total_height_mm??DEFAULT_LOWER_TOTAL_H)||DEFAULT_LOWER_TOTAL_H),650,1200)}
   function lowerDepth(){return clamp(Math.round(Number(inputs.lower_depth_mm??DEFAULT_LOWER_DEPTH)||DEFAULT_LOWER_DEPTH),300,800)}
+  function lowerWallGap(){return clamp(Math.round(Number(inputs.lower_wall_gap_mm??45)),0,150)}
+  function lowerCarcassDepth(){return Math.max(300,lowerDepth()-lowerWallGap())}
   function upperDepth(){return clamp(Math.round(Number(inputs.upper_depth_mm??DEFAULT_UPPER_DEPTH)||DEFAULT_UPPER_DEPTH),200,650)}
   function upperConfiguredHeight(){return clamp(Math.round(Number(inputs.upper_height_mm??DEFAULT_UPPER_H)||DEFAULT_UPPER_H),220,1500)}
   function lowerBodyHeight(){return Math.max(300,lowerTotalHeight()-plinthHeight()-worktopThickness())}
@@ -200,9 +202,9 @@
       module.facade_openings=normalizeOpenings(module.facade_count||edit.facade_openings.length,edit.facade_openings);
       module.middle_side_boundaries=middleSideBoundaries(module.facade_count||module.facade_openings.length,module.facade_openings);
     }
-    if(edit.shelf_count!==undefined)module.shelf_count=clamp(Math.round(Number(edit.shelf_count)||0),0,module.tall?3:2);
+    if(edit.shelf_count!==undefined)module.shelf_count=clamp(Math.round(Number(edit.shelf_count)||0),0,5);
     if(edit.shelf_type)module.shelf_type=edit.shelf_type;
-    if(Array.isArray(edit.shelf_z_overrides_mm))module.shelf_z_overrides_mm=[...edit.shelf_z_overrides_mm];
+    delete module.shelf_z_overrides_mm; // manual shelf movement frozen
     if(edit.drawer_count!==undefined)module.drawer_count=clamp(Math.round(Number(edit.drawer_count)||2),2,5);
     if(module.tall&&!['TALL_OVEN','FRIDGE'].includes(module.kind)){
       module.tall_facade_count=clamp(Math.round(Number(edit.tall_facade_count)||module.facade_count||1),1,3);
@@ -296,7 +298,7 @@
     return autoWall(requested,sink,cook);
   }
   function baseModule(id,label,width,kind,wall='A',extra={}){
-    const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:lowerDepth(),h:lowerBodyHeight(),z:plinthHeight(),level:'lower',anchor:true,...extra};
+    const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:lowerCarcassDepth(),rear_wall_gap_mm:lowerWallGap(),installation_depth_mm:lowerDepth(),h:lowerBodyHeight(),z:plinthHeight(),level:'lower',anchor:true,...extra};
     if(kind==='DRAWERS')module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
     module.module_run_limit_mm=maxRunFor(module);
     module.facade_width_limit_mm=LIMITS.HINGED_FACADE_MAX;
@@ -631,15 +633,15 @@
       let placed={...m,w:runSize,runSize,runPosition:cursor,module_run_limit_mm:maxRunFor(m)};
       if(wall==='A'){
         placed.x=clamp(cursor+offset,bounds.start,Math.max(bounds.start,bounds.end-runSize));
-        placed.y=room.depthMm-placed.d;
+        placed.y=room.depthMm-placed.d-(placed.rear_wall_gap_mm||0);
       }else if(wall==='B'){
         const depth=placed.d;
-        placed.x=0;
+        placed.x=placed.rear_wall_gap_mm||0;
         placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);
         placed.d=runSize;placed.w=depth;
       }else{
         const depth=placed.d;
-        placed.x=room.lengthMm-depth;
+        placed.x=room.lengthMm-depth-(placed.rear_wall_gap_mm||0);
         placed.y=clamp(room.depthMm-cursor-runSize-offset,0,room.depthMm-runSize);
         placed.d=runSize;placed.w=depth;
       }
@@ -796,6 +798,14 @@
     if(collision.length)pushWarning('HARD_MODULE_INTERSECTION_STOP','STOP: физические пересечения модулей: '+collision.slice(0,4).map(c=>c.first+' / '+c.second).join('; ')+'. Экспорт недоступен.');
   }
     const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(applyEndPanelRules(applyTemplateOpeningRules(lower.concat(upper))));
+    all.forEach(m=>{
+      if(m.level==='upper'&&m.source_kind==='SINK'){m.is_dish_dryer=true;m.dish_dryer_model=String(inputs.dish_dryer_model||'DOUBLE_WIRE_STANDARD');m.shelf_count=0;}
+      else if(['UPPER','UPPER_TOP','HINGED'].includes(m.kind)||m.tall&&!['FRIDGE','TALL_OVEN'].includes(m.kind)){
+        const def=m.tall?3:m.level==='upper'?(m.h<=750?1:2):1;
+        m.shelf_count=clamp(Math.round(Number(m.shelf_count??def))||0,0,5);
+      }
+      delete m.shelf_z_overrides_mm;
+    });
     inspectPhysicalIntersections(all);
     evaluateErgonomics(all);
     const standardPackageH=lowerTotalHeight()+Math.max(300,Number(inputs.upper_gap_mm)||600)+upperConfiguredHeight();
@@ -837,27 +847,7 @@
     removeShelfMoveUI();renderScene(false);
     window.dispatchEvent(new CustomEvent('bizet:modelchange',{detail:{reason:'fixed-shelf-move',module_id:moduleId}}));
   }
-  window.addEventListener('bizet:shelfhold',event=>{
-    const {module_id,shelf_index}=event.detail||{};
-    if(viewMode!==VIEW_FOCUS||module_id!==activeModule?.id||window.BIZET_KITCHEN_UI_MODE!=='EDIT')return;
-    const m=modules.find(x=>x.id===module_id),idx=Number(shelf_index);
-    if(!m||m.shelf_type!=='FIXED')return;
-    const candidates=window.BizetR10Rules?.allowedShelfPositions?.(m,idx)||[];
-    removeShelfMoveUI();
-    const stage=$('modelStage');if(!stage)return;
-    const panel=document.createElement('div');panel.id='r1055ShelfMoves';
-    panel.style.cssText='position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:130;background:rgba(16,18,21,.94);padding:12px;border:1px solid #888;border-radius:12px;max-width:min(440px,92vw);display:flex;gap:8px;flex-wrap:wrap;justify-content:center;box-shadow:0 12px 35px #0009';
-    const caption=document.createElement('div');caption.style.cssText='width:100%;color:white;text-align:center;font-size:12px';
-    caption.textContent='Shelf '+(idx+1)+' · 64 mm pilot positions · machining export blocked pending approval';panel.appendChild(caption);
-    for(const p of candidates){
-      const btn=document.createElement('button');btn.type='button';btn.title='Z '+p.z_mm+' mm';
-      btn.textContent='● '+(p.delta_mm>0?'+':'')+p.delta_mm+' mm';
-      btn.style.cssText='border:1px solid #e66;border-radius:12px;color:#fff;background:#7a1d22;padding:8px;min-width:80px;cursor:pointer';
-      btn.onclick=()=>commitShelfMove(module_id,idx,p.z_mm).catch(e=>console.error(e));
-      panel.appendChild(btn);
-    }
-    const close=document.createElement('button');close.textContent='×';close.style.cssText='background:#444;color:#fff;border:1px solid #888;border-radius:8px;padding:8px';close.onclick=removeShelfMoveUI;panel.appendChild(close);stage.appendChild(panel);
-  });
+  // Shelf dragging suspended by owner decision.
   function switchFocusModule(delta){
     if(viewMode!==VIEW_FOCUS||!activeModule)return;
     const ordered=focusModuleOrder(),index=ordered.findIndex(m=>m.id===activeModule.id),target=ordered[index+delta];
@@ -916,7 +906,7 @@
       facade_openings:normalizeOpenings(facades,module.facade_openings),
       shelf_count:module.shelf_count!==undefined?Number(module.shelf_count):(kind==='TALL_PLAIN'?3:1),
       shelf_type:module.shelf_type||'ADJUSTABLE',
-      shelf_z_overrides_mm:Array.isArray(module.shelf_z_overrides_mm)?[...module.shelf_z_overrides_mm]:[],
+      shelf_z_overrides_mm:[],
       drawer_count:clamp(Math.round(Number(module.drawer_count)||2),2,5),
       lift_mechanism:module.lift_mechanism||'LIFT_ONLY',
       tall_facade_count:clamp(Math.round(Number(module.tall_facade_count)||facades),1,3),
@@ -957,14 +947,14 @@
         if(fc===3&&run!==900)return tr('3 распашных фасада допускаются только при ширине 900 мм.','3 hinged doors are allowed only at 900 mm width.');
       }else if(run<150||run>900)return tr('Верхний модуль с горизонтальными фасадами: ширина 150–900 мм.','Horizontal wall cabinet width: 150–900 mm.');
       const shelves=Math.round(Number(draft.shelf_count)||0);
-      if(shelves<0||shelves>2)return tr('Полок может быть не больше двух.','Maximum 2 shelves.');
+      if(shelves<0||shelves>5)return tr('Максимум пять полок на модуль.','Maximum five shelves per cabinet.');
       return'';
     }
     if(kind==='TALL_PLAIN'){
       if(run<300||run>900)return tr('Пенал без техники: ширина 300–900 мм.','Tall cabinet width: 300–900 mm.');
       const fc=Math.round(Number(draft.tall_facade_count)||0),shelves=Math.round(Number(draft.shelf_count)||0);
       if(fc<1||fc>3)return tr('Пенал: от 1 до 3 распашных фасадов по высоте.','Tall cabinet: 1 to 3 hinged facade zones.');
-      if(shelves<0||shelves>3)return tr('Пенал: не больше 3 полок.','Tall cabinet: maximum 3 shelves.');
+      if(shelves<0||shelves>5)return tr('Пенал: не больше 5 полок.','Tall cabinet: maximum 5 shelves.');
       if(draft.tall_drawer_mode==='VISIBLE'){
         const stack=Math.round(Number(draft.visible_drawer_stack_height_mm)||0);
         if(stack<=0||stack>visibleTallDrawerLimit())return tr(`Суммарная высота видимых ящиков не может превышать ${visibleTallDrawerLimit()} мм.`,`Total visible drawer height cannot exceed ${visibleTallDrawerLimit()} mm.`);
@@ -1006,20 +996,20 @@
         html+=`<div class="r104-module-info">${tr('Фасад','Facade')} ≈ ${facadeH} mm · ${tr('высота короба строго','box height exactly')} ${facadeH-50} mm.</div>`;
       }else{
         html+=editField(tr('Фасадов','Doors'),'facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3',Number(d.run_mm)!==900]]);
-        html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
+        html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5']]);
         html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);html+=module.template_opening_locked?`<div class="r104-module-info">${tr('Сторона открывания задана шаблонным правилом относительно центра варочной/духовки.','Opening side is locked by the template rule relative to the cooktop/oven center.')}</div>`:facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
       }
     }else if(kind==='UPPER'){
       html+=editField(tr('Ориентация фасада','Facade orientation'),'facade_orientation',d.facade_orientation,'select',[['VERTICAL',tr('Вертикальная','Vertical')],['HORIZONTAL',tr('Горизонтальная','Horizontal')]]);
       html+=editField(tr('Фасадов','Doors'),'facade_count',d.facade_count,'select',[[1,'1'],[2,'2'],[3,'3',Number(d.run_mm)!==900]]);
-      html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2']]);
+      html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5']]);
       html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);
       if(d.facade_orientation==='HORIZONTAL'){
         html+=editField(tr('Механизм','Mechanism'),'lift_mechanism',d.lift_mechanism,'select',[['LIFT_ONLY','Aventos HK'],['HINGE_PLUS_LIFT',tr('2 газлифта + петли','2 gas lifts + hinges')]]);html+=`<div class="r104-module-info">${tr('Выбранная механика должна быть видна и в общем 3D, и в изоляции. Геометрия механизма пока является инженерным proxy до выбора артикула.','Selected lift hardware must be visible both in the full 3D and isolation. Hardware geometry remains an engineering proxy until an exact article is selected.')}</div>`;
       }else html+=module.template_opening_locked?`<div class="r104-module-info">${tr('Сторона открывания задана шаблонным правилом относительно центра варочной/духовки.','Opening side is locked by the template rule relative to the cooktop/oven center.')}</div>`:facadeOpeningFields(Number(d.facade_count)||1,d.facade_openings);
     }else if(kind==='TALL_PLAIN'){
       html+=editField(tr('Фасадов по высоте','Facade zones'),'tall_facade_count',d.tall_facade_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
-      html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2'],[3,'3']]);
+      html+=editField(tr('Полок','Shelves'),'shelf_count',d.shelf_count,'select',[[0,'0'],[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5']]);
       html+=editField(tr('Тип полок','Shelf type'),'shelf_type',d.shelf_type,'select',[['ADJUSTABLE',tr('Регулируемые','Adjustable')],['FIXED',tr('Жёсткие','Fixed')]]);
       html+=editField(tr('Ящики','Drawers'),'tall_drawer_mode',d.tall_drawer_mode,'select',[['NONE',tr('Нет','None')],['HIDDEN',tr('Скрытые за фасадом','Hidden behind door')],['VISIBLE',tr('Видимые снизу','Visible at bottom')]]);
       if(d.tall_drawer_mode!=='NONE')html+=editField(tr('Количество ящиков','Drawer count'),'tall_drawer_count',d.tall_drawer_count,'select',[[1,'1'],[2,'2'],[3,'3']]);
@@ -1060,20 +1050,8 @@
       html+=editField(tr('Торец у стены','Wall end'),'end_panel_shape',d.end_panel_shape,'select',[['FLAT',tr('Торцевая панель','End panel')],['L_SHAPE',tr('Г-образный филлер 40 мм','L-shaped filler 40 mm')]]);
       html+=editField(tr('Материал торца','End material'),'end_panel_material',d.end_panel_material,'select',[['CARCASS',tr('Материал корпуса','Carcass material')],['FACADE',tr('Материал фасада','Facade material')]]);
     }
-    if(d.shelf_type==='FIXED'&&Number(d.shelf_count)>0&&kind!=='FILLER'){
-      html+='<div class="r1056-shelf-controls" style="grid-column:1/-1;border:1px solid #af5858;border-radius:12px;padding:10px"><strong>'+
-        tr1054('Положение жёстких полок · шаг 64 мм','Fixed shelf positions · 64 mm','Положення жорстких полиць · крок 64 мм')+
-        '</strong><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">'+
-        Array.from({length:Number(d.shelf_count)},(_,idx)=>'<button type="button" data-r1056-shelf-index="'+idx+'" style="padding:9px 13px;border-radius:10px;border:1px solid #e04b57;background:#84242d;color:#fff">● '+
-          tr1054('Полка ','Shelf ','Полиця ')+(idx+1)+' · ±64 мм</button>').join('')+'</div></div>';
-    }
+    // No manual shelf-height widgets in the equal-compartment pilot.
     body.innerHTML=html;
-    body.querySelectorAll('[data-r1056-shelf-index]').forEach(btn=>btn.onclick=()=>{
-      if(module.shelf_type!=='FIXED'){
-        rule.hidden=false;rule.textContent=tr1054('Сначала сохраните модуль с типом «Жёсткая полка».','Save fixed shelf type first.','Спочатку збережіть модуль із жорсткою полицею.');return
-      }
-      window.dispatchEvent(new CustomEvent('bizet:shelfhold',{detail:{module_id:module.id,shelf_index:Number(btn.dataset.r1056ShelfIndex)}}));
-    });
     const save=$('moduleEditSave'),cancel=$('moduleEditCancel');
     if(save)save.textContent=tr('Сохранить модуль','Save module');
     if(cancel)cancel.textContent=tr('Отменить','Cancel');
@@ -1124,7 +1102,7 @@
     if(!activeModule||!moduleDraft)return;
     if(document.activeElement instanceof HTMLElement)document.activeElement.blur();
     const error=validateModuleDraft(moduleDraft,moduleDraftBase||activeModule);if(error){const rule=$('moduleEditRule');rule.hidden=false;rule.textContent=error;return}
-    const id=activeModule.id,overrides=moduleEditOverrides(),payload={...moduleDraft};delete payload.id;
+    const id=activeModule.id,overrides=moduleEditOverrides(),payload={...moduleDraft};delete payload.id;delete payload.shelf_z_overrides_mm;
     overrides[id]=payload;
     await saveVisual({...visual,module_edit_overrides:overrides,module_direct_edit_status:'R10.4.5_MODULE_SAVED'},`R10.4.5 module edit ${id}`);
     moduleDraft=null;moduleDraftBase=null;moduleDraftBasePrice=0;
