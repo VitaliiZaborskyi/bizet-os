@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#f5f5f2">
   <script>try{if(sessionStorage.getItem("bizet_route_splash")==="1")document.documentElement.classList.add("r10-route-loading")}catch(_){}</script>
-  <title>BIZET OS R10.5.6 — Робоча модель</title>
+  <title>BIZET OS R10.5.7 — Робоча модель</title>
   <link rel="stylesheet" href="/static/start.css">
   <link rel="stylesheet" href="/static/model.css">
   <link rel="stylesheet" href="/static/model-r5.css">
   <link rel="stylesheet" href="/static/pilot-shell.css">
-<link rel="stylesheet" href="/static/visualization-r1055.css?v=1056">
+<link rel="stylesheet" href="/static/visualization-r1055.css?v=1057">
   <link rel="stylesheet" href="/static/workspace-r8.css?v=1051">
   <link rel="stylesheet" href="/static/r1050.css?v=1056">
   <link rel="stylesheet" href="/static/r1051.css?v=1051">
@@ -34,6 +34,10 @@
 .r1056-visualization .r1055-visual-prompt input{width:100%;padding:10px 12px;border:1px solid #8a8f92;border-radius:10px;background:var(--surface,#373737);color:var(--ink,#fff)}
 .r1056-error{color:#ff9b92}
 .r1056-visualization .r1055-visual-preview{overflow-y:auto}
+</style><style>
+#openVisualizationR1056.r1057-primary-render{background:linear-gradient(110deg,#263b58,#354d70)!important;color:#fff!important;font-weight:800!important;border:1px solid #7299cc!important;border-radius:12px!important;padding:12px!important;min-height:47px;box-shadow:0 5px 18px #0c1c2e55}
+#openVisualizationR1056.r1057-primary-render span{color:#dcecff!important}
+#openVisualizationTop{font-weight:800;white-space:nowrap}
 </style></head>
 <body class="r8-workspace-body">
   <div class="r8-shell">
@@ -59,6 +63,7 @@
     <main class="r8-main">
       <nav class="r8-tools" id="workspaceTools" aria-label="Настройки проекта">
         <div class="r8-tools-label">Настройки проекта</div>
+        <button data-panel="visualization" id="openVisualizationR1056" type="button" class="r1056-visual-entry r1057-primary-render"><span>✦</span> Визуализация</button>
         <button data-panel="room" type="button"><span>01</span>Помещение</button>
         <button data-panel="appliances" type="button"><span>02</span>Техника</button>
         <button data-panel="upper" type="button"><span>03</span>Настройка модулей</button>
@@ -66,7 +71,7 @@
         <button data-panel="elements" type="button"><span>05</span>Элементы стен</button>
         <button data-panel="materials" type="button"><span>06</span>Материалы</button>
         <button data-panel="general" type="button"><span>07</span>Экспорт</button>
-        <button data-panel="visualization" id="openVisualizationR1056" type="button" class="r1056-visual-entry"><span>08</span>✨ Визуализация</button>
+
       </nav>
 
       <section class="r8-canvas-column">
@@ -217,7 +222,7 @@
   <script src="/static/pilot-r6.js"></script>
   <script src="/static/workspace-r8.js?v=20261021r1056"></script>
   <script src="/static/point-b.js?v=20261021r1056"></script>
-<script src="/static/visualization-r1055.js?v=1056"></script>
+<script src="/static/visualization-r1055.js?v=1057"></script>
   <script src="/static/owner-qa-business.js?v=175"></script>
   <script src="/static/workspace-r1050.js?v=20261011"></script>
   <script src="/static/ua-ui-r1050.js?v=1051"></script>
