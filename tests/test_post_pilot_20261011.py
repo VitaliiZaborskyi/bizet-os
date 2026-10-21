@@ -40,7 +40,7 @@ def test_fix_04_legs_and_plinth_do_not_share_coplanar_box_faces():
     assert "function addSupportLeg" in viewer
     assert "new THREE.CylinderGeometry(radTop,radBottom" in viewer
     assert "foot-mounting-plate" in viewer
-    assert "nominalFrontOffsetMm:recess" in viewer
+    assert "nominalFrontOffsetMm=recess" in viewer
     assert "d:12,h:ph" in viewer
     assert "w:12,d:+m.d,h:ph" in viewer
 
@@ -103,8 +103,8 @@ def test_new_pilot_assets_are_cache_busted():
     index=read("index.html")
     grande=read("grande-r1046.html")
     for asset in [
-        "/static/model.js?v=20261021r1056",
-        "/static/kitchen-webgl-r1050.js?v=20261021r1056",
+        "/static/model.js?v=20261021r1059",
+        "/static/kitchen-webgl-r1050.js?v=20261021r1059",
         "/static/r10-domain-rules.js?v=20261020r1055",
         "/static/ui-viewer-pilot.css?v=20261015",
     ]:
