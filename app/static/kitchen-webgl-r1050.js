@@ -259,8 +259,18 @@ function plinthRecess(){
  return I.dishwasher_type&&I.dishwasher_type!=='NO'?90:40;
 }
 function addSupportLeg(room,x,y,h,id,recess){
- const mat=ownMat({color:'#252627',roughness:.45,metalness:.4}),geo=new THREE.CylinderGeometry(14,14,Math.max(40,h),16),mesh=new THREE.Mesh(geo,mat);
- mesh.position.copy(roomToWorld(room,x,y,Math.max(40,h)/2));mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData={moduleId:id,cat:'leg',nominalFrontOffsetMm:recess};hardwareGroup.add(mesh);return mesh;
+  // Readable lightweight adjustable foot: base pad, threaded stem, telescopic barrel and mounting flange.
+  const height=Math.max(40,Number(h)||100),mat=ownMat({color:'#24282b',roughness:.46,metalness:.22}),metal=ownMat({color:'#858b90',roughness:.32,metalness:.58});
+  function disc(radius,thick,z,material,cat){
+    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,thick,12),material.clone());
+    mesh.material.userData.owned=true;mesh.position.copy(roomToWorld(room,x,y,z));mesh.castShadow=true;mesh.receiveShadow=true;
+    mesh.userData={moduleId:id,cat,nominalFrontOffsetMm:recess};hardwareGroup.add(mesh);return mesh;
+  }
+  disc(30,8,4,mat,'leg-foot');
+  disc(10,Math.max(12,height*.33),12+Math.max(12,height*.33)/2,metal,'leg-thread');
+  disc(17,Math.max(12,height-31),height/2+11,mat,'leg-body');
+  disc(26,6,height-3,mat,'leg-mount');
+  mat.dispose();metal.dispose();
 }
 function addLegs(room,m){
  if(!(window.BizetR10Rules?.requiresFloorSupports?.(m)??(m.level!=='upper'&&!m.freestanding&&m.kind!=='FILLER'&&Number(m.z)>0)))return;
@@ -276,18 +286,30 @@ function addLegs(room,m){
 }
 
 function addHinges(room,m,count){
- if(m.kind==='DRAWERS'||m.kind==='FILLER'||(m.level==='upper'&&(m.opening==='LIFT'||m.facade_orientation==='HORIZONTAL')))return;
- const mat=ownMat({color:'#858b8f',roughness:.3,metalness:.7}),plan=window.BizetR10Rules?.planHingePositions?.(m),ys=plan?.positions?.length?plan.positions.map(v=>(v-(Number(m.z)||0))/Math.max(1,Number(m.h)||1)):[.18,.5,.82],wall=m.wall||'A',run=wall==='A'?+m.w:+m.d;
- if(plan&&!plan.ok){m.hinge_layout_conflict=plan.reason;window.dispatchEvent(new CustomEvent('bizet:engineering-stop',{detail:{module_id:m.id,reason:plan.reason}}));return}
- ys.forEach(fr=>{for(let i=0;i<count;i++){
-   const requested=String(m.facade_openings?.[i]||'').toUpperCase();
-   const side=requested==='RIGHT'?'right':requested==='LEFT'?'left':i%2===0?'left':'right';
-   const hingeAt=(i+(side==='right'?1:0))*run/count+(side==='right'?-16:14);
-   const z=+m.z+(+m.h)*fr,part=wall==='A'
-     ?{x:+m.x+hingeAt,y:+m.y+8,z,w:22,d:30,h:12}
-     :{x:+m.x+8,y:+m.y+hingeAt,z,w:30,d:22,h:12};
-   const q=meshBox(room,part,mat.clone(),hardwareGroup,'hinge',m.id);q.material.userData.owned=true;q.userData.hingeSide=side;
- }});mat.dispose();
+  if(m.kind==='DRAWERS'||m.kind==='FILLER'||(m.level==='upper'&&(m.opening==='LIFT'||m.facade_orientation==='HORIZONTAL')))return;
+  const mat=ownMat({color:'#a0a5a8',roughness:.32,metalness:.68}),dark=ownMat({color:'#596169',roughness:.47,metalness:.36});
+  const plan=window.BizetR10Rules?.planHingePositions?.(m);
+  const heights=plan?.positions?.length?plan.positions.map(v=>(v-(Number(m.z)||0))/Math.max(1,Number(m.h)||1)):[.18,.82];
+  const wall=m.wall||'A',run=wall==='A'?+m.w:+m.d;
+  if(plan&&!plan.ok){m.hinge_layout_conflict=plan.reason;window.dispatchEvent(new CustomEvent('bizet:engineering-stop',{detail:{module_id:m.id,reason:plan.reason}}));mat.dispose();dark.dispose();return}
+  const piece=(spec,role,material)=>{const q=meshBox(room,spec,material.clone(),hardwareGroup,'hinge',m.id);q.material.userData.owned=true;q.userData.partRole=role;q.userData.visualizationProxy=true;return q};
+  heights.forEach(fr=>{for(let i=0;i<count;i++){
+    const requested=String(m.facade_openings?.[i]||'').toUpperCase();
+    const side=requested==='RIGHT'?'right':requested==='LEFT'?'left':i%2===0?'left':'right';
+    const edge=(i+(side==='right'?1:0))*run/count+(side==='right'?-28:12),z=+m.z+(+m.h)*fr;
+    if(wall==='A'){
+      const x=+m.x+edge,y=+m.y+10;
+      piece({x,y:y+12,z:z-5,w:42,d:3,h:18},'MOUNTING_PLATE',mat);
+      piece({x:x+8,y:y-4,z:z-7,w:27,d:26,h:14},'HINGE_ARM',dark);
+      piece({x:x+9,y:y-11,z:z-12,w:24,d:5,h:24},'HINGE_CUP',mat);
+    }else{
+      const y=+m.y+edge,x=wall==='B'?+m.x+ +m.w-10:+m.x+10;
+      piece({x:x-3,y:y,z:z-5,w:3,d:42,h:18},'MOUNTING_PLATE',mat);
+      piece({x:x-18,y:y+8,z:z-7,w:28,d:27,h:14},'HINGE_ARM',dark);
+      piece({x:x-13,y:y+9,z:z-12,w:5,d:24,h:24},'HINGE_CUP',mat);
+    }
+  }});
+  mat.dispose();dark.dispose();
 }
 function addHardwareRod(room,a,b,radius=6,cat='hardware-proxy',id=''){
  const A=roomToWorld(room,...a),B=roomToWorld(room,...b),mid=A.clone().add(B).multiplyScalar(.5),len=A.distanceTo(B);
@@ -405,12 +427,12 @@ function addSinkCarcass(room,m,mat){
  }
 }
 function addCarcassShelves(room,m,mat){
- if(['SINK','COOKTOP','TALL_OVEN','UPPER_HOOD','DISHWASHER','FRIDGE','FILLER'].includes(m.kind))return;
+ if(m.is_dish_dryer||['SINK','COOKTOP','TALL_OVEN','UPPER_HOOD','DISHWASHER','FRIDGE','FILLER'].includes(m.kind))return;
  const wall=m.wall||'A',t=18,x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h;
  const defaultCount=m.level==='upper'?(H<=750?1:H<=1100?2:Math.max(2,Math.ceil(H/400)-1)):1;
- const count=Math.max(0,Math.min(4,Number.isFinite(Number(m.shelf_count))?Number(m.shelf_count):defaultCount));
+ const count=Math.max(0,Math.min(5,Number.isFinite(Number(m.shelf_count))?Number(m.shelf_count):defaultCount));
  for(let i=1;i<=count;i++){
-   const sz=window.BizetR10Rules?.fixedShelfCenters?.(m)?.[i-1]??(z+t+(H-2*t)*i/(count+1));
+   const sz=window.BizetR10Rules?.fixedShelfCenters?.(m)?.[i-1]??(z+t+(Math.max(0,H-2*t-count*t)/(count+1))*i+t*(i-1));
    const s=wall==='A'?{x:x+t,y:y+8,z:sz,w:Math.max(40,W-2*t),d:Math.max(80,D-16),h:t}:{x:x+8,y:y+t,z:sz,w:Math.max(80,W-16),d:Math.max(40,D-2*t),h:t};
    const q=meshBox(room,s,mat.clone(),furnitureGroup,'shelf',m.id);q.material.userData.owned=true;q.userData.partRole='SHELF_'+i;
  }
@@ -425,25 +447,25 @@ function addCarcass(room,m,mat){
  if(wall==='A'){
    push({x,y,z,w:t,d:D,h:H},'SIDE_A');push({x:x+W-t,y,z,w:t,d:D,h:H},'SIDE_B');
    push({x:x+t,y,z,w:Math.max(20,W-2*t),d:D,h:t},'BOTTOM');
-   if(hasTop)push({x:x+t,y,z:z+H-t,w:Math.max(20,W-2*t),d:D,h:t},'TOP');
+   if(hasTop)push({x:x+t,y:y+(m.level==='upper'?1:0),z:z+H-t,w:Math.max(20,W-2*t),d:Math.max(40,D-(m.level==='upper'?21:0)),h:t},'TOP');
    else{
      // #26: FLAT 100 mm horizontal stretchers, not upright vertical rails.
      push({x:x+t,y:y+4,z:z+H-t,w:Math.max(20,W-2*t),d:100,h:t},'FRONT_STRETCHER');
      push({x:x+t,y:y+D-104,z:z+H-t,w:Math.max(20,W-2*t),d:100,h:t},'REAR_STRETCHER');
    }
-   push({x:x+t,y:y+D-4,z:z+t,w:Math.max(20,W-2*t),d:4,h:Math.max(20,H-2*t)},'BACK');
+   if(!(m.kind==='TALL_OVEN'||m.oven_appliance_present))push({x:x+t,y:y+D-(m.level==='upper'?24:4),z:z+t,w:Math.max(20,W-2*t),d:4,h:Math.max(20,H-2*t)},'BACK');
  }else{
    push({x,y,z,w:W,d:t,h:H},'SIDE_A');push({x,y:y+D-t,z,w:W,d:t,h:H},'SIDE_B');
    push({x,y:y+t,z,w:W,d:Math.max(20,D-2*t),h:t},'BOTTOM');
-   if(hasTop)push({x,y:y+t,z:z+H-t,w:W,d:Math.max(20,D-2*t),h:t},'TOP');
+   if(hasTop)push({x:x+(m.level==='upper'?(wall==='B'?20:1):0),y:y+t,z:z+H-t,w:Math.max(40,W-(m.level==='upper'?21:0)),d:Math.max(20,D-2*t),h:t},'TOP');
    else{
      const isB=wall==='B';
      push({x:isB?x+W-104:x+4,y:y+t,z:z+H-t,w:100,d:Math.max(20,D-2*t),h:t},'FRONT_STRETCHER');
      push({x:isB?x+4:x+W-104,y:y+t,z:z+H-t,w:100,d:Math.max(20,D-2*t),h:t},'REAR_STRETCHER');
    }
-   push({x:wall==='B'?x:x+W-4,y:y+t,z:z+t,w:4,d:Math.max(20,D-2*t),h:Math.max(20,H-2*t)},'BACK');
+   if(!(m.kind==='TALL_OVEN'||m.oven_appliance_present))push({x:wall==='B'?x+(m.level==='upper'?20:0):x+W-(m.level==='upper'?24:4),y:y+t,z:z+t,w:4,d:Math.max(20,D-2*t),h:Math.max(20,H-2*t)},'BACK');
  }
- const made=parts.map(p=>{const q=meshBox(room,p.spec,mat.clone(),furnitureGroup,'carcass-part',m.id);q.material.userData.owned=true;q.userData.partRole=p.role;return q});
+ const made=parts.map(p=>{const q=meshBox(room,p.spec,mat.clone(),furnitureGroup,'carcass-part',m.id);q.material.userData.owned=true;q.userData.partRole=p.role;selectable.push(q);return q});
  addCarcassShelves(room,m,mat);
  return made;
 }
