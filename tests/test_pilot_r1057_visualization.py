@@ -170,7 +170,7 @@ def test_visualization_button_is_first_and_prompt_is_locked():
     menu = html[html.index('id="workspaceTools"'):html.index("</nav>", html.index('id="workspaceTools"'))]
     assert 'id="openVisualizationR1056"' not in menu
     assert menu.index('data-panel="general"') > menu.index('data-panel="room"')
-    assert 'id="openVisualizationTop"' in html
+    assert 'id="openVisualizationTop"' not in html
     assert "/static/visualization-r1055.js?v=1057" in html
     js = source("visualization-r1055.js")
     for phrase in [
@@ -187,8 +187,8 @@ def test_visualization_button_is_first_and_prompt_is_locked():
 
 
 def test_10_5_7_current_version_and_node_syntax():
-    assert 'version="R10.5.8"' in (ROOT / "app" / "main.py").read_text()
-    assert "R10.5.8 — Робоча модель" in source("workspace-r8.html")
+    assert 'version="R10.5.9"' in (ROOT / "app" / "main.py").read_text()
+    assert "R10.5.9 — Робоча модель" in source("workspace-r8.html")
     node = shutil.which("node")
     if not node:
         import pytest
