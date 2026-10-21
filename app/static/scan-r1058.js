@@ -331,6 +331,25 @@ async function onFiles(fileList,fromArchive=false){
  }
  setOrientation();setCamera('TOP');selectRole(wallIds[0]);updateList();
 }
+function activeWallMark(){return marks.find(m=>m.role===activeRole&&m.points?.length===2)}
+function syncWallEditFields(){
+ const m=activeWallMark(),a=m?.points?.[0]||[0,0],b=m?.points?.[1]||a;
+ $('scanWallLengthMm').value=m?Math.round(Math.hypot(b[0]-a[0],b[1]-a[1])*1000):'';
+ $('scanWallAngleDeg').value=m?Math.round(Math.atan2(b[1]-a[1],b[0]-a[0])*1800/Math.PI)/10:'';
+ $('scanWallMoveX').value=m?Math.round(a[0]*1000):'';
+ $('scanWallMoveZ').value=m?Math.round(a[1]*1000):'';
+ $('scanWallHeightMm').value=m?.wall_height_mm||2600;
+ $('scanWallCommunications').value=m?.communications||'';
+}
+function applyWallEditFields(){
+ const m=activeWallMark();if(!m)return;
+ const L=Number($('scanWallLengthMm').value),A=Number($('scanWallAngleDeg').value)*Math.PI/180,x=Number($('scanWallMoveX').value)/1000,y=Number($('scanWallMoveZ').value)/1000;
+ if(![L,A,x,y].every(Number.isFinite)||L<100||L>100000)return;
+ m.points=[[clean(x),clean(y)],[clean(x+L/1000*Math.cos(A)),clean(y+L/1000*Math.sin(A))]];
+ m.wall_height_mm=Number($('scanWallHeightMm').value)||2600;
+ m.communications=$('scanWallCommunications').value.slice(0,240);m.manual_changed=true;
+ renderMarks();updateList();
+}
 function renderMarks(){
  if(!engine||!annotationsGroup)return;
  const THREE=engine.THREE;
