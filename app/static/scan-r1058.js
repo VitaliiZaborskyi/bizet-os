@@ -329,7 +329,7 @@ async function onFiles(fileList,fromArchive=false){
   if(textured>0)text('3D-скан с фотофиксацией загружен. Отмечай нужные стены на виде сверху.',false,true);
   else text('Упрощённая 3D-модель стен загружена. Фототекстуры в этом экспорте нет. Добавляй и размечай любые стены.',false,true);
  }
- setOrientation();setCamera('TOP');selectRole(wallIds[0]);updateList();
+ setOrientation();setCamera('TOP');selectRole(wallIds[0]);updateList();if(!marks.length)setTimeout(proposeVerticalWalls,30);
 }
 function inferVerticalPlanes(){
  if(!loaded||!scanObject)return[];
