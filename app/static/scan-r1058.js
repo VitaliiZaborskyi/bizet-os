@@ -10,12 +10,19 @@ const MAX_ZIP_BYTES=90*1024*1024;
 const MAX_UNPACKED_BYTES=112*1024*1024;
 const MAX_ZIP_ENTRIES=128;
 const STORE='bizet_os_project_id';
-const ROLE={A:{label:'А',description:'Выступ · грань А',color:0xe0ad66,kind:'PROTRUSION_FACE'},
- B:{label:'Б',description:'Выступ · грань Б',color:0xe0ad66,kind:'PROTRUSION_FACE'},
- V:{label:'В',description:'Основная стена В',color:0x5acba3,kind:'PRIMARY_WALL'},
- G:{label:'Г',description:'Основная стена Г',color:0x5acba3,kind:'PRIMARY_WALL'},
- ENTRY:{label:'Вход',description:'Вход / дверь',color:0x87bdf3,kind:'ENTRANCE_ANCHOR'},
- TURN_CABINET:{label:'Шкаф ↷',description:'Поворотный высокий блок',color:0xaeb5f6,kind:'FURNITURE_TURN_ANCHOR'}};
+// Semantic wall list is project-specific, NOT limited to four owner sample walls.
+const ROLE={ENTRY:{label:'Вход',description:'Вход / дверь',color:0x87bdf3,kind:'ENTRANCE_ANCHOR'}};
+const WALL_KINDS={
+ PRIMARY_WALL:{title:'Основная стена',color:0x5acba3},
+ PROTRUSION_FACE:{title:'Выступ / короб',color:0xe0ad66},
+ PARTITION:{title:'Перегородка',color:0x8cb5e9},
+ OTHER_SURFACE:{title:'Другая поверхность',color:0xc3bdba}
+};
+const OLD_SAMPLE_ROLES={
+ A:{label:'А',kind:'PROTRUSION_FACE'}, B:{label:'Б',kind:'PROTRUSION_FACE'},
+ V:{label:'В',kind:'PRIMARY_WALL'}, G:{label:'Г',kind:'PRIMARY_WALL'}
+};
+let wallIds=[],wallSequence=0;
 const PROVIDERS={
  POLYCAM:{ios:'https://poly.cam/',android:'https://poly.cam/',web:'https://poly.cam/'},
  SKETCHUP:{ios:'https://apps.apple.com/app/id796352563',android:'https://app.sketchup.com/',web:'https://app.sketchup.com/'}
@@ -28,7 +35,7 @@ let localLinks=[],savedRegistration=null;
 let archiveModels=[],archiveFiles=[],archiveName='';
 let bound={width:0,depth:0,height:0,center:[0,0,0],floor_y:0};
 let orient={quarter_turns:0,mirror_x:false};
-let mode='TOP',activeRole='A',first=null,marks=[],textureOn=true,wireOn=false;
+let mode='TOP',activeRole='W1',first=null,marks=[],textureOn=true,wireOn=false;
 let pointerDown=null;
 const finite=n=>Number.isFinite(n);
 const clean=(n,k=5)=>Number(n.toFixed(k));
@@ -293,7 +300,7 @@ async function onFiles(fileList,fromArchive=false){
  const maxDim=Math.max(bound.width,bound.depth);
  e.helper.scale.set(Math.max(.35,maxDim/8),1,Math.max(.35,maxDim/8));
  orient={quarter_turns:0,mirror_x:false};
- marks=[];activeRole='A';first=null;textureOn=true;wireOn=false;
+ marks=[];first=null;textureOn=true;wireOn=false;
  setMaterialStyle();
  loaded=true;$('scanWorkspace').hidden=false;
  $('scanFileName').textContent=fileName;
@@ -304,18 +311,25 @@ async function onFiles(fileList,fromArchive=false){
  const existing=savedRegistration;
  if(existing?.source?.sha256===fileHash){
   orient=existing.orientation||orient;
-  marks=(existing.segments||[]).filter(v=>ROLE[v.role]&&Array.isArray(v.points)&&v.points.length>0).map(v=>({
+  resetWallDefinitions(existing.wall_definitions||existing.segments||[]);
+  marks=(existing.segments||[]).filter(v=>ROLE[v.role]&&Array.isArray(v.points)).map(v=>({
    role:v.role,points:v.points.map(p=>[+p[0],+p[1]]).filter(p=>p.every(finite)).slice(0,2)
   })).filter(v=>v.points.length===(ROLE[v.role].kind.endsWith('ANCHOR')?1:2));
   const measure=existing.known_dimension||{};
-  if(finite(+measure.mm)&&+measure.mm>0){$('scanKnownMm').value=measure.mm;$('scanKnownRole').value=measure.role||'V';}
+  if(finite(+measure.mm)&&+measure.mm>0){
+   $('scanKnownMm').value=measure.mm;
+   if(wallIds.includes(measure.role))$('scanKnownRole').value=measure.role;
+  }
   text('Скан загружен. Восстановил разметку этого же файла из проекта (непроверенная).',false,true);
  }else if(existing?.source?.sha256&&existing.source.sha256!==fileHash){
+  resetWallDefinitions([]);
   text('Новый скан не совпадает с ранее размеченным. Старую разметку не применяю.',false);
  }else{
-  text('3D-геометрия скана загружена. Включи вид сверху и размечай столько стен, сколько нужно.',false,true);
+  resetWallDefinitions([]);
+  if(textured>0)text('3D-скан с фотофиксацией загружен. Отмечай нужные стены на виде сверху.',false,true);
+  else text('Упрощённая 3D-модель стен загружена. Фототекстуры в этом экспорте нет. Добавляй и размечай любые стены.',false,true);
  }
- setOrientation();setCamera('TOP');selectRole('A');updateList();
+ setOrientation();setCamera('TOP');selectRole(wallIds[0]);updateList();
 }
 function renderMarks(){
  if(!engine||!annotationsGroup)return;
@@ -345,19 +359,65 @@ function renderMarks(){
   const cfg=ROLE[m.role];if(!cfg)continue;
   m.points.forEach(p=>drawDisc(p,cfg.color));
   if(m.points.length===2){addLine(m.points[0],m.points[1],cfg.color);
-   const mid=[(m.points[0][0]+m.points[1][0])/2,(m.points[0][1]+m.points[1][1])/2];drawText(mid,cfg.label,cfg.color);
-  }else drawText(m.points[0],cfg.label,cfg.color);
+   const mid=[(m.points[0][0]+m.points[1][0])/2,(m.points[0][1]+m.points[1][1])/2];drawText(mid,cfg.label.slice(0,8),cfg.color);
+  }else drawText(m.points[0],cfg.label.slice(0,8),cfg.color);
  }
  if(first)drawDisc(first,ROLE[activeRole].color);
  annotationsGroup.visible=mode==='TOP';
+}
+function createWall(id=null,label=null,kind='PRIMARY_WALL'){
+ if(!WALL_KINDS[kind])kind='OTHER_SURFACE';
+ if(!id)id='W'+(++wallSequence);
+ if(ROLE[id])return id;
+ const matched=/^W([0-9]+)$/.exec(id);
+ if(matched)wallSequence=Math.max(wallSequence,Number(matched[1]));
+ const fallback=OLD_SAMPLE_ROLES[id];
+ const textLabel=String(label||fallback?.label||('Стена '+wallSequence)).slice(0,24);
+ const actualKind=WALL_KINDS[kind]?kind:(fallback?.kind||'PRIMARY_WALL');
+ ROLE[id]={label:textLabel,description:WALL_KINDS[actualKind].title,
+  color:WALL_KINDS[actualKind].color,kind:actualKind};
+ wallIds.push(id);return id;
+}
+function resetWallDefinitions(definitions=[]){
+ for(const id of wallIds)delete ROLE[id];
+ wallIds=[];wallSequence=0;
+ for(const item of definitions){
+  if(!item||typeof item.role!=='string'||!item.role||item.role==='ENTRY')continue;
+  const legacy=OLD_SAMPLE_ROLES[item.role];
+  createWall(item.role,item.label||legacy?.label, item.kind||legacy?.kind||'PRIMARY_WALL');
+ }
+ if(!wallIds.length)createWall();
+ paintWallButtons();
+}
+function paintWallButtons(){
+ const host=$('scanRoleGrid');host.textContent='';
+ for(const id of wallIds){
+  const cfg=ROLE[id],button=document.createElement('button');
+  button.type='button';button.className='scan-role';
+  button.dataset.scanRole=id;button.classList.toggle('is-active',activeRole===id);
+  const letter=document.createElement('b');letter.textContent=cfg.label.length>3?String(wallIds.indexOf(id)+1):cfg.label;
+  const name=document.createElement('span');name.textContent=cfg.label+' · '+cfg.description;
+  button.append(letter,name);button.onclick=()=>selectRole(id);host.appendChild(button);
+ }
+ const list=$('scanKnownRole'),old=list.value;
+ list.textContent='';
+ for(const id of wallIds){
+  const o=document.createElement('option');o.value=id;o.textContent=ROLE[id].label;
+  list.appendChild(o);
+ }
+ if(wallIds.includes(old))list.value=old;
 }
 function selectRole(role){
  if(!ROLE[role])return;
  activeRole=role;first=null;
  document.querySelectorAll('[data-scan-role]').forEach(b=>b.classList.toggle('is-active',b.dataset.scanRole===role));
  document.querySelectorAll('[data-scan-anchor]').forEach(b=>b.classList.toggle('is-active',b.dataset.scanAnchor===role));
- const cfg=ROLE[role];
- $('scanDrawingHint').textContent='Выбрано: '+cfg.label+' · '+cfg.description+'. '+(cfg.kind.endsWith('ANCHOR')?'Нажми одну точку на плане сверху.':'Нажми начало и конец линии на плане сверху.');
+ const cfg=ROLE[role],isAnchor=cfg.kind.endsWith('ANCHOR');
+ $('scanWallEditor').hidden=isAnchor;
+ if(!isAnchor){$('scanWallLabel').value=cfg.label;$('scanWallKind').value=cfg.kind;}
+ $('scanDrawingHint').textContent='Выбрано: '+cfg.label+' · '+cfg.description+'. '+(isAnchor
+  ?'Нажми одну точку на плане сверху.'
+  :'Коснись первой точки в начале стены, затем второй — в её конце. Между точками появится линия; повтори для следующих стен.');
  renderMarks();
 }
 function hitPlan(event){
@@ -439,19 +499,20 @@ function registrationPayload(){
    display_translation_m:[clean(-bound.center[0]),clean(-bound.floor_y),clean(-bound.center[2])],
    semantic_plan_axis:'XZ',engineering_mapping:'PENDING_OWNER_CONFIRMATION'},
   orientation:{quarter_turns:orient.quarter_turns,mirror_x:orient.mirror_x},
-  segments:marks.map(m=>({role:m.role,kind:ROLE[m.role].kind,points:m.points.map(p=>[clean(p[0]),clean(p[1])]),
-    unit:'M',confirmed:false})),
+  wall_definitions:wallIds.map(id=>({role:id,label:ROLE[id].label,kind:ROLE[id].kind})),
+  segments:marks.map(m=>({role:m.role,label:ROLE[m.role].label,kind:ROLE[m.role].kind,
+    points:m.points.map(p=>[clean(p[0]),clean(p[1])]),unit:'M',confirmed:false})),
   known_dimension:known,
   tentative_scale_ratio:ratio,
   production_ready:false,
   export_stop:'STOP_UNCONFIRMED_SCANNED_GEOMETRY',
-  note:'А/Б = one architectural protrusion; В/Г = two primary walls. Kitchen along В; tall turn cabinet near Г. All markings require owner review.'
+  note:'User-defined arbitrary wall list; kind and labels assigned by owner. Scanned coordinates, rotations and measurements are preliminary. All walls require owner review.'
  };
 }
 async function saveRegistration(){
  if(!loaded)throw Error('Сначала загрузи исходный скан.');
- if(!marks.some(m=>m.role==='V')||!marks.some(m=>m.role==='G'))
-  throw Error('Отметь основные стены В и Г двумя точками каждая.');
+ if(!marks.some(m=>ROLE[m.role]&&!ROLE[m.role].kind.endsWith('ANCHOR')&&m.points.length===2))
+  throw Error('Сначала разметь хотя бы одну стену двумя точками на плане сверху.');
  const id=projectId();if(!id)throw Error('Нет активного проекта. Открой Скан с начального экрана BIZET OS.');
  const payload=registrationPayload();
  $('scanSaveRegistration').disabled=true;text('Сохраняю предварительную разметку. Файл GLB остаётся на устройстве…');
@@ -499,9 +560,26 @@ function bind(){
  $('scanToggleMesh').onclick=()=>{wireOn=!wireOn;setMaterialStyle()};
  document.querySelectorAll('[data-scan-role]').forEach(b=>b.onclick=()=>selectRole(b.dataset.scanRole));
  document.querySelectorAll('[data-scan-anchor]').forEach(b=>b.onclick=()=>selectRole(b.dataset.scanAnchor));
- $('scanCancelMark').onclick=()=>{first=null;renderMarks();$('scanDrawingHint').textContent='Текущая первая точка сброшена. Укажи начало линии.'};
+ $('scanCancelMark').onclick=()=>{first=null;renderMarks();$('scanDrawingHint').textContent='Первая точка сброшена. Укажи начало линии.'};
+ $('scanAddWall').onclick=()=>{
+   const id=createWall();
+   paintWallButtons();selectRole(id);updateList();
+   $('scanDrawingHint').textContent='Добавлена '+ROLE[id].label+'. Отметь на виде сверху начало и конец новой стены.';
+ };
+ $('scanWallLabel').oninput=e=>{
+   const cfg=ROLE[activeRole];if(!cfg||cfg.kind.endsWith('ANCHOR'))return;
+   const label=e.target.value.trim().slice(0,24);
+   if(label){cfg.label=label;paintWallButtons();renderMarks();updateList();}
+ };
+ $('scanWallKind').onchange=e=>{
+   const cfg=ROLE[activeRole],kind=e.target.value;
+   if(!cfg||!WALL_KINDS[kind])return;
+   cfg.kind=kind;cfg.description=WALL_KINDS[kind].title;cfg.color=WALL_KINDS[kind].color;
+   paintWallButtons();renderMarks();updateList();
+ };
  $('scanUndoMark').onclick=()=>{first=null;marks.pop();renderMarks();updateList()};
  $('scanSaveRegistration').onclick=()=>saveRegistration().catch(err=>text('Сохранение: '+(err.message||String(err)),true));
+ resetWallDefinitions([]);selectRole(wallIds[0]);
  projectReturn();
 }
 document.addEventListener('DOMContentLoaded',async()=>{bind();await loadSaved()});
