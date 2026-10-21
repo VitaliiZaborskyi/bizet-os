@@ -658,7 +658,7 @@ function renderRoomSourceScreen(screen) {
       </button>
       <button class="room-source-card" id="startScanButton" type="button">
         <span class="room-source-visual scan"></span>
-        <span class="room-source-copy"><strong>${t3('Скан','Scan','Скан')}</strong><small>${t3('Сканирование помещения будет подключено отдельным слоем.','Room scanning will be connected as a separate layer.','Сканування приміщення буде підключено окремим шаром.')}</small></span>
+        <span class="room-source-copy"><strong>${t3('Скан','Scan','Скан')}</strong><small>${t3('Загрузить GLB/GLTF или открыть Polycam / SketchUp.','Room scanning will be connected as a separate layer.','Сканування приміщення буде підключено окремим шаром.')}</small></span>
       </button>
     </div>
     <input id="startRoomFileInput" type="file" accept=".pdf,image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" hidden>
@@ -679,9 +679,13 @@ function renderRoomSourceScreen(screen) {
     try{await patchProject('scene.visual_settings.room_input_mode','TEMPLATE','Room input source: template')}catch(_){}
     renderConfigurationScreen(screen);
   });
-  screen.querySelector('#startScanButton')?.addEventListener('click',()=>{
+  screen.querySelector('#startScanButton')?.addEventListener('click',async()=>{
     const status=screen.querySelector('#roomSourceStatus');
-    if(status)status.textContent=t3('Скан — в стадии разработки.','Scan — in development.','Скан — у розробці.');
+    if(status)status.textContent=t3('Открываю регистрацию 3D-скана…','Opening 3D scan registration…','Відкриваю реєстрацію 3D-скану…');
+    try{await patchProject('scene.visual_settings.room_input_mode','SCAN','Room input source: Polycam scan')}
+    catch(error){console.warn('R10.5.8 scan source selection deferred',error)}
+    const id=currentProjectId();
+    window.location.assign('/scan'+(id?'?project='+encodeURIComponent(id):''));
   });
   bindStartRoomImport(screen);
   window.scrollTo({top:0,behavior:'auto'});
