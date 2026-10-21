@@ -142,12 +142,11 @@
   });
   function fixedShelfCenters(m={}){
     const h=Number(m.h)||0,z=Number(m.z)||0,t=18;
-    const count=Math.max(0,Math.min(4,Number(m.shelf_count??(m.level==='upper'?1:1))||0));
-    const overrides=Array.isArray(m.shelf_z_overrides_mm)?m.shelf_z_overrides_mm:[];
-    return Array.from({length:count},(_,i)=>{
-      const natural=z+t+(h-2*t)*(i+1)/(count+1);
-      return Number.isFinite(Number(overrides[i]))&&overrides[i]!==null?Number(overrides[i]):natural;
-    });
+    const count=Math.max(0,Math.min(5,Number(m.shelf_count??1)||0));
+    // n shelves divide usable cavity into n+1 precisely equal clear openings.
+    // Return lower face coordinates because the viewer's Box spec uses z as part bottom.
+    const clearOpening=Math.max(0,(h-2*t-count*t)/(count+1));
+    return Array.from({length:count},(_,i)=>z+t+clearOpening*(i+1)+t*i);
   }
   function planHingePositions(m={},shelfCenters=fixedShelfCenters(m)){
     const z=Number(m.z)||0,h=Number(m.h)||0;
