@@ -331,6 +331,50 @@ async function onFiles(fileList,fromArchive=false){
  }
  setOrientation();setCamera('TOP');selectRole(wallIds[0]);updateList();
 }
+function inferVerticalPlanes(){
+ if(!loaded||!scanObject)return[];
+ const T=engine.THREE,a=new T.Vector3(),b=new T.Vector3(),d=new T.Vector3(),edge1=new T.Vector3(),edge2=new T.Vector3(),normal=new T.Vector3();
+ const clusters=new Map();let budget=9000;engine.orientationGroup.updateMatrixWorld(true);
+ scanObject.traverse(mesh=>{
+  if(!mesh.isMesh||budget<=0)return;
+  const attr=mesh.geometry?.getAttribute?.('position'),indices=mesh.geometry?.index;if(!attr)return;
+  const triangles=Math.floor((indices?.count||attr.count)/3),step=Math.max(1,Math.ceil(triangles/budget));let checked=0;
+  const read=(out,j)=>{out.fromBufferAttribute(attr,indices?indices.getX(j):j);mesh.localToWorld(out);engine.orientationGroup.worldToLocal(out);};
+  for(let j=0;j<triangles&&checked<budget;j+=step){
+   read(a,j*3);read(b,j*3+1);read(d,j*3+2);checked++;
+   normal.crossVectors(edge1.subVectors(b,a),edge2.subVectors(d,a));const mag=normal.length();
+   if(mag<.00004||Math.abs(normal.y/mag)>.18)continue;
+   let nx=normal.x/mag,nz=normal.z/mag,den=Math.hypot(nx,nz);nx/=den;nz/=den;
+   if(nx<0||(Math.abs(nx)<.0001&&nz<0)){nx=-nx;nz=-nz}
+   const angle=Math.atan2(nz,nx),dist=(a.x*nx+a.z*nz+b.x*nx+b.z*nz+d.x*nx+d.z*nz)/3;
+   const key=Math.round(angle/.15)+':'+Math.round(dist/.09);
+   let g=clusters.get(key);if(!g){g={angle,dist,area:0,lo:Infinity,hi:-Infinity,minY:Infinity,maxY:-Infinity};clusters.set(key,g)}
+   g.area+=mag*.5*step;
+   for(const p of [a,b,d]){const t=-nz*p.x+nx*p.z;g.lo=Math.min(g.lo,t);g.hi=Math.max(g.hi,t);g.minY=Math.min(g.minY,p.y);g.maxY=Math.max(g.maxY,p.y)}
+  }budget-=checked;
+ });
+ return [...clusters.values()].filter(g=>g.area>.45&&g.maxY-g.minY>.65&&g.hi-g.lo>.55)
+  .sort((a,b)=>b.area-a.area).slice(0,14).map(g=>{
+   const nx=Math.cos(g.angle),nz=Math.sin(g.angle),tx=-nz,tz=nx;
+   return{points:[[clean(nx*g.dist+tx*g.lo),clean(nz*g.dist+tz*g.lo)],[clean(nx*g.dist+tx*g.hi),clean(nz*g.dist+tz*g.hi)]],
+    wall_height_mm:Math.round((g.maxY-g.minY)*1000),detection:'VERTICAL_PLANE_CANDIDATE'};
+  });
+}
+function proposeVerticalWalls(){
+ try{
+  const found=inferVerticalPlanes();if(!found.length){$('scanAutoStatus').textContent='Автоматически устойчивые стены не найдены. Добавь стену вручную.';return}
+  const previous=new Set(marks.filter(m=>m.detection==='VERTICAL_PLANE_CANDIDATE'&&!m.manual_changed).map(m=>m.role));
+  marks=marks.filter(m=>!previous.has(m.role));for(const id of previous){wallIds=wallIds.filter(x=>x!==id);delete ROLE[id];}
+  const free=wallIds.length===1&&!marks.some(m=>m.role===wallIds[0])?wallIds[0]:null;
+  found.forEach((candidate,i)=>{
+   const id=i===0&&free?free:createWall();
+   ROLE[id].label='Стена '+(i+1);ROLE[id].description='Плоскость · проверить';
+   marks.push({role:id,...candidate,confirmed:false});
+  });
+  $('scanAutoStatus').textContent='Найдено '+found.length+' предварительных вертикальных плоскостей. Проверь красную поверхность: мебель тоже может быть ошибочно распознана как стена.';
+  paintWallButtons();selectRole(free||wallIds[0]);updateList();
+ }catch(error){$('scanAutoStatus').textContent='Для этого меша требуется ручная разметка: '+(error.message||String(error))}
+}
 function activeWallMark(){return marks.find(m=>m.role===activeRole&&m.points?.length===2)}
 function syncWallEditFields(){
  const m=activeWallMark(),a=m?.points?.[0]||[0,0],b=m?.points?.[1]||a;
@@ -587,7 +631,7 @@ function bind(){
  document.querySelectorAll('[data-scan-role]').forEach(b=>b.onclick=()=>selectRole(b.dataset.scanRole));
  document.querySelectorAll('[data-scan-anchor]').forEach(b=>b.onclick=()=>selectRole(b.dataset.scanAnchor));
  $('scanCancelMark').onclick=()=>{first=null;renderMarks();$('scanDrawingHint').textContent='Первая точка сброшена. Укажи начало линии.'};
- $('scanAutoWalls').onclick=()=>{$('scanAutoStatus').textContent='Предварительное выделение стен из меша проходит проверку. Пока добавь стену вручную.';};
+ $('scanAutoWalls').onclick=proposeVerticalWalls;
  ['scanWallLengthMm','scanWallAngleDeg','scanWallMoveX','scanWallMoveZ','scanWallHeightMm','scanWallCommunications'].forEach(id=>$(id).addEventListener('change',applyWallEditFields));
  $('scanAddWall').onclick=()=>{
    const id=createWall();
