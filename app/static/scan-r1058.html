@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111c2a">
+<title>BIZET OS 10.5.8 · Скан помещения</title>
+<link rel="stylesheet" href="/static/scan-r1058.css?v=1058">
+</head>
+<body>
+<header class="scan-top">
+ <a href="/" class="scan-logo" aria-label="BIZET OS на главную">BIZET <span>OS</span></a>
+ <span class="scan-pilot">PILOT 10.5.8 · SCAN REGISTRATION</span>
+ <a id="scanReturn" href="/room" class="scan-return">← К проекту</a>
+</header>
+<main class="scan-app">
+<section class="scan-heading">
+ <div><div class="scan-eyebrow">BIZET OS / ROOM INTELLIGENCE</div>
+ <h1>Скан помещения</h1>
+ <p>От исходного Polycam-скана — к ориентированному плану, разметке стен и предварительной геометрии.</p></div>
+ <span class="scan-preliminary">Предварительно · не для производства</span>
+</section>
+<section class="scan-entry" id="scanEntry">
+ <button class="scan-method is-active" id="scanChooseImport" type="button" aria-pressed="true"><span class="scan-method-icon">↥</span><strong>Загрузить готовый скан</strong><small>GLB / GLTF + связанные BIN и текстуры</small></button>
+ <button class="scan-method" id="scanChooseProvider" type="button" aria-pressed="false"><span class="scan-method-icon">◎</span><strong>Создать новый скан</strong><small>Открыть Polycam или SketchUp</small></button>
+</section>
+<section class="scan-section scan-input" id="scanImportPanel">
+ <div class="scan-drop" id="scanDropZone">
+  <div><strong>Выбери GLB или GLTF</strong><p>Можно выбрать сразу несколько файлов, если к GLTF прилагаются BIN и изображения. Файлы обрабатываются локально в браузере.</p></div>
+  <button class="scan-primary" id="scanOpenPicker" type="button">Выбрать файлы</button>
+  <input id="scanFileInput" type="file" accept=".glb,.gltf,.bin,.jpg,.jpeg,.png,.webp,model/gltf-binary,model/gltf+json" multiple hidden>
+ </div>
+</section>
+<section class="scan-section scan-providers" id="scanProviderPanel" hidden>
+ <p>Эти программы пока внешние. BIZET OS откроет выбранный сервис; после экспорта вернись и загрузи GLB / GLTF. Прямой встроенный LiDAR-сканер — отдельный этап.</p>
+ <div class="scan-provider-grid">
+ <button type="button" id="scanOpenPolycam"><strong>Polycam</strong><small>3D-сканирование и экспорт</small><span>Открыть ↗</span></button>
+ <button type="button" id="scanOpenSketchup"><strong>SketchUp</strong><small>Моделирование / доступные инструменты</small><span>Открыть ↗</span></button>
+ </div>
+ <button class="scan-outline" id="scanBackToImport" type="button">У меня уже есть файл скана</button>
+</section>
+<div id="scanStatus" class="scan-status" role="status" aria-live="polite">Ожидаю файл скана. Для этого пилота можно использовать Polycam 13.08.2026.glb.</div>
+<section class="scan-workspace" id="scanWorkspace" hidden>
+ <div class="scan-viewer-top">
+  <div class="scan-section-label"><strong id="scanFileName">3D-скан</strong><small id="scanStats">Исходный меш + текстуры</small></div>
+  <div class="scan-view-switch">
+   <button id="scanTop" type="button" class="is-active" aria-pressed="true">Сверху</button>
+   <button id="scanOrbit" type="button" aria-pressed="false">3D · 360°</button>
+   <button id="scanResetCamera" type="button">Сбросить камеру</button>
+  </div>
+ </div>
+ <div id="scanViewport" class="scan-viewport" aria-label="Область просмотра текстурированного скана в 3D">
+  <div class="scan-axis">Y ↑ · предварительная система координат</div>
+  <div id="scanPointerHint" class="scan-pointer-hint">Поворот камеры и масштаб — мышью или жестами</div>
+ </div>
+ <div class="scan-controllers">
+  <div class="scan-controls-group">
+   <label>Ориентация плана</label>
+   <div class="scan-button-line"><button id="scanRotateLeft" type="button">↶ 90°</button><button id="scanRotateRight" type="button">↷ 90°</button><button id="scanMirrorHorizontal" type="button">⇄ Отразить</button><button id="scanResetOrientation" type="button">Исходная</button></div>
+  </div>
+  <div class="scan-controls-group">
+   <label>Вид исходной модели</label>
+   <div class="scan-button-line"><button id="scanToggleTexture" type="button" aria-pressed="true">Текстура: ВКЛ</button><button id="scanToggleMesh" type="button" aria-pressed="false">Сетка: ВЫКЛ</button></div>
+  </div>
+ </div>
+ <div class="scan-work-bottom">
+  <section class="scan-semantic">
+   <div class="scan-sub-head"><div class="scan-eyebrow">ШАГ 2 · СМЫСЛОВАЯ ГЕОМЕТРИЯ</div><h2>Разметка стен</h2><p>Выбери участок, затем отметь <b>две точки</b> вдоль его линии на виде сверху. Это предварительная разметка, а не автоматическое подтверждение размеров.</p></div>
+   <div class="scan-role-grid">
+    <button class="scan-role is-active" data-scan-role="A" type="button"><b>А</b><span>Выступ · грань A</span></button>
+    <button class="scan-role" data-scan-role="B" type="button"><b>Б</b><span>Выступ · грань Б</span></button>
+    <button class="scan-role" data-scan-role="V" type="button"><b>В</b><span>Основная стена В</span></button>
+    <button class="scan-role" data-scan-role="G" type="button"><b>Г</b><span>Основная стена Г</span></button>
+   </div>
+   <div class="scan-addons">
+    <button data-scan-anchor="ENTRY" type="button">+ Вход / дверь</button>
+    <button data-scan-anchor="TURN_CABINET" type="button">+ Поворотный шкаф</button>
+   </div>
+   <div class="scan-semantic-help" id="scanDrawingHint">Выбрана А — выступ. На виде сверху нажми начало и конец линии.</div>
+   <div class="scan-markup-list" id="scanMarkupList"></div>
+   <div class="scan-action-footer"><button id="scanCancelMark" class="scan-outline" type="button">Сбросить текущие точки</button><button id="scanUndoMark" class="scan-outline" type="button">Удалить последнее</button></div>
+  </section>
+  <section class="scan-registration">
+   <div class="scan-eyebrow">ШАГ 3 · ПРИВЯЗКА К BIZET OS</div>
+   <h2>Контроль масштаба</h2>
+   <p>Скан даёт приближённую геометрию. Укажи известный лазерный размер, когда он появится; подтверждение производства выполняется отдельно.</p>
+   <div class="scan-dimensions"><span>Габарит меша:</span><strong id="scanDimensions">—</strong><small>Включает мебель и лишнюю геометрию</small></div>
+   <label class="scan-measure-label" for="scanKnownMm">Проверенный размер выбранной стены, мм (необязательно)</label>
+   <input id="scanKnownMm" type="number" min="100" max="100000" step="1" inputmode="numeric" placeholder="Например, 4100">
+   <label class="scan-measure-label" for="scanKnownRole">Для какой стены</label>
+   <select id="scanKnownRole"><option value="V">В · основная</option><option value="G">Г · основная</option><option value="A">А · выступ</option><option value="B">Б · выступ</option></select>
+   <div class="scan-registration-state" id="scanRegistrationState">Геометрия пока не подтверждена · экспорт производства запрещён</div>
+   <button class="scan-primary" type="button" id="scanSaveRegistration">Сохранить предварительную разметку в проект</button>
+   <button class="scan-outline" type="button" id="scanContinueToRoom">Открыть редактор помещения →</button>
+   <p class="scan-fineprint">Сохраняются только координаты, ориентация, разметка и отпечаток файла — сам GLB остаётся на устройстве. После обновления страницы загрузи GLB повторно. Никакие производственные размеры не подтверждаются автоматически.</p>
+  </section>
+ </div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="/static/scan-r1058.js?v=1058"></script>
+</body>
+</html>
