@@ -443,7 +443,7 @@ function addSinkCarcass(room,m,mat){
 function addCarcassShelves(room,m,mat){
  if(['SINK','COOKTOP','TALL_OVEN','UPPER_HOOD','UPPER_DRYER','DISHWASHER','FRIDGE','FILLER'].includes(m.kind))return;
  const wall=m.wall||'A',t=18,x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h;
- const defaultCount=m.level==='upper'?(H<=750?1:H<=1100?2:Math.max(2,Math.ceil(H/400)-1)):1;
+ const defaultCount=1; // shared with R1059 equal compartment policy
  const count=Math.max(0,Math.min(5,Number.isFinite(Number(m.shelf_count))?Number(m.shelf_count):defaultCount));
  for(let i=1;i<=count;i++){
    const sz=window.BizetR10Rules?.fixedShelfCenters?.(m)?.[i-1]??(z+t+(i*(H-2*t-count*t)/(count+1))+i*t+t/2);
