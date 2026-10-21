@@ -137,17 +137,17 @@
   // Approved hardware series, plate projections and bore templates remain HUMAN OPEN.
   const R1055_SHELF_RULES=Object.freeze({
     STEP_MM:64,SHELF_THICKNESS_MM:18,EDGE_CLEARANCE_MM:38,
+    MAX_SHELVES:5,POSITION_EDITING:'FROZEN_EQUAL_COMPARTMENTS_R1059',
     HINGE_CLEARANCE_PROXY_MM:60,MIN_HINGE_SPACING_PROXY_MM:120,
     classification:'PILOT_NO_MANUFACTURING_CERTIFICATION'
   });
   function fixedShelfCenters(m={}){
     const h=Number(m.h)||0,z=Number(m.z)||0,t=18;
-    const count=Math.max(0,Math.min(4,Number(m.shelf_count??(m.level==='upper'?1:1))||0));
-    const overrides=Array.isArray(m.shelf_z_overrides_mm)?m.shelf_z_overrides_mm:[];
-    return Array.from({length:count},(_,i)=>{
-      const natural=z+t+(h-2*t)*(i+1)/(count+1);
-      return Number.isFinite(Number(overrides[i]))&&overrides[i]!==null?Number(overrides[i]):natural;
-    });
+    const count=Math.max(0,Math.min(5,Math.round(Number(m.shelf_count??1)||0)));
+    // Equal CLEAR heights (not equal centre-to-centre distances). Explicit
+    // positions are intentionally ignored while owner shelf movement is frozen.
+    const free=Math.max(0,h-2*t-count*t),opening=free/(count+1);
+    return Array.from({length:count},(_,i)=>z+t+(i+1)*opening+i*t+t/2);
   }
   function planHingePositions(m={},shelfCenters=fixedShelfCenters(m)){
     const z=Number(m.z)||0,h=Number(m.h)||0;
@@ -166,7 +166,7 @@
   }
   function allowedShelfPositions(m={},index=0){
     const current=fixedShelfCenters(m),z=Number(m.z)||0,h=Number(m.h)||0,t=R1055_SHELF_RULES.SHELF_THICKNESS_MM;
-    if(index<0||index>=current.length||m.shelf_type!=='FIXED')return[];
+    if(index<0||index>=current.length||m.shelf_type!=='FIXED'||R1055_SHELF_RULES.POSITION_EDITING.startsWith('FROZEN'))return[];
     const lo=z+t+R1055_SHELF_RULES.EDGE_CLEARANCE_MM,hi=z+h-t-R1055_SHELF_RULES.EDGE_CLEARANCE_MM;
     const prev=index>0?current[index-1]+t+R1055_SHELF_RULES.EDGE_CLEARANCE_MM:lo;
     const next=index<current.length-1?current[index+1]-t-R1055_SHELF_RULES.EDGE_CLEARANCE_MM:hi;
