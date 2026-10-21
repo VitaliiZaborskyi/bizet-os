@@ -86,7 +86,7 @@ def test_fix_08_rod_anchor_is_a_hard_core_rule_and_grande_consumes_it():
     assert "BizetR10Rules?.clothesRodCenterFromUpperShelf" in grande
     assert "upperShelfCenter-t/2-80" in grande
     assert "80 мм" in grande
-    assert "/static/r10-domain-rules.js?v=20261020r1055" in html
+    assert "/static/r10-domain-rules.js?v=20261021r1059" in html
 
 def test_fix_09_header_and_price_use_surface_contrast_not_only_theme():
     css=read("ui-viewer-pilot.css")
