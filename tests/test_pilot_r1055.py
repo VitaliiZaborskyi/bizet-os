@@ -135,7 +135,7 @@ def test_32_superseded_real_provider_with_readonly_engineering_prompt():
         assert token in js
     assert 'readonly aria-readonly="true"' in js
     assert 'id="openVisualizationR1056"' in html
-    assert "visualization-r1055.js?v=1056" in html
+    assert "visualization-r1055.js?v=1057" in html
 
 
 def test_r1055_js_syntax():
