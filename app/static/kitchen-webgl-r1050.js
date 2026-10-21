@@ -41,7 +41,7 @@ if(THREE.EffectComposer&&THREE.RenderPass&&THREE.SAOPass){
   composer.addPass(saoPass);
 }
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-let selectable=[],movables=[],lastOptions=null,lastMode='',lastRoomKey='',down=null,motionEnabled=true,deepShadow=false;
+let selectable=[],movables=[],lastOptions=null,lastMode='',lastRoomKey='',down=null,motionEnabled=true,deepShadow=false,lastFacadeTap={id:'',at:0};
 let r1056LightingVisible=true;
 const openState=new Map();
 
@@ -451,6 +451,34 @@ function addCarcassShelves(room,m,mat){
    const q=meshBox(room,s,mat.clone(),furnitureGroup,'shelf',m.id);q.material.userData.owned=true;q.userData.partRole='SHELF_'+i;
  }
 }
+function addDishDryingRack(room,m){
+ if(m.kind!=='UPPER_DRYER')return;
+ // Two-tier low-poly metal drying basket. Lower supports plates; upper
+ // grid supports cups/glasses. NOT a verified article or drilling template.
+ const t=18,run=Math.max(150,m.wall==='A'?+m.w:+m.d),
+   depth=Math.max(120,m.wall==='A'?+m.d:+m.w);
+ const variant=String(m.dish_dryer_variant||'TWO_TIER_STANDARD');
+ const margin=variant==='TWO_TIER_WIDE'?25:34;
+ const usable=Math.max(90,run-2*t-margin*2),innerD=Math.max(90,depth-2*t-28);
+ const h=+m.h,zz=+m.z,zs=[zz+Math.max(100,h*.28),zz+Math.max(220,h*.68)];
+ const pos=(u,v,z)=>m.wall==='A'
+   ?[+m.x+t+margin+u,+m.y+t+14+v,z]
+   :[+m.x+t+14+v,+m.y+t+margin+u,z];
+ for(let tier=0;tier<2;tier++){
+  const z=zs[tier],left=pos(0,0,z),right=pos(usable,0,z);
+  const rearLeft=pos(0,innerD,z),rearRight=pos(usable,innerD,z);
+  addHardwareRod(room,left,right,4,'dish-dryer-frame',m.id);
+  addHardwareRod(room,rearLeft,rearRight,4,'dish-dryer-frame',m.id);
+  addHardwareRod(room,left,rearLeft,3,'dish-dryer-side',m.id);
+  addHardwareRod(room,right,rearRight,3,'dish-dryer-side',m.id);
+  const ribs=Math.max(5,Math.min(14,Math.floor(usable/(tier===0?73:65))));
+  for(let i=1;i<ribs;i++){
+   const u=(usable*i)/ribs;
+   const lower=pos(u,0,z),higher=pos(u,innerD,tier===0?z+48:z);
+   addHardwareRod(room,lower,higher,tier===0?3.2:2.8,tier===0?'dish-dryer-plate-divider':'dish-dryer-cup-grid',m.id);
+  }
+ }
+}
 function addCarcass(room,m,mat){
  if(m.kind==='SINK'){addSinkCarcass(room,m,mat);return}
  const wall=m.wall||'A',t=18,x=+m.x,y=+m.y,z=+m.z,W=+m.w,D=+m.d,H=+m.h,parts=[];
@@ -735,12 +763,12 @@ function addWorktopAndPlinth(room,modules){
    const segments=segmentBy4100(wall,list);
    segments.forEach((seg,si)=>{const first=seg[0],last=seg.at(-1),topZ=Math.max(...seg.map(m=>+m.z+ +m.h))+1;
      if(wall==='A'){
-       const x=+first.x-2,w=(+last.x+ +last.w)-+first.x+4,y=Math.min(...seg.map(m=>+m.y))-20,d=Math.max(...seg.map(m=>+m.y+ +m.d))-y;
+       const x=+first.x-2,w=(+last.x+ +last.w)-+first.x+4,y=Math.min(room.depthMm-600,Math.min(...seg.map(m=>+m.y))-40),d=Math.max(room.depthMm,...seg.map(m=>+m.y+ +m.d))-y;
        r1056WorktopMesh(room,{x,y,z:topZ,w,d,h:wt},wm,worktopOccupied,wall+'-'+si);
        if(si>0){const seamX=+first.x;const seam=meshBox(room,{x:seamX-1.5,y,z:topZ+wt,w:3,d,h:1.6},seamMat.clone(),hardwareGroup,'worktop-seam','SEAM-'+wall+'-'+si);seam.material.userData.owned=true}
        seg.forEach(m=>{const ph=Math.max(60,+m.z||100),pl=meshBox(room,{x:+m.x,y:+m.y+recess,z:0,w:+m.w,d:12,h:ph},pm.clone(),furnitureGroup,'plinth','PLINTH-'+m.id);pl.material.userData.owned=true;pl.userData.recess_mm=recess});
      }else{
-       const y=+first.y-2,d=(+last.y+ +last.d)-+first.y+4,x=wall==='B'?Math.min(...seg.map(m=>+m.x))-20:Math.min(...seg.map(m=>+m.x)),w=Math.max(...seg.map(m=>+m.x+ +m.w))-x+(wall==='C'?20:0);
+       const y=+first.y-2,d=(+last.y+ +last.d)-+first.y+4,x=wall==='B'?0:Math.min(...seg.map(m=>+m.x))-40,w=wall==='B'?Math.max(600,Math.max(...seg.map(m=>+m.x+ +m.w))-x):Math.max(room.lengthMm,...seg.map(m=>+m.x+ +m.w))-x;
        r1056WorktopMesh(room,{x,y,z:topZ,w,d,h:wt},wm,worktopOccupied,wall+'-'+si);
        if(si>0){const seamY=+first.y;const seam=meshBox(room,{x,y:seamY-1.5,z:topZ+wt,w,d:3,h:1.6},seamMat.clone(),hardwareGroup,'worktop-seam','SEAM-'+wall+'-'+si);seam.material.userData.owned=true}
        seg.forEach(m=>{const ph=Math.max(60,+m.z||100),front=wall==='B'?+m.x+ +m.w:+m.x,px=wall==='B'?front-recess-12:front+recess,pl=meshBox(room,{x:px,y:+m.y,z:0,w:12,d:+m.d,h:ph},pm.clone(),furnitureGroup,'plinth','PLINTH-'+m.id);pl.material.userData.owned=true;pl.userData.recess_mm=recess});
@@ -919,8 +947,21 @@ renderer.domElement.addEventListener('pointerup',e=>{
  const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(moved>8)return;
  const r=renderer.domElement.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,camera);
  const hit=raycaster.intersectObjects(selectable,true)[0],id=hit?.object?.userData?.movableId||hit?.object?.parent?.userData?.movableId||hit?.object?.userData?.moduleId||'';
- if(window.BIZET_KITCHEN_UI_MODE==='VIEW'&&id){const mv=movables.find(x=>x.id===id);if(mv){mv.target=mv.target>.5?0:1;openState.set(mv.id,mv.target>0);return}}
- if(window.BIZET_KITCHEN_UI_MODE!=='VIEW'&&!lastOptions?.focusMode&&id){document.querySelector('#moduleStrip [data-module="'+CSS.escape(String(id).split(':')[0])+'"]')?.click()}
+ const moduleId=String(id).split(':')[0];
+ if(window.BIZET_KITCHEN_UI_MODE==='VIEW'&&id){
+   const mv=movables.find(x=>x.id===id);
+   if(mv){
+     const now=Date.now(),doubleTap=lastFacadeTap.id===moduleId&&now-lastFacadeTap.at<370;
+     lastFacadeTap={id:moduleId,at:now};
+     if(doubleTap){
+       document.querySelector('#moduleStrip [data-module="'+CSS.escape(moduleId)+'"]')?.click();
+       lastFacadeTap={id:'',at:0};return;
+     }
+     mv.target=mv.target>.5?0:1;openState.set(mv.id,mv.target>0);return;
+   }
+   document.querySelector('#moduleStrip [data-module="'+CSS.escape(moduleId)+'"]')?.click();return;
+ }
+ if(window.BIZET_KITCHEN_UI_MODE!=='VIEW'&&!lastOptions?.focusMode&&id){document.querySelector('#moduleStrip [data-module="'+CSS.escape(moduleId)+'"]')?.click()}
 });
 function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
 window.BizetPilot3D.drawKitchenScene=(canvas,options={})=>{const legacy=legacyDraw(canvas,options);try{draw(options)}catch(e){console.error('R10.5.1 kitchen WebGL fallback',e);host.style.display='none';canvas.style.opacity='1'}return legacy};
