@@ -14,3 +14,28 @@
 #r1055Snapshot{opacity:.68;font-size:11px;overflow-wrap:anywhere}
 #r1055RenderStale{color:#ffad78;font-weight:700}
 @media(max-width:700px){.r1055-visual-card{padding:12px;min-height:90dvh}.r1055-visual-preview{min-height:170px}.r1055-visual-prompt{max-height:53dvh}}
+
+/* BIZET OS 10.5.7 — two-pane mobile/desktop production-like render UI. */
+.r1057-visualization .r1055-visual-card{height:min(92dvh,940px);min-height:min(720px,88dvh);box-sizing:border-box}
+.r1057-visualization .r1055-visual-preview{position:relative;flex:1 1 46%;min-height:170px;max-height:52dvh;overflow:hidden;gap:8px}
+.r1057-visualization .r1055-visual-preview img{max-width:100%;max-height:100%;min-height:0;width:auto;height:auto;object-fit:contain;border-radius:10px}
+.r1057-visualization .r1055-visual-prompt{flex:1 1 48%;min-height:205px;max-height:49dvh;overflow-y:auto;scrollbar-width:thin}
+.r1057-visualization #r1056Prompt{min-height:85px;height:102px;resize:vertical;opacity:.86;font:12px/1.5 ui-monospace,Consolas,monospace}
+.r1057-visualization #r1056Extra{min-height:65px}
+.r1057-visualization #r1056Status{margin:0;line-height:1.45;font-size:14px}
+.r1057-visualization #r1057Phase{font:700 10px/1.2 ui-monospace,monospace;letter-spacing:.11em;opacity:.75}
+.r1057-visualization #r1057Warnings{color:#ffce91;border:1px solid #d6a572;background:#3a3124;padding:9px 10px;border-radius:9px;font-size:12px}
+.r1057-visualization .r1057-actions{display:grid;grid-template-columns:1.3fr 1fr;gap:8px}
+.r1057-visualization .r1057-actions button{min-height:45px;border:1px solid #8194a5;border-radius:10px;padding:10px;color:white;background:#354d70;font-weight:750}
+.r1057-visualization .r1057-actions button:disabled{opacity:.46;cursor:not-allowed}
+.r1057-visualization .r1057-actions #r1057Save{background:#293c32;border-color:#557d65}
+.r1057-visualization .r1057-progress{width:140px;max-width:70%;height:5px;border-radius:20px;background:linear-gradient(90deg,#6c88c8,#ddeaff,#6c88c8);background-size:220% 100%;animation:r1057-bar 1.45s linear infinite}
+@keyframes r1057-bar{to{background-position:220% 0}}
+@media(max-width:700px){
+ .r1057-visualization{width:97vw;max-width:97vw;max-height:97dvh}
+ .r1057-visualization .r1055-visual-card{height:94dvh;min-height:0;max-height:94dvh;padding:11px;gap:8px}
+ .r1057-visualization .r1055-visual-preview{flex-basis:44%;min-height:130px;max-height:none}
+ .r1057-visualization .r1055-visual-prompt{flex-basis:56%;min-height:170px;max-height:none}
+ .r1057-visualization #r1056Prompt{height:86px}
+ .r1057-visualization .r1057-actions button{min-height:47px}
+}
