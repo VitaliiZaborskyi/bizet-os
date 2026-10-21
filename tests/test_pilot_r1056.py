@@ -104,7 +104,7 @@ def test_15_visualization_visible_and_provider_not_fake():
     assert 'id="openVisualizationR1056"' in html
     assert 'id="openVisualizationTop"' in html
     assert "readonly aria-readonly" in js
-    assert "referenceCapture()" in js and "/api/v1.1/visualization/generate" in js
+    assert "referenceCapture()" in js and "const API=\'/api/v1.1/visualization\'" in js and "fetch(API+\'/generate\'" in js
     assert 'https://api.openai.com/v1/images/edits' in server
     assert "OPENAI_API_KEY" in server and "BIZET_VISUALIZATION_ACCESS_CODE" in server
     assert "engineering_verified" in server
