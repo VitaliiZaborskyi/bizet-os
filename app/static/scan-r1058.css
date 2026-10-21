@@ -11,3 +11,22 @@
 .scan-role b{flex:0 0 38px}.scan-role span{overflow-wrap:anywhere;line-height:1.35}
 .scan-addons{margin-top:10px}
 @media(max-width:560px){.scan-wall-editor{grid-template-columns:1fr}.scan-role-grid{max-height:290px}.scan-role{min-height:65px}.scan-role b{flex-basis:31px}}
+
+/* R10.5.9: automatic wall recognition and red wall editing. */
+.scan-input .scan-drop{display:block}.scan-input .scan-drop strong{font-size:12px;color:#9cbacb}
+.scan-input .scan-drop p{margin:6px 0}.scan-entry .scan-method{min-height:89px}
+.scan-auto-candidates{display:grid;grid-template-columns:1fr;gap:7px;max-height:265px;overflow:auto;margin-bottom:15px}
+.scan-detected-surface{width:100%;text-align:left;border:1px solid #597081;border-radius:10px;
+ background:#263c50;color:#cfe9fb;min-height:43px;padding:10px 12px;font-size:12px}
+.scan-detected-surface.is-active{border-color:#fb5454;background:#4c2933;color:#fff}
+.scan-selected-edit{padding:14px;margin:16px 0;border:1px solid #b75e64;background:#2c2c3e;border-radius:14px}
+.scan-selected-edit h3{font-size:14px;margin:5px 0 13px;color:#ffbcbf}
+.scan-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.scan-edit-grid label{display:grid;gap:6px;font-size:11px;color:#bfd0de;min-width:0}
+.scan-edit-grid input,.scan-edit-grid select{min-height:43px;border:1px solid #6d879c;background:#223b4e;color:#fff;border-radius:9px;padding:9px;max-width:100%;font:inherit}
+.scan-selected-edit>button,.scan-utility button{margin-top:10px;width:100%}
+.scan-utility{margin-top:16px;padding-top:13px;border-top:1px solid #66809675}
+.scan-utility-row{display:flex;align-items:center;gap:8px;justify-content:space-between;margin:6px 0;padding:8px;
+ font-size:11px;border:1px solid #4c6679;border-radius:7px}
+.scan-utility-row button{margin:0!important;width:auto!important;min-width:35px;background:#3e5267;color:#fff;border:none;border-radius:8px;padding:6px 10px}
+@media(max-width:540px){.scan-edit-grid{grid-template-columns:1fr}.scan-entry .scan-method{min-height:82px}}
