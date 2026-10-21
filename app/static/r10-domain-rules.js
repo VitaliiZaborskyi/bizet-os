@@ -44,6 +44,26 @@
     skipWhenCommunicationsConfirmed:true,
     classification:'PILOT_COMPOSITION_SCORE'
   });
+  // Owner-approved pilot defaults, per wall A lower carcass depth:
+  // 600 countertop depth - 40 cabinet-front allowance - 45 wall gap = 515.
+  // Groove geometry is not yet a supplier validated machining profile.
+  const R1059_CARCASS_RULES=Object.freeze({
+    WORKTOP_WALL_TO_FRONT_MM:600,
+    FRONT_OVERHANG_FACADE_MM:20,
+    FRONT_OVERHANG_CARCASS_MM:40,
+    LOWER_WALL_CLEARANCE_MM:45,
+    LOWER_CARCASS_DEPTH_MM:515,
+    DRAWER_SLIDE_500_MIN_CARCASS_MM:513,
+    DEFAULT_SLIDE_LENGTH_MM:500,
+    ALTERNATIVE_SLIDE_LENGTH_MM:450,
+    UPPER_ROOF_FRONT_RECESS_MM:1,
+    UPPER_ROOF_REAR_RECESS_MM:20,
+    UPPER_ROOF_DEPTH_REDUCTION_MM:21,
+    UPPER_BACK_RECESS_MM:20,
+    UPPER_BOTTOM_FULL_DEPTH:true,
+    UPPER_BACK_GROOVES:'SIDE_AND_BOTTOM_PENDING_CNC_PROFILE',
+    classification:'HARD_OWNER_DIMENSIONS_PILOT_UNVERIFIED_MACHINING'
+  });
   const OVEN_RULES=Object.freeze({
     DEFAULT_APPLIANCE_HEIGHT_MM:600,
     TECHNICAL_GAP_MM:3,
@@ -260,6 +280,7 @@
     allowedShelfPositions,
     cornerRules:CORNER_RULES,
     compositionRules:COMPOSITION_RULES,
+    r1059CarcassRules:R1059_CARCASS_RULES,
     ovenRules:OVEN_RULES,
     dishwasherRules:DISHWASHER_RULES,
     sinkBaseRules:SINK_BASE_RULES,
