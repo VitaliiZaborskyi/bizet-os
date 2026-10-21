@@ -266,7 +266,7 @@ function addSupportLeg(room,x,y,h,id,recess){
  const steel=ownMat({color:'#414447',roughness:.43,metalness:.42});
  const dark=ownMat({color:'#1f2326',roughness:.76,metalness:.08});
  const plate=meshBox(room,{x:x-24,y:y-24,z:height-7,w:48,d:48,h:7},steel.clone(),hardwareGroup,'foot-mounting-plate',id);
- plate.material.userData.owned=true;plate.userData.visualizationProxy=true;
+ plate.material.userData.owned=true;plate.userData.visualizationProxy=true;plate.userData.nominalFrontOffsetMm=recess;
  function cylinder(radTop,radBottom,from,to,mat,role,sides=12){
    const obj=new THREE.Mesh(new THREE.CylinderGeometry(radTop,radBottom,to-from,sides),mat);
    obj.position.copy(roomToWorld(room,x,y,(from+to)/2));obj.castShadow=true;obj.receiveShadow=true;
