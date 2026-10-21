@@ -515,7 +515,7 @@ function assignPoint(event){
    $('scanDrawingHint').textContent='Сегмент слишком короткий. Отметь вторую точку дальше от первой.';return;
   }
   marks=marks.filter(v=>v.role!==activeRole);marks.push({role:activeRole,points:[first,p]});
-  first=null;$('scanDrawingHint').textContent=type.label+' размечена. Выбери следующий участок.';
+  first=null;$('scanDrawingHint').textContent=type.label+' размечена. Выбери следующий участок.';syncWallEditFields();
  }
  renderMarks();updateList();
 }
