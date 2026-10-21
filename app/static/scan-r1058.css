@@ -30,3 +30,5 @@
  font-size:11px;border:1px solid #4c6679;border-radius:7px}
 .scan-utility-row button{margin:0!important;width:auto!important;min-width:35px;background:#3e5267;color:#fff;border:none;border-radius:8px;padding:6px 10px}
 @media(max-width:540px){.scan-edit-grid{grid-template-columns:1fr}.scan-entry .scan-method{min-height:82px}}
+
+#scanDragWall[aria-pressed="true"]{background:#dc4347;color:#fff;border-color:#ff9b9d;font-weight:750}
