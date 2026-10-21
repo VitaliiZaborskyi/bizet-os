@@ -381,11 +381,14 @@
        +numberField('Общая высота нижних модулей, мм','lower_total_height_mm',900,650)
        +numberField('Общая высота верхних модулей, мм','upper_height_mm',1000,220)
        +numberField('Расстояние между нижними и верхними модулями, мм','upper_gap_mm',600,300)
-       +numberField('Глубина нижних модулей, мм','lower_depth_mm',560,300)
+       +numberField('Глубина нижних модулей (корпус), мм','lower_depth_mm',515,300)
+       +numberField('Отступ нижних корпусов от стены, мм','lower_wall_gap_mm',45,0)
        +numberField('Глубина верхних модулей, мм','upper_depth_mm',320,200)
        +numberField('Высота цоколя, мм','plinth_height_mm',100,0)
        +numberField('Толщина столешницы, мм','worktop_thickness_mm',38,10)
-       +'</div><p>Высота корпуса = габарит нижнего ряда − толщина столешницы − высота опор.</p></section>';
+       +'</div><p>Стандарт: столешница 600 мм, фасадный передний вылет 20 мм, корпусный передний вылет 40 мм, корпус 515 мм + задний монтажный зазор 45 мм. Верхняя крыша укорачивается на 21 мм (1 мм спереди + 20 мм сзади); дно полной глубины, паз под заднюю стенку предусмотрен в боковинах и дне. Производственные фрезеровки уточняются по библиотеке.</p></section>'
+       +'<section class="r8-section"><h3>Сушка для посуды над мойкой</h3><p>Ширина верхнего модуля соответствует ширине модуля мойки. Снизу решётка для тарелок, сверху для чашек и стаканов. На данном этапе три конструкции являются визуальными proxy, не артикулами производителя.</p>'
+       +field('Вариант сеток','dish_dryer_variant',[['TWO_TIER_STANDARD','2 уровня · стандартная'],['TWO_TIER_WIDE','2 уровня · расширенная'],['TWO_TIER_COMPACT','2 уровня · компактная']])+'</section>';
      html+='<section class="r8-section"><h3>Ручки</h3><p>Распашные фасады: вертикально, 40 мм от бокового края и 40 мм от верхнего/нижнего края. Ящики и подъёмные фасады: горизонтально по центру.</p><div class="r104-general-grid">'
        +field('Распашные модули','hinged_handle_orientation',[['VERTICAL','Вертикальные ручки'],['HORIZONTAL','Горизонтальные ручки']])
        +field('Ящики','drawer_handle_orientation',[['HORIZONTAL','Горизонтальные ручки'],['VERTICAL','Вертикальные ручки']])
@@ -517,7 +520,7 @@
  function updateReadiness(){ /* R10.3.4: no visible project-readiness UI. */ }
  async function ensureTemplate(){
    const I=rt.getInputs(),patch={};
-   const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,worktop_thickness_mm:38,lower_total_height_mm:900,upper_height_mm:1000,lower_depth_mm:560,upper_depth_mm:320,hinged_handle_orientation:'VERTICAL',drawer_handle_orientation:'HORIZONTAL',display_currency:'UAH',oven_width_mm:600,oven_height_mm:600,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600,lighting_enabled:'NO',lighting_plinth:'NO',lighting_worktop:'NO',lighting_upper_inside:'NO',lighting_lower_inside:'NO',lighting_kelvin:3000};
+   const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,worktop_thickness_mm:38,lower_total_height_mm:900,upper_height_mm:1000,lower_depth_mm:515,lower_wall_gap_mm:45,upper_depth_mm:320,dish_dryer_variant:'TWO_TIER_STANDARD',hinged_handle_orientation:'VERTICAL',drawer_handle_orientation:'HORIZONTAL',display_currency:'UAH',oven_width_mm:600,oven_height_mm:600,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600,lighting_enabled:'NO',lighting_plinth:'NO',lighting_worktop:'NO',lighting_upper_inside:'NO',lighting_lower_inside:'NO',lighting_kelvin:3000};
    Object.keys(defaults).forEach(k=>{if(I[k]===undefined||I[k]===null||I[k]==='')patch[k]=defaults[k]});
    if(rt.getConfiguration()!=='CUSTOM'&&String(I.dishwasher_type||patch.dishwasher_type||'NO')==='NO')patch.dishwasher_type='BUILT_IN';
    if(Object.keys(patch).length)await rt.patchInputs(patch,'R8 base template');
