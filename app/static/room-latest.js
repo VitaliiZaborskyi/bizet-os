@@ -647,88 +647,20 @@ async function processScanSelection(fileInput, host, explicitApplyButton = null)
   }
 }
 
-function buildGeometryInputQuestion() {
-  if (document.getElementById('geometryInputQuestion')) return;
-  const viewport = document.querySelector('.viewport-card');
-  if (!viewport) return;
-  const layer = document.createElement('div');
-  layer.id = 'geometryInputQuestion';
-  layer.className = 'scan-question-layer scan-input-question';
-  layer.innerHTML = `
-    <div class="scan-question-panel">
-      <p class="scan-question-kicker">BIZET OS · 3D</p>
-      <h2>${isRussian() ? 'Как получим геометрию помещения?' : 'How should we get the room geometry?'}</h2>
-      <p>${isRussian() ? 'Загрузите скан или перейдите к ручному вводу. Сейчас нужен только один ответ.' : 'Load a scan or continue with manual input. Only one answer is needed now.'}</p>
-      <div class="scan-question-actions">
-        <button class="scan-question-primary" id="initialScanChoose" type="button">${isRussian() ? 'Загрузить скан' : 'Load scan'}</button>
-        <button class="scan-question-secondary" id="manualGeometryPath" type="button">${isRussian() ? 'Ввести вручную' : 'Enter manually'}</button>
-      </div>
-      <input id="initialScanFileInput" type="file" accept=".gltf,.glb,.bin,model/gltf+json,model/gltf-binary,application/octet-stream" multiple hidden>
-      <p class="scan-question-status" data-scan-status hidden></p>
-    </div>`;
-  viewport.appendChild(layer);
-  const input = layer.querySelector('#initialScanFileInput');
-  layer.querySelector('#initialScanChoose').addEventListener('click', () => input.click());
-  input.addEventListener('change', () => processScanSelection(input, layer));
-  layer.querySelector('#manualGeometryPath').addEventListener('click', async () => {
-    try { await patchProject('scene.visual_settings.geometry_input_mode', 'MANUAL', { reason: 'Manual room geometry selected' }); } catch (_) {}
-    layer.remove();
-  });
+function openUnifiedScan(){
+  const id=new URLSearchParams(window.location.search).get('project')||
+    sessionStorage.getItem('bizet_os_project_id')||localStorage.getItem('bizet_os_project_id')||'';
+  window.location.assign('/scan'+(id?'?project='+encodeURIComponent(id):''));
 }
-
-function buildScanPilot() {
-  const dialog = document.getElementById('scanDialog');
-  if (!dialog) return;
-  const card = dialog.querySelector('.modal-card');
-  card?.querySelector('.scan-options')?.remove();
-  card?.querySelector('#latestScanPaths')?.remove();
-  const note = document.getElementById('scanNote');
-  const host = document.createElement('div');
-  host.id = 'latestScanPaths';
-  host.innerHTML = `
-    <div class="scan-paths">
-      <button class="scan-path-button is-active" id="existingScanPath" type="button"><strong>${isRussian() ? 'У меня уже есть скан' : 'I already have a scan'}</strong><span>${isRussian() ? 'Выбрать GLB/GLTF на устройстве' : 'Choose GLB/GLTF from this device'}</span></button>
-      <button class="scan-path-button" id="newScanPath" type="button"><strong>${isRussian() ? 'Мне нужно отсканировать' : 'I need to scan the room'}</strong><span>${isRussian() ? 'Открыть приложение для сканирования' : 'Open a scanning app'}</span></button>
-    </div>
-    <section class="scan-path-panel" id="existingScanPanel">
-      <input id="scanFileInput" type="file" accept=".gltf,.glb,.bin,model/gltf+json,model/gltf-binary,application/octet-stream" multiple hidden>
-      <button class="scan-file-button" id="chooseScanFile" type="button"><strong>${isRussian() ? 'Выбрать файл скана' : 'Choose scan file'}</strong><span>GLB / GLTF${isRussian() ? ' · BIN при необходимости' : ' · BIN if required'}</span></button>
-      <div class="scan-progress" id="scanProgress"><span>Загружаем</span><span>Распознаём</span><span>Проверяем</span></div>
-      <p class="scan-question-status" data-scan-status hidden></p>
-      <button class="primary-button scan-apply-button" id="scanApplyDimensions" type="button" hidden>${isRussian() ? 'Показать контур в 3D' : 'Show contour in 3D'}</button>
-      <p class="scan-file-note">${isRussian() ? 'Для GLTF с отдельным BIN выберите оба файла одновременно. Сжатие Draco/Meshopt пока не поддерживается.' : 'For GLTF with a separate BIN, select both files. Draco/Meshopt compression is not supported yet.'}</p>
-    </section>
-    <section class="scan-path-panel" id="newScanPanel" hidden>
-      <div class="scan-download-grid">
-        <button class="scan-download-button" type="button" data-download-provider="POLYCAM"><strong>Polycam</strong><span>${isRussian() ? 'Сканировать и экспортировать GLB без сжатия' : 'Scan and export an uncompressed GLB'}</span></button>
-        <button class="scan-download-button" type="button" data-download-provider="SKETCHUP"><strong>SketchUp</strong><span>${isRussian() ? 'Открыть доступный вариант для устройства' : 'Open the available option for this device'}</span></button>
-      </div>
-    </section>`;
-  if (note) card.insertBefore(host, note); else card.appendChild(host);
-
-  const existingButton = host.querySelector('#existingScanPath');
-  const newButton = host.querySelector('#newScanPath');
-  const existingPanel = host.querySelector('#existingScanPanel');
-  const newPanel = host.querySelector('#newScanPanel');
-  function choosePath(existing) {
-    existingButton.classList.toggle('is-active', existing);
-    newButton.classList.toggle('is-active', !existing);
-    existingPanel.hidden = !existing;
-    newPanel.hidden = existing;
-  }
-  existingButton.addEventListener('click', () => choosePath(true));
-  newButton.addEventListener('click', () => choosePath(false));
-  host.querySelectorAll('[data-download-provider]').forEach(button => button.addEventListener('click', () => {
-    const provider = SCAN_DOWNLOADS[button.dataset.downloadProvider];
-    const platform = devicePlatform();
-    if (provider) window.open(provider[platform] || provider.web, '_blank', 'noopener,noreferrer');
-  }));
-  const input = host.querySelector('#scanFileInput');
-  const apply = host.querySelector('#scanApplyDimensions');
-  host.querySelector('#chooseScanFile').addEventListener('click', () => input.click());
-  input.addEventListener('change', () => processScanSelection(input, host, apply));
+function buildGeometryInputQuestion(){
+  // Legacy upload wizard removed. A single scan route handles ZIP, GLB and GLTF.
+  // Manual room editing remains accessible; no modal overlays the viewport.
 }
-
+function buildScanPilot(){
+  document.getElementById('scanButton')?.addEventListener('click',event=>{
+    event.preventDefault();event.stopImmediatePropagation();openUnifiedScan();
+  },true);
+}
 function roomGeometry() {
   const geometry = roomProject?.room?.geometry || {};
   return {
@@ -996,7 +928,7 @@ async function initialize() {
   const inputMode = roomProject?.scene?.visual_settings?.geometry_input_mode;
   const needsConfirmation = params.get('scan') === 'confirm' || sessionStorage.getItem(SCAN_CONFIRM_KEY) === '1' || scanImport?.status === 'CONTOUR_CANDIDATE';
   if (needsConfirmation && scanImport?.contour_segments_m?.length) buildContourConfirmation();
-  else if (!['MANUAL', 'MANUAL_CORRECTION', 'SCAN_CONFIRMED'].includes(inputMode) && scanImport?.status !== 'CONFIRMED') buildGeometryInputQuestion();
+  // Legacy source-selection overlay intentionally disabled; /scan owns all imports.
   setTimeout(() => { applyPilotCopy(); drawScanContour(); }, 450);
 }
 
