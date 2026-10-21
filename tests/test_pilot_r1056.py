@@ -102,7 +102,7 @@ def test_15_visualization_visible_and_provider_not_fake():
     html=read("workspace-r8.html");js=read("visualization-r1055.js")
     server=(ROOT/"app"/"api"/"visualization_r1056.py").read_text(encoding="utf-8")
     assert 'data-panel="general"' in html  # only menu 07 entry
-    assert 'id="openVisualizationTop"' in html
+    assert 'id="openVisualizationTop"' not in html
     assert "readonly aria-readonly" in js
     assert "referenceCapture()" in js and "const API=\'/api/v1.1/visualization\'" in js and "fetch(API+\'/generate\'" in js
     assert 'https://api.openai.com/v1/images/edits' in server
