@@ -90,7 +90,7 @@
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,partD));
     const lowerOven=module.kind==='COOKTOP'&&module.oven_appliance_present;
-    const rawShelves=module.shelf_count===undefined?1:Number(module.shelf_count),shelfCount=Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:1));
+    const rawShelves=module.shelf_count===undefined?1:Number(module.shelf_count),shelfCount=Math.max(0,Math.min(5,Number.isFinite(rawShelves)?rawShelves:1));
     const shelfType=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
     if(!lowerOven){
       const compartments=shelfCompartments(module,inner);
@@ -172,8 +172,8 @@
     let n=startNo,seq=1;
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Left',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
-    if(!dryer)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
-    const defaultShelves=Math.min(2,shelfCountForUpper(H)),rawShelves=module.shelf_count===undefined?defaultShelves:Number(module.shelf_count),sc=hood?0:Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
+    out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D),1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
+    const defaultShelves=Math.min(5,shelfCountForUpper(H)),rawShelves=module.shelf_count===undefined?defaultShelves:Number(module.shelf_count),sc=(hood||dryer||module.is_dish_dryer)?0:Math.max(0,Math.min(5,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
     const shelfProcess=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
     const compartments=shelfCompartments(module,inner);
     for(let i=0;i<sc;i++){
@@ -185,7 +185,7 @@
     }
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21),1,EDGE,2,2,hood?'Вырез Ø150 под вентканал':'',hood?'Ось трубы по центру модуля; центр трубы 110 мм от задней стенки':''));
     out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'В пазы боковин/дна, нахлёст на крышу; Г-вырезы 44×30 под навесы'));
-    if(dryer)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Light Rail',inner,60,1,EDGE,2,2,'Паз под заднюю стенку','Модуль с сушкой — отдельное исключение'));
+    if(dryer||module.is_dish_dryer)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Light Rail',inner,60,1,EDGE,2,2,'Паз под заднюю стенку','Модуль с сушкой; две сетки выбираются отдельно, не раскраиваются из ЛДСП'));
     if(hood){
       const shelfD=Math.max(100,D-21),ductH=Math.max(100,Math.floor((H-180-BODY_T*2)/2)),ductDepth=190;
       out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Hood Shelf Lower',inner,shelfD,1,EDGE,2,2,'Вырез Ø150 под вентканал','Полка сразу над встроенной вытяжкой; ось трубы по центру модуля, 110 мм от задней стенки'));
@@ -216,7 +216,7 @@
     const rawShelves=(!fridge&&!oven&&module.shelf_count!==undefined)?Number(module.shelf_count):defaultShelves,shelves=Math.max(0,Math.min(oven?4:3,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
     const shelfProcess=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
     for(let i=0;i<shelves;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',`Shelf ${i+1}`,inner,Math.max(100,D-21),1,EDGE,2,2,oven?'Положение зависит от техники':shelfProcess));
-    if(!fridge)out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз 20'));
+    if(!fridge&&!oven)out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз 20'));
     if(oven){
       // R10.4.0: appliance tall cabinet remains on the frozen pre-library logic.
       const drawerFacadeH=360;
