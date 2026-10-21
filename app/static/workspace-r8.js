@@ -522,6 +522,11 @@
    const I=rt.getInputs(),patch={};
    const defaults={ceiling:'OPEN_GAP',plinth_height_mm:100,worktop_thickness_mm:38,lower_total_height_mm:900,upper_height_mm:1000,lower_depth_mm:515,lower_wall_gap_mm:45,upper_depth_mm:320,dish_dryer_variant:'TWO_TIER_STANDARD',hinged_handle_orientation:'VERTICAL',drawer_handle_orientation:'HORIZONTAL',display_currency:'UAH',oven_width_mm:600,oven_height_mm:600,fridge_present:'YES',fridge_side:'LEFT',fridge_type:'BUILT_IN',fridge_width_mm:600,sink_side:'LEFT',sink_mount_type:'TOP_MOUNT',sink_bowl_count:1,sink_disposer:'NO',sink_filters:'NO',sink_placement:'LINEAR_PENDING',cooktop_type:'INDUCTION',cooktop_width_mm:600,cooktop_wall:'AUTO',dishwasher_type:'NO',dishwasher_width_mm:600,hood_type:'BUILT_IN',hood_width_mm:600,oven_location:'LOWER',oven_wall:'AUTO',microwave_present:'NO',coffee_present:'NO',upper_gap_mm:600,lighting_enabled:'NO',lighting_plinth:'NO',lighting_worktop:'NO',lighting_upper_inside:'NO',lighting_lower_inside:'NO',lighting_kelvin:3000};
    Object.keys(defaults).forEach(k=>{if(I[k]===undefined||I[k]===null||I[k]==='')patch[k]=defaults[k]});
+   // Owners earlier got a 560 mm historical default that included wall space.
+   // Migrate only unlocked defaults to actual 515 mm carcass +45 mm gap.
+   if(Number(I.lower_depth_mm)===560&&!locks.has('lower_depth_mm'))patch.lower_depth_mm=515;
+   if(Number(I.lower_depth_mm)===560&&locks.has('lower_depth_mm')&&I.lower_depth_user_confirmed!==true)
+     patch.lower_depth_user_confirmed=true;
    if(rt.getConfiguration()!=='CUSTOM'&&String(I.dishwasher_type||patch.dishwasher_type||'NO')==='NO')patch.dishwasher_type='BUILT_IN';
    if(Object.keys(patch).length)await rt.patchInputs(patch,'R8 base template');
  }
