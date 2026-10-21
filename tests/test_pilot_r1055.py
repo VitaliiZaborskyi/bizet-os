@@ -134,7 +134,7 @@ def test_32_superseded_real_provider_with_readonly_engineering_prompt():
                   "window.BizetVisualizationR1056"]:
         assert token in js
     assert 'readonly aria-readonly="true"' in js
-    assert 'id="openVisualizationR1056"' in html
+    assert 'data-panel="general"' in html  # visualization now lives only inside menu 07
     assert "visualization-r1055.js?v=1057" in html
 
 
