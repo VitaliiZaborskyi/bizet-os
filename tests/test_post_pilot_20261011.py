@@ -105,7 +105,7 @@ def test_new_pilot_assets_are_cache_busted():
     for asset in [
         "/static/model.js?v=20261021r1059",
         "/static/kitchen-webgl-r1050.js?v=20261021r1059",
-        "/static/r10-domain-rules.js?v=20261020r1055",
+        "/static/r10-domain-rules.js?v=20261021r1059",
         "/static/ui-viewer-pilot.css?v=20261015",
     ]:
         assert asset in workspace
@@ -114,7 +114,7 @@ def test_new_pilot_assets_are_cache_busted():
         "/static/grande-r1048.js?v=20261021r1056",
         "/static/grande-r1050.js?v=20261020r1054",
         "/static/grande-r1050.css?v=20261011b",
-        "/static/r10-domain-rules.js?v=20261020r1055",
+        "/static/r10-domain-rules.js?v=20261021r1059",
     ]:
         assert asset in grande
 
