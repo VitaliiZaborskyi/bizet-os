@@ -190,6 +190,9 @@
     if(edit.configuration==='DRAWERS'&&module.level!=='upper'&&!module.tall&&!['SINK','DISHWASHER','COOKTOP','FRIDGE'].includes(module.kind)){
       module.kind='DRAWERS';module.label=`Ящики · ${clamp(Math.round(Number(edit.drawer_count)||2),2,5)}`;module.drawer_count=clamp(Math.round(Number(edit.drawer_count)||2),2,5);
       module.drawer_layout='EQUAL';module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
+      module.drawer_slide_nominal_length_mm=lowerDepth()>=513?500:450;
+      module.drawer_slide_required_depth_mm=module.drawer_slide_nominal_length_mm===500?513:463;
+      module.drawer_slide_profile_status='PILOT_DIMENSION_ONLY_VENDOR_NOT_SELECTED';
       module.facade_count=undefined;module.opening='DRAWERS';
     }else if(edit.configuration==='HINGED'&&module.level!=='upper'&&!module.tall&&!['SINK','DISHWASHER','COOKTOP','FRIDGE'].includes(module.kind)){
       module.kind='HINGED';module.label='Распашной';module.drawer_count=undefined;
@@ -303,7 +306,12 @@
   }
   function baseModule(id,label,width,kind,wall='A',extra={}){
     const module={id,label,kind,wall,w:Math.max(100,Number(width)||600),d:lowerDepth(),h:lowerBodyHeight(),z:plinthHeight(),level:'lower',anchor:true,wall_gap_mm:lowerWallGap(),...extra};
-    if(kind==='DRAWERS')module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
+    if(kind==='DRAWERS'){
+      module.drawer_structure={components:['bottom','left_side','right_side','box_front','box_rear','slides'],facade_separate:true};
+      module.drawer_slide_nominal_length_mm=lowerDepth()>=513?500:450;
+      module.drawer_slide_required_depth_mm=module.drawer_slide_nominal_length_mm===500?513:463;
+      module.drawer_slide_profile_status='PILOT_DIMENSION_ONLY_VENDOR_NOT_SELECTED';
+    }
     module.module_run_limit_mm=maxRunFor(module);
     module.facade_width_limit_mm=LIMITS.HINGED_FACADE_MAX;
     module.handle_type=module.handle_type||'STANDARD';
@@ -696,7 +704,7 @@
         else{const center=m.y+m.d/2,y=clamp(center-hoodWidth/2,0,room.depthMm-hoodWidth),x=m.wall==='B'?0:room.lengthMm-hoodDepth;result.push({id:`upper-hood-${m.wall}`,label:'Вытяжка',kind:'UPPER_HOOD',wall:m.wall,x,y,z:bottom,w:hoodDepth,d:hoodWidth,h:height,level:'upper',anchor:true,hood_type:inputs.hood_type,hood_subtype:inputs.hood_integrated_subtype,hood_width_mm:hoodWidth,appliance_model_selection_enabled:false})}
         return;
       }
-      if(m.wall==='A')result.push({id:`upper-${m.id}`,label:m.kind==='SINK'?'Сушка над мойкой':'Верхний модуль',kind:m.kind==='SINK'?'UPPER_DRYER':'UPPER',dish_dryer_variant:inputs.dish_dryer_variant||'TWO_TIER_STANDARD',dish_dryer_source_width_mm:m.w,wall:'A',x:m.x,y:room.depthMm-uDepth,z:bottom,w:m.w,d:uDepth,h:height,level:'upper',anchor:false,system:true,pending:m.pending,source_kind:m.kind,source_id:m.id});
+      if(m.wall==='A')result.push({id:`upper-${m.id}`,label:m.kind==='SINK'?'Сушка над мойкой':'Верхний модуль',kind:m.kind==='SINK'?'UPPER_DRYER':'UPPER',dish_dryer_variant:inputs.dish_dryer_variant||'TWO_TIER_STANDARD',dish_dryer_source_width_mm:runWidth(m),wall:'A',x:m.x,y:room.depthMm-uDepth,z:bottom,w:m.w,d:uDepth,h:height,level:'upper',anchor:false,system:true,pending:m.pending,source_kind:m.kind,source_id:m.id});
       else result.push({id:`upper-${m.id}`,label:m.kind==='SINK'?'Сушка над мойкой':'Верхний модуль',kind:m.kind==='SINK'?'UPPER_DRYER':'UPPER',dish_dryer_variant:inputs.dish_dryer_variant||'TWO_TIER_STANDARD',dish_dryer_source_width_mm:m.w,wall:m.wall,x:m.wall==='B'?0:room.lengthMm-uDepth,y:m.y,z:bottom,w:uDepth,d:m.d,h:height,level:'upper',anchor:false,system:true,pending:m.pending,source_kind:m.kind,source_id:m.id});
     });
     const variant=variantState();
