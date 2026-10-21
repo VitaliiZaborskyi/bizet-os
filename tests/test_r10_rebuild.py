@@ -944,7 +944,7 @@ def test_r1044_start_assets_are_cache_busted():
     assert "/static/start.css?v=1051" in html
     assert "/static/next-pilot.css?v=1051" in html
     assert "/static/start.js?v=20261011" in html
-    assert "/static/start-room-handoff.js?v=1051" in html
+    assert "/static/start-room-handoff.js?v=1058" in html
     assert "/static/next-pilot-start.js?v=1051" in html
 
 
@@ -1364,7 +1364,7 @@ def test_r1042_offer_download_uses_real_pdf_endpoint():
 def test_r1044_start_uses_fresh_assets_and_custom_choice_has_no_visible_roman_v():
     index = read("index.html")
     start = read("start.js")
-    for asset in ["start.css?v=1051", "start.js?v=1051", "start-room-handoff.js?v=1051"]:
+    for asset in ["start.css?v=1051", "start.js?v=1051", "start-room-handoff.js?v=1058"]:
         assert asset in index
     assert "{ value: 'V', disabled: true" in start
     assert "Custom configuration" in start
