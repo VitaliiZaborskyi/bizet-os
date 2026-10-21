@@ -213,7 +213,7 @@
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,fridge?'Круглый вырез Ø250 для вентиляции':'Паз 20',fridge?'Вырез по умолчанию в дне встроенного холодильного модуля':''));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21)));
     const defaultShelves=fridge?1:oven?Math.min(4,Math.max(3,shelfCountForTall(H))):Math.min(3,shelfCountForTall(H));
-    const rawShelves=(!fridge&&!oven&&module.shelf_count!==undefined)?Number(module.shelf_count):defaultShelves,shelves=Math.max(0,Math.min(oven?4:3,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
+    const rawShelves=(!fridge&&!oven&&module.shelf_count!==undefined)?Number(module.shelf_count):defaultShelves,shelves=Math.max(0,Math.min(5,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
     const shelfProcess=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
     for(let i=0;i<shelves;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',`Shelf ${i+1}`,inner,Math.max(100,D-21),1,EDGE,2,2,oven?'Положение зависит от техники':shelfProcess));
     if(!fridge&&!oven)out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз 20'));
