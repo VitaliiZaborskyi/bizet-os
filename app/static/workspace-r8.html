@@ -38,6 +38,24 @@
 #openVisualizationR1056.r1057-primary-render{background:linear-gradient(110deg,#263b58,#354d70)!important;color:#fff!important;font-weight:800!important;border:1px solid #7299cc!important;border-radius:12px!important;padding:12px!important;min-height:47px;box-shadow:0 5px 18px #0c1c2e55}
 #openVisualizationR1056.r1057-primary-render span{color:#dcecff!important}
 #openVisualizationTop{font-weight:800;white-space:nowrap}
+</style>
+<style id="r1059MobileSafeNavigation">
+@media(max-width:820px){
+ .r8-tools{left:max(5px,env(safe-area-inset-left));right:max(5px,env(safe-area-inset-right));
+   bottom:calc(6px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+   gap:2px;padding:6px;overflow:visible;max-width:100%;box-sizing:border-box}
+ .r8-tools .r8-tools-label{display:none}
+ .r8-tools [data-panel]{min-width:0;width:100%;padding:10px 2px;font-size:0;text-align:center;white-space:nowrap;overflow:hidden}
+ .r8-tools [data-panel] span{font-size:12px!important;width:auto!important;min-width:0}
+ .r8-canvas-column{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}
+ .r8-stage-top{max-width:calc(100% - 18px);left:8px!important;right:8px!important;top:8px!important;
+   gap:3px!important;display:flex!important;align-items:center;flex-wrap:wrap}
+ .r8-stage-top button{flex-shrink:0;padding:7px 8px;font-size:11px}
+ #focusBackButton{order:-1;font-weight:800;position:relative;z-index:30}
+ #modelDimensionsToggle{position:relative;z-index:30}
+ .r8-stage-top .r1049-viewer-mode{flex-shrink:1}
+ .r8-panel{bottom:calc(70px + env(safe-area-inset-bottom))}
+}
 </style></head>
 <body class="r8-workspace-body">
   <div class="r8-shell">
@@ -63,14 +81,13 @@
     <main class="r8-main">
       <nav class="r8-tools" id="workspaceTools" aria-label="Настройки проекта">
         <div class="r8-tools-label">Настройки проекта</div>
-        <button data-panel="visualization" id="openVisualizationR1056" type="button" class="r1056-visual-entry r1057-primary-render"><span>✦</span> Визуализация</button>
         <button data-panel="room" type="button"><span>01</span>Помещение</button>
         <button data-panel="appliances" type="button"><span>02</span>Техника</button>
         <button data-panel="upper" type="button"><span>03</span>Настройка модулей</button>
         <button data-panel="communications" type="button"><span>04</span>Коммуникации</button>
         <button data-panel="elements" type="button"><span>05</span>Элементы стен</button>
         <button data-panel="materials" type="button"><span>06</span>Материалы</button>
-        <button data-panel="general" type="button"><span>07</span>Экспорт</button>
+        <button data-panel="general" type="button"><span>07</span>Визуализация / Экспорт</button>
 
       </nav>
 
@@ -85,7 +102,6 @@
             </div>
             <button class="r8-pill r10-focus-back" id="focusBackButton" type="button" hidden>← Назад</button>
             <button class="r8-pill r1056-view-light" id="r1056ViewLighting" type="button" disabled aria-pressed="false" title="Подсветка" aria-label="Подсветка">☀</button>
-            <button class="r8-pill r1056-header-render" id="openVisualizationTop" type="button" title="Фотореалистичная визуализация">✨ Визуализация</button>
             <button class="r8-pill r10-dimensions-icon" id="modelDimensionsToggle" type="button" aria-pressed="true" aria-label="Скрыть размеры" title="Скрыть размеры">📏</button>
             <button class="r8-pill r104-number-toggle" id="moduleNumbersToggle" type="button" aria-pressed="true" aria-label="Скрыть номера модулей" title="Скрыть номера модулей">#</button>
             <button class="r8-pill r10-warning-button" id="constraintButton" type="button" hidden aria-expanded="false" title="Предупреждения проекта">!</button>
