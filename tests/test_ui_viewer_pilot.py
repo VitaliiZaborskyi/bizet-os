@@ -12,7 +12,7 @@ def read(name):
 def test_ui_pilot_assets_are_layered_after_r1051():
     assert '/static/ui-viewer-pilot.css?v=20261015' in read("index.html")
     assert '/static/ui-viewer-pilot.css?v=20261015' in read("workspace-r8.html")
-    assert 'version="R10.5.8"' in (ROOT/"app"/"main.py").read_text(encoding="utf-8")
+    assert 'version="R10.5.9"' in (ROOT/"app"/"main.py").read_text(encoding="utf-8")
 
 def test_direction_gate_is_frontend_only_and_has_four_future_branches():
     start=read("start.js")
