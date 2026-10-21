@@ -6,6 +6,9 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const MAX_SCAN_BYTES=85*1024*1024;
+const MAX_ZIP_BYTES=90*1024*1024;
+const MAX_UNPACKED_BYTES=112*1024*1024;
+const MAX_ZIP_ENTRIES=128;
 const STORE='bizet_os_project_id';
 const ROLE={A:{label:'А',description:'Выступ · грань А',color:0xe0ad66,kind:'PROTRUSION_FACE'},
  B:{label:'Б',description:'Выступ · грань Б',color:0xe0ad66,kind:'PROTRUSION_FACE'},
@@ -14,7 +17,7 @@ const ROLE={A:{label:'А',description:'Выступ · грань А',color:0xe0
  ENTRY:{label:'Вход',description:'Вход / дверь',color:0x87bdf3,kind:'ENTRANCE_ANCHOR'},
  TURN_CABINET:{label:'Шкаф ↷',description:'Поворотный высокий блок',color:0xaeb5f6,kind:'FURNITURE_TURN_ANCHOR'}};
 const PROVIDERS={
- POLYCAM:{ios:'https://apps.apple.com/app/id1532482376',android:'https://play.google.com/store/apps/details?id=ai.polycam',web:'https://poly.cam/get-the-app'},
+ POLYCAM:{ios:'https://poly.cam/',android:'https://poly.cam/',web:'https://poly.cam/'},
  SKETCHUP:{ios:'https://apps.apple.com/app/id796352563',android:'https://app.sketchup.com/',web:'https://app.sketchup.com/'}
 };
 const projectId=()=>new URLSearchParams(location.search).get('project')||
@@ -22,6 +25,7 @@ const projectId=()=>new URLSearchParams(location.search).get('project')||
 let engine=null,scanObject=null,meshGroup=null,annotationsGroup=null;
 let fileHash='',fileName='',fileSize=0,loaded=false;
 let localLinks=[],savedRegistration=null;
+let archiveModels=[],archiveFiles=[],archiveName='';
 let bound={width:0,depth:0,height:0,center:[0,0,0],floor_y:0};
 let orient={quarter_turns:0,mirror_x:false};
 let mode='TOP',activeRole='A',first=null,marks=[],textureOn=true,wireOn=false;
@@ -50,8 +54,12 @@ function selectPath(kind){
 function revokeLocalURLs(){localLinks.forEach(u=>URL.revokeObjectURL(u));localLinks=[]}
 function activateExternal(kind){
  const url=providerUrl(kind);if(!url)return;
- const tab=window.open(url,'_blank','noopener,noreferrer');
- if(!tab)text('Браузер заблокировал новую вкладку — разреши всплывающее окно для открытия приложения.',true);
+ // Official deep-link to the installed native application is NOT confirmed.
+ // HTTPS may be claimed as a Universal Link by the app, otherwise it opens Web.
+ window.open(url,'_blank','noopener,noreferrer');
+ text(kind==='POLYCAM'
+   ?'Открыта ссылка Polycam. Если iOS не передал её установленному приложению, запусти Polycam с домашнего экрана. Это ограничение внешнего приложения, а не загрузки BIZET.'
+   :'Открыт SketchUp; доступные функции зависят от установленной версии.',false);
 }
 
 function ensureEngine(){
@@ -176,10 +184,91 @@ function parseModel(bytes,manager){
   loader.parse(bytes,'',resolve,error=>reject(error instanceof Error?error:new Error(String(error))));
  });
 }
-async function onFiles(fileList){
+function inspectZipCentralDirectory(data){
+ // Before decompression, inspect ZIP central directory to reject oversized
+ // payloads and unsupported encrypted/ZIP64 entries. No filesystem extraction.
+ const view=new DataView(data.buffer,data.byteOffset,data.byteLength);
+ const end=view.byteLength, min=Math.max(0,end-65557);
+ let eocd=-1;
+ for(let n=end-22;n>=min;n--)if(view.getUint32(n,true)===0x06054b50){eocd=n;break;}
+ if(eocd<0)throw Error('ZIP_END_OF_CENTRAL_DIRECTORY_MISSING');
+ const count=view.getUint16(eocd+10,true),cdLength=view.getUint32(eocd+12,true),cdOffset=view.getUint32(eocd+16,true);
+ if(count<1||count>MAX_ZIP_ENTRIES||cdLength===0xffffffff||cdOffset===0xffffffff||cdOffset+cdLength>eocd)
+   throw Error('ZIP_UNSUPPORTED_OR_TOO_MANY_FILES');
+ let offset=cdOffset,total=0;
+ const decoder=new TextDecoder('utf-8');
+ const names=new Set();
+ for(let i=0;i<count;i++){
+  if(offset+46>end||view.getUint32(offset,true)!==0x02014b50)throw Error('ZIP_CENTRAL_DIRECTORY_CORRUPT');
+  const flags=view.getUint16(offset+8,true),method=view.getUint16(offset+10,true);
+  const size=view.getUint32(offset+24,true),packed=view.getUint32(offset+20,true);
+  const nameSize=view.getUint16(offset+28,true),extra=view.getUint16(offset+30,true),comment=view.getUint16(offset+32,true);
+  if(flags&1)throw Error('ENCRYPTED_ZIP_NOT_SUPPORTED');
+  if(method!==0&&method!==8)throw Error('ZIP_COMPRESSION_METHOD_UNSUPPORTED');
+  const finish=offset+46+nameSize+extra+comment;
+  if(finish>end||size===0xffffffff||packed===0xffffffff)throw Error('ZIP64_OR_CORRUPT_ARCHIVE_UNSUPPORTED');
+  const path=decoder.decode(new Uint8Array(data.buffer,data.byteOffset+offset+46,nameSize));
+  if(path.startsWith('/')||path.split(/[\\/]/).includes('..')||path.includes('\0'))
+    throw Error('UNSAFE_ZIP_FILE_PATH');
+  if(!path.endsWith('/')){
+   total+=size;
+   if(size>MAX_SCAN_BYTES||total>MAX_UNPACKED_BYTES)throw Error('ZIP_DECOMPRESSED_DATA_TOO_LARGE');
+   names.add(path);
+  }
+  offset=finish;
+ }
+ return {count:count,total:total,names:[...names]};
+}
+async function expandZipIfNeeded(fileList){
  const files=Array.from(fileList||[]);
+ const zip=files.find(f=>/\.zip$/i.test(f.name));
+ if(!zip){
+  if(!archiveModels.length)$('scanArchiveChoice').hidden=true;
+  return files;
+ }
+ if(zip.size>MAX_ZIP_BYTES)throw Error('ZIP больше лимита 90 МБ для мобильного пилота.');
+ if(!window.fflate?.unzip)throw Error('ZIP_READER_UNAVAILABLE: проверь загрузку библиотеки ZIP');
+ text('Проверяю и распаковываю ZIP на устройстве, без передачи в облако…');
+ const raw=new Uint8Array(await zip.arrayBuffer());
+ const meta=inspectZipCentralDirectory(raw);
+ const extracted=await new Promise((resolve,reject)=>window.fflate.unzip(raw,(err,items)=>err?reject(err):resolve(items)));
+ const available=Object.entries(extracted).filter(([name,bytes])=>
+  !name.endsWith('/')&&/\.(glb|gltf|bin|png|jpg|jpeg|webp)$/i.test(name));
+ const aliases=new Set();
+ archiveFiles=available.map(([name,bytes])=>{
+  const base=name.split(/[\\/]/).pop();
+  const normalized=base.toLowerCase();
+  if(aliases.has(normalized))throw Error('В архиве несколько файлов с одинаковым именем '+base+'. Используй GLB-экспорт.');
+  aliases.add(normalized);
+  if(bytes.length>MAX_SCAN_BYTES)throw Error('Ресурс '+base+' слишком большой для пилота');
+  return new File([bytes],base,{type:/\.glb$/i.test(base)?'model/gltf-binary':'application/octet-stream'});
+ });
+ archiveModels=archiveFiles.filter(f=>/\.(glb|gltf)$/i.test(f.name));
+ archiveName=zip.name;
+ if(!archiveModels.length)throw Error('В ZIP нет GLB или GLTF. Выгрузи в Polycam 3D-модель в GLTF/GLB, а не только чертёж PDF/SVG.');
+ const selection=$('scanArchiveModel');selection.textContent='';
+ archiveModels.forEach((model,i)=>{
+  const option=document.createElement('option');option.value=String(i);
+  option.textContent=model.name+' · '+(model.size/1048576).toFixed(2)+' МБ';
+  selection.appendChild(option);
+ });
+ // Choose largest mesh by default rather than silently treating first entry
+ // in the ZIP as the project. Owner can select a clean floorplan alternative.
+ const largest=archiveModels.reduce((best,m,i)=>m.size>archiveModels[best].size?i:best,0);
+ selection.value=String(largest);
+ $('scanArchiveChoice').hidden=archiveModels.length<2;
+ text('ZIP Polycam распакован локально: '+meta.count+' файл(ов), 3D-моделей: '+archiveModels.length+'.');
+ return selectArchiveModel(largest);
+}
+function selectArchiveModel(index){
+ const main=archiveModels[Number(index)];
+ if(!main)throw Error('ARCHIVE_MODEL_NOT_FOUND');
+ return [main,...archiveFiles.filter(f=>f!==main&&!/\.(glb|gltf)$/i.test(f.name))];
+}
+async function onFiles(fileList,fromArchive=false){
+ const files=fromArchive?Array.from(fileList||[]):await expandZipIfNeeded(fileList);
  const main=files.find(f=>/\.(glb|gltf)$/i.test(f.name));
- if(!main)throw Error('Выбери GLB или GLTF. Архив ZIP сначала распакуй.');
+ if(!main)throw Error('Выбери ZIP, GLB или GLTF.');
  if(main.size>MAX_SCAN_BYTES)throw Error('Файл больше лимита пилота 85 МБ. Для больших сцен нужен отдельный потоковый импорт.');
  if(files.some(f=>f.size>MAX_SCAN_BYTES))throw Error('Слишком большой ресурс GLTF.');
  ensureEngine();cleanOldScene();
@@ -208,8 +297,9 @@ async function onFiles(fileList){
  setMaterialStyle();
  loaded=true;$('scanWorkspace').hidden=false;
  $('scanFileName').textContent=fileName;
- const meshes=[];scanObject.traverse(o=>{if(o.isMesh)meshes.push(o)});
- $('scanStats').textContent=meshes.length+' меш(ей) · '+(bytes.byteLength/1048576).toFixed(2)+' МБ · SHA256 '+fileHash.slice(0,14)+'…';
+ const meshes=[];let textured=0;scanObject.traverse(o=>{if(o.isMesh){meshes.push(o);const mats=Array.isArray(o.material)?o.material:[o.material];if(mats.some(m=>!!m?.map))textured++}});
+ $('scanStats').textContent=meshes.length+' меш(ей) · текстуры у '+textured+' · '+(bytes.byteLength/1048576).toFixed(2)+' МБ · SHA256 '+fileHash.slice(0,14)+'…';
+ if(textured===0)text('Загружена упрощённая геометрия стен Polycam без фототекстуры. Это полезный исходник для разметки, но не фотофиксация.',false,true);
  $('scanDimensions').textContent=[bound.width,bound.depth,bound.height].map(v=>Math.round(v*1000).toLocaleString('ru-RU')).join(' × ')+' мм';
  const existing=savedRegistration;
  if(existing?.source?.sha256===fileHash){
@@ -223,7 +313,7 @@ async function onFiles(fileList){
  }else if(existing?.source?.sha256&&existing.source.sha256!==fileHash){
   text('Новый скан не совпадает с ранее размеченным. Старую разметку не применяю.',false);
  }else{
-  text('Исходный текстурированный скан загружен. Переключись в вид сверху и отметь стены А / Б / В / Г.',false,true);
+  text('3D-геометрия скана загружена. Включи вид сверху и размечай столько стен, сколько нужно.',false,true);
  }
  setOrientation();setCamera('TOP');selectRole('A');updateList();
 }
@@ -343,7 +433,7 @@ function registrationPayload(){
  return{
   schema:'BIZET_SCAN_REGISTRATION_R10_5_8',
   status:'PRELIMINARY_UNVERIFIED',
-  source:{file_name:fileName,byte_size:fileSize,sha256:fileHash,format:/\.glb$/i.test(fileName)?'GLB':'GLTF',storage:'CLIENT_ONLY_NOT_UPLOADED'},
+  source:{file_name:fileName,archive_name:archiveName||null,byte_size:fileSize,sha256:fileHash,format:/\.glb$/i.test(fileName)?'GLB':'GLTF',storage:'CLIENT_ONLY_NOT_UPLOADED'},
   coordinate_system:{source:'GLTF_METERS_Y_UP',view_top_from:'POSITIVE_Y',
    source_bounds_m:{length:clean(bound.width),depth:clean(bound.depth),height:clean(bound.height)},
    display_translation_m:[clean(-bound.center[0]),clean(-bound.floor_y),clean(-bound.center[2])],
@@ -383,10 +473,21 @@ function bind(){
  $('scanOpenPolycam').onclick=()=>activateExternal('POLYCAM');
  $('scanOpenSketchup').onclick=()=>activateExternal('SKETCHUP');
  $('scanOpenPicker').onclick=()=>$('scanFileInput').click();
- $('scanFileInput').onchange=e=>onFiles(e.target.files).catch(err=>text('Ошибка импорта: '+(err.message||String(err)),true));
+ $('scanFileInput').onchange=e=>{
+   if(!Array.from(e.target.files||[]).some(f=>/.zip$/i.test(f.name))){
+     archiveModels=[];archiveFiles=[];archiveName='';$('scanArchiveChoice').hidden=true;
+   }
+   onFiles(e.target.files).catch(err=>text('Ошибка импорта: '+(err.message||String(err)),true));
+ }; 
+ $('scanArchiveModel').onchange=e=>onFiles(selectArchiveModel(e.target.value),true)
+  .catch(err=>text('Ошибка выбора модели ZIP: '+(err.message||String(err)),true));
  $('scanDropZone').addEventListener('dragover',e=>{e.preventDefault();$('scanDropZone').classList.add('is-drop')});
  $('scanDropZone').addEventListener('dragleave',()=>$('scanDropZone').classList.remove('is-drop'));
- $('scanDropZone').addEventListener('drop',e=>{e.preventDefault();$('scanDropZone').classList.remove('is-drop');onFiles(e.dataTransfer.files).catch(err=>text(err.message,true))});
+ $('scanDropZone').addEventListener('drop',e=>{
+   e.preventDefault();$('scanDropZone').classList.remove('is-drop');
+   archiveModels=[];archiveFiles=[];archiveName='';
+   onFiles(e.dataTransfer.files).catch(err=>text(err.message,true));
+ });
  $('scanTop').onclick=()=>setCamera('TOP');
  $('scanOrbit').onclick=()=>setCamera('ORBIT');
  $('scanResetCamera').onclick=()=>setCamera(mode);
