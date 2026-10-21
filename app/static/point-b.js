@@ -90,7 +90,7 @@
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,partD));
     const lowerOven=module.kind==='COOKTOP'&&module.oven_appliance_present;
-    const rawShelves=module.shelf_count===undefined?1:Number(module.shelf_count),shelfCount=Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:1));
+    const rawShelves=module.shelf_count===undefined?1:Number(module.shelf_count),shelfCount=Math.max(0,Math.min(5,Number.isFinite(rawShelves)?rawShelves:1));
     const shelfType=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
     if(!lowerOven){
       const compartments=shelfCompartments(module,inner);
@@ -115,7 +115,7 @@
     (module.middle_side_boundaries||[]).forEach((boundary,i)=>{
       out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Middle Side '+(i+1),H,partD,1,EDGE,2,2,'Вертикальная перегородка','Граница фасадов '+boundary));
     });
-    out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз под заднюю стенку','PILOT: размер HDF требует финальной заморозки'));
+    if(!lowerOven)out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз под заднюю стенку','PILOT: размер HDF требует финальной заморозки'));
     if(lowerOven){
       const drawerFacadeH=Math.max(1,round(module.oven_drawer_facade_height_mm||0));
       if(drawerFacadeH>0){
@@ -172,8 +172,8 @@
     let n=startNo,seq=1;
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Left',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Right',H,D,1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
-    if(!dryer)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,'Паз 20 по длинной стороне, 4×10 мм'));
-    const defaultShelves=Math.min(2,shelfCountForUpper(H)),rawShelves=module.shelf_count===undefined?defaultShelves:Number(module.shelf_count),sc=hood?0:Math.max(0,Math.min(2,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
+    if(!dryer)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D),1,EDGE,2,2,'Паз 20 под заднюю стенку · дно полной глубины · требует каталог сверления'));
+    const defaultShelves=1,rawShelves=module.shelf_count===undefined?defaultShelves:Number(module.shelf_count),sc=(hood||dryer)?0:Math.max(0,Math.min(5,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
     const shelfProcess=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
     const compartments=shelfCompartments(module,inner);
     for(let i=0;i<sc;i++){
@@ -213,10 +213,10 @@
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Bottom',inner,Math.max(100,D-1),1,EDGE,2,2,fridge?'Круглый вырез Ø250 для вентиляции':'Паз 20',fridge?'Вырез по умолчанию в дне встроенного холодильного модуля':''));
     out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas','Top',inner,Math.max(100,D-21)));
     const defaultShelves=fridge?1:oven?Math.min(4,Math.max(3,shelfCountForTall(H))):Math.min(3,shelfCountForTall(H));
-    const rawShelves=(!fridge&&!oven&&module.shelf_count!==undefined)?Number(module.shelf_count):defaultShelves,shelves=Math.max(0,Math.min(oven?4:3,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
+    const rawShelves=(!fridge&&!oven&&module.shelf_count!==undefined)?Number(module.shelf_count):defaultShelves,shelves=Math.max(0,Math.min(5,Number.isFinite(rawShelves)?rawShelves:defaultShelves));
     const shelfProcess=module.shelf_type==='FIXED'?'Жёсткая полка; крепление к бокам':'Регулируемая полка; полкодержатели';
     for(let i=0;i<shelves;i++)out.push(detail(module,n++,seq++,'ЛДСП 18 Carcas',`Shelf ${i+1}`,inner,Math.max(100,D-21),1,EDGE,2,2,oven?'Положение зависит от техники':shelfProcess));
-    if(!fridge)out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз 20'));
+    if(!fridge&&!oven)out.push(detail(module,n++,seq++,'HDF 3 mm','Back',Math.max(100,W-2),Math.max(100,H-2),1,'',0,0,'Паз 20'));
     if(oven){
       // R10.4.0: appliance tall cabinet remains on the frozen pre-library logic.
       const drawerFacadeH=360;
