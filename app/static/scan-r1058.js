@@ -36,6 +36,7 @@ let archiveModels=[],archiveFiles=[],archiveName='';
 let bound={width:0,depth:0,height:0,center:[0,0,0],floor_y:0};
 let orient={quarter_turns:0,mirror_x:false};
 let mode='TOP',activeRole='W1',first=null,marks=[],textureOn=true,wireOn=false;
+let autoCandidates=[],autoStats=null;
 let pointerDown=null;
 const finite=n=>Number.isFinite(n);
 const clean=(n,k=5)=>Number(n.toFixed(k));
@@ -127,7 +128,7 @@ function setCamera(next){
   e.camera.position.set(gap*.8,gap*.7,gap*.88);
  }
  e.camera.lookAt(e.controls.target);e.controls.update();
- if(annotationsGroup)annotationsGroup.visible=next==='TOP';
+ if(annotationsGroup)annotationsGroup.visible=true; // Red wall plane also visible while orbiting in 3D
  $('scanPointerHint').textContent=next==='TOP'?'План сверху: выбери А / Б / В / Г и отметь две точки линии (или одну точку входа / шкафа). Колесо / щипок — масштаб.'
  :'3D-осмотр с реальными текстурами: вращай, приближай и изучай стены, проводку и розетки.';
 }
@@ -313,7 +314,10 @@ async function onFiles(fileList,fromArchive=false){
   orient=existing.orientation||orient;
   resetWallDefinitions(existing.wall_definitions||existing.segments||[]);
   marks=(existing.segments||[]).filter(v=>ROLE[v.role]&&Array.isArray(v.points)).map(v=>({
-   role:v.role,points:v.points.map(p=>[+p[0],+p[1]]).filter(p=>p.every(finite)).slice(0,2)
+   role:v.role,points:v.points.map(p=>[+p[0],+p[1]]).filter(p=>p.every(finite)).slice(0,2),
+   source:v.source||'MANUAL',owner_reviewed:!!v.owner_reviewed,height_mm:Number(v.height_mm)||null,
+   communications:Array.isArray(v.communications)?v.communications.filter(c=>c&&typeof c.kind==='string').slice(0,30):[],
+   confidence:Number(v.confidence)||null
   })).filter(v=>v.points.length===(ROLE[v.role].kind.endsWith('ANCHOR')?1:2));
   const measure=existing.known_dimension||{};
   if(finite(+measure.mm)&&+measure.mm>0){
@@ -330,6 +334,9 @@ async function onFiles(fileList,fromArchive=false){
   else text('Упрощённая 3D-модель стен загружена. Фототекстуры в этом экспорте нет. Добавляй и размечай любые стены.',false,true);
  }
  setOrientation();setCamera('TOP');selectRole(wallIds[0]);updateList();
+ // First attempt offline automatic wall detection for EVERY imported GLB.
+ // No candidate is approved as a production wall without user review.
+ try{runAutoDetection()}catch(error){$('scanDetectStatus').textContent='Автоматические плоскости не определены: '+error.message+' · используй ручную разметку.';}
 }
 function renderMarks(){
  if(!engine||!annotationsGroup)return;
@@ -362,9 +369,125 @@ function renderMarks(){
    const mid=[(m.points[0][0]+m.points[1][0])/2,(m.points[0][1]+m.points[1][1])/2];drawText(mid,cfg.label.slice(0,8),cfg.color);
   }else drawText(m.points[0],cfg.label.slice(0,8),cfg.color);
  }
- if(first)drawDisc(first,ROLE[activeRole].color);
- annotationsGroup.visible=mode==='TOP';
+ if(first&&ROLE[activeRole])drawDisc(first,ROLE[activeRole].color);
+ const selected=marks.find(m=>m.role===activeRole&&m.points?.length===2);
+ if(selected){
+   const a=selected.points[0],b=selected.points[1],
+     len=Math.hypot(b[0]-a[0],b[1]-a[1]),centerX=(a[0]+b[0])/2,centerZ=(a[1]+b[1])/2,
+     angle=-Math.atan2(b[1]-a[1],b[0]-a[0]);
+   if(len>.05){
+     const red=new THREE.MeshBasicMaterial({color:0xef3740,transparent:true,opacity:.32,
+        side:THREE.DoubleSide,depthWrite:false,depthTest:false});
+     const wallHeight=Math.max(.4,(selected.height_mm||bound.height*1000)/1000);
+     const vertical=new THREE.Mesh(new THREE.PlaneGeometry(len,wallHeight),red.clone());
+     vertical.rotation.y=angle;
+     vertical.position.set(centerX,wallHeight/2,centerZ);
+     vertical.renderOrder=18;vertical.visible=mode!=='TOP';annotationsGroup.add(vertical);
+     const flat=new THREE.Mesh(new THREE.PlaneGeometry(len,.13),red.clone());
+     flat.rotation.set(-Math.PI/2,0,angle);
+     flat.position.set(centerX,h+.09,centerZ);flat.renderOrder=18;
+     flat.visible=mode==='TOP';annotationsGroup.add(flat);
+     red.dispose();
+   }
+ }
+ annotationsGroup.visible=true;
 }
+function runAutoDetection(){
+ if(!loaded||!scanObject)throw Error('Сначала загрузи GLB/GLTF.');
+ if(!window.BizetScanAutoR1059)throw Error('SCAN_PLANE_ANALYZER_NOT_AVAILABLE');
+ const result=window.BizetScanAutoR1059.analyze(scanObject,engine.THREE);
+ autoCandidates=result.candidates||[];
+ autoStats=result.stats||null;
+ const info=$('scanDetectStatus');
+ info.textContent=autoCandidates.length
+  ?'Найдено предложений: '+autoCandidates.length+'. Это геометрические плоскости, не готовые подтверждённые стены. Выбери нужную.'
+  :'Подходящих больших плоскостей автоматически не обнаружено. Сохраняется возможность ручной разметки.';
+ const list=$('scanDetectedCandidates');list.textContent='';
+ for(const [index,c] of autoCandidates.entries()){
+  const button=document.createElement('button');
+  button.type='button';button.className='scan-detected-surface';
+  button.textContent='Плоскость '+(index+1)+' · ≈ '+c.estimated_mm+' мм · уверенность '+Math.round(c.confidence*100)+'%';
+  button.onclick=()=>activateCandidate(index);
+  list.appendChild(button);
+ }
+ if(autoCandidates.length)text('Скан проанализирован локально: '+autoCandidates.length+
+   ' возможных стен. Выбери каждую и проверь красную плоскость, размеры и коммуникации.',false,true);
+}
+function activateCandidate(index){
+ const c=autoCandidates[index];if(!c)return;
+ let found=marks.find(m=>m.source_candidate_id===c.id);
+ if(!found){
+  const role=createWall(null,'Стена '+(wallIds.length+1),'PRIMARY_WALL');
+  found={role,points:[c.from.slice(),c.to.slice()],
+   height_mm:Math.round(c.height_m*1000),owner_reviewed:false,source:'AUTO_PLANE_PROPOSAL',
+   source_candidate_id:c.id,confidence:c.confidence,communications:[]};
+  marks.push(found);paintWallButtons();
+ }
+ selectRole(found.role);setCamera('TOP');renderMarks();updateList();
+ document.querySelectorAll('.scan-detected-surface').forEach((b,i)=>b.classList.toggle('is-active',i===index));
+ $('scanDrawingHint').textContent=ROLE[found.role].label+
+  ': автоматически предложенная поверхность. Красный прямоугольник можно переместить, повернуть и изменить его длину ниже.';
+ $('scanSelectedEdit').scrollIntoView?.({block:'nearest',behavior:'smooth'});
+}
+function updateSelectedEditor(){
+ const el=$('scanSelectedEdit');if(!el)return;
+ const cfg=ROLE[activeRole],m=marks.find(v=>v.role===activeRole&&v.points?.length===2);
+ el.hidden=!m||!cfg||cfg.kind.endsWith('ANCHOR');
+ if(el.hidden)return;
+ const dx=m.points[1][0]-m.points[0][0],dz=m.points[1][1]-m.points[0][1];
+ const length=Math.max(100,Math.round(Math.hypot(dx,dz)*1000));
+ const lengthField=$('scanWallLengthMm'),heightField=$('scanWallHeightMm');
+ if(document.activeElement!==lengthField)lengthField.value=String(length);
+ if(document.activeElement!==heightField)heightField.value=String(Math.round(m.height_mm||bound.height*1000));
+ const button=$('scanAcceptWall');
+ button.textContent=m.owner_reviewed?'✓ Предварительная геометрия проверена':'Подтвердить как предварительную стену';
+ renderWallUtilities(m);
+}
+function applyWallAdjustment(){
+ const m=marks.find(v=>v.role===activeRole&&v.points?.length===2);
+ if(!m)return text('Сначала выбери обнаруженную или вручную размеченную стену.',true);
+ const newLength=Number($('scanWallLengthMm').value),offset=Number($('scanWallOffsetMm').value)||0,
+  rot=Number($('scanWallAngleDeg').value)||0,height=Number($('scanWallHeightMm').value);
+ if(![newLength,offset,rot,height].every(finite)||newLength<100||newLength>30000||
+   Math.abs(offset)>5000||Math.abs(rot)>180||height<200||height>10000)
+   return text('Недопустимые корректировки стены; проверь длину, высоту, угол и смещение.',true);
+ const a=m.points[0],b=m.points[1],
+   angle=Math.atan2(b[1]-a[1],b[0]-a[0])+rot*Math.PI/180;
+ const dx=Math.cos(angle),dz=Math.sin(angle),
+   mx=(-dz*offset)/1000,mz=(dx*offset)/1000;
+ const point=[clean(a[0]+mx),clean(a[1]+mz)];
+ m.points=[point,[clean(point[0]+dx*newLength/1000),clean(point[1]+dz*newLength/1000)]];
+ m.height_mm=Math.round(height);m.owner_reviewed=false;
+ $('scanWallAngleDeg').value='0';$('scanWallOffsetMm').value='0';
+ $('scanDrawingHint').textContent='Красная плоскость изменена. Перед сохранением проверь совмещение с исходным сканом.';
+ renderMarks();updateList();updateSelectedEditor();
+}
+function renderWallUtilities(m){
+ const list=$('scanUtilityList');list.textContent='';
+ for(const [index,c] of (m.communications||[]).entries()){
+  const row=document.createElement('div');row.className='scan-utility-row';
+  const span=document.createElement('span');
+  span.textContent=c.kind+' · '+Math.round(c.from_start_mm)+' мм от начала · '+Math.round(c.height_mm)+' мм высота';
+  const del=document.createElement('button');del.textContent='×';del.title='Удалить коммуникацию';del.type='button';
+  del.onclick=()=>{m.communications.splice(index,1);renderWallUtilities(m)};
+  row.append(span,del);list.appendChild(row);
+ }
+}
+function addWallUtility(){
+ const m=marks.find(v=>v.role===activeRole&&v.points?.length===2);
+ if(!m)return text('Сначала выбери стену.',true);
+ const kind=$('scanUtilityKind').value,offset=Number($('scanUtilityOffset').value),
+   height=Number($('scanUtilityHeight').value);
+ const len=Math.hypot(m.points[1][0]-m.points[0][0],m.points[1][1]-m.points[0][1])*1000;
+ if(!finite(offset)||!finite(height)||offset<0||offset>len||height<0||height>10000)
+  return text('Коммуникация выходит за границы сегмента или имеет неверную высоту.',true);
+ m.communications=m.communications||[];
+ m.communications.push({kind,from_start_mm:Math.round(offset),
+   height_mm:Math.round(height),source:'OWNER_ANNOTATION',confirmed:false});
+ renderWallUtilities(m);updateList();
+ text('Коммуникация сохранена в предварительной разметке стены. Координаты требуют подтверждения замером.',false,true);
+}
+
 function createWall(id=null,label=null,kind='PRIMARY_WALL'){
  if(!WALL_KINDS[kind])kind='OTHER_SURFACE';
  if(!id)id='W'+(++wallSequence);
@@ -415,6 +538,7 @@ function selectRole(role){
  const cfg=ROLE[role],isAnchor=cfg.kind.endsWith('ANCHOR');
  $('scanWallEditor').hidden=isAnchor;
  if(!isAnchor){$('scanWallLabel').value=cfg.label;$('scanWallKind').value=cfg.kind;}
+ updateSelectedEditor();
  $('scanDrawingHint').textContent='Выбрано: '+cfg.label+' · '+cfg.description+'. '+(isAnchor
   ?'Нажми одну точку на плане сверху.'
   :'Коснись первой точки в начале стены, затем второй — в её конце. Между точками появится линия; повтори для следующих стен.');
@@ -446,7 +570,7 @@ function assignPoint(event){
   marks=marks.filter(v=>v.role!==activeRole);marks.push({role:activeRole,points:[first,p]});
   first=null;$('scanDrawingHint').textContent=type.label+' размечена. Выбери следующий участок.';
  }
- renderMarks();updateList();
+ renderMarks();updateList();updateSelectedEditor();
 }
 function bindCanvasInteraction(){
  const canvas=engine.renderer.domElement;
@@ -469,10 +593,11 @@ function updateList(){
   const mm=m.points.length===2?Math.round(Math.hypot(m.points[0][0]-m.points[1][0],m.points[0][1]-m.points[1][1])*1000)+' мм (скан)':'маркер';
   desc.textContent=role.description+' · '+mm;
   const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.title='Удалить отметку';
-  remove.onclick=()=>{marks.splice(i,1);updateList();renderMarks()};
+  remove.onclick=()=>{marks.splice(i,1);updateList();renderMarks();updateSelectedEditor()};
   row.append(label,desc,remove);list.appendChild(row);
  });
- $('scanRegistrationState').textContent='Размечено участков: '+marks.length+' · всё предварительно · экспорт производства STOP';
+ $('scanRegistrationState').textContent='Размечено участков: '+marks.filter(m=>m.points?.length===2).length+' · всё предварительно · экспорт производства STOP';
+ updateSelectedEditor();
 }
 async function loadSaved(){
  const id=projectId();if(!id)return;
@@ -501,7 +626,11 @@ function registrationPayload(){
   orientation:{quarter_turns:orient.quarter_turns,mirror_x:orient.mirror_x},
   wall_definitions:wallIds.map(id=>({role:id,label:ROLE[id].label,kind:ROLE[id].kind})),
   segments:marks.map(m=>({role:m.role,label:ROLE[m.role].label,kind:ROLE[m.role].kind,
-    points:m.points.map(p=>[clean(p[0]),clean(p[1])]),unit:'M',confirmed:false})),
+    points:m.points.map(p=>[clean(p[0]),clean(p[1])]),unit:'M',confirmed:false,
+    source:m.source||'MANUAL',owner_reviewed:!!m.owner_reviewed,
+    height_mm:m.height_mm||null,confidence:m.confidence||null,
+    communications:(m.communications||[]).map(c=>({...c,confirmed:false}))})),
+  auto_detection_stats:autoStats,
   known_dimension:known,
   tentative_scale_ratio:ratio,
   production_ready:false,
@@ -528,12 +657,16 @@ async function saveRegistration(){
  }finally{$('scanSaveRegistration').disabled=false}
 }
 function bind(){
- $('scanChooseImport').onclick=()=>selectPath('IMPORT');
+ $('scanChooseImport').onclick=()=>{
+   selectPath('IMPORT');
+   // One primary upload action: immediately invoke the file chooser.
+   $('scanFileInput').click();
+ };
  $('scanChooseProvider').onclick=()=>selectPath('PROVIDER');
  $('scanBackToImport').onclick=()=>selectPath('IMPORT');
  $('scanOpenPolycam').onclick=()=>activateExternal('POLYCAM');
  $('scanOpenSketchup').onclick=()=>activateExternal('SKETCHUP');
- $('scanOpenPicker').onclick=()=>$('scanFileInput').click();
+ // The historical second file-picker button is intentionally removed.
  $('scanFileInput').onchange=e=>{
    if(!Array.from(e.target.files||[]).some(f=>/.zip$/i.test(f.name))){
      archiveModels=[];archiveFiles=[];archiveName='';$('scanArchiveChoice').hidden=true;
@@ -558,6 +691,19 @@ function bind(){
  $('scanResetOrientation').onclick=()=>{orient={quarter_turns:0,mirror_x:false};setOrientation()};
  $('scanToggleTexture').onclick=()=>{textureOn=!textureOn;setMaterialStyle()};
  $('scanToggleMesh').onclick=()=>{wireOn=!wireOn;setMaterialStyle()};
+ $('scanDetectWalls').onclick=()=>{
+   try{runAutoDetection()}catch(error){text('Распознавание: '+error.message,true)}
+ };
+ $('scanApplyWallAdjust').onclick=applyWallAdjustment;
+ $('scanAcceptWall').onclick=()=>{
+   const m=marks.find(v=>v.role===activeRole&&v.points.length===2);
+   if(!m)return;
+   m.owner_reviewed=true;
+   $('scanDrawingHint').textContent=ROLE[activeRole].label+
+      ': геометрия проверена владельцем как предварительная, не как производственный замер.';
+   updateSelectedEditor();updateList();
+ };
+ $('scanUtilityAdd').onclick=addWallUtility;
  document.querySelectorAll('[data-scan-role]').forEach(b=>b.onclick=()=>selectRole(b.dataset.scanRole));
  document.querySelectorAll('[data-scan-anchor]').forEach(b=>b.onclick=()=>selectRole(b.dataset.scanAnchor));
  $('scanCancelMark').onclick=()=>{first=null;renderMarks();$('scanDrawingHint').textContent='Первая точка сброшена. Укажи начало линии.'};
