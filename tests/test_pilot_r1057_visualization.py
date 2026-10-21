@@ -168,7 +168,8 @@ def test_mocked_real_generation_request_roundtrip(monkeypatch):
 def test_visualization_button_is_first_and_prompt_is_locked():
     html = source("workspace-r8.html")
     menu = html[html.index('id="workspaceTools"'):html.index("</nav>", html.index('id="workspaceTools"'))]
-    assert menu.index('id="openVisualizationR1056"') < menu.index('data-panel="room"')
+    assert 'id="openVisualizationR1056"' not in menu
+    assert menu.index('data-panel="general"') > menu.index('data-panel="room"')
     assert 'id="openVisualizationTop"' in html
     assert "/static/visualization-r1055.js?v=1057" in html
     js = source("visualization-r1055.js")
