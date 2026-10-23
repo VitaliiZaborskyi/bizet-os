@@ -72,7 +72,7 @@ def test_current_isolation_reuses_actual_module_builder_and_no_fake_confirmats()
     assert "addFocusInternals" not in viewer
     assert "CylinderGeometry(3.15,3.15,50" not in viewer
     build=viewer[viewer.index("function buildFurniture"):viewer.index("function frame(")]
-    assert "addCarcass(room,m,body)" in build
+    assert "addCarcass(room,carcass,body)" in build
     assert "mods.forEach(buildOne)" in build
     focus=model[model.index("function renderModuleFocus"):model.index("function renderScene")]
     assert "modules:[current]" in focus
