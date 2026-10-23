@@ -551,7 +551,20 @@
     </svg>`;
   }
 
-  function approvalStamp(pageNo,title,orderRef=''){
+  const APPROVAL_UNITS_PER_MM=1120/282;
+  function approvalScale(mmW,pxW,mmH,pxH){
+    return [10,15,20,25,30,40,50,75,100,125,150,200].find(n=>mmW*APPROVAL_UNITS_PER_MM/n<=pxW&&mmH*APPROVAL_UNITS_PER_MM/n<=pxH)||200;
+  }
+  function approvalSectionGroups(modules){
+    const groups=new Map();
+    (modules||[]).filter(m=>m.kind!=='FILLER').forEach(m=>{
+      const signature=[m.kind,m.level||'lower',Math.round(Number(m.d)||0),Math.round(Number(m.h)||0),
+        Number(m.shelf_count)||0,Number(m.facade_count)||1,m.opening||'HINGED',m.end_panel_edges?.join(',')||''].join('|');
+      if(!groups.has(signature))groups.set(signature,{module:m,members:[]});
+      groups.get(signature).members.push('M'+m.number);
+    });return [...groups.values()];
+  }
+  function approvalStamp(pageNo,title,orderRef='',scaleLabel='VARIES',totalPages=3){
     const stampX=760,stampY=700,stampW=340,stampH=72;
     return `
       <g class="stamp">
@@ -563,14 +576,14 @@
         <text x="${stampX+10}" y="${stampY+58}" font-size="9">${esc(orderRef||'PROJECT')} · Rev A</text>
         <text x="${stampX+220}" y="${stampY+18}" font-size="9">FOR APPROVAL</text>
         <text x="${stampX+220}" y="${stampY+34}" font-size="8">NOT FOR PRODUCTION</text>
-        <text x="${stampX+220}" y="${stampY+50}" font-size="8">Scale: NTS</text>
-        <text x="${stampX+220}" y="${stampY+65}" font-size="8">Page ${pageNo}/3</text>
+        <text x="${stampX+220}" y="${stampY+50}" font-size="8">Scale: ${scaleLabel}</text>
+        <text x="${stampX+220}" y="${stampY+65}" font-size="8">Page ${pageNo}/${totalPages}</text>
       </g>`;
   }
 
   function approvalPlanSheet(modules,room,orderRef=''){
     const W=1120,H=790,pad=70,roomW=Math.max(1000,Number(room.lengthMm)||6000),roomD=Math.max(1000,Number(room.depthMm)||4200);
-    const scale=Math.min((W*0.64-pad*2)/roomW,(H-180)/roomD),ox=pad,oy=80;
+    const denominator=approvalScale(roomW,W*.64-pad*2,roomD,H-180),scale=APPROVAL_UNITS_PER_MM/denominator,ox=pad,oy=80;
     const wallRect=`<rect x="${ox}" y="${oy}" width="${roomW*scale}" height="${roomD*scale}" fill="none" stroke="#111" stroke-width="3"/>`;
     const moduleRects=modules.filter(m=>m.level!=='upper').map(m=>{
       const x=ox+(Number(m.x)||0)*scale,y=oy+(roomD-(Number(m.y)||0)-(Number(m.d)||0))*scale,w=Math.max(2,(Number(m.w)||0)*scale),d=Math.max(2,(Number(m.d)||0)*scale);
@@ -579,43 +592,52 @@
     const dims=`
       <line x1="${ox}" y1="${oy-18}" x2="${ox+roomW*scale}" y2="${oy-18}" stroke="#d71920"/><text x="${ox+roomW*scale/2}" y="${oy-25}" class="dim" text-anchor="middle">${round(roomW)}</text>
       <line x1="${ox-18}" y1="${oy}" x2="${ox-18}" y2="${oy+roomD*scale}" stroke="#d71920"/><text x="${ox-28}" y="${oy+roomD*scale/2}" class="dim" transform="rotate(-90 ${ox-28} ${oy+roomD*scale/2})" text-anchor="middle">${round(roomD)}</text>`;
-    const isoX=785,isoY=125;
-    const run=modules.filter(m=>m.wall==='A'&&m.level!=='upper').sort((a,b)=>(a.x||0)-(b.x||0));
-    const axo=run.map((m,i)=>{
-      const x=isoX+i*32,y=isoY+70-i*2,h=Math.min(110,Math.max(45,(Number(m.h)||700)*.08));
-      return `<path d="M${x} ${y} l26 -10 l0 ${h} l-26 10 z M${x+26} ${y-10} l12 8 l0 ${h} l-12 -8" fill="none" stroke="#111" stroke-width="1"/>`;
-    }).join('');
+    const isoX=755,isoY=115,actualIso=window.BizetKitchenWebGL?.captureApprovalIsometric?.();
+    const axo=actualIso
+      ?'<image x="'+isoX+'" y="'+isoY+'" width="330" height="290" preserveAspectRatio="xMidYMid meet" href="'+actualIso+'"/>'
+      :'<text x="'+isoX+'" y="'+(isoY+100)+'" font-size="12">ISOMETRIC 3D NOT AVAILABLE</text>';
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
       <style>text{font-family:"Century Gothic",Arial,sans-serif;fill:#111}.dim{fill:#d71920;font-size:12px;font-weight:700}</style>
       <rect x="8" y="8" width="1104" height="774" fill="#fff" stroke="#777"/>
-      <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · APPROVAL DRAWING · PLAN</text>
+      <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · TOP VIEW · 1:${denominator}</text>
       ${wallRect}${moduleRects}${dims}
-      <text x="${isoX}" y="${isoY-20}" font-size="12" font-weight="700">AXONOMETRY</text>${axo}
-      <text x="${isoX}" y="${isoY+215}" font-size="9">Client approval geometry · module numbering follows BIZET OS.</text>
-      ${approvalStamp(1,'PLAN + AXONOMETRY',orderRef)}
+      <text x="${isoX}" y="${isoY-20}" font-size="12" font-weight="700">AXONOMETRIC VIEW · REAL 3D / ORTHOGRAPHIC</text>${axo}
+      <text x="${isoX}" y="${isoY+215}" font-size="9">Rendered directly from the 3D scene · no hidden lines</text>
+      ${approvalStamp(1,'TOP VIEW + AXONOMETRIC VIEW',orderRef,'1:'+denominator)}
     </svg>`;
   }
 
   function approvalElevationSheet(modules,room,orderRef=''){
     const W=1120,H=790,wallA=modules.filter(m=>m.wall==='A').sort((a,b)=>(a.x||0)-(b.x||0));
-    const roomW=Math.max(1000,Number(room.lengthMm)||6000),maxH=Math.max(2400,Number(room.heightMm)||2800),scale=Math.min(900/roomW,500/maxH),ox=70,baseY=610;
+    const roomW=Math.max(1000,Number(room.lengthMm)||6000),maxH=Math.max(2400,Number(room.heightMm)||2800),denominator=approvalScale(roomW,900,maxH,500),scale=APPROVAL_UNITS_PER_MM/denominator,ox=70,baseY=610;
+    const unique=approvalSectionGroups(wallA).slice(0,8);
     const parts=wallA.map(m=>{
       const x=ox+(Number(m.x)||0)*scale,w=Math.max(2,(Number(m.w)||0)*scale),z=(Number(m.z)||0),h=Math.max(2,(Number(m.h)||0)*scale),y=baseY-(z+Number(m.h||0))*scale;
-      let splits='';
+      let splits='',hidden='';
       const faces=Math.max(1,Number(m.facade_count)||1);
-      for(let i=1;i<faces;i++)splits+=`<line x1="${x+w*i/faces}" y1="${y}" x2="${x+w*i/faces}" y2="${y+h}" stroke="#666" stroke-dasharray="4 3"/>`;
-      return `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#111" stroke-width="1.6"/>${splits}<text x="${x+w/2}" y="${y+h/2}" text-anchor="middle" font-size="9">M${m.number}</text><text x="${x+w/2}" y="${baseY+25}" text-anchor="middle" class="dim">${round(runW(m))}</text></g>`;
+      for(let i=1;i<faces;i++)splits+=`<line x1="${x+w*i/faces}" y1="${y}" x2="${x+w*i/faces}" y2="${y+h}" stroke="#555" stroke-width="1"/>`;
+      if(Number(m.shelf_count)>0){for(let k=1;k<=Math.min(5,Number(m.shelf_count));k++){
+        const yy=y+h*k/(Number(m.shelf_count)+1);
+        hidden+=`<line class="approval-hidden" x1="${x+2}" y1="${yy}" x2="${x+w-2}" y2="${yy}" stroke="#999" stroke-dasharray="5 4" stroke-width=".8"/>`;
+      }}
+      if(faces===2)for(let i=0;i<2;i++){const fx=x+w*i/2,fw=w/2,side=m.facade_openings?.[i]||(i===0?'LEFT':'RIGHT');
+       const from=side==='RIGHT'?fx+fw:fx,to=side==='RIGHT'?fx:fx+fw;
+       splits+=`<path d="M ${from} ${y+2} L ${to} ${y+h-2}" fill="none" stroke="#c5212a" stroke-width="1" stroke-dasharray="7 4"/>`;
+      }
+      return `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#111" stroke-width="1.6"/>${splits}${hidden}<text x="${x+w/2}" y="${y+h/2}" text-anchor="middle" font-size="9">M${m.number}</text><text x="${x+w/2}" y="${baseY+25}" text-anchor="middle" class="dim">${round(runW(m))}</text></g>`;
     }).join('');
+    const markers=unique.map((q,i)=>{const m=q.module,mx=ox+(Number(m.x)||0)*scale+(Number(m.w)||0)*scale/2;
+      return `<line x1="${mx}" y1="${baseY+8}" x2="${mx}" y2="${baseY-maxH*scale-12}" stroke="#888" stroke-dasharray="6 3"/><text x="${mx+4}" y="${baseY-maxH*scale-14}" font-size="10">${String.fromCharCode(65+i)}–${String.fromCharCode(65+i)}</text>`;}).join('');
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
       <style>text{font-family:"Century Gothic",Arial,sans-serif;fill:#111}.dim{fill:#d71920;font-size:10px;font-weight:700}</style>
       <rect x="8" y="8" width="1104" height="774" fill="#fff" stroke="#777"/>
-      <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · APPROVAL DRAWING · ELEVATION A</text>
-      <line x1="${ox}" y1="${baseY}" x2="${ox+roomW*scale}" y2="${baseY}" stroke="#111" stroke-width="2"/>${parts}
+      <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · FRONT VIEW · 1:${denominator}</text>
+      <line x1="${ox}" y1="${baseY}" x2="${ox+roomW*scale}" y2="${baseY}" stroke="#111" stroke-width="2"/>${parts}${markers}
       <line x1="${ox}" y1="${baseY+48}" x2="${ox+roomW*scale}" y2="${baseY+48}" stroke="#d71920"/>
       <text x="${ox+roomW*scale/2}" y="${baseY+44}" class="dim" text-anchor="middle">${round(roomW)}</text>
       <line x1="${ox-28}" y1="${baseY}" x2="${ox-28}" y2="${baseY-maxH*scale}" stroke="#d71920"/>
       <text x="${ox-38}" y="${baseY-maxH*scale/2}" class="dim" text-anchor="middle" transform="rotate(-90 ${ox-38} ${baseY-maxH*scale/2})">${round(maxH)}</text>
-      ${approvalStamp(2,'MAIN ELEVATION',orderRef)}
+      ${approvalStamp(2,'FRONT VIEW · SECTIONS MARKED',orderRef,'1:'+denominator)}
     </svg>`;
   }
 
