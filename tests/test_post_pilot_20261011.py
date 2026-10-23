@@ -103,8 +103,8 @@ def test_new_pilot_assets_are_cache_busted():
     index=read("index.html")
     grande=read("grande-r1046.html")
     for asset in [
-        "/static/model.js?v=20261021r1059",
-        "/static/kitchen-webgl-r1050.js?v=20261021r1059",
+        "/static/model.js?v=20261023r1060",
+        "/static/kitchen-webgl-r1050.js?v=20261023r1060",
         "/static/r10-domain-rules.js?v=20261021r1059",
         "/static/ui-viewer-pilot.css?v=20261015",
     ]:
