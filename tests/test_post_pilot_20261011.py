@@ -51,7 +51,7 @@ def test_fix_05_isolation_uses_same_module_and_same_builder():
     build=viewer[viewer.index("function buildFurniture"):viewer.index("function frame(")]
     assert "focus=!!options.focusMode" in build
     assert "mods.forEach(buildOne)" in build
-    assert "addCarcass(room,m,body)" in build
+    assert "addCarcass(room,carcass,body)" in build
     focus=model[model.index("function renderModuleFocus"):model.index("function renderScene")]
     assert "modules:[current]" in focus
     assert "clone={...current" not in focus
