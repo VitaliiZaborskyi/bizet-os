@@ -70,7 +70,7 @@
  ];
  const MATERIAL_LIBRARY={
    floor:{title:'Пол',types:{
-     TILE:{label:'Плитка',presets:[['TILE_SAND','Песочная','#d7c9ad'],['STONE_LIGHT','Светлый камень','#d1cec5'],['TILE_GREY','Серая','#aeb0ae']]},
+     TILE:{label:'Плитка',presets:[['TILE_MARBLE_WHITE','Белый мрамор · чёрные прожилки','#f7f6f3'],['TILE_SAND','Песочная','#d7c9ad'],['STONE_LIGHT','Светлый камень','#d1cec5'],['TILE_GREY','Серая','#aeb0ae']]},
      PARQUET:{label:'Паркет',presets:[['OAK_NATURAL','Дуб натуральный','#cbb58f'],['OAK_SMOKED','Дуб дымчатый','#8c7358'],['ASH_LIGHT','Ясень светлый','#d5c29f']]},
      LAMINATE:{label:'Ламинат',presets:[['LAMINATE_OAK','Дуб','#b99c72'],['LAMINATE_GREY','Серо-бежевый','#aaa59b'],['LAMINATE_DARK','Тёмный','#655b50']]},
      MICROCEMENT:{label:'Микроцемент',presets:[['CONCRETE_WARM','Тёплый','#bbb7ae'],['CONCRETE_GREY','Серый','#9d9e9c'],['CONCRETE_LIGHT','Светлый','#d0cec8']]}
@@ -172,7 +172,7 @@
  $('kitchenViewMode')?.addEventListener('click',()=>setKitchenUiMode('VIEW'));
  $('kitchenEditMode')?.addEventListener('click',()=>setKitchenUiMode('EDIT'));
  // Presentation-first invariant: every workspace entry starts in VIEW.
- setKitchenUiMode('VIEW');
+ setKitchenUiMode('EDIT');
  $('workspaceLanguageSelect')?.addEventListener('change',e=>{const v=['ua','ru','en'].includes(e.target.value)?e.target.value:'ua';localStorage.setItem(LANG_KEY,v);location.reload()});
  function option(value,label){return '<option value="'+esc(value)+'">'+esc(ui(label))+'</option>'}
  function field(label,key,choices){const current=rt.getInputs()[key];return '<label class="r8-field" data-setting-key="'+key+'"><span>'+esc(ui(label))+'</span><select data-input="'+key+'">'+choices.map(x=>option(x[0],x[1])).join('')+'</select></label>'}
@@ -359,7 +359,19 @@
    const I=rt.getInputs(),C=rt.getContext();
    if(panel==='room'){
      const room=rt.getRoom(),importState=rt.getVisual().room_import||{};
-     html='<section class="r8-section"><h3>Как задать помещение</h3><div class="r8-choice-row r10-room-source"><button data-action="room-source-manual">Шаблон</button><button data-action="room-source-scan">Скан</button><button data-action="room-source-file">Загрузить файл</button></div><input id="r10RoomFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg,image/*,application/pdf" hidden><p class="r10-room-import-status" id="r10RoomImportStatus">'+esc(importState.message||'Три входа приводятся к единой Room Model.')+'</p></section>';
+     html='<input id="r10RoomFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg,image/*,application/pdf" hidden><p class="r10-room-import-status" id="r10RoomImportStatus" hidden></p>';
+      const scanImport=rt.getVisual().scan_import_r1060;
+      if(scanImport?.walls?.length){
+       const wf=(wall,i,key,title)=>'<label class="r8-field"><span>'+title+'</span><input type="'+(key==='label'?'text':'number')+'" data-scan-wall="'+i+'" data-scan-field="'+key+'" value="'+esc(wall[key])+'"></label>';
+       html+='<section class="r8-section r1060-scan-walls"><h3>Стены из скана · '+scanImport.walls.length+'</h3>'
+        +'<p class="r1060-scan-warning">Предварительные стены · для производства STOP</p>'
+        +scanImport.walls.map((wall,i)=>'<div class="r1060-scan-wall"><strong>'+(i+1)+'. '+esc(wall.label)+'</strong>'
+        +wf(wall,i,'label','Название')+'<div class="r1060-wall-fields">'
+        +wf(wall,i,'x1_mm','X1, мм')+wf(wall,i,'z1_mm','Z1, мм')
+        +wf(wall,i,'x2_mm','X2, мм')+wf(wall,i,'z2_mm','Z2, мм')
+        +wf(wall,i,'height_mm','Высота, мм')+'</div></div>').join('')
+        +'</section>';
+      }
      html+='<section class="r8-section"><h3>Геометрия</h3><div class="r8-two">'+numberField('Длина основной стены, мм','__room_length',room.lengthMm,1000)+numberField('Глубина помещения, мм','__room_depth',room.depthMm,1000)+'</div>'+numberField('Высота помещения, мм','__room_height',room.heightMm,2000)+'</section>';
      html+='<section class="r8-section"><h3>Поверхности помещения</h3><p>Выберите тип и тестовый материал или загрузите свою текстуру.</p><div class="r104-surface-buttons">'+materialButton('floor')+materialButton('walls')+materialButton('ceiling')+'</div></section>';
      html+='<section class="r8-section r10-file-calibration" '+(importState.source==='FILE'?'':'hidden')+'><h3>Калибровка файла</h3><p>Укажите один известный реальный размер. После анализа BIZET OS пересчитает Room Model.</p><label class="r8-field"><span>Известный размер, мм</span><input id="r10KnownDimension" type="number" inputmode="numeric" min="300" step="1" value="'+esc(importState.known_dimension_mm||room.lengthMm)+'"></label><button class="r8-save" data-action="calibrate-import">Применить масштаб</button>'+(importState.status==='ROOM_MODEL_PREVIEW_READY'?'<button class="r8-secondary" data-action="confirm-import">Подтвердить помещение</button>':'')+'</section>';
@@ -368,8 +380,8 @@
    if(panel==='appliances'){
      const templateKitchen=rt.getConfiguration()!=='CUSTOM',dishChoices=templateKitchen?[['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']]:[['NO','Нет'],['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']];
      html='<section class="r8-section"><h3>Холодильник</h3>'+field('Наличие','fridge_present',[['YES','Да'],['NO','Нет']])+field('Сторона','fridge_side',[['LEFT','Слева'],['RIGHT','Справа']])+field('Тип','fridge_type',[['BUILT_IN','Встраиваемый'],['FREESTANDING','Отдельностоящий']])+field('Ширина','fridge_width_mm',[[600,'600 мм'],[900,'900 мм'],[1200,'1200 мм']])+modelChoiceButton('Выбор модели холодильника')+'</section>';
-     html+='<section class="r8-section"><h3>Мойка</h3>'+field('Сторона','sink_side',[['LEFT','Слева'],['RIGHT','Справа']])+field('Монтаж','sink_mount_type',[['TOP_MOUNT','Накладная'],['FLUSH','Вровень'],['UNDERMOUNT','Под столешницей']])+field('Чаш','sink_bowl_count',[[1,'1'],[2,'2']])+field('Измельчитель','sink_disposer',[['NO','Нет'],['YES','Да']])+field('Фильтры','sink_filters',[['NO','Нет'],['YES','Да']])+'</section>';
-     html+='<section class="r8-section"><h3>Варочная / ПММ</h3>'+field('Варочная','cooktop_type',[['INDUCTION','Индукционная'],['ELECTRIC','Электрическая'],['GAS','Газовая'],['COMBINED','Комбинированная']])+field('Ширина варочной','cooktop_width_mm',[[600,'600 мм'],[300,'300 мм']])+modelChoiceButton('Выбор модели варочной')+field('Посудомоечная машина','dishwasher_type',dishChoices)+field('Ширина ПММ','dishwasher_width_mm',[[450,'450 мм'],[600,'600 мм']])+modelChoiceButton('Выбор модели ПММ')+(templateKitchen?'<p class="r1053-rule-note">'+ui('В шаблонной конфигурации ПММ обязательна и ставится рядом с мойкой.')+'</p>':'')+'</section>';
+     html+='<section class="r8-section"><h3>Мойка</h3>'+field('Сторона','sink_side',[['LEFT','Слева'],['RIGHT','Справа']])+field('Монтаж','sink_mount_type',[['TOP_MOUNT','Накладная'],['FLUSH','Вровень'],['UNDERMOUNT','Под столешницей']])+field('Чаш','sink_bowl_count',[[1,'1'],[2,'2']])+field('Измельчитель','sink_disposer',[['NO','Нет'],['YES','Да']])+'<div class="r1060-water-filter"><small>Для воды</small>'+field('Фильтры','sink_filters',[['NO','Нет'],['YES','Да']])+'</div>'+'</section>';
+     html+='<section class="r8-section"><h3>Варочная / ПММ</h3>'+field('Варочная','cooktop_type',[['INDUCTION','Индукционная'],['ELECTRIC','Электрическая'],['GAS','Газовая'],['COMBINED','Комбинированная']])+field('Ширина варочной','cooktop_width_mm',[[600,'600 мм'],[300,'300 мм']])+modelChoiceButton('Выбор модели варочной')+field('Посудомоечная машина','dishwasher_type',dishChoices)+field('Ширина ПММ','dishwasher_width_mm',[[450,'450 мм'],[600,'600 мм']])+modelChoiceButton('Выбор модели ПММ')+'</section>';
      html+='<section class="r8-section"><h3>Вытяжка / духовка</h3>'+field('Вытяжка','hood_type',[['BUILT_IN','Встраиваемая'],['FREESTANDING','Отдельностоящая']])+field('Ширина вытяжки','hood_width_mm',[[500,'500 мм'],[600,'600 мм'],[800,'800 мм'],[900,'900 мм'],[1000,'1000 мм']])+modelChoiceButton('Выбор модели вытяжки')+field('Духовка','oven_location',[['NO','Нет'],['LOWER','В нижнем модуле'],['TALL','В пенале']])+field('Ширина духовки','oven_width_mm',[[600,'600 мм'],[900,'900 мм']])+numberField('Высота духовки, мм','oven_height_mm',600,300)+modelChoiceButton('Выбор модели духовки')+field('Микроволновка','microwave_present',[['NO','Нет'],['YES','Да']])+field('Кофемашина','coffee_present',[['NO','Нет'],['YES','Да']])+'</section>';
      const walls=rt.getConfiguration()==='L_LEFT'?[['A','Стена A'],['B','Стена B']]:rt.getConfiguration()==='L_RIGHT'?[['A','Стена A'],['C','Стена C']]:rt.getConfiguration()==='U_SHAPE'?[['A','Стена A'],['B','Стена B'],['C','Стена C']]:[['A','Стена A']];
      html+='<section class="r8-section"><h3>Дополнительные настройки техники</h3>'+field('Наполнение холодильника','fridge_content',[['FRIDGE_ONLY','Только холодильник'],['FREEZER_ONLY','Только морозильник'],['FRIDGE_FREEZER','Холодильник + морозильник']])+field('Положение мойки','sink_placement',[['AT_CORNER','От угла'],['OFFSET','Со смещением'],['LINEAR_PENDING','На прямом участке']])+numberField('Смещение мойки от угла, мм','sink_offset_mm',300,0)+field('Стена варочной панели','cooktop_wall',[['AUTO','Авто'],...walls])+field('Стена ПММ','dishwasher_wall',walls)+field('Тип встраиваемой вытяжки','hood_integrated_subtype',[['FULL','Полновстраиваемая'],['TELESCOPIC','Телескопическая']])+field('Стена духового шкафа','oven_wall',[['AUTO','Авто'],...walls])+'</section>';
@@ -386,10 +398,10 @@
        +numberField('Глубина верхних модулей, мм','upper_depth_mm',320,200)
        +numberField('Высота цоколя, мм','plinth_height_mm',100,0)
        +numberField('Толщина столешницы, мм','worktop_thickness_mm',38,10)
-       +'</div><p>Стандарт: столешница 600 мм, фасадный передний вылет 20 мм, корпусный передний вылет 40 мм, корпус 515 мм + задний монтажный зазор 45 мм. Верхняя крыша укорачивается на 21 мм (1 мм спереди + 20 мм сзади); дно полной глубины, паз под заднюю стенку предусмотрен в боковинах и дне. Производственные фрезеровки уточняются по библиотеке.</p></section>'
-       +'<section class="r8-section"><h3>Сушка для посуды над мойкой</h3><p>Ширина верхнего модуля соответствует ширине модуля мойки. Снизу решётка для тарелок, сверху для чашек и стаканов. На данном этапе три конструкции являются визуальными proxy, не артикулами производителя.</p>'
+       +'</div></section>'
+       +'<section class="r8-section"><h3>Сушка для посуды над мойкой</h3>'
        +field('Вариант сеток','dish_dryer_variant',[['TWO_TIER_STANDARD','2 уровня · стандартная'],['TWO_TIER_WIDE','2 уровня · расширенная'],['TWO_TIER_COMPACT','2 уровня · компактная']])+'</section>';
-     html+='<section class="r8-section"><h3>Ручки</h3><p>Распашные фасады: вертикально, 40 мм от бокового края и 40 мм от верхнего/нижнего края. Ящики и подъёмные фасады: горизонтально по центру.</p><div class="r104-general-grid">'
+     html+='<section class="r8-section"><h3>Ручки</h3><div class="r104-general-grid">'
        +field('Распашные модули','hinged_handle_orientation',[['VERTICAL','Вертикальные ручки'],['HORIZONTAL','Горизонтальные ручки']])
        +field('Ящики','drawer_handle_orientation',[['HORIZONTAL','Горизонтальные ручки'],['VERTICAL','Вертикальные ручки']])
        +'</div></section>';
@@ -402,7 +414,7 @@
        +lightOption('lighting_worktop','Рабочая стенка','Work zone','Робоча зона')
        +lightOption('lighting_upper_inside','Внутри верхних модулей','Inside upper cabinets','Всередині верхніх модулів')
        +lightOption('lighting_lower_inside','Внутри нижних модулей','Inside base cabinets','Всередині нижніх модулів')
-       +'</div><label class="r1055-lighting-kelvin"><span>'+(uiLang()==='en'?'LED color temperature':uiLang()==='ua'?'Температура світла':'Температура света')+'</span><select data-input="lighting_kelvin"><option value="2700">2700 K · Warm</option><option value="3000">3000 K · Warm white</option><option value="4000">4000 K · Neutral white</option></select></label><p class="r1055-pilot-note">PILOT: 3000 K default pending owner approval</p><p>'+(uiLang()==='en'?'Multiple zones can be active at once. This is a visualization layer, not production data.':uiLang()==='ua'?'Можна одночасно обрати кілька зон. Це шар візуалізації, а не виробничі дані.':'Можно одновременно выбрать несколько зон. Это слой визуализации, а не производственные данные.')+'</p></section>';
+       +'</div><label class="r1055-lighting-kelvin"><span>'+(uiLang()==='en'?'LED color temperature':uiLang()==='ua'?'Температура світла':'Температура света')+'</span><select data-input="lighting_kelvin"><option value="2700">2700 K · Warm</option><option value="3000">3000 K · Warm white</option><option value="4000">4000 K · Neutral white</option></select></label><p class="r1055-pilot-note">PILOT: 3000 K default pending owner approval</p></section>';
    }
    if(panel==='communications'){
      html='<section class="r8-section"><h3>Система ожидает</h3><p>Канализация · вода · питание варочной · вытяжка · холодильник · духовка · розетки.</p>'+field('Статус координат','communications_status',[['PENDING_COORDINATE_DETAIL','Уточнить позже'],['USER_CONFIRMED','Проверено']])+'</section>';
@@ -422,19 +434,35 @@
      html='<section class="r8-section"><button class="r8-save r1055-visualize-entry" type="button" id="openVisualizationFromExportR1056">'+(uiLang()==='ua'?'Візуалізація':uiLang()==='en'?'Visualization':'Визуализация')+'</button><h3>Экспорт</h3><div class="r1050-production-grid">'
        +'<span class="r1050-source-badge">BIZET GENERATED</span>'
        +'<label><span>Производственный подрядчик</span><select id="productionProfileR1050"><option value="QUADRO">Quadro · active</option><option value="VIYAR" disabled>Viyar · soon</option><option value="KRONAS" disabled>Kronas · soon</option></select></label>'
-       +'<p>Один инженерный BIZET Model → профиль производства → нужные артикулы и выходной формат.</p>'
+       
        +'<div class="r1050-export-actions"><button class="primary" id="exportProjectR1050">XML .project</button><button id="exportQuadroReproR1051">Quadro · мінімальний тест</button><button id="exportBomR1050">BOM</button><button id="exportDetailR1050">Деталировка</button><button id="exportApprovalR1050">Чертежи</button></div>'
        +'<div id="exportPreflightR1051" aria-live="polite"></div>'
        +'</div></section>';
-     html+='<section class="r8-section"><h3>Дальнейшие выходы</h3><p>DWG / DXF / GLB / развёртки / визуализации подключаются как отдельные адаптеры без изменения инженерного ядра.</p></section>';
+     // Descriptive adapters hidden; export functionality remains.
    }
    $('panelBody').innerHTML=html;localizePanelBody();bindInputs();bindMaterialTargets();bindLighting();applyConditionalSettings();
    $('openVisualizationFromExportR1056')?.addEventListener('click',()=>window.BizetVisualizationR1056?.open?.());
-   if(panel==='room')bindRoomImport();
+   if(panel==='room'){bindRoomImport();bindScanWallEditors()}
    if(panel==='elements')renderElements();
    $('editorPanel').hidden=false;
  }
- function classifyRoomFile(file){
+ function bindScanWallEditors(){
+   for(const field of document.querySelectorAll('#panelBody [data-scan-wall]'))field.addEventListener('change',async()=>{
+    const original=rt.getVisual().scan_import_r1060;
+    if(!original?.walls?.length)return;
+    const i=Number(field.dataset.scanWall),key=field.dataset.scanField;
+    if(!Number.isInteger(i)||!original.walls[i]||!['label','x1_mm','z1_mm','x2_mm','z2_mm','height_mm'].includes(key))return;
+    const next=JSON.parse(JSON.stringify(original)),value=key==='label'?field.value.trim().slice(0,24):Number(field.value);
+    if(key==='label'&&!value)return;
+    if(key!=='label'&&(!Number.isFinite(value)||Math.abs(value)>100000))return;
+    if(key==='height_mm'&&(value<200||value>10000))return;
+    next.walls[i][key]=value;
+    const wall=next.walls[i];if(Math.hypot(wall.x2_mm-wall.x1_mm,wall.z2_mm-wall.z1_mm)<100)return;
+    next.status='PRELIMINARY_UNVERIFIED';next.production_ready=false;
+    await rt.patchVisual({scan_import_r1060:next});refreshPanel();
+   });
+  }
+  function classifyRoomFile(file){
    const ext=String(file?.name||'').split('.').pop().toLowerCase(),mime=String(file?.type||'').toLowerCase();
    if(mime==='application/pdf'||ext==='pdf')return'PDF';
    if(mime.startsWith('image/')||['jpg','jpeg','png','webp'].includes(ext))return'RASTER_IMAGE';
@@ -609,6 +637,8 @@
  $('baseInfoButton').onclick=()=>{$('baseInfoPopover').hidden=false};$('baseInfoClose').onclick=()=>{$('baseInfoPopover').hidden=true};
  $('panelClose').onclick=()=>{$('editorPanel').hidden=true;activePanel=null;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>rt?.render?.())};
  document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.onclick=()=>selectPanel(b.dataset.panel));
- async function ready(){localizeWorkspaceChrome();for(let i=0;i<100;i++){if(window.BizetModelRuntime?.ready){rt=window.BizetModelRuntime;break}await sleep(80)}if(!rt)return;await ensureTemplate();await initVariantSlots();updateReadiness();activePanel=null;$('editorPanel').hidden=true;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>{rt.render();requestAnimationFrame(()=>rt.render())})}
+ async function ready(){localizeWorkspaceChrome();for(let i=0;i<100;i++){if(window.BizetModelRuntime?.ready){rt=window.BizetModelRuntime;break}await sleep(80)}if(!rt)return;await ensureTemplate();await initVariantSlots();updateReadiness();activePanel=null;$('editorPanel').hidden=true;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>{rt.render();requestAnimationFrame(()=>rt.render())});if(new URLSearchParams(location.search).get('scan_import')==='1')selectPanel('room')}
+ $('workspaceScanLink')?.addEventListener('click',()=>location.assign('/scan?project='+encodeURIComponent(projectId)));
+ $('workspaceFileImport')?.addEventListener('click',()=>{selectPanel('room');$('r10RoomFileInput')?.click()});
  ready();
 })();
