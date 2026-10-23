@@ -44,8 +44,12 @@ const hashHex=buffer=>crypto.subtle.digest('SHA-256',buffer).then(v=>Array.from(
 const text=(value,error=false,success=false)=>{const e=$('scanStatus');if(!e)return;e.textContent=value;e.classList.toggle('is-error',error);e.classList.toggle('is-success',success)};
 function projectReturn(){
  const id=projectId();
- $('scanReturn').href='/room'+(id?'?project='+encodeURIComponent(id):'');
- $('scanContinueToRoom').onclick=()=>location.assign('/room'+(id?'?project='+encodeURIComponent(id):''));
+ $('scanReturn').href='/workspace'+(id?'?project='+encodeURIComponent(id):'');
+ $('scanContinueToRoom').onclick=async()=>{
+  const button=$('scanContinueToRoom');button.disabled=true;
+  try{await saveRegistration();location.assign('/workspace'+(id?'?project='+encodeURIComponent(id)+'&scan_import=1':'?scan_import=1'))}
+  catch(error){text('Загрузка стен: '+(error.message||String(error)),true);button.disabled=false}
+ };
 }
 function providerUrl(kind){
  const ua=navigator.userAgent||'',device=/iPhone|iPad|iPod/.test(ua)?'ios':/Android/i.test(ua)?'android':'web';
@@ -669,6 +673,27 @@ function registrationPayload(){
   note:'User-defined arbitrary wall list; kind and labels assigned by owner. Scanned coordinates, rotations and measurements are preliminary. All walls require owner review.'
  };
 }
+function scanWallPreview(payload){
+ // Scan walls are visual/editable candidates only; machining keeps a hard stop.
+ const q=((Number(payload.orientation?.quarter_turns)||0)%4+4)%4,a=q*Math.PI/2,c=Math.cos(a),s=Math.sin(a);
+ const ratio=Number(payload.tentative_scale_ratio)||1,flip=payload.orientation?.mirror_x?-1:1;
+ const walls=(payload.segments||[]).filter(v=>Array.isArray(v.points)&&v.points.length===2&&v.kind!=='ENTRANCE_ANCHOR')
+  .slice(0,100).map((v,i)=>{
+   const point=p=>{const x=Number(p[0])*flip,z=Number(p[1]);return [Math.round((x*c+z*s)*1000*ratio),Math.round((-x*s+z*c)*1000*ratio)]};
+   const p1=point(v.points[0]),p2=point(v.points[1]);
+   return{id:v.role||'W'+(i+1),label:v.label||'Стена '+(i+1),kind:v.kind||'PRIMARY_WALL',
+    x1_mm:p1[0],z1_mm:p1[1],x2_mm:p2[0],z2_mm:p2[1],height_mm:Math.max(200,Number(v.height_mm)||2800),
+    owner_reviewed:!!v.owner_reviewed,confidence:v.confidence||null,confirmed:false,communications:v.communications||[]};
+  }).filter(v=>[v.x1_mm,v.z1_mm,v.x2_mm,v.z2_mm,v.height_mm].every(Number.isFinite)
+    &&Math.hypot(v.x2_mm-v.x1_mm,v.z2_mm-v.z1_mm)>=100);
+ if(!walls.length)throw Error('Нет подготовленных стен для редактора.');
+ const xs=walls.flatMap(v=>[v.x1_mm,v.x2_mm]),zs=walls.flatMap(v=>[v.z1_mm,v.z2_mm]);
+ const cx=Math.round((Math.min(...xs)+Math.max(...xs))/2),cz=Math.round((Math.min(...zs)+Math.max(...zs))/2);
+ walls.forEach(v=>{v.x1_mm-=cx;v.x2_mm-=cx;v.z1_mm-=cz;v.z2_mm-=cz});
+ return{schema:'BIZET_SCAN_WALL_PREVIEW_R1060',status:'PRELIMINARY_UNVERIFIED',
+  source_sha256:payload.source.sha256,source_name:payload.source.file_name,
+  walls,production_ready:false,export_stop:'STOP_UNCONFIRMED_SCANNED_GEOMETRY'};
+}
 async function saveRegistration(){
  if(!loaded)throw Error('Сначала загрузи исходный скан.');
  if(!marks.some(m=>ROLE[m.role]&&!ROLE[m.role].kind.endsWith('ANCHOR')&&m.points.length===2))
@@ -683,8 +708,14 @@ async function saveRegistration(){
       source:'IMPORTED',confirmed:false,reason:'10.5.8 Polycam user-scoped preliminary scan wall markup'})});
   const body=await patch.json().catch(()=>({}));
   if(!patch.ok)throw Error(body.detail||'PROJECT_SAVE_FAILED_'+patch.status);
+  const preview=scanWallPreview(payload);
+  const second=await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({path:'scene.visual_settings.scan_import_r1060',value:preview,
+    source:'IMPORTED',confirmed:false,reason:'R10.6.0 preview walls for editor'})});
+  const secondBody=await second.json().catch(()=>({}));
+  if(!second.ok)throw Error(secondBody.detail||'SCAN_PREVIEW_SAVE_FAILED_'+second.status);
   savedRegistration=payload;
-  text('Разметка сохранена в проект. Экспорт BOM/XML НЕ подтверждён; рабочие размеры кухни не изменены.',false,true);
+  text('Стены доступны в 3D-редакторе как предварительная геометрия. Машинный экспорт из скана заблокирован.',false,true);
  }finally{$('scanSaveRegistration').disabled=false}
 }
 function bind(){
