@@ -928,17 +928,18 @@ function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareG
    if(m.kind==='FRIDGE'&&m.freestanding){addAppliance(room,m);if(options.showNumbers!==false&&!focus)addNumber(room,m);return}
    if(m.kind==='DISHWASHER'){addAppliance(room,m);if(options.showNumbers!==false&&!focus)addNumber(room,m);return}
    if(m.kind==='UPPER_HOOD'&&m.hood_type==='FREESTANDING'){addAppliance(room,m);if(options.showNumbers!==false&&!focus)addNumber(room,m);return}
-   const shellParts=addCarcass(room,m,body)||[];
+   const carcass=window.BizetPanelsR1061?.body(m)||m;
+   const shellParts=addCarcass(room,carcass,body)||[];
    shellParts.forEach(part=>{if(part?.userData?.cat==='carcass-part')selectable.push(part)});
-   if(m.kind==='UPPER_DRYER')addDishDryingRack(room,m);
+   if(m.kind==='UPPER_DRYER')addDishDryingRack(room,carcass);
    const count=Math.max(1,Math.min(5,Number(m.kind==='DRAWERS'?m.drawer_count:m.facade_count)||1));
    const localFront=front.clone();localFront.userData.owned=true;
    if(focus){localFront.transparent=true;localFront.opacity=.58;localFront.depthWrite=false}
-   if(!m.freestanding&&!['COOKTOP','TALL_OVEN'].includes(m.kind))for(let i=0;i<count;i++)makeFront(room,m,i,count,localFront.clone());
+   if(!m.freestanding&&!['COOKTOP','TALL_OVEN'].includes(m.kind))for(let i=0;i<count;i++)makeFront(room,carcass,i,count,localFront.clone());
    localFront.dispose();
-   addLegs(room,m);
+   addLegs(room,carcass);
    if(focus&&m.tall&&window.BizetR10Rules?.requiresCommonPlinth?.(m))addFloorPlinth(room,m,body);
-   addHinges(room,m,count);addLiftHardware(room,m);addEndPanels(room,m,body,front);addR1056CornerFalseFront(room,m,front);addAppliance(room,m);
+   addHinges(room,carcass,count);addLiftHardware(room,carcass);addEndPanels(room,m,body,front);addR1056CornerFalseFront(room,m,front);addAppliance(room,carcass);
    if(options.showNumbers!==false&&!focus)addNumber(room,m);
  };
  mods.forEach(buildOne);
