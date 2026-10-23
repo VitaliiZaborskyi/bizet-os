@@ -164,6 +164,21 @@ function buildRoom(options){clearGroup(roomGroup);const focus=!!options.focusMod
  if(active.has('A')){const w=new THREE.Mesh(new THREE.PlaneGeometry(L,H),wm.clone());w.material.userData.owned=true;w.position.set(0,H/2,D/2);w.receiveShadow=true;roomGroup.add(w)}
  if(active.has('B')){const w=new THREE.Mesh(new THREE.PlaneGeometry(D,H),wm.clone());w.material.userData.owned=true;w.rotation.y=Math.PI/2;w.position.set(-L/2,H/2,0);w.receiveShadow=true;roomGroup.add(w)}
  if(active.has('C')){const w=new THREE.Mesh(new THREE.PlaneGeometry(D,H),wm.clone());w.material.userData.owned=true;w.rotation.y=-Math.PI/2;w.position.set(L/2,H/2,0);w.receiveShadow=true;roomGroup.add(w)}
+ const scan=window.BizetModelRuntime?.getVisual?.().scan_import_r1060;
+ if(scan?.status==='PRELIMINARY_UNVERIFIED'&&Array.isArray(scan.walls)){
+  scan.walls.forEach(w=>{
+   const ax=Number(w.x1_mm),az=Number(w.z1_mm),bx=Number(w.x2_mm),bz=Number(w.z2_mm);
+   const height=Number(w.height_mm)||2800,len=Math.hypot(bx-ax,bz-az);
+   if(![ax,az,bx,bz,height].every(Number.isFinite)||len<100||len>30000||height<200||height>10000)return;
+   const mat=ownMat({color:0xed5350,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide});
+   const wall=new THREE.Mesh(new THREE.PlaneGeometry(len,height),mat);
+   wall.rotation.y=-Math.atan2(bz-az,bx-ax);wall.position.set((ax+bx)/2,height/2,(az+bz)/2);
+   wall.userData={cat:'scanned-wall-preview',label:w.label,productionReady:false};
+   wall.renderOrder=4;roomGroup.add(wall);
+   const edge=new THREE.LineSegments(new THREE.EdgesGeometry(wall.geometry),new THREE.LineBasicMaterial({color:0xae2028}));
+   edge.renderOrder=5;wall.add(edge);
+  });
+ }
  wm.dispose();
 }
 // R10.5.6 owner-supplied reference: rectangular black matte bridge with two end feet.
