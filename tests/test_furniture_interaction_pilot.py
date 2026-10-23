@@ -72,7 +72,7 @@ def test_horizontal_lift_hardware_is_visible_in_main_and_isolation():
     assert "'aventos-hk-proxy'" in viewer
     assert "'gas-lift-proxy'" in viewer
     build=viewer[viewer.index("function buildFurniture"):viewer.index("function frame(")]
-    assert "addLiftHardware(room,m)" in build
+    assert "addLiftHardware(room,carcass)" in build
     assert "focus=!!options.focusMode" in build
     assert "mods.forEach(buildOne)" in build
 
