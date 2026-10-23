@@ -18,7 +18,7 @@ def test_r1050_app_and_current_assets_are_wired():
     assert 'version="R10.5.9"' in main
     for asset in [
         "/static/r1050.css?v=1056",
-        "/static/production-r1050.js?v=20261021r1056",
+        "/static/production-r1050.js?v=20261024r1061",
         "/static/kitchen-webgl-r1050.js?v=20261024r1061",
         "/static/workspace-r1050.js?v=20261011",
         "/static/ua-ui-r1050.js?v=1051",
