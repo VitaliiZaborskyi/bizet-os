@@ -642,23 +642,22 @@
   }
 
   function approvalSectionSheet(modules,room,orderRef=''){
-    const W=1120,H=790,preferred=['SINK','DRAWERS','HINGED','COOKTOP','TALL_OVEN','FRIDGE'],picked=[];
-    preferred.forEach(kind=>{const m=modules.find(x=>x.kind===kind);if(m&&!picked.includes(m))picked.push(m)});
-    modules.filter(m=>m.level!=='upper').forEach(m=>{if(picked.length<6&&!picked.includes(m))picked.push(m)});
+    const W=1120,H=790,picked=approvalSectionGroups(modules.filter(m=>m.wall==='A')).slice(0,6);
     const boxes=picked.slice(0,6).map((m,i)=>{
-      const col=i%3,row=Math.floor(i/3),x=80+col*335,y=95+row*285,dep=Math.max(100,depth(m)),mh=Math.max(300,Number(m.h)||700),scale=Math.min(210/dep,190/mh),w=dep*scale,h=mh*scale;
+      const mod=m.module,col=i%3,row=Math.floor(i/3),x=80+col*335,y=95+row*285,dep=Math.max(100,depth(mod)),mh=Math.max(300,Number(mod.h)||700),
+       denominator=approvalScale(dep,210,mh,190),scale=APPROVAL_UNITS_PER_MM/denominator,w=dep*scale,h=mh*scale;
       let internals='';
-      const shelves=Math.max(0,Number(m.shelf_count)||0);
+      const shelves=Math.max(0,Number(mod.shelf_count)||0);
       for(let s=1;s<=shelves;s++){const yy=y+h-h*s/(shelves+1);internals+=`<line x1="${x}" y1="${yy}" x2="${x+w}" y2="${yy}" stroke="#555"/>`}
-      if(m.kind==='DRAWERS'){const count=Math.max(2,Number(m.drawer_count)||2);for(let d=1;d<count;d++){const yy=y+h*d/count;internals+=`<line x1="${x}" y1="${yy}" x2="${x+w}" y2="${yy}" stroke="#555" stroke-dasharray="4 3"/>`}}
-      return `<g><text x="${x}" y="${y-18}" font-size="12" font-weight="700">${String.fromCharCode(65+i)}-${String.fromCharCode(65+i)} · M${m.number} · ${esc(m.label||m.kind)}</text><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#111" stroke-width="2"/>${internals}<text x="${x+w/2}" y="${y+h+22}" class="dim" text-anchor="middle">D ${round(dep)} · H ${round(mh)}</text></g>`;
+      if(mod.kind==='DRAWERS'){const count=Math.max(2,Number(mod.drawer_count)||2);for(let d=1;d<count;d++){const yy=y+h*d/count;internals+=`<line x1="${x}" y1="${yy}" x2="${x+w}" y2="${yy}" stroke="#555" stroke-dasharray="4 3"/>`}}
+      return `<g><text x="${x}" y="${y-18}" font-size="12" font-weight="700">${String.fromCharCode(65+i)}–${String.fromCharCode(65+i)} · ${esc(m.members.join(', '))}</text><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#111" stroke-width="2"/>${internals}<text x="${x+w/2}" y="${y+h+22}" class="dim" text-anchor="middle">D ${round(dep)} · H ${round(mh)} · 1:${denominator}</text></g>`;
     }).join('');
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
       <style>text{font-family:"Century Gothic",Arial,sans-serif;fill:#111}.dim{fill:#d71920;font-size:10px;font-weight:700}</style>
       <rect x="8" y="8" width="1104" height="774" fill="#fff" stroke="#777"/>
-      <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · APPROVAL DRAWING · TYPICAL SECTIONS</text>
+      <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · UNIQUE SECTION A–A / B–B / C–C</text>
       ${boxes}
-      ${approvalStamp(3,'TYPICAL SECTIONS',orderRef)}
+      ${approvalStamp(3,'UNIQUE SECTIONS',orderRef,'VARIES')}
     </svg>`;
   }
 
@@ -673,7 +672,7 @@
   function approvalDrawingHtml(data=current()){
     if(!data)return'';
     const sheets=approvalSheets(data.modules,data.room,data.orderRef);
-    return `<!doctype html><html><head><meta charset="utf-8"><title>BIZET Approval Drawings</title><style>@page{size:A4 landscape;margin:5mm}body{margin:0;background:#ddd;font-family:Arial,sans-serif}.sheet{background:#fff;margin:0 auto 8mm;page-break-after:always}.sheet svg{display:block;width:100%;height:auto}@media print{body{background:#fff}.sheet{margin:0;page-break-after:always}}</style></head><body>${sheets.map(svg=>`<div class="sheet">${svg}</div>`).join('')}</body></html>`;
+    return `<!doctype html><html><head><meta charset="utf-8"><title>BIZET Approval Drawings</title><style>@page{size:A4 landscape;margin:5mm 7.5mm}body{margin:0;background:#ddd;font-family:Arial,sans-serif}.sheet{background:#fff;margin:0 auto 8mm;page-break-after:always}.sheet svg{display:block;width:282mm;height:198.94mm;max-width:100%}body.hidden-lines-off .approval-hidden{display:none}@media print{body{background:#fff}.sheet{margin:0;page-break-after:always}.approval-toolbar{display:none!important}}</style></head><body><div class="approval-toolbar" style="padding:12px;background:white;font:14px Arial"><label><input type="checkbox" checked onchange="document.body.classList.toggle('hidden-lines-off',!this.checked)"> Show hidden lines / Скрытые линии</label> · A4 landscape · Actual-size print (100%)</div>${sheets.map(svg=>`<div class="sheet">${svg}</div>`).join('')}</body></html>`;
   }
   function openApprovalDrawings(){
     const html=approvalDrawingHtml();if(!html)return;
