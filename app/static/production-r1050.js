@@ -254,6 +254,15 @@ function materialIdFor(p){
 }
 function exportEngineering(model,filename,options={}){
  if(!model)return false;
+ const rt=window.BizetModelRuntime,src=window.BizetRoomR1061?.source(rt?.getVisual?.()||{}),
+   led=window.BizetLED1061?.manifest(rt?.getInputs?.()||{},rt?.getModules?.()||[]);
+ if(src==='SCAN'||led?.included){
+   const errors=[...(src==='SCAN'?['STOP_SCAN_GEOMETRY_UNVERIFIED_R1061']:[]),
+      ...(led?.included?['STOP_LED_MACHINING_AND_SUPPLIER_PROFILE_UNVERIFIED_R1061']:[])];
+   const report={ok:false,errors,warnings:[],status:'HUMAN_REVIEW_REQUIRED'};
+   window.dispatchEvent(new CustomEvent('bizet:export-preflight',{detail:{profile:profile().id,report,model:model.name}}));
+   console.warn('R10.6.1 engineering export STOP',report);return false;
+ }
  const customShelves=(model.modules||[]).filter(m=>Array.isArray(m.shelf_z_overrides_mm)&&m.shelf_z_overrides_mm.length);
  const invalidHinges=(model.modules||[]).filter(m=>m.hinge_layout_conflict||window.BizetR10Rules?.planHingePositions?.(m)?.ok===false);
  const unresolvedGrilles=(model.modules||[]).filter(m=>['FRIDGE','TALL_OVEN'].includes(m.kind)&&!m.freestanding);
