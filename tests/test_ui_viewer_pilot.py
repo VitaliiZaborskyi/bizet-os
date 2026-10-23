@@ -22,9 +22,9 @@ def test_direction_gate_is_frontend_only_and_has_four_future_branches():
     assert "currentStep === 0" in start
     assert "currentStep = 1" in start
 
-def test_workspace_always_enters_presentation_view():
+def test_workspace_opens_edit_mode_by_owner_1060():
     ws=read("workspace-r8.js")
-    assert "setKitchenUiMode('VIEW')" in ws
+    assert "setKitchenUiMode('EDIT')" in ws
     assert "setKitchenUiMode(localStorage.getItem(KITCHEN_MODE_KEY)||'VIEW')" not in ws
 
 def test_conditional_settings_disable_impossible_appliance_fields():
@@ -46,7 +46,7 @@ def test_module_lighting_is_multiselect_and_has_opaque_internal_profile():
     viewer=read("kitchen-webgl-r1050.js")
     for token in ["lighting_enabled","lighting_plinth","lighting_worktop","lighting_upper_inside","lighting_lower_inside","data-lighting-zone"]:
         assert token in ws
-    assert "Multiple zones can be active at once" in ws
+    assert "Multiple zones can be active at once" not in ws
     assert "function addInternalLED" in viewer
     assert "function buildLighting" in viewer
     assert "depthTest:true,depthWrite:true" in viewer
@@ -66,7 +66,7 @@ def test_viewer_uses_visible_edges_and_disables_unstable_ao():
 def test_default_environment_is_graphite_and_walnut_like():
     viewer=read("kitchen-webgl-r1050.js")
     assert "wall:pick('walls','wallPreset','#565b61')" in viewer
-    assert "floor:pick('floor','floorPreset','#694932')" in viewer
+    assert "floor:pick('floor','floorPreset','#f7f6f3')" in viewer
     assert "function makeWalnutTexture" in viewer
     assert "THREE.RepeatWrapping" in viewer
 
