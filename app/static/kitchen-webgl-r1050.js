@@ -908,6 +908,17 @@ function buildLighting(room,mods){
      addInternalLED(room,spec,m,kelvin,index);
    });
  });
+ const scheduled=window.BizetLED1061?.manifest(I,mods);
+ const brightness=Math.max(0,Math.min(100,Number(window.BizetModelRuntime?.getVisual?.().led_brightness_pct_r1061??75)))/100;
+ (scheduled?.segments||[]).filter(x=>['WORKTOP','PLINTH','UPPER_INSIDE'].includes(x.zone)).slice(0,10).forEach(segment=>{
+  const m=mods.find(q=>q.id===segment.module_id);if(!m)return;
+  const point=new THREE.PointLight(kelvin<=3000?0xffddaa:0xf4f7ff,brightness*1.55,
+    Math.max(950,Math.min(2900,segment.length_mm*1.5)),2);
+  const elev=segment.zone==='PLINTH'?Number(m.z)+65:segment.zone==='WORKTOP'?Number(m.z)+40:Number(m.z)+Number(m.h)*.5;
+  point.position.copy(roomToWorld(room,Number(m.x)+Number(m.w)/2,Number(m.y)+Number(m.d)/2,elev));
+  point.userData={cat:'led-photometric-preview',ledId:segment.id,productionReady:false};
+  lightingGroup.add(point);
+ });
 }
 function addR1056CornerFalseFront(room,m,frontMaterial){
  // Geometry-visible 40 mm return where the perpendicular wall run meets wall A.
