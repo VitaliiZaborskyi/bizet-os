@@ -173,7 +173,7 @@
  $('kitchenEditMode')?.addEventListener('click',()=>setKitchenUiMode('EDIT'));
  // Presentation-first invariant: every workspace entry starts in VIEW.
  setKitchenUiMode('EDIT');
- $('workspaceLanguageSelect')?.addEventListener('change',e=>{const v=['ua','ru','en'].includes(e.target.value)?e.target.value:'ua';localStorage.setItem(LANG_KEY,v);location.reload()});
+ $('workspaceLanguageSelect')?.addEventListener('change',e=>{const v=['ua','ru','en'].includes(e.target.value)?e.target.value:'ua';localStorage.setItem(LANG_KEY,v);document.documentElement.lang=v==='ua'?'uk':v;window.dispatchEvent(new CustomEvent('bizet:languagechange',{detail:{language:v}}));});
  function option(value,label){return '<option value="'+esc(value)+'">'+esc(ui(label))+'</option>'}
  function field(label,key,choices){const current=rt.getInputs()[key];return '<label class="r8-field" data-setting-key="'+key+'"><span>'+esc(ui(label))+'</span><select data-input="'+key+'">'+choices.map(x=>option(x[0],x[1])).join('')+'</select></label>'}
  function numberField(label,key,def,min){const current=Number(rt.getInputs()[key]??def);return '<label class="r8-field" data-setting-key="'+key+'"><span>'+esc(ui(label))+'</span><input type="number" min="'+(min||0)+'" step="1" value="'+current+'" data-number="'+key+'"></label>'}
@@ -282,7 +282,7 @@
      upper:[tr('03 · НАСТРОЙКА МОДУЛЕЙ','03 · MODULE SETTINGS'),tr('Настройка модулей','Module settings')],
      communications:[tr('04 · КОММУНИКАЦИИ','04 · UTILITIES'),tr('Коммуникации','Utilities')],
      elements:[tr('05 · ЭЛЕМЕНТЫ СТЕН','05 · WALL ELEMENTS'),tr('Элементы стен','Wall elements')],
-     materials:[tr('06 · МАТЕРИАЛЫ','06 · MATERIALS'),tr('Материалы','Materials')],
+     materials:['',tr('Материалы','Materials')],
      general:[tr('07 · ОБЩИЕ','07 · GENERAL'),tr('Общие настройки','General settings')]
    };return map[panel]
  }
@@ -355,24 +355,14 @@
  }
  let activePanel=null;
  function renderPanel(panel){
-   activePanel=panel;const h=panelTitle(panel);$('panelKicker').textContent=h[0];$('panelTitle').textContent=h[1];let html='';
+   activePanel=panel;const h=panelTitle(panel);$('panelKicker').textContent=h[0];$('panelTitle').textContent=h[1];$('panelKicker').hidden=panel==='materials';$('panelTitle').hidden=panel==='materials';let html='';
    const I=rt.getInputs(),C=rt.getContext();
    if(panel==='room'){
      const room=rt.getRoom(),importState=rt.getVisual().room_import||{};
      html='<input id="r10RoomFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.svg,.dxf,.dwg,image/*,application/pdf" hidden><p class="r10-room-import-status" id="r10RoomImportStatus" hidden></p>';
-      const scanImport=rt.getVisual().scan_import_r1060;
-      if(scanImport?.walls?.length){
-       const wf=(wall,i,key,title)=>'<label class="r8-field"><span>'+title+'</span><input type="'+(key==='label'?'text':'number')+'" data-scan-wall="'+i+'" data-scan-field="'+key+'" value="'+esc(wall[key])+'"></label>';
-       html+='<section class="r8-section r1060-scan-walls"><h3>Стены из скана · '+scanImport.walls.length+'</h3>'
-        +'<p class="r1060-scan-warning">Предварительные стены · для производства STOP</p>'
-        +scanImport.walls.map((wall,i)=>'<div class="r1060-scan-wall"><strong>'+(i+1)+'. '+esc(wall.label)+'</strong>'
-        +wf(wall,i,'label','Название')+'<div class="r1060-wall-fields">'
-        +wf(wall,i,'x1_mm','X1, мм')+wf(wall,i,'z1_mm','Z1, мм')
-        +wf(wall,i,'x2_mm','X2, мм')+wf(wall,i,'z2_mm','Z2, мм')
-        +wf(wall,i,'height_mm','Высота, мм')+'</div></div>').join('')
-        +'</section>';
-      }
-     html+='<section class="r8-section"><h3>Геометрия</h3><div class="r8-two">'+numberField('Длина основной стены, мм','__room_length',room.lengthMm,1000)+numberField('Глубина помещения, мм','__room_depth',room.depthMm,1000)+'</div>'+numberField('Высота помещения, мм','__room_height',room.heightMm,2000)+'</section>';
+      const activeSource=window.BizetRoomR1061?.source(rt.getVisual())||'TEMPLATE';
+      html+=window.BizetRoomR1061?.markup(rt.getVisual(),uiLang())||'';
+     if(activeSource==='TEMPLATE')html+='<section class="r8-section"><h3>Геометрия</h3><div class="r8-two">'+numberField('Длина основной стены, мм','__room_length',room.lengthMm,1000)+numberField('Глубина помещения, мм','__room_depth',room.depthMm,1000)+'</div>'+numberField('Высота помещения, мм','__room_height',room.heightMm,2000)+'</section>';
      html+='<section class="r8-section"><h3>Поверхности помещения</h3><p>Выберите тип и тестовый материал или загрузите свою текстуру.</p><div class="r104-surface-buttons">'+materialButton('floor')+materialButton('walls')+materialButton('ceiling')+'</div></section>';
      html+='<section class="r8-section r10-file-calibration" '+(importState.source==='FILE'?'':'hidden')+'><h3>Калибровка файла</h3><p>Укажите один известный реальный размер. После анализа BIZET OS пересчитает Room Model.</p><label class="r8-field"><span>Известный размер, мм</span><input id="r10KnownDimension" type="number" inputmode="numeric" min="300" step="1" value="'+esc(importState.known_dimension_mm||room.lengthMm)+'"></label><button class="r8-save" data-action="calibrate-import">Применить масштаб</button>'+(importState.status==='ROOM_MODEL_PREVIEW_READY'?'<button class="r8-secondary" data-action="confirm-import">Подтвердить помещение</button>':'')+'</section>';
      html+='<section class="r8-section"><h3>Потолок</h3>'+field('Тип потолка','ceiling',[['STRETCH_A','Натяжной — подготовленное основание'],['STRETCH_B','Готовый натяжной'],['GYPSUM','Гипсокартон'],['OPEN_GAP','Открытый зазор']])+'</section>';
@@ -423,9 +413,7 @@
      html='<section class="r8-section"><h3>Добавить элемент стены</h3>'+field('Тип','__element_type',[['WINDOW','Окно'],['DOOR','Дверь'],['RADIATOR','Радиатор'],['CURTAIN_RECESS','Подшторник / карниз'],['NICHE','Ниша'],['COLUMN','Колонна'],['PROJECTION','Выступ'],['BEAM','Балка'],['OTHER','Другое']])+field('Стена','__element_wall',[['A','A'],['B','B'],['C','C'],['D','D']])+'<div class="r8-two">'+numberField('Ширина, мм','__element_width',900,100)+numberField('Высота, мм','__element_height',1200,100)+'</div>'+numberField('Глубина / выступ, мм','__element_depth',0,0)+'<div class="r8-two">'+numberField('От левого края, мм','__element_x',500,0)+numberField('От пола, мм','__element_z',900,0)+'</div><button class="r8-save" data-action="add-element">Добавить к модели</button></section><section class="r8-section"><h3>Добавлено</h3><div id="elementList"></div></section>';
    }
    if(panel==='materials'){
-     const dir=rt.getVisual().r8_palette||C.visual_direction||'LIGHT';
-     html='<section class="r8-section"><h3>Визуальное направление</h3><p>Выбрано на стартовом экране: <strong>'+esc(dir==='DARK'?'Тёмное':dir==='OTHER'?'Другое':'Светлое')+'</strong>.</p><div class="r8-choice-row"><button data-action="palette-light">Светлое</button><button data-action="palette-dark">Тёмное</button><button data-action="palette-other">Другое</button></div></section>';
-     html+='<section class="r8-section"><h3>Материалы мебели</h3><p>Тестовый набор для связки модель → спецификация → будущая визуализация.</p><div class="r104-surface-buttons">'+materialButton('facade')+materialButton('carcass')+materialButton('worktop')+'</div></section>';
+     html='<section class="r8-section"><h3>Материалы мебели</h3><p>Тестовый набор для связки модель → спецификация → будущая визуализация.</p><div class="r104-surface-buttons">'+materialButton('facade')+materialButton('carcass')+materialButton('worktop')+'</div></section>';
      html+='<section class="r8-section"><h3>'+(uiLang()==='en'?'Room materials':uiLang()==='ua'?'Матеріали приміщення':'Материалы помещения')+'</h3><div class="r104-surface-buttons">'+materialButton('floor')+materialButton('walls')+materialButton('ceiling')+'</div></section>';
      html+='<section class="r8-section"><h3>'+(uiLang()==='en'?'Lighting color':uiLang()==='ua'?'Температура підсвітки':'Температура подсветки')+'</h3><label class="r8-field"><span>Kelvin</span><select data-input="lighting_kelvin"><option value="2700">2700 K</option><option value="3000">3000 K</option><option value="4000">4000 K</option></select></label></section>';
      html+='<section class="r8-section"><h3>Подтверждение</h3><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
@@ -442,7 +430,7 @@
    }
    $('panelBody').innerHTML=html;localizePanelBody();bindInputs();bindMaterialTargets();bindLighting();applyConditionalSettings();
    $('openVisualizationFromExportR1056')?.addEventListener('click',()=>window.BizetVisualizationR1056?.open?.());
-   if(panel==='room'){bindRoomImport();bindScanWallEditors()}
+   if(panel==='room'){bindRoomImport();window.BizetRoomR1061?.bind(rt,refreshPanel)}
    if(panel==='elements')renderElements();
    $('editorPanel').hidden=false;
  }
