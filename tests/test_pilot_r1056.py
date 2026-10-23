@@ -55,7 +55,7 @@ def test_08_09_two_door_hinges_and_flat_roofless_base():
     model=read("model.js")
     scene=read("kitchen-webgl-r1050.js")
     bom=read("point-b.js")
-    assert "m.facade_openings=(count===2&&m.kind==='HINGED')?['LEFT','RIGHT']" in model
+    assert "m.level==='upper'&&m.kind==='UPPER'" in model
     assert "const hasTop=!ordinaryBase||explicitTop" in scene
     assert "'FRONT_STRETCHER'" in scene and "'REAR_STRETCHER'" in scene
     assert "'Rail Front',inner,100" in bom and "'Rail Back',inner,100" in bom
