@@ -5,6 +5,10 @@
  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function source(v){
+  const choice=v?.room_source_r1061;
+  if(choice==='TEMPLATE')return 'TEMPLATE';
+  if(choice==='FILE'&&v?.room_import?.source==='FILE')return 'FILE';
+  if(choice==='SCAN'&&v?.scan_import_r1060?.walls?.length)return 'SCAN';
   if(v?.scan_import_r1060?.walls?.length)return 'SCAN';
   if(v?.room_import?.source==='FILE')return 'FILE';
   return 'TEMPLATE';
@@ -69,11 +73,14 @@
  function choose(i){selected=i;draft=null;window.dispatchEvent(new CustomEvent('bizet:scan-wall-selected',{detail:{index:i}}))}
  function markup(v,lang){
   const src=source(v),en=lang==='en';const t=(ru,eng)=>en?eng:ru;
-  if(src==='FILE')return '<section class="r8-section"><h3>'+t('Геометрия импортированного файла','Imported file geometry')+'</h3><p>'+t('Редактирование файла выполняется через калибровку ниже.','Use calibration controls below to edit imported geometry.')+'</p></section>';
-  if(src!=='SCAN')return '';
+  const sourcePicker='<section class="r8-section r1061-source-chooser"><label class="r8-field"><span>'+t('Активный источник геометрии','Active geometry source')+'</span><select id="r1061Source"><option value="TEMPLATE" '+(src==='TEMPLATE'?'selected':'')+'>'+t('Шаблон','Template')+'</option>'+
+   (v?.room_import?.source==='FILE'?'<option value="FILE" '+(src==='FILE'?'selected':'')+'>'+t('Импортированный файл','Imported file')+'</option>':'')+
+   (v?.scan_import_r1060?.walls?.length?'<option value="SCAN" '+(src==='SCAN'?'selected':'')+'>'+t('Реальный скан','Real scan')+'</option>':'')+'</select></label></section>';
+  if(src==='FILE')return sourcePicker+ '<section class="r8-section"><h3>'+t('Геометрия импортированного файла','Imported file geometry')+'</h3><p>'+t('Редактирование файла выполняется через калибровку ниже.','Use calibration controls below to edit imported geometry.')+'</p></section>';
+  if(src!=='SCAN')return sourcePicker;
   const s=live(v),w=s.walls[clamp(selected,0,s.walls.length-1)],cv=w.curve_mm||{};
   const slider=(k,ru,eng)=>'<label class="r1061-curve-range"><span>'+t(ru,eng)+'</span><input type="range" min="-150" max="150" step="1" data-r1061-curve="'+k+'" value="'+(Number(cv[k])||0)+'"><output>'+(Number(cv[k])||0)+' mm</output></label>';
-  return '<section class="r8-section r1061-room"><h3>'+t('Стены реального скана','Real scan walls')+'</h3>'+
+  return sourcePicker+'<section class="r8-section r1061-room"><h3>'+t('Стены реального скана','Real scan walls')+'</h3>'+
    '<p class="r1061-notice">'+t('Предварительные размеры · производство STOP','Unverified dimensions · manufacturing STOP')+'</p>'+
    '<label class="r8-field"><span>'+t('Стена','Wall')+'</span><select id="r1061Select">'+s.walls.map((z,i)=>'<option value="'+i+'" '+(i===selected?'selected':'')+'>'+esc(z.label||'W'+i)+'</option>').join('')+'</select></label>'+
    '<label class="r8-field"><span>'+t('Основная стена','Primary wall')+'</span><select id="r1061Primary">'+s.walls.map(z=>'<option value="'+esc(z.id)+'" '+(primary(s)?.id===z.id?'selected':'')+'>'+esc(z.label||z.id)+'</option>').join('')+'</select></label>'+
@@ -86,7 +93,12 @@
    '<div class="r1061-button-row"><button type="button" id="r1061Reset">'+t('Сброс','Reset')+'</button><button type="button" id="r1061Cancel">'+t('Отмена','Cancel')+'</button></div></details>'+
    '<button type="button" class="r8-save r1061-apply" id="r1061Apply">'+t('Применить','Apply')+'</button></section>';
  }
- function bind(rt,rerender){const v=rt.getVisual(),s=live(v);if(!s)return;
+ function bind(rt,rerender){const v=rt.getVisual(),s=live(v);
+  document.getElementById('r1061Source')?.addEventListener('change',async e=>{
+   const chosen=e.target.value;if(!['SCAN','FILE','TEMPLATE'].includes(chosen))return;
+   draft=null;await rt.patchVisual({room_source_r1061:chosen});rt.render();rerender();
+  });
+  if(!s)return;
   const $=id=>document.getElementById(id),edit=()=>{if(!draft)draft=copy(rt.getVisual().scan_import_r1060);return draft};
   $('r1061Select')?.addEventListener('change',e=>{choose(Number(e.target.value));rerender()});
   $('r1061Primary')?.addEventListener('change',e=>{edit().primary_wall_id=e.target.value;rt.render()});
