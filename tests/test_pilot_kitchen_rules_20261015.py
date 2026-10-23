@@ -108,7 +108,7 @@ def test_fix_15_variable_worktop_and_inactive_model_buttons_are_wired():
     assert "numberField('Толщина столешницы, мм','worktop_thickness_mm',38,10)" in workspace
     assert "oven_height_mm:600" in workspace
     assert "/static/workspace-r8.js?v=20261024r1061" in html
-    assert "/static/point-b.js?v=20261021r1059" in html
+    assert "/static/point-b.js?v=20261024r1061" in html
     assert "/static/kitchen-webgl-r1050.js?v=20261024r1061" in html
     assert ".r1053-model-choice" in css
 
