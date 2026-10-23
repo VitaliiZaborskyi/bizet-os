@@ -31,8 +31,8 @@ def test_preliminary_walls_render_in_same_editable_workspace():
     assert "bindScanWallEditors()" in ws
     assert "data-scan-wall" in ws
     assert "scan_import_r1060" in ws and "BizetRoomR1061.renderWalls" in viewer and "scan_import_r1060" in src("room-r1061.js")
-    assert "scanned-wall-preview" in viewer
-    assert "productionReady:false" in viewer
+    assert "scan-wall-r1061" in src("room-r1061.js")
+    assert "productionReady:false" in src("room-r1061.js")
 
 def test_clean_owner_panels_keep_actual_functionality():
     ws=src("workspace-r8.js")
