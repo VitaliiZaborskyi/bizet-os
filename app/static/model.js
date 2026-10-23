@@ -67,9 +67,13 @@
   async function request(url,options={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});if(!r.ok){let p={};try{p=await r.json()}catch(_){};throw new Error(typeof p.detail==='string'?p.detail:'Не удалось загрузить модель.')}return r.json()}
   async function saveVisual(next,reason){visual=next;const result=await request(`/api/v1.1/projects/${encodeURIComponent(projectId)}`,{method:'PATCH',body:JSON.stringify({path:'scene.visual_settings',value:visual,reason})});project=result.project||result;visual={...(project.scene?.visual_settings||visual)};inputs={...(visual.guided_inputs||inputs)}}
   function measured(key,fallback){const value=project?.room?.geometry?.[key]?.value_mm;return Number.isFinite(value)&&value>0?value:fallback}
-  function roomValues(){return{lengthMm:measured('wall_length',6000),depthMm:measured('wall_depth',4200),heightMm:measured('room_height',2800)}}
+  function roomValues(){
+    const imported=window.BizetRoomR1061?.room(visual);
+    if(imported)return{lengthMm:imported.lengthMm,depthMm:imported.depthMm,heightMm:imported.heightMm,source:'SCAN',preliminary:true};
+    return{lengthMm:measured('wall_length',6000),depthMm:measured('wall_depth',4200),heightMm:measured('room_height',2800),source:visual?.room_import?.source==='FILE'?'FILE':'TEMPLATE'};
+   }
   function configuration(){return sessionStorage.getItem(CONFIG_KEY)||localStorage.getItem(CONFIG_KEY)||'WALL_CENTER'}
-  function activeWalls(){const map={WALL_CENTER:['A'],WALL_LEFT:['A'],WALL_RIGHT:['A'],L_LEFT:['A','B'],L_RIGHT:['A','C'],U_SHAPE:['A','B','C'],CUSTOM:['A']};return map[configuration()]||['A']}
+  function activeWalls(){if(window.BizetRoomR1061?.source(visual)==='SCAN')return ['A'];const map={WALL_CENTER:['A'],WALL_LEFT:['A'],WALL_RIGHT:['A'],L_LEFT:['A','B'],L_RIGHT:['A','C'],U_SHAPE:['A','B','C'],CUSTOM:['A']};return map[configuration()]||['A']}
   function autoWall(requested,avoidWall=null,preferWall='A'){
     const walls=activeWalls();
     if(requested&&requested!=='AUTO'&&walls.includes(requested))return requested;
@@ -769,7 +773,7 @@
         const gap=4,cell=Math.max(1,(run-gap*(count-1))/count);
         // R10.5.6: a two-door hinged cabinet ALWAYS starts left + right,
         // independent of the composition centerline. Explicit manual overrides remain separate.
-        m.facade_openings=(count===2&&m.kind==='HINGED')?['LEFT','RIGHT']:
+        m.facade_openings=(count===2&&((m.kind==='HINGED')||(m.level==='upper'&&m.kind==='UPPER'&&m.facade_orientation!=='HORIZONTAL'&&m.opening!=='LIFT')))?['LEFT','RIGHT']:
           Array.from({length:count},(_,i)=>(start+i*(cell+gap)+cell/2)<=axis?'LEFT':'RIGHT');
         m.template_opening_locked=true;m.template_opening_axis_mm=Math.round(axis);m.template_opening_rule='TEMPLATE_CENTER_LEFT_RIGHT';
       });
@@ -810,6 +814,7 @@
     if(collision.length)pushWarning('HARD_MODULE_INTERSECTION_STOP','STOP: физические пересечения модулей: '+collision.slice(0,4).map(c=>c.first+' / '+c.second).join('; ')+'. Экспорт недоступен.');
   }
     const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(applyEndPanelRules(applyTemplateOpeningRules(lower.concat(upper))));
+    if(room.source==='SCAN')pushWarning('SCAN_ROOM_UNVERIFIED_R1061','STOP: размещение кухни построено по предварительной основной стене скана. Контуры, точность и столкновения требуют измерений и подтверждения до производства.');
     inspectPhysicalIntersections(all);
     evaluateErgonomics(all);
     const standardPackageH=lowerTotalHeight()+Math.max(300,Number(inputs.upper_gap_mm)||600)+upperConfiguredHeight();
