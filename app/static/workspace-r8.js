@@ -478,7 +478,7 @@
      try{
        const form=new FormData();form.append('file',file,file.name);
        const body=await roomImportApi('analyze',{method:'POST',body:form});
-       await rt.patchVisual({room_import:body.room_import});
+       await rt.patchVisual({room_import:body.room_import,room_source_r1061:'FILE'});
        refreshPanel();
      }catch(error){if(status)status.textContent=tr('Ошибка анализа: ','Analysis error: ')+error.message}
    };
@@ -630,7 +630,7 @@
  $('baseInfoButton').onclick=()=>{$('baseInfoPopover').hidden=false};$('baseInfoClose').onclick=()=>{$('baseInfoPopover').hidden=true};
  $('panelClose').onclick=()=>{$('editorPanel').hidden=true;activePanel=null;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>rt?.render?.())};
  document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.onclick=()=>selectPanel(b.dataset.panel));
- async function ready(){localizeWorkspaceChrome();for(let i=0;i<100;i++){if(window.BizetModelRuntime?.ready){rt=window.BizetModelRuntime;break}await sleep(80)}if(!rt)return;await ensureTemplate();await initVariantSlots();updateReadiness();activePanel=null;$('editorPanel').hidden=true;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>{rt.render();requestAnimationFrame(()=>rt.render())});if(new URLSearchParams(location.search).get('scan_import')==='1')selectPanel('room')}
+ async function ready(){localizeWorkspaceChrome();for(let i=0;i<100;i++){if(window.BizetModelRuntime?.ready){rt=window.BizetModelRuntime;break}await sleep(80)}if(!rt)return;await ensureTemplate();await initVariantSlots();updateReadiness();if(new URLSearchParams(location.search).get('scan_import')==='1'&&rt.getVisual().scan_import_r1060?.walls?.length){await rt.patchVisual({room_source_r1061:'SCAN'})}activePanel=null;$('editorPanel').hidden=true;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>{rt.render();requestAnimationFrame(()=>rt.render())});if(new URLSearchParams(location.search).get('scan_import')==='1')selectPanel('room')}
  $('workspaceScanLink')?.addEventListener('click',()=>location.assign('/scan?project='+encodeURIComponent(projectId)));
  $('workspaceFileImport')?.addEventListener('click',()=>{selectPanel('room');$('r10RoomFileInput')?.click()});
  $('r1061TopbarHelp')?.addEventListener('click',()=>{
