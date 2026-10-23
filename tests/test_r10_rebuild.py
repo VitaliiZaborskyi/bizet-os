@@ -855,10 +855,10 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
 
 def test_current_workspace_cache_busts_rules_and_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=20261023r1060" in html
-    assert "/static/kitchen-webgl-r1050.js?v=20261023r1060" in html
+    assert "/static/model.js?v=20261024r1061" in html
+    assert "/static/kitchen-webgl-r1050.js?v=20261024r1061" in html
     assert "/static/r10-domain-rules.js?v=20261021r1059" in html
-    assert "/static/workspace-r8.js?v=20261023r1060" in html
+    assert "/static/workspace-r8.js?v=20261024r1061" in html
     assert "/static/point-b.js?v=20261021r1059" in html
     assert "/static/pilot-3d.js?v=1051" in html
     assert "/static/workspace-r8.css?v=1051" in html
@@ -1307,7 +1307,7 @@ def test_r1042_approval_drawings_are_three_page_client_documents():
     pointb = read('point-b.js')
     for name in ['approvalPlanSheet','approvalElevationSheet','approvalSectionSheet','approvalSheets','approvalDrawingHtml','openApprovalDrawings']:
         assert f'function {name}' in pointb
-    for token in ['BIZET by Zaborsky','FOR APPROVAL','NOT FOR PRODUCTION','PLAN + AXONOMETRY','MAIN ELEVATION','TYPICAL SECTIONS']:
+    for token in ['BIZET by Zaborsky','FOR APPROVAL','NOT FOR PRODUCTION','TOP VIEW + AXONOMETRIC VIEW','FRONT VIEW · SECTIONS MARKED','UNIQUE SECTIONS']:
         assert token in pointb
     assert 'Page ' in pointb and '/3' in pointb
 
