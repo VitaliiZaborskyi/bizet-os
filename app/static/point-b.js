@@ -304,7 +304,8 @@
 
   function detailsFor(modules){
     const all=[];let no=1;
-    modules.filter(m=>m.wall==='A').forEach(m=>{
+    modules.filter(m=>m.wall==='A').forEach(original=>{
+      const m=window.BizetPanelsR1061?.body(original)||original;
       let rows=[];
       if(m.kind==='FILLER')rows=fillerDetail(m,no);
       else if(m.kind==='DISHWASHER')rows=dishwasher(m,no);
@@ -318,7 +319,7 @@
       else if(m.tall)rows=tall(m,no,false,false);
       else if(m.kind==='FRIDGE'&&m.freestanding)rows=[];
       else rows=ordinaryBase(m,no);
-      const endRows=endPanelDetails(m,no+rows.length);
+      const endRows=endPanelDetails(original,no+rows.length);
       all.push(...rows,...endRows);no+=rows.length+endRows.length;
     });
     return all.map((r,i)=>({...r,no:i+1}));
