@@ -217,6 +217,11 @@
    });
  }
  function bindLighting(){
+   const brightness=$('r1061LedBrightness');
+   if(brightness)brightness.addEventListener('input',async()=>{
+      $('r1061LedBrightnessOutput').textContent=brightness.value+'%';
+      await rt.patchVisual({led_brightness_pct_r1061:Number(brightness.value)});
+   });
    const master=document.querySelector('[data-lighting-master]');
    if(master){
      master.onchange=async()=>{
@@ -404,7 +409,7 @@
        +lightOption('lighting_worktop','Рабочая стенка','Work zone','Робоча зона')
        +lightOption('lighting_upper_inside','Внутри верхних модулей','Inside upper cabinets','Всередині верхніх модулів')
        +lightOption('lighting_lower_inside','Внутри нижних модулей','Inside base cabinets','Всередині нижніх модулів')
-       +'</div><label class="r1055-lighting-kelvin"><span>'+(uiLang()==='en'?'LED color temperature':uiLang()==='ua'?'Температура світла':'Температура света')+'</span><select data-input="lighting_kelvin"><option value="2700">2700 K · Warm</option><option value="3000">3000 K · Warm white</option><option value="4000">4000 K · Neutral white</option></select></label><p class="r1055-pilot-note">PILOT: 3000 K default pending owner approval</p></section>';
+       +'</div><label class="r1055-lighting-kelvin"><span>'+(uiLang()==='en'?'LED color temperature':uiLang()==='ua'?'Температура світла':'Температура света')+'</span><select data-input="lighting_kelvin"><option value="2700">2700 K · Warm</option><option value="3000">3000 K · Warm white</option><option value="4000">4000 K · Neutral white</option></select></label><p class="r1055-pilot-note">PILOT: 3000 K default pending owner approval</p><label class="r8-field"><span>'+tr('Яркость LED в 3D, %','3D LED brightness, %')+'</span><input type="range" id="r1061LedBrightness" min="0" max="100" step="5" value="'+Number(rt.getVisual().led_brightness_pct_r1061??75)+'"><output id="r1061LedBrightnessOutput">'+Number(rt.getVisual().led_brightness_pct_r1061??75)+'%</output></label></section>';
    }
    if(panel==='communications'){
      html='<section class="r8-section"><h3>Система ожидает</h3><p>Канализация · вода · питание варочной · вытяжка · холодильник · духовка · розетки.</p>'+field('Статус координат','communications_status',[['PENDING_COORDINATE_DETAIL','Уточнить позже'],['USER_CONFIRMED','Проверено']])+'</section>';
@@ -628,5 +633,10 @@
  async function ready(){localizeWorkspaceChrome();for(let i=0;i<100;i++){if(window.BizetModelRuntime?.ready){rt=window.BizetModelRuntime;break}await sleep(80)}if(!rt)return;await ensureTemplate();await initVariantSlots();updateReadiness();activePanel=null;$('editorPanel').hidden=true;document.querySelectorAll('#workspaceTools [data-panel]').forEach(b=>b.classList.remove('is-active'));requestAnimationFrame(()=>{rt.render();requestAnimationFrame(()=>rt.render())});if(new URLSearchParams(location.search).get('scan_import')==='1')selectPanel('room')}
  $('workspaceScanLink')?.addEventListener('click',()=>location.assign('/scan?project='+encodeURIComponent(projectId)));
  $('workspaceFileImport')?.addEventListener('click',()=>{selectPanel('room');$('r10RoomFileInput')?.click()});
+ $('r1061TopbarHelp')?.addEventListener('click',()=>{
+   $('baseInfoPopover').hidden=false;
+   $('baseInfoPopover').querySelector('p').textContent=tr('Поворачивайте кухню жестом или мышью. Для редактирования стен откройте Помещение. Скан требует подтверждения размеров перед производством.','Drag to orbit the kitchen. Open Room to edit scanned walls. Confirm all scan dimensions before manufacturing.');
+ });
+ $('backButton')?.addEventListener('click',()=>{if(history.length>1)history.back();else location.assign('/')});
  ready();
 })();
