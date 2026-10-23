@@ -154,18 +154,19 @@ function r1056MaterialTexture(mat,target,color){
    mat.map=r1056Texture(preset,color,target);mat.color.set('#ffffff');mat.needsUpdate=true;
  }
 }
-function buildRoom(options){clearGroup(roomGroup);const focus=!!options.focusMode;scene.background=new THREE.Color(focus?0xd9dde1:0x34383d);if(focus)return;const r=options.room||{},L=+r.lengthMm||6000,D=+r.depthMm||4200,H=+r.heightMm||2800,c=colors();
+function scanActive(){return window.BizetRoomR1061?.source(window.BizetModelRuntime?.getVisual?.())==='SCAN'}
+ function buildRoom(options){clearGroup(roomGroup);const focus=!!options.focusMode;scene.background=new THREE.Color(focus?0xd9dde1:0x34383d);if(focus)return;const r=options.room||{},L=+r.lengthMm||6000,D=+r.depthMm||4200,H=+r.heightMm||2800,c=colors();
  const fm=ownMat({color:c.floor,roughness:.74});r1056MaterialTexture(fm,'floor',c.floor);
  if(fm.map&&((window.BizetModelRuntime?.getVisual?.().room_surface_materials?.floor?.preset||document.documentElement.dataset.floorPreset||'TILE_MARBLE_WHITE')==='TILE_MARBLE_WHITE')){
   fm.map.wrapS=fm.map.wrapT=THREE.RepeatWrapping;fm.map.repeat.set(Math.max(1,L/2400),Math.max(1,D/2400));
  }
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(L,D),fm);floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;roomGroup.add(floor);
- const wm=ownMat({color:c.wall,roughness:.91,side:THREE.DoubleSide}),active=new Set(options.activeWalls||[]);r1056MaterialTexture(wm,'walls',c.wall);
+ const wm=ownMat({color:c.wall,roughness:.91,side:THREE.DoubleSide}),active=new Set(scanActive()?[]:(options.activeWalls||[]));r1056MaterialTexture(wm,'walls',c.wall);
  if(active.has('A')){const w=new THREE.Mesh(new THREE.PlaneGeometry(L,H),wm.clone());w.material.userData.owned=true;w.position.set(0,H/2,D/2);w.receiveShadow=true;roomGroup.add(w)}
  if(active.has('B')){const w=new THREE.Mesh(new THREE.PlaneGeometry(D,H),wm.clone());w.material.userData.owned=true;w.rotation.y=Math.PI/2;w.position.set(-L/2,H/2,0);w.receiveShadow=true;roomGroup.add(w)}
  if(active.has('C')){const w=new THREE.Mesh(new THREE.PlaneGeometry(D,H),wm.clone());w.material.userData.owned=true;w.rotation.y=-Math.PI/2;w.position.set(L/2,H/2,0);w.receiveShadow=true;roomGroup.add(w)}
  const scan=window.BizetModelRuntime?.getVisual?.().scan_import_r1060;
- if(scan?.status==='PRELIMINARY_UNVERIFIED'&&Array.isArray(scan.walls)){
+ if(false&&scan?.status==='PRELIMINARY_UNVERIFIED'&&Array.isArray(scan.walls)){
   scan.walls.forEach(w=>{
    const ax=Number(w.x1_mm),az=Number(w.z1_mm),bx=Number(w.x2_mm),bz=Number(w.z2_mm);
    const height=Number(w.height_mm)||2800,len=Math.hypot(bx-ax,bz-az);
@@ -179,6 +180,7 @@ function buildRoom(options){clearGroup(roomGroup);const focus=!!options.focusMod
    edge.renderOrder=5;wall.add(edge);
   });
  }
+ if(scan?.walls?.length)window.BizetRoomR1061?.renderWalls({THREE,group:roomGroup,visual:window.BizetModelRuntime.getVisual()});
  wm.dispose();
 }
 // R10.5.6 owner-supplied reference: rectangular black matte bridge with two end feet.
@@ -953,7 +955,12 @@ function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareG
 function frame(options,force=false){const room=options.room||{},mods=options.modules||[],mode=options.focusMode?'focus':'normal',key=[room.lengthMm,room.depthMm,room.heightMm,mode,options.focusMode?mods.map(m=>[m.id,m.w,m.d,m.h].join('/')).join('|'):''].join(':');if(!force&&lastMode===mode&&lastRoomKey===key)return;lastMode=mode;lastRoomKey=key;if(!mods.length)return;const minX=Math.min(...mods.map(m=>+m.x||0)),maxX=Math.max(...mods.map(m=>(+m.x||0)+(+m.w||0))),minY=Math.min(...mods.map(m=>+m.y||0)),maxY=Math.max(...mods.map(m=>(+m.y||0)+(+m.d||0))),minZ=Math.min(...mods.map(m=>+m.z||0)),maxZ=Math.max(...mods.map(m=>(+m.z||0)+(+m.h||0))),ct=roomToWorld(room,(minX+maxX)/2,(minY+maxY)/2,(minZ+maxZ)/2),span=Math.max(maxX-minX,maxY-minY,maxZ-minZ,1200),dist=options.focusMode?Math.max(1500,span*1.55):Math.max(2600,span*1.25);controls.target.copy(ct);camera.position.set(ct.x+dist*.78,ct.y+dist*.38,ct.z-dist*.96);camera.updateProjectionMatrix();controls.update()}
 function resize(){const r=host.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(r.width,r.height,false);composer?.setSize(r.width,r.height);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();controls.update()}
 new ResizeObserver(resize).observe(host);addEventListener('resize',resize);
-function draw(options){lastOptions=options;setDeepShadow(false);buildRoom(options);buildFurniture(options);frame(options,false);resize();normalCanvas.style.opacity='0';focusCanvas.style.opacity='0'}
+function draw(options){
+   lastOptions=options;setDeepShadow(false);buildRoom(options);buildFurniture(options);
+   const spin=scanActive()?Number(window.BizetRoomR1061?.current(window.BizetModelRuntime?.getVisual?.())?.rotation_deg||0)*Math.PI/180:0;
+   [roomGroup,furnitureGroup,hardwareGroup,annotationGroup,lightingGroup].forEach(group=>group.rotation.y=spin);
+   frame(options,false);resize();normalCanvas.style.opacity='0';focusCanvas.style.opacity='0'
+ }
 // #27: the viewer only starts shelf editing after a hold in EDIT/isolation.
 let shelfHoldTimer=0,shelfHoldDown=null;
 renderer.domElement.addEventListener('pointerdown',e=>{
@@ -984,7 +991,12 @@ renderer.domElement.addEventListener('pointerup',e=>{
  if(!down||down.id!==e.pointerId){down=null;return}
  const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(moved>8)return;
  const r=renderer.domElement.getBoundingClientRect();pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,camera);
- const hit=raycaster.intersectObjects(selectable,true)[0],id=hit?.object?.userData?.movableId||hit?.object?.parent?.userData?.movableId||hit?.object?.userData?.moduleId||'';
+ const scanTargets=[];roomGroup.traverse(o=>{if(o.isMesh&&o.userData?.cat==='scan-wall-r1061')scanTargets.push(o)});
+  if(window.BIZET_KITCHEN_UI_MODE==='EDIT'&&scanTargets.length){
+    const hitWall=raycaster.intersectObjects(scanTargets,false)[0];
+    if(hitWall){window.BizetRoomR1061?.choose(hitWall.object.userData.scanWallIndex);document.querySelector('#workspaceTools [data-panel="room"]')?.click();return}
+  }
+  const hit=raycaster.intersectObjects(selectable,true)[0],id=hit?.object?.userData?.movableId||hit?.object?.parent?.userData?.movableId||hit?.object?.userData?.moduleId||'';
  const moduleId=String(id).split(':')[0];
  if(window.BIZET_KITCHEN_UI_MODE==='VIEW'&&id){
    const mv=movables.find(x=>x.id===id);
@@ -1003,5 +1015,5 @@ renderer.domElement.addEventListener('pointerup',e=>{
 });
 function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
 window.BizetPilot3D.drawKitchenScene=(canvas,options={})=>{const legacy=legacyDraw(canvas,options);try{draw(options)}catch(e){console.error('R10.5.1 kitchen WebGL fallback',e);host.style.display='none';canvas.style.opacity='1'}return legacy};
-window.BizetKitchenWebGL={version:'R10.6.0',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
+window.BizetKitchenWebGL={version:'R10.6.1',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
 })();
