@@ -23,7 +23,7 @@ def test_r10_phase1_workspace_starts_with_room_panel_closed():
     assert '<button data-panel="room"' in html
     assert "let activePanel=null" in js
     ready = js[js.index("async function ready"):js.index("ready();")]
-    assert "selectPanel('room')" not in ready
+    assert "if(new URLSearchParams(location.search).get('scan_import')==='1')selectPanel('room')" in ready
     assert "rt.render()" in ready
 
 def test_r10_phase1_full_kitchen_renderer_still_receives_all_modules():
@@ -737,7 +737,7 @@ def test_r1034_room_source_screen_precedes_kitchen_configuration():
 
 def test_r1034_workspace_room_source_uses_template_and_scan_is_wip():
     js = read("workspace-r8.js")
-    assert 'data-action="room-source-manual">Шаблон</button>' in js
+    assert 'data-action="room-source-manual">Шаблон</button>' not in js
     assert "source:'TEMPLATE'" in js
     assert "window.location.assign('/scan'" in js
     assert "SCAN_CONNECTOR_REQUIRED" not in js
@@ -855,10 +855,10 @@ def test_r1036_render_scheduler_has_no_pointer_dependency():
 
 def test_current_workspace_cache_busts_rules_and_renderer_assets():
     html = read("workspace-r8.html")
-    assert "/static/model.js?v=20261021r1059" in html
-    assert "/static/kitchen-webgl-r1050.js?v=20261021r1059" in html
+    assert "/static/model.js?v=20261023r1060" in html
+    assert "/static/kitchen-webgl-r1050.js?v=20261023r1060" in html
     assert "/static/r10-domain-rules.js?v=20261021r1059" in html
-    assert "/static/workspace-r8.js?v=20261021r1059" in html
+    assert "/static/workspace-r8.js?v=20261023r1060" in html
     assert "/static/point-b.js?v=20261021r1059" in html
     assert "/static/pilot-3d.js?v=1051" in html
     assert "/static/workspace-r8.css?v=1051" in html
