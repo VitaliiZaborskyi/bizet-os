@@ -30,7 +30,7 @@ def test_preliminary_walls_render_in_same_editable_workspace():
     assert "setKitchenUiMode('VIEW');\n $('workspaceLanguageSelect')" not in ws
     assert "bindScanWallEditors()" in ws
     assert "data-scan-wall" in ws
-    assert "scan_import_r1060" in ws and "BizetRoomR1061.renderWalls" in viewer and "scan_import_r1060" in read("room-r1061.js")
+    assert "scan_import_r1060" in ws and "BizetRoomR1061.renderWalls" in viewer and "scan_import_r1060" in src("room-r1061.js")
     assert "scanned-wall-preview" in viewer
     assert "productionReady:false" in viewer
 
