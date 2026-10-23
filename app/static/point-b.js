@@ -474,6 +474,12 @@
     add('Работы','Сборка',panelArea,'м²',PRICES.ASSEMBLY_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     add('Работы','Упаковка',panelArea,'м²',PRICES.PACKING_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     add('Работы','Установка',panelArea,'м²',PRICES.INSTALL_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
+    const ledSchedule=window.BizetLED1061?.manifest(window.BizetModelRuntime?.getInputs?.()||{},modules);
+    if(ledSchedule?.included){
+      ledSchedule.materials.forEach(q=>add('LED · предварительно',q.item,q.qty,q.unit,q.price,'UNVERIFIED OWNER MARKET RATE · уточнить прайс/артикул перед заказом'));
+      add('LED · информация','Сегменты LED: '+ledSchedule.segments.length+' / '+Math.round(ledSchedule.total_mm)+' мм',1,'компл',0,
+        '24 V / '+ledSchedule.kelvin+' K / '+ledSchedule.watts.toFixed(1)+' W / запас PSU +25% · монтажные пазы и питание требуют производства');
+    }
     const cost=rows.reduce((s,r)=>s+r.total,0),client=cost*2;
     return{rows,cost,client,areas,plinthEndReturns,cutM,edgeM,worktopSlabs,worktopJoints,worktopJointMap,worktopBlockedByCriticalZone,plinthPieces,plinthConnectors,plinthJointMap,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
   }
@@ -611,6 +617,12 @@
     const W=1120,H=790,wallA=modules.filter(m=>m.wall==='A').sort((a,b)=>(a.x||0)-(b.x||0));
     const roomW=Math.max(1000,Number(room.lengthMm)||6000),maxH=Math.max(2400,Number(room.heightMm)||2800),denominator=approvalScale(roomW,900,maxH,500),scale=APPROVAL_UNITS_PER_MM/denominator,ox=70,baseY=610;
     const unique=approvalSectionGroups(wallA).slice(0,8);
+    const ledManifest=window.BizetLED1061?.manifest(window.BizetModelRuntime?.getInputs?.()||{},modules);
+    const ledMarkup=(ledManifest?.segments||[]).filter(q=>q.zone==='WORKTOP').map(q=>{
+       const m=modules.find(x=>x.id===q.module_id);if(!m||m.wall!=='A')return '';
+       const x=ox+(Number(m.x)||0)*scale,w=(Number(m.w)||0)*scale,y=baseY-((Number(m.z)||0)-14)*scale;
+       return `<line x1="${x+3}" y1="${y}" x2="${x+w-3}" y2="${y}" stroke="#d8aa00" stroke-width="2.2" stroke-dasharray="7 4"/><text x="${x+4}" y="${y-7}" font-size="9" fill="#8b7200">${q.id} · ${q.length_mm} mm</text>`;
+    }).join('');
     const parts=wallA.map(m=>{
       const x=ox+(Number(m.x)||0)*scale,w=Math.max(2,(Number(m.w)||0)*scale),z=(Number(m.z)||0),h=Math.max(2,(Number(m.h)||0)*scale),y=baseY-(z+Number(m.h||0))*scale;
       let splits='',hidden='';
@@ -632,7 +644,7 @@
       <style>text{font-family:"Century Gothic",Arial,sans-serif;fill:#111}.dim{fill:#d71920;font-size:10px;font-weight:700}</style>
       <rect x="8" y="8" width="1104" height="774" fill="#fff" stroke="#777"/>
       <text x="60" y="42" font-size="18" font-weight="800">BIZET OS · FRONT VIEW · 1:${denominator}</text>
-      <line x1="${ox}" y1="${baseY}" x2="${ox+roomW*scale}" y2="${baseY}" stroke="#111" stroke-width="2"/>${parts}${markers}
+      <line x1="${ox}" y1="${baseY}" x2="${ox+roomW*scale}" y2="${baseY}" stroke="#111" stroke-width="2"/>${parts}${markers}${ledMarkup}
       <line x1="${ox}" y1="${baseY+48}" x2="${ox+roomW*scale}" y2="${baseY+48}" stroke="#d71920"/>
       <text x="${ox+roomW*scale/2}" y="${baseY+44}" class="dim" text-anchor="middle">${round(roomW)}</text>
       <line x1="${ox-28}" y1="${baseY}" x2="${ox-28}" y2="${baseY-maxH*scale}" stroke="#d71920"/>
