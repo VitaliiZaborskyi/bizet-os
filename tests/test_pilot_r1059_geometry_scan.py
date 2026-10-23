@@ -58,7 +58,7 @@ def test_furniture_settings_and_drilling_safe_defaults():
     assert "placed.y=room.depthMm-placed.d-lowerWallGap();" in js
     assert "placed.x=lowerWallGap();" in js
     assert "lower_depth_mm:515,lower_wall_gap_mm:45" in workspace
-    assert "Стандарт: столешница 600 мм" in workspace
+    assert "Стандарт: столешница 600 мм" not in workspace
     assert "dish_dryer_variant" in workspace
     assert "m.kind==='SINK'?'UPPER_DRYER'" in js
     assert "addDishDryingRack(room,m)" in renderer
