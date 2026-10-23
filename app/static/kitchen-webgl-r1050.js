@@ -1015,5 +1015,33 @@ renderer.domElement.addEventListener('pointerup',e=>{
 });
 function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
 window.BizetPilot3D.drawKitchenScene=(canvas,options={})=>{const legacy=legacyDraw(canvas,options);try{draw(options)}catch(e){console.error('R10.5.1 kitchen WebGL fallback',e);host.style.display='none';canvas.style.opacity='1'}return legacy};
-window.BizetKitchenWebGL={version:'R10.6.1',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
+function captureApprovalIsometric(){
+  if(!lastOptions||!furnitureGroup.children.length)return null;
+  const box=new THREE.Box3().setFromObject(furnitureGroup);
+  if(box.isEmpty())return null;
+  box.expandByObject(hardwareGroup);
+  const center=box.getCenter(new THREE.Vector3()),extents=box.getSize(new THREE.Vector3());
+  const span=Math.max(extents.x,extents.z,extents.y,900)*1.42;
+  const width=900,height=570,aspect=width/height;
+  const cameraIso=new THREE.OrthographicCamera(-span*aspect/2,span*aspect/2,span/2,-span/2,1,50000);
+  cameraIso.position.copy(center).add(new THREE.Vector3(span*.95,span*.95,-span*.95));
+  cameraIso.lookAt(center);
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  const isoRenderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'low-power'});
+  isoRenderer.setPixelRatio(1);isoRenderer.setSize(width,height,false);isoRenderer.outputEncoding=THREE.sRGBEncoding;
+  const groups=[roomGroup,annotationGroup,lightingGroup];
+  const prior=groups.map(g=>g.visible),before=scene.background;
+  const hidden=[];for(const root of [furnitureGroup,hardwareGroup]){
+    root.traverse(node=>{if(node.userData?.viewerEdge){hidden.push([node,node.visible]);node.visible=false;}});
+  }
+  try{
+    groups.forEach(g=>g.visible=false);scene.background=new THREE.Color('#ffffff');
+    isoRenderer.render(scene,cameraIso);
+    return canvas.toDataURL('image/png');
+  }finally{
+    groups.forEach((g,i)=>g.visible=prior[i]);hidden.forEach(([n,v])=>n.visible=v);
+    scene.background=before;isoRenderer.dispose();
+  }
+ }
+ window.BizetKitchenWebGL={version:'R10.6.1',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,captureApprovalIsometric,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
 })();
