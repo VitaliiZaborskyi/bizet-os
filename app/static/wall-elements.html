@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BIZET OS — Элементы стен</title>
+<link rel="stylesheet" href="/static/start.css">
+<link rel="stylesheet" href="/static/pilot-shell.css">
+<link rel="stylesheet" href="/static/pilot-r7.css">
+<link rel="stylesheet" href="/static/wall-elements.css">
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<a class="icon-button back-button" href="/room" aria-label="Назад">←</a>
+<a class="brand" href="/">BIZET <span>OS</span></a>
+<div class="settings-wrap">
+<button class="icon-button menu-button" id="settingsButton" type="button" aria-label="Настройки">•••</button>
+<div class="settings-panel" id="settingsPanel" hidden>
+<div class="settings-title">Настройки</div>
+<label class="settings-field"><span>Тема</span><select id="themeSelect"><option value="light">Светлая</option><option value="dark">Тёмная</option></select></label>
+<label class="settings-field"><span>Язык</span><select id="languageSelect"><option value="ru">Русский</option><option value="en">English</option></select></label>
+</div>
+</div>
+</header>
+<main class="wall-editor">
+<section class="wall-editor-head"><p class="step-meta">Дополнительно · необязательно</p><h1>Элементы стен</h1><p>Выберите стену. Сначала задайте габарит элемента, затем его положение относительно стены.</p></section>
+<nav class="wall-tabs" id="wallTabs"></nav>
+<section class="wall-card">
+<h2 id="wallTitle">Стена A</h2><p class="muted">Добавьте только элементы, которые влияют на мебель.</p>
+<div class="element-types" id="elementTypes">
+<button type="button" data-type="WINDOW">Окно</button><button type="button" data-type="PROJECTION">Выступ</button><button type="button" data-type="NICHE">Ниша</button><button type="button" data-type="COLUMN">Колонна</button>
+</div>
+<form class="element-form" id="elementForm" hidden>
+<strong id="selectedTypeLabel">Окно</strong>
+<label>Ширина, мм<input id="elWidth" type="number" min="1" required></label>
+<label>Высота, мм<input id="elHeight" type="number" min="1" required></label>
+<label>Глубина, мм<input id="elDepth" type="number" min="0"></label>
+<label>От левого края стены, мм<input id="elX" type="number" min="0" required></label>
+<label>От пола, мм<input id="elZ" type="number" min="0" required></label>
+<div class="form-actions"><button class="r7-secondary-button" id="cancelElement" type="button">Отмена</button><button class="primary-button" type="submit">Добавить</button></div>
+</form>
+<div class="elements-list" id="elementsList"></div>
+</section>
+<div class="wall-editor-footer"><a class="r7-secondary-button" href="/room">К помещению</a><button class="primary-button" id="toAppliances" type="button">Выбор бытовой техники →</button></div>
+<p class="save-note" id="saveNote">Элементы сохраняются в проекте.</p>
+</main>
+</div>
+<script src="/static/pilot-shell.js"></script>
+<script src="/static/wall-elements.js"></script>
+</body>
+</html>
