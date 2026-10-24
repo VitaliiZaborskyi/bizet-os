@@ -789,6 +789,36 @@
       const wall=group[0]?.wall||'A',corners=cornerEdgesForWall(wall);group.sort((a,b)=>moduleRunStart(a)-moduleRunStart(b));
       const mark=(m,edge)=>{if(!m||corners.has(edge))return;const shape=m.end_panel_shape||'FLAT',material=m.end_panel_material||'CARCASS',side=edge==='START'?'LEFT':'RIGHT';m.end_panel_side=m.end_panel_side&&m.end_panel_side!==side?'BOTH':side;m.end_panel_edges=Array.from(new Set([...(m.end_panel_edges||[]),edge]));m.end_panel_shape=shape;m.end_panel_material=material;m.end_panel_height_mm=Math.round(Number(m.h)||0);m.end_panel_floor_extension=false;m.end_panel_width_mm=shape==='L_SHAPE'?40:18;m.end_panel_front_flush=true};
       mark(group[0],'START');mark(group[group.length-1],'END');
+      const axis=wall==='A'?'w':'d',coordinate=wall==='A'?'x':'y';
+      const adjustable=m=>m&&!m.freestanding&&!['FILLER','DISHWASHER','SINK','FRIDGE','COOKTOP','TALL_OVEN','OVEN'].includes(m.kind);
+      const minRun=m=>Math.max(300,Number(m.minimum_width_mm)||300);
+      // Preserve the refrigerator nominal width; never silently shrink it below 600 mm.
+      group.forEach((fridge,index)=>{
+        if(fridge.kind!=='FRIDGE'||fridge.freestanding||!fridge.end_panel_edges?.length)return;
+        const t=Math.max(8,Number(fridge.end_panel_thickness_mm)||Number(fridge.end_panel_width_mm)||18);
+        let unresolved=false;
+        for(const edge of fridge.end_panel_edges){
+          const atStart=edge==='START',neighbor=group[index+(atStart?-1:1)];
+          if(adjustable(neighbor)&&Number(neighbor[axis])-t>=minRun(neighbor)){
+            if(!atStart)neighbor[coordinate]=Number(neighbor[coordinate])+t;
+            neighbor[axis]=Number(neighbor[axis])-t;
+            fridge.fridge_panel_compensation_mm=(fridge.fridge_panel_compensation_mm||0)+t;
+            continue;
+          }
+          const other=group[index+(atStart?1:-1)];
+          const span=Number(fridge[axis])||0,outerStart=Number(fridge[coordinate])||0;
+          const boundary=atStart?outerStart<=2:outerStart+span>=wallSpan(wall,roomValues())-2;
+          if(boundary&&adjustable(other)&&Number(other[axis])-t>=minRun(other)){
+            other[axis]=Number(other[axis])-t;
+            if(atStart){fridge[coordinate]=outerStart+t;other[coordinate]=Number(other[coordinate])+t}
+            else fridge[coordinate]=outerStart-t;
+            fridge.fridge_panel_compensation_mm=(fridge.fridge_panel_compensation_mm||0)+t;
+            continue;
+          }
+          unresolved=true;
+        }
+        fridge.fridge_end_panel_compensation_status=unresolved?'STOP_UNRESOLVED':'COMPENSATED_PROVISIONAL_QA';
+      });
     });
     return out;
   }
@@ -820,6 +850,8 @@
       window.BizetR1061WallCollisions=wallCollisions;
       if(wallCollisions.length)pushWarning('STOP_SCANNED_WALL_MODULE_INTERSECTION','STOP: кухня пересекается со стенами скана: '+wallCollisions.slice(0,4).map(q=>q.module_id+'/'+q.wall_id).join('; '));
     }else window.BizetR1061WallCollisions=[];
+    all.filter(m=>m.fridge_end_panel_compensation_status==='STOP_UNRESOLVED').forEach(m=>
+      pushWarning('STOP_FRIDGE_PANEL_COMPENSATION_'+m.id,'STOP: лицевая панель холодильника '+m.id+' не компенсируется в заданных допустимых размерах соседей.'));
     inspectPhysicalIntersections(all);
     evaluateErgonomics(all);
     const standardPackageH=lowerTotalHeight()+Math.max(300,Number(inputs.upper_gap_mm)||600)+upperConfiguredHeight();
