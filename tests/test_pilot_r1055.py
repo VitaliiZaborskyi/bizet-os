@@ -111,7 +111,7 @@ assert.strictEqual(r.planHingePositions({...m,h:100},[]).ok,false);
 
 def test_29_isolation_frame_key_includes_module_identity():
     js=read("kitchen-webgl-r1050.js")
-    assert "options.focusMode?mods.map(m=>[m.id,m.w,m.d,m.h]" in js
+    assert "mods.map(m=>[m.id,m.x,m.y,m.z,m.w,m.d,m.h]" in js
 
 def test_30_plinth_returns_are_drawn_and_counted_in_bom():
     viewer=read("kitchen-webgl-r1050.js");pb=read("point-b.js")
