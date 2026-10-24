@@ -188,7 +188,7 @@ def test_visualization_button_is_first_and_prompt_is_locked():
 
 def test_10_5_7_current_version_and_node_syntax():
     assert 'version="R10.5.9"' in (ROOT / "app" / "main.py").read_text()
-    assert "BIZET OS 10.6.3 — Protected Preview" in source("workspace-r8.html")
+    assert "BIZET OS 10.6.4 — Protected QA LIVE" in source("workspace-r8.html")
     node = shutil.which("node")
     if not node:
         import pytest
