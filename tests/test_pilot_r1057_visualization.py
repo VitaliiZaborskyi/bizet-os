@@ -188,7 +188,7 @@ def test_visualization_button_is_first_and_prompt_is_locked():
 
 def test_10_5_7_current_version_and_node_syntax():
     assert 'version="R10.5.9"' in (ROOT / "app" / "main.py").read_text()
-    assert "R10.6.1 — Робоча модель" in source("workspace-r8.html")
+    assert "R10.6.2 — Робоча модель" in source("workspace-r8.html")
     node = shutil.which("node")
     if not node:
         import pytest
