@@ -122,6 +122,17 @@ def test_real_3d_edit_view_isolation(server,engine,viewport):
             assert_frame(page,"EDIT")
             assert_frame(page,"VIEW")
             assert_frame(page,"ISOLATION",minimum=.004)
+            # Owner #40: two doors on QA1 -> exactly four real 35-mm cups and
+            # two door sides. Drawer QA2 must never receive hinged hardware.
+            hinges=page.evaluate("""() => {
+              const v=window.BizetKitchenWebGL,found=[];
+              v.scene.traverse(o=>{if(o.isMesh&&o.userData?.cat==='r1064-35mm-door-cup')
+                found.push({module:o.userData.moduleId,side:o.userData.hingeSide,visible:o.visible})});
+              return found;
+            }""")
+            assert len(hinges)==4, f"Wrong double-door hinge count: {hinges}"
+            assert {v["side"] for v in hinges}=={"left","right"},hinges
+            assert {v["module"] for v in hinges}=={"QA1"},f"Drawers incorrectly received hinges: {hinges}"
             # Approval export must use the current 3D scene without a second WebGL context.
             export=page.evaluate("""() => {
               const source=window.BizetApprovalCaptureR1063,d=window.BizetApprovalR1063;
@@ -196,6 +207,18 @@ def test_actual_workspace_visible(server,engine,viewport):
             assert state["ready"] and state["modules"]>=1 and state["meshes"]>=3, state
             assert state["width"]>250 and state["height"]>200 and state["webgl"],state
             assert state["display"]!="none",state
+            header=page.evaluate("""() => {
+              const ids=['backButton'],selectors=['.r8-topbar .r8-brand',
+                '.r1064-header-actions #r1063HelpButton',
+                '.r1064-header-actions #baseInfoButton',
+                '.r1064-header-actions #settingsButton'];
+              const els=[document.getElementById(ids[0]),...selectors.map(q=>document.querySelector(q))];
+              return els.map(el=>el?{id:el.id||'brand',left:el.getBoundingClientRect().left,
+                right:el.getBoundingClientRect().right,visible:getComputedStyle(el).display!=='none'}:null);
+            }""")
+            assert all(h and h["visible"] for h in header),f"Header control missing: {header}"
+            for left,right in zip(header,header[1:]):
+                assert left["right"]<=right["left"]+1, f"Header overlap: {header}"
             assert state["coreVersion"]=="R10.6.0",f"Protected 3D core changed: {state}"
             assert state["roomAdapter"] and state["drawings"] and state["visual"],state
             assert not errors,f"Actual workspace browser errors: {errors[:8]}"
