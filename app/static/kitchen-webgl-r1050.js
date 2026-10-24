@@ -1150,5 +1150,49 @@ function captureApprovalIsometric(){
   tempMaterials.forEach(m=>m.dispose());scene.background=oldBackground;renderIso?.dispose();
  }
 }
- window.BizetKitchenWebGL={version:'R10.6.2',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,captureApprovalIsometric,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
+function captureApprovalSections(){
+ if(!lastOptions?.modules?.length)return [];
+ furnitureGroup.updateMatrixWorld(true);hardwareGroup.updateMatrixWorld(true);roomGroup.updateMatrixWorld(true);
+ const room=lastOptions.room||{},halfX=Number(room.lengthMm||6000)/2,halfZ=Number(room.depthMm||4200)/2;
+ const select=(lastOptions.modules||[]).filter(m=>m.wall==='A'&&!m.freestanding&&Number(m.w)>80);
+ const hits=[];
+ select.forEach(module=>{
+  const xPlane=Number(module.x)+Number(module.w)/2-halfX,parts=[];
+  const sliceMesh=n=>{
+   if(!n.isMesh||!n.geometry?.attributes?.position)return;
+   const moduleId=String(n.userData?.moduleId||'');
+   const isRoom=String(n.userData?.cat||'').includes('wall')||String(n.userData?.cat||'').includes('room');
+   if(!isRoom&&moduleId!==String(module.id))return;
+   const geometry=n.geometry,index=geometry.getIndex(),pos=geometry.attributes.position;
+   if(!pos||pos.count>100000)return;
+   const a=new THREE.Vector3(),b=new THREE.Vector3(),d=new THREE.Vector3();
+   const vertex=i=>new THREE.Vector3().fromBufferAttribute(pos,i).applyMatrix4(n.matrixWorld);
+   const triangles=index?index.count/3:pos.count/3;
+   const segments=[];
+   for(let i=0;i<triangles;i++){
+    const p=[vertex(index?index.getX(i*3):i*3),vertex(index?index.getX(i*3+1):i*3+1),vertex(index?index.getX(i*3+2):i*3+2)],cross=[];
+    for(let j=0;j<3;j++){
+     const v=p[j],w=p[(j+1)%3],di=v.x-xPlane,dj=w.x-xPlane;
+     if(Math.abs(di)<.01&&Math.abs(dj)<.01)continue;
+     if(di*dj>0)continue;
+     const t=Math.abs(di-dj)<.000001?0:di/(di-dj);
+     if(t<-.0001||t>1.0001)continue;
+     const q=v.clone().lerp(w,t);
+     if(!cross.some(s=>s.distanceToSquared(q)<.1))cross.push(q);
+    }
+    if(cross.length>=2){
+     const p=cross[0],q=cross[1];
+     segments.push({depth0:p.z+halfZ,height0:p.y,depth1:q.z+halfZ,height1:q.y,
+      module_id:moduleId,cat:String(n.userData?.cat||''),source:'THREE_MESH_TRIANGLE_INTERSECTION'});
+    }
+   }
+   if(segments.length)parts.push(...segments);
+  };
+  [furnitureGroup,hardwareGroup,roomGroup].forEach(g=>g.traverse(sliceMesh));
+  hits.push({module_id:module.id,number:module.number||module.id,plane_x_mm:Number(module.x)+Number(module.w)/2,
+    section_segments:parts.slice(0,4500),measured:true,has_geometry:parts.length>0});
+ });
+ return hits;
+}
+ window.BizetKitchenWebGL={version:'R10.6.2',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,captureApprovalIsometric,captureApprovalSections,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
 })();
