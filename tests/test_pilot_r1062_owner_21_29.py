@@ -42,7 +42,7 @@ def test_24_led_is_visible_line_and_independent_bom():
 
 def test_25_29_source_linked_svg_engine_and_dimensions():
     html=js("workspace-r8.html");draw=js("approval-r1062.js");client=js("point-b.js")
-    assert "approval-r1062.js?v=106201" in html
+    assert "approval-r1062.js?v=106239" in html
     assert "set.overview(modules,room,approvalStamp,orderRef)" in client
     for token in ("INSTALLATION ZONE","AXONOMETRIC · ORTHOGRAPHIC","FRONT VIEW","LEFT VIEW",
                   "r1062Hatch","approval-hidden","UNIQUE SECTION DETAILS","stroke-dasharray"):
