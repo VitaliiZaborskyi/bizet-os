@@ -350,7 +350,7 @@
  function orthoTop(L,area,colored=false){
   const{low,m,first,longest,minY,maxY,s,den}=L;
   const tops=low.length?low:m,x0=area.x+33,y0=area.y+44;
-  let svg=title((colored?'PLAN / SECTION LOCATIONS':'TOP VIEW · INSTALLATION ZONE')+' · 1:'+den,area.x,area.y+14);
+  let svg=title(colored?'PLAN / SECTION LOCATIONS · 1:'+den:'TOP VIEW · 1:'+den+' · INSTALLATION ZONE',area.x,area.y+14);
   for(const q of tops){
    const x=x0+(num(q.x)-first)*s,y=y0+(maxY-num(q.y)-num(q.d))*s,w=num(q.w)*s,h=num(q.d)*s;
    svg+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+(colored?tinted('carcass'):'#f6f6f5')+'" stroke="#111" stroke-width="1.2"/>'+
