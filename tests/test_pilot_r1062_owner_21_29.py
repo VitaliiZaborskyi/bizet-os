@@ -45,7 +45,7 @@ def test_25_29_source_linked_svg_engine_and_dimensions():
     assert "approval-r1062.js?v=106239" in html
     assert "set.overview(modules,room,stamp4,orderRef)" in client
     for token in ("INSTALLATION ZONE","AXONOMETRIC · ORTHOGRAPHIC","FRONT VIEW","LEFT VIEW",
-                  "r1062Hatch","approval-hidden","UNIQUE SECTION DETAILS","stroke-dasharray"):
+                  "r1062Hatch","approval-hidden","REAL MESH SECTIONS","stroke-dasharray"):
         assert token in draw
     assert "NTS AXO" in draw # Never claim printable exact axo scale until empirically calibrated
     assert "TOP VIEW · 1:" in draw and "FRONT VIEW · 1:" in draw
