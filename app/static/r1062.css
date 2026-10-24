@@ -1,0 +1,60 @@
+/* BIZET OS R10.6.2 owner #21: real, non-overlapping mobile header buttons.
+  All five controls remain keyboard/VoiceOver accessible; no hidden critical action. */
+body.r8-workspace-body .r8-topbar{
+ display:flex!important;flex-wrap:nowrap!important;box-sizing:border-box!important;
+ align-items:center!important;column-gap:8px!important;min-width:0!important;
+ padding-inline:max(10px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-right))!important;
+}
+body.r8-workspace-body .r8-topbar #backButton,
+body.r8-workspace-body .r8-topbar #r1061TopbarHelp,
+body.r8-workspace-body .r8-topbar #baseInfoButton,
+body.r8-workspace-body .r8-topbar #settingsButton{
+ flex:0 0 36px!important;width:36px!important;min-width:36px!important;
+ height:36px!important;min-height:36px!important;
+ padding:0!important;display:inline-flex!important;
+ align-items:center!important;justify-content:center!important;
+ position:relative!important;inset:auto!important;transform:none!important;
+ margin:0!important;box-sizing:border-box!important;white-space:nowrap!important;
+}
+body.r8-workspace-body .r8-topbar .r8-brand{
+ flex:0 1 auto!important;min-width:0!important;margin:0!important;
+ max-width:32vw!important;overflow:hidden!important;text-overflow:ellipsis!important;
+ white-space:nowrap!important;position:relative!important;
+}
+body.r8-workspace-body .r8-topbar .r8-project-state{
+ display:flex!important;flex:1 1 auto!important;min-width:0!important;
+ align-items:center!important;justify-content:flex-end!important;gap:6px!important;
+ padding:0!important;margin:0!important;white-space:nowrap!important;
+}
+body.r8-workspace-body .r8-topbar .r8-project-state>span:first-child{
+ overflow:hidden!important;text-overflow:ellipsis!important;min-width:0!important;
+}
+body.r8-workspace-body .r8-topbar .settings-wrap{
+ flex:0 0 36px!important;min-width:36px!important;margin:0!important;
+ position:relative!important;
+}
+body.r8-workspace-body .r8-topbar .settings-panel{
+ position:absolute!important;right:0!important;max-width:min(340px,calc(100vw - 20px))!important;
+}
+body.r8-workspace-body .r8-topbar button:focus-visible,
+body.r8-workspace-body .r8-topbar a:focus-visible{
+ outline:3px solid #4b95e3!important;outline-offset:2px!important
+}
+@media(max-width:560px){
+ body.r8-workspace-body .r8-topbar{column-gap:4px!important;height:56px!important;min-height:56px!important}
+ body.r8-workspace-body .r8-topbar #backButton,
+ body.r8-workspace-body .r8-topbar #r1061TopbarHelp,
+ body.r8-workspace-body .r8-topbar #baseInfoButton,
+ body.r8-workspace-body .r8-topbar #settingsButton{flex-basis:32px!important;width:32px!important;min-width:32px!important;height:34px!important}
+ body.r8-workspace-body .r8-topbar .settings-wrap{flex-basis:32px!important;min-width:32px!important}
+ body.r8-workspace-body .r8-topbar .r8-brand{max-width:32vw!important}
+ body.r8-workspace-body .r8-topbar .r8-project-state>span:first-child,
+ body.r8-workspace-body .r8-topbar .r10-order-badge{display:none!important}
+ body.r8-workspace-body .r8-topbar .r8-project-state{flex:1 0 32px!important;justify-content:flex-end!important}
+}
+@media(max-width:340px){
+ body.r8-workspace-body .r8-topbar{column-gap:2px!important}
+ body.r8-workspace-body .r8-topbar .r8-brand{max-width:29vw!important}
+}
+/* Orthographic approval export is never a manufacturing sign-off. */
+.r1062-manufacturing-warning{font-weight:700;color:#a52b31}
