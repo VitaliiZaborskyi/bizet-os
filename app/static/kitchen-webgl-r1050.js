@@ -1071,32 +1071,56 @@ renderer.domElement.addEventListener('pointerup',e=>{
 function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
 window.BizetPilot3D.drawKitchenScene=(canvas,options={})=>{const legacy=legacyDraw(canvas,options);try{draw(options)}catch(e){console.error('R10.5.1 kitchen WebGL fallback',e);host.style.display='none';canvas.style.opacity='1'}return legacy};
 function captureApprovalIsometric(){
-  if(!lastOptions||!furnitureGroup.children.length)return null;
-  const box=new THREE.Box3().setFromObject(furnitureGroup);
-  if(box.isEmpty())return null;
-  box.expandByObject(hardwareGroup);
-  const center=box.getCenter(new THREE.Vector3()),extents=box.getSize(new THREE.Vector3());
-  const span=Math.max(extents.x,extents.z,extents.y,900)*1.42;
-  const width=900,height=570,aspect=width/height;
-  const cameraIso=new THREE.OrthographicCamera(-span*aspect/2,span*aspect/2,span/2,-span/2,1,50000);
-  cameraIso.position.copy(center).add(new THREE.Vector3(span*.95,span*.95,-span*.95));
-  cameraIso.lookAt(center);
-  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
-  const isoRenderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'low-power'});
-  isoRenderer.setPixelRatio(1);isoRenderer.setSize(width,height,false);isoRenderer.outputEncoding=THREE.sRGBEncoding;
-  const groups=[roomGroup,annotationGroup,lightingGroup];
-  const prior=groups.map(g=>g.visible),before=scene.background;
-  const hidden=[];for(const root of [furnitureGroup,hardwareGroup]){
-    root.traverse(node=>{if(node.userData?.viewerEdge){hidden.push([node,node.visible]);node.visible=false;}});
-  }
-  try{
-    groups.forEach(g=>g.visible=false);scene.background=new THREE.Color('#ffffff');
-    isoRenderer.render(scene,cameraIso);
-    return canvas.toDataURL('image/png');
-  }finally{
-    groups.forEach((g,i)=>g.visible=prior[i]);hidden.forEach(([n,v])=>n.visible=v);
-    scene.background=before;isoRenderer.dispose();
-  }
+ if(!lastOptions||!furnitureGroup.children.length)return null;
+ // Actual current 3D exterior, no illustration or dummy cabinet geometry.
+ const box=new THREE.Box3().setFromObject(furnitureGroup);box.expandByObject(hardwareGroup);
+ if(box.isEmpty())return null;
+ const center=box.getCenter(new THREE.Vector3()),view=new THREE.Vector3(1,1,1).normalize();
+ const cameraIso=new THREE.OrthographicCamera(-1,1,1,-1,1,65000);
+ cameraIso.position.copy(center).addScaledVector(view,16000);cameraIso.lookAt(center);cameraIso.updateMatrixWorld(true);
+ const projected=[];
+ const corners=[[box.min.x,box.min.y,box.min.z],[box.min.x,box.min.y,box.max.z],
+  [box.min.x,box.max.y,box.min.z],[box.min.x,box.max.y,box.max.z],
+  [box.max.x,box.min.y,box.min.z],[box.max.x,box.min.y,box.max.z],
+  [box.max.x,box.max.y,box.min.z],[box.max.x,box.max.y,box.max.z]];
+ corners.forEach(p=>projected.push(new THREE.Vector3(...p).applyMatrix4(cameraIso.matrixWorldInverse)));
+ const minX=Math.min(...projected.map(p=>p.x)),maxX=Math.max(...projected.map(p=>p.x));
+ const minY=Math.min(...projected.map(p=>p.y)),maxY=Math.max(...projected.map(p=>p.y));
+ const width=1000,height=900,aspect=width/height;
+ const span=Math.max((maxY-minY)/.89,(maxX-minX)/(.89*aspect),700);
+ cameraIso.left=-span*aspect/2;cameraIso.right=span*aspect/2;
+ cameraIso.top=span/2;cameraIso.bottom=-span/2;cameraIso.updateProjectionMatrix();
+ const offsetX=(maxX+minX)/2,offsetY=(maxY+minY)/2;
+ cameraIso.position.add(cameraIso.localToWorld(new THREE.Vector3(offsetX,offsetY,0)).sub(cameraIso.position).multiplyScalar(1));
+ cameraIso.updateMatrixWorld(true);
+ const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+ let isoRenderer=null;
+ const hiddenGroups=[roomGroup,annotationGroup,lightingGroup],oldVisibility=hiddenGroups.map(g=>g.visible);
+ const oldBackground=scene.background,oldMaterials=[],tempMaterials=[];
+ try{
+  isoRenderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'low-power'});
+  isoRenderer.setPixelRatio(1);isoRenderer.setSize(width,height,false);
+  isoRenderer.outputEncoding=THREE.sRGBEncoding;
+  hiddenGroups.forEach(g=>g.visible=false);scene.background=new THREE.Color(0xffffff);
+  // High-contrast outline print without lying about the actual exterior geometry.
+  const shell=new THREE.MeshBasicMaterial({color:0xf6f7f7});
+  const front=new THREE.MeshBasicMaterial({color:0xe9eced});
+  const metal=new THREE.MeshBasicMaterial({color:0x747a80});
+  tempMaterials.push(shell,front,metal);
+  for(const group of [furnitureGroup,hardwareGroup])group.traverse(n=>{
+   if(!n.isMesh||!n.material)return;
+   oldMaterials.push([n,n.material]);
+   const cat=String(n.userData?.cat||'');
+   n.material=group===hardwareGroup?metal:cat==='front'?front:shell;
+  });
+  isoRenderer.render(scene,cameraIso);
+  return canvas.toDataURL('image/png');
+ }catch(error){console.warn('R10.6.2 isometric capture failed',error);return null}
+ finally{
+  oldMaterials.forEach(([n,mat])=>n.material=mat);
+  hiddenGroups.forEach((g,i)=>g.visible=oldVisibility[i]);
+  scene.background=oldBackground;tempMaterials.forEach(m=>m.dispose());isoRenderer?.dispose();
  }
- window.BizetKitchenWebGL={version:'R10.6.1',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,captureApprovalIsometric,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
+}
+ window.BizetKitchenWebGL={version:'R10.6.2',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,captureApprovalIsometric,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
 })();
