@@ -1,0 +1,39 @@
+/* BIZET OS R10.6.1: owner materials, view navigation and cross-theme contrast. */
+.r1061-help{flex:0 0 38px!important;font-weight:850;border-radius:50%!important}
+.r1061-room .r8-field{margin-block:10px}
+.r1061-room .r1061-curve{margin-top:14px;padding:12px;border:1px solid var(--r8-line,#aaa);border-radius:11px}
+.r1061-room .r1061-curve>summary{font-weight:800;cursor:pointer}
+.r1061-room .r1061-curve-range{display:flex;flex-direction:column;gap:7px;padding:10px 0;font-size:12px}
+.r1061-room .r1061-curve-range output{align-self:flex-end;font-variant-numeric:tabular-nums}
+.r1061-room .r1061-curve-range input{width:100%;accent-color:#2479d2}
+.r1061-room .r1061-notice{font-size:12px;font-weight:700;color:#bc4148}
+.r1061-room .r1061-button-row{display:flex;gap:8px}
+.r1061-room .r1061-button-row button{padding:9px 12px;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit}
+.r1061-room .r1061-apply{margin-top:14px;background:#1475df!important;color:#fff!important}
+#r1061Rotation{width:100%;accent-color:#186ac8}
+#r1061RotationText{display:inline-block;font-weight:800;margin-left:10px}
+html[data-theme=light] .r8-shell,html[data-theme=light] .r8-panel,
+html[data-theme=light] .r8-section{color:#18191c}
+html[data-theme=dark] .r8-shell,html[data-theme=dark] .r8-panel,
+html[data-theme=dark] .r8-section{color:#f4f4f1}
+html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] textarea{background:#292d31;color:#f7f7f4;border-color:#777}
+html[data-theme=light] input,html[data-theme=light] select,html[data-theme=light] textarea{color:#1c1d20;background:#fff;border-color:#888}
+html[data-theme=dark] .r1061-room .r1061-curve{background:#292d31;color:#fff}
+html[data-theme=light] .r1061-room .r1061-curve{background:#fff;color:#111}
+html[data-theme=dark] button:disabled,html[data-theme=light] button:disabled{opacity:.56}
+html[data-theme=dark] .r1061-apply:focus-visible,html[data-theme=light] .r1061-apply:focus-visible{outline:3px solid #eab308;outline-offset:2px}
+/* Restore the application header in VIEW, including on iPhone, without covering the 3D. */
+body.r8-workspace-body.kitchen-view-mode .r8-topbar{
+ display:flex!important;position:relative!important;transform:none!important;
+ top:auto!important;left:auto!important;right:auto!important;z-index:200!important;
+ visibility:visible!important;opacity:1!important;min-height:60px!important
+}
+body.r8-workspace-body.kitchen-view-mode .r8-topbar #backButton,
+body.r8-workspace-body.kitchen-view-mode .r8-topbar .r8-brand,
+body.r8-workspace-body.kitchen-view-mode .r8-topbar #r1061TopbarHelp,
+body.r8-workspace-body.kitchen-view-mode .r8-topbar #settingsButton{display:flex!important;visibility:visible!important;opacity:1!important}
+body.r8-workspace-body.kitchen-view-mode .r8-main{top:0!important;padding-top:0!important}
+body.r8-workspace-body.kitchen-view-mode .r1050-view-full #modelStage{height:calc(100dvh - 64px)!important}
+body.r8-workspace-body.kitchen-view-mode #r1050KitchenWebGL{max-height:calc(100dvh - 64px)}
+.r8-tools button,.r8-section button,.r8-panel input{overflow-wrap:anywhere}
+@media(max-width:680px){.r8-topbar{gap:6px!important}.r8-brand{min-width:0!important}.r8-master{display:none!important}.r8-project-state{min-width:0!important;overflow:hidden}.r1061-help{width:34px!important;flex-basis:34px!important}}
