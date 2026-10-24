@@ -122,6 +122,32 @@ def test_real_3d_edit_view_isolation(server,engine,viewport):
             assert_frame(page,"EDIT")
             assert_frame(page,"VIEW")
             assert_frame(page,"ISOLATION",minimum=.004)
+            # Approval export must use the current 3D scene without a second WebGL context.
+            export=page.evaluate("""() => {
+              const source=window.BizetApprovalCaptureR1063,d=window.BizetApprovalR1063;
+              const screenshot=source?.isometric?.();
+              const cuts=source?.sectionSlices?.()||[];
+              const modules=window.BizetR1063QA.modules;
+              const room=window.BizetR1063QA.options.room;
+              const stamp=()=>'<g><text>FOR APPROVAL</text></g>';
+              const sheets=d&&[
+                d.overview(modules,room,stamp,'QA'),
+                d.elevation(modules,room,stamp,'QA'),
+                d.sections(modules,room,stamp,'QA'),
+                d.detailSheet(modules,room,stamp,'QA')
+              ];
+              return {imageLength:screenshot?.length||0,sections:cuts.length,
+                sectionLines:cuts.reduce((n,s)=>n+(s.section_segments?.length||0),0),
+                sheets:sheets?.length||0,allSvg:sheets?.every(x=>x.includes('</svg>')),
+                sourceLinked:sheets?.[0]?.includes('data:image/png'),webgl:!!window.BizetKitchenWebGL?.renderer.getContext(),
+                messages:window.BizetR1063QA.messages};
+            }""")
+            assert export["imageLength"]>5000, f"3D axonometric capture blank: {export}"
+            assert export["sectionLines"]>0, f"No real mesh section contours: {export}"
+            assert export["sheets"]==4 and export["allSvg"] and export["sourceLinked"],f"Approval pages invalid: {export}"
+            assert export["webgl"] and not export["messages"],f"WebGL damaged by approval export: {export}"
+            # Hardest part of #30: the 3D remains visibly present after the export.
+            assert_frame(page,"VIEW")
         finally:
             context.close()
             browser.close()
