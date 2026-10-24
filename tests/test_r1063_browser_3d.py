@@ -151,3 +151,50 @@ def test_real_3d_edit_view_isolation(server,engine,viewport):
         finally:
             context.close()
             browser.close()
+
+@pytest.mark.parametrize("engine,viewport",[
+    ("chromium",{"width":1365,"height":900,"is_mobile":False,"has_touch":False}),
+    ("webkit",{"width":390,"height":844,"is_mobile":True,"has_touch":True}),
+])
+def test_actual_workspace_visible(server,engine,viewport):
+    """True /workspace integration, not the isolated QA fixture."""
+    with sync_playwright() as p:
+        browser=getattr(p,engine).launch(headless=True,args=["--no-sandbox","--enable-webgl","--use-gl=angle","--use-angle=swiftshader"] if engine=="chromium" else [])
+        context=browser.new_context(viewport={k:viewport[k] for k in ("width","height")},
+            is_mobile=viewport["is_mobile"],has_touch=viewport["has_touch"],device_scale_factor=1)
+        page=context.new_page()
+        page.route("https://cdn.jsdelivr.net/npm/three@0.128.0/**",local_three_route)
+        errors=[]
+        page.on("pageerror",lambda e: errors.append(str(e)))
+        try:
+            page.goto(f"http://127.0.0.1:{PORT}/workspace",wait_until="domcontentloaded",timeout=60000)
+            page.wait_for_function("""() => {
+              const r=window.BizetModelRuntime,v=window.BizetKitchenWebGL;
+              if(!r?.ready||!v?.renderer?.domElement||!r.getModules?.()?.length)return false;
+              let count=0;v.scene.traverse(o=>{
+                if(o.isMesh&&r.getModules().some(m=>String(m.id)===String(o.userData?.moduleId)))count++
+              });
+              return count>=3;
+            }""",timeout=35000)
+            page.wait_for_timeout(500)
+            state=page.evaluate("""() => {
+              const v=window.BizetKitchenWebGL,r=window.BizetModelRuntime;
+              const modules=r.getModules(),canvas=v.renderer.domElement,b=canvas.getBoundingClientRect();
+              let count=0;v.scene.traverse(o=>{
+                if(o.isMesh&&modules.some(m=>String(m.id)===String(o.userData?.moduleId)))count++;
+              });
+              return {ready:r.ready,modules:modules.length,meshes:count,webgl:!!v.renderer.getContext(),
+                width:b.width,height:b.height,display:getComputedStyle(v.host).display,
+                coreVersion:v.version,roomAdapter:!!window.BizetRoomR1063,
+                drawings:!!window.BizetApprovalR1063,
+                visual:!!window.BizetVisualR1063};
+            }""")
+            assert state["ready"] and state["modules"]>=1 and state["meshes"]>=3, state
+            assert state["width"]>250 and state["height"]>200 and state["webgl"],state
+            assert state["display"]!="none",state
+            assert state["coreVersion"]=="R10.6.0",f"Protected 3D core changed: {state}"
+            assert state["roomAdapter"] and state["drawings"] and state["visual"],state
+            assert not errors,f"Actual workspace browser errors: {errors[:8]}"
+        finally:
+            context.close()
+            browser.close()
