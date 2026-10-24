@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111c2a">
+<title>BIZET OS 10.6.0 · Скан помещения</title>
+<link rel="stylesheet" href="/static/scan-r1058.css?v=1059">
+</head>
+<body>
+<header class="scan-top">
+ <a href="/" class="scan-logo" aria-label="BIZET OS на главную">BIZET <span>OS</span></a>
+ <span class="scan-pilot">PILOT 10.5.8 · SCAN REGISTRATION</span>
+ <a id="scanReturn" href="/room" class="scan-return">← К проекту</a>
+</header>
+<main class="scan-app">
+<section class="scan-heading">
+ <div><div class="scan-eyebrow">BIZET OS / ROOM INTELLIGENCE</div>
+ <h1>Скан помещения</h1>
+ <p>От исходного Polycam-скана — к ориентированному плану, разметке стен и предварительной геометрии.</p></div>
+ <span class="scan-preliminary">Предварительно · не для производства</span>
+</section>
+<section class="scan-entry" id="scanEntry">
+ <button class="scan-method is-active" id="scanChooseImport" type="button" aria-pressed="true"><span class="scan-method-icon">↥</span><strong>Загрузить скан</strong><small>ZIP из Polycam · GLB / GLTF / BIN / текстуры</small></button>
+ <button class="scan-method" id="scanChooseProvider" type="button" aria-pressed="false"><span class="scan-method-icon">◎</span><strong>Создать новый скан</strong><small>Открыть Polycam или SketchUp</small></button>
+</section>
+<section class="scan-section scan-input" id="scanImportPanel">
+ <div class="scan-drop" id="scanDropZone">
+  <div><strong>ZIP / GLB / GLTF</strong><p>Поддерживается готовый скан с текстурами или упрощённая модель стен. ZIP распаковывается прямо на устройстве. Файлы не отправляются на сервер.</p></div>
+  <input id="scanFileInput" type="file" accept=".zip,.glb,.gltf,.bin,.jpg,.jpeg,.png,.webp,application/zip,model/gltf-binary,model/gltf+json" multiple hidden>
+ </div>
+ <label class="scan-archive-choice" id="scanArchiveChoice" for="scanArchiveModel" hidden>В архиве найдено несколько моделей. Выбери, какую открыть: <select id="scanArchiveModel"></select></label>
+</section>
+<section class="scan-section scan-providers" id="scanProviderPanel" hidden>
+ <p>Приложения пока внешние. На iPhone попробуем открыть ссылку Polycam (она может открыть приложение, если Polycam поддерживает этот маршрут). Если откроется сайт, запусти установленное приложение обычным способом. Гарантированный deep-link не подтверждён. Экспортируй ZIP или GLB и вернись сюда. SketchUp — альтернативный редактор, а не эквивалент LiDAR-сканирования.</p>
+ <div class="scan-provider-grid">
+ <button type="button" id="scanOpenPolycam"><strong>Polycam</strong><small>3D-сканирование и экспорт</small><span>Открыть ↗</span></button>
+ <button type="button" id="scanOpenSketchup"><strong>SketchUp</strong><small>Моделирование / доступные инструменты</small><span>Открыть ↗</span></button>
+ </div>
+ <p><a href="https://apps.apple.com/app/id1532482376" target="_blank" rel="noopener noreferrer" class="scan-appstore">Polycam в App Store — только если приложение не установлено ↗</a></p><button class="scan-outline" id="scanBackToImport" type="button">У меня уже есть файл скана</button>
+</section>
+<div id="scanStatus" class="scan-status" role="status" aria-live="polite">Ожидаю файл скана. Для этого пилота можно использовать Polycam 13.08.2026.glb.</div>
+<section class="scan-workspace" id="scanWorkspace" hidden>
+ <div class="scan-viewer-top">
+  <div class="scan-section-label"><strong id="scanFileName">3D-скан</strong><small id="scanStats">Исходный меш + текстуры</small></div>
+  <div class="scan-view-switch">
+   <button id="scanTop" type="button" class="is-active" aria-pressed="true">Сверху</button>
+   <button id="scanOrbit" type="button" aria-pressed="false">3D · 360°</button>
+   <button id="scanResetCamera" type="button">Сбросить камеру</button>
+  </div>
+ </div>
+ <div id="scanViewport" class="scan-viewport" aria-label="Область просмотра текстурированного скана в 3D">
+  <div class="scan-axis">Y ↑ · предварительная система координат</div>
+  <div id="scanPointerHint" class="scan-pointer-hint">Поворот камеры и масштаб — мышью или жестами</div>
+ </div>
+ <div class="scan-controllers">
+  <div class="scan-controls-group">
+   <label>Ориентация плана</label>
+   <div class="scan-button-line"><button id="scanRotateLeft" type="button">↶ 90°</button><button id="scanRotateRight" type="button">↷ 90°</button><button id="scanMirrorHorizontal" type="button">⇄ Отразить</button><button id="scanResetOrientation" type="button">Исходная</button></div>
+  </div>
+  <div class="scan-controls-group">
+   <label>Вид исходной модели</label>
+   <div class="scan-button-line"><button id="scanToggleTexture" type="button" aria-pressed="true">Текстура: ВКЛ</button><button id="scanToggleMesh" type="button" aria-pressed="false">Сетка: ВЫКЛ</button></div>
+  </div>
+ </div>
+ <div class="scan-work-bottom">
+  <section class="scan-semantic">
+   <div class="scan-sub-head"><div class="scan-eyebrow">ШАГ 2 · РАСПОЗНАВАНИЕ ГЕОМЕТРИИ</div><h2>Стены помещения</h2><p>Сначала система предложит крупные вертикальные поверхности из GLB. Выбери найденный участок — появится полупрозрачная красная плоскость. Скорректируй границы, имя и размеры. Если система что-то пропустила, добавь стену вручную двумя касаниями по плану.</p></div>
+   <button id="scanDetectWalls" type="button" class="scan-add-wall">◎ Распознать стены из 3D-скана</button>
+   <p id="scanDetectStatus" class="scan-semantic-help" aria-live="polite">Сначала загрузи скан — после этого попробуем найти плоскости автоматически.</p>
+   <div id="scanDetectedCandidates" class="scan-auto-candidates" aria-label="Предложенные системой поверхности"></div>
+   <div class="scan-role-grid" id="scanRoleGrid"></div>
+   <button class="scan-add-wall" id="scanAddWall" type="button">+ Добавить следующую стену</button>
+   <div class="scan-wall-editor" id="scanWallEditor">
+    <label for="scanWallLabel">Обозначение выбранной стены</label>
+    <input id="scanWallLabel" type="text" maxlength="24" placeholder="Например, 1, А или В">
+    <label for="scanWallKind">Какой это участок?</label>
+    <select id="scanWallKind">
+     <option value="PRIMARY_WALL">Основная стена</option>
+     <option value="PROTRUSION_FACE">Выступ / короб</option>
+     <option value="PARTITION">Перегородка</option>
+     <option value="OTHER_SURFACE">Другая поверхность</option>
+    </select>
+   </div>
+   <div class="scan-selected-edit" id="scanSelectedEdit" hidden>
+    <h3>Выбранная поверхность · красная плоскость</h3>
+    <div class="scan-edit-grid">
+     <label>Длина сегмента, мм<input id="scanWallLengthMm" type="number" inputmode="decimal" min="100" max="30000" step="1"></label>
+     <label>Смещение от текущего положения, мм<input id="scanWallOffsetMm" type="number" inputmode="decimal" step="10" value="0"></label>
+     <label>Повернуть на угол, °<input id="scanWallAngleDeg" type="number" inputmode="decimal" step="1" value="0"></label>
+     <label>Высота поверхности, мм<input id="scanWallHeightMm" type="number" inputmode="decimal" step="1" min="200"></label>
+    </div>
+    <button id="scanDragWall" class="scan-outline" type="button" aria-pressed="false">✥ Переместить красную плоскость пальцем</button>
+    <button id="scanApplyWallAdjust" class="scan-outline" type="button">Применить числовую корректировку</button>
+    <button id="scanAcceptWall" class="scan-outline" type="button">Подтвердить как предварительную стену</button>
+    <div class="scan-utility"><h3>Коммуникации на этой стене</h3>
+     <div class="scan-edit-grid">
+      <label>Тип<select id="scanUtilityKind"><option value="SOCKET">Розетка</option><option value="SWITCH">Выключатель</option><option value="WATER">Вода</option><option value="DRAIN">Канализация</option><option value="VENT">Вентиляция</option><option value="PIPE">Труба</option><option value="OTHER">Другое</option></select></label>
+      <label>От начала стены, мм<input id="scanUtilityOffset" type="number" inputmode="decimal" value="0" min="0"></label>
+      <label>Высота от пола, мм<input id="scanUtilityHeight" type="number" inputmode="decimal" value="300" min="0"></label>
+     </div>
+     <button id="scanUtilityAdd" class="scan-outline" type="button">+ Привязать коммуникацию</button>
+     <div id="scanUtilityList" class="scan-utility-list"></div>
+    </div>
+   </div>
+   <div class="scan-addons"><button data-scan-anchor="ENTRY" type="button">+ Отметить вход / дверь (необязательно)</button></div>
+   <div class="scan-semantic-help" id="scanDrawingHint">Выбери стену, коснись начала и конца её линии на виде сверху.</div>
+   <div class="scan-markup-list" id="scanMarkupList"></div>
+   <div class="scan-action-footer"><button id="scanCancelMark" class="scan-outline" type="button">Сбросить текущие точки</button><button id="scanUndoMark" class="scan-outline" type="button">Удалить последнее</button></div>
+  </section>
+  <section class="scan-registration">
+   <div class="scan-eyebrow">ШАГ 3 · ПРИВЯЗКА К BIZET OS</div>
+   <h2>Контроль масштаба</h2>
+   <p>Скан даёт приближённую геометрию. Укажи известный лазерный размер, когда он появится; подтверждение производства выполняется отдельно.</p>
+   <div class="scan-dimensions"><span>Габарит меша:</span><strong id="scanDimensions">—</strong><small>Включает мебель и лишнюю геометрию</small></div>
+   <label class="scan-measure-label" for="scanKnownMm">Проверенный размер выбранной стены, мм (необязательно)</label>
+   <input id="scanKnownMm" type="number" min="100" max="100000" step="1" inputmode="numeric" placeholder="Например, 4100">
+   <label class="scan-measure-label" for="scanKnownRole">Для какой размеченной стены</label>
+   <select id="scanKnownRole"></select>
+   <div class="scan-registration-state" id="scanRegistrationState">Геометрия пока не подтверждена · экспорт производства запрещён</div>
+   <button class="scan-primary" type="button" id="scanSaveRegistration">Сохранить предварительную разметку в проект</button>
+   <button class="scan-outline" type="button" id="scanContinueToRoom">Загрузить стены в проект →</button>
+   <p class="scan-fineprint">Сохраняются только координаты, ориентация, разметка и отпечаток файла — сам GLB остаётся на устройстве. После обновления страницы загрузи GLB повторно. Никакие производственные размеры не подтверждаются автоматически.</p>
+  </section>
+ </div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.3/umd/index.js"></script>
+<script src="/static/scan-auto-r1059.js?v=1059"></script>
+<script src="/static/scan-r1058.js?v=1060"></script>
+</body>
+</html>
