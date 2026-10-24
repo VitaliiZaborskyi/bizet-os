@@ -3,7 +3,7 @@
  * Any preflight error leaves the ORIGINAL 10.6.0 scene intact.
  */
 (()=>{'use strict';
- let accessories=null,lights=null,bound=null,queued=false,refreshing=false;
+ let accessories=null,lights=null,bound=null,queued=false,refreshing=false,attached=[];
  const rt=()=>window.BizetModelRuntime,viewer=()=>window.BizetKitchenWebGL,THREE=()=>window.THREE;
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const contents=()=>rt()?.getModules?.()||window.BizetR1063QA?.modules||[];
@@ -61,12 +61,12 @@
    cup.material.userData.r1063Owned=true;cup.position.copy(world);
    cup.rotation.set(wall==='A'?Math.PI/2:0,0,wall==='A'?0:Math.PI/2);
    cup.userData={cat:'r1063-real-hinge-cup',moduleId:module.id,spec_mm:35,certified:false};
-   root.add(cup);pivot.attach(cup);
+   root.add(cup);pivot.attach(cup);attached.push(cup);
    const arm=new T.Mesh(new T.BoxGeometry(wall==='A'?39:14,11,wall==='A'?14:39),hue.clone());
    arm.material.userData.r1063Owned=true;
    arm.position.copy(world).add(new T.Vector3(0,0,wall==='A'?19:0));
    arm.userData={cat:'r1063-hinge-arm',moduleId:module.id,certified:false};
-   root.add(arm);pivot.attach(arm);
+   root.add(arm);pivot.attach(arm);attached.push(arm);
    const cabinetPoint=wall==='A'
     ?coreWorld(Number(module.x)+((front.position.x<0)?24:Number(module.w)-24),Number(module.y)+20,Number(module.z)+height*percent)
     :coreWorld(Number(module.x)+Number(module.w)/2,Number(module.y)+((side==='left')?24:Number(module.d)-24),Number(module.z)+height*percent);
@@ -125,7 +125,7 @@
   refreshing=true;
   try{
    // Build everything first. If an extension throws, old renderer stays untouched.
-   clear(accessories);clear(lights);
+   attached.forEach(n=>{n.parent?.remove(n);n.geometry?.dispose();if(n.material?.userData?.r1063Owned)n.material.dispose()});attached=[];clear(accessories);clear(lights);
    accessories=new T.Group();accessories.name='BIZET_R1063_REAL_HINGES';
    lights=new T.Group();lights.name='BIZET_R1063_LED_PREVIEW';
    const mods=contents(),fronts=readRealFronts(v.scene);
@@ -158,7 +158,7 @@
      protectedCore:true,productionReady:false};
   }catch(error){console.error('R1063_PROTECTED_VISUAL_EXTENSION_FAILED',error);
     window.BizetVisualR1063.status={ok:false,error:String(error),protectedCore:true};
-    clear(accessories);clear(lights);accessories=lights=null;
+    attached.forEach(n=>{n.parent?.remove(n);n.geometry?.dispose();if(n.material?.userData?.r1063Owned)n.material.dispose()});attached=[];clear(accessories);clear(lights);accessories=lights=null;
   }finally{refreshing=false}
  }
  function schedule(){
