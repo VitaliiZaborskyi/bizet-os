@@ -167,7 +167,11 @@ def test_actual_workspace_visible(server,engine,viewport):
         errors=[]
         page.on("pageerror",lambda e: errors.append(str(e)))
         try:
-            page.goto(f"http://127.0.0.1:{PORT}/workspace",wait_until="domcontentloaded",timeout=60000)
+            # /workspace REQUIRES a real project ID; never test a missing-project URL.
+            response=page.request.post(f"http://127.0.0.1:{PORT}/api/v1.1/projects",data={})
+            assert response.ok,f"Project fixture creation failed: {response.status} {response.text()[:250]}"
+            project_id=response.json()["identity"]["internal_id"]
+            page.goto(f"http://127.0.0.1:{PORT}/workspace?project={project_id}",wait_until="domcontentloaded",timeout=60000)
             page.wait_for_function("""() => {
               const r=window.BizetModelRuntime,v=window.BizetKitchenWebGL;
               if(!r?.ready||!v?.renderer?.domElement||!r.getModules?.()?.length)return false;
