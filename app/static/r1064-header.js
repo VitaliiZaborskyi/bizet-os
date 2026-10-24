@@ -16,7 +16,8 @@
   return true;
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',arrange,{once:true});else arrange();
- const watch=new MutationObserver(()=>{if(arrange())watch.disconnect()});
+ // Other legacy chrome extensions may add another ? AFTER DOMContentLoaded.
+ const watch=new MutationObserver(()=>arrange());
  watch.observe(document.documentElement,{subtree:true,childList:true});
  window.BizetHeaderR1064={arrange};
 })();
