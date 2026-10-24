@@ -650,11 +650,19 @@
   }
 
   function approvalSheets(modules,room,orderRef=''){
-    return[
-      approvalPlanSheet(modules,room,orderRef),
+    const engine=window.BizetApprovalR1063;
+    if(engine){
+      const stamp=(page,title,ref,scaleLabel)=>approvalStamp(page,title,ref,scaleLabel);
+      return[
+       engine.overview(modules,room,stamp,orderRef),
+       engine.elevation(modules,room,stamp,orderRef),
+       engine.sections(modules,room,stamp,orderRef),
+       engine.detailSheet(modules,room,stamp,orderRef)
+      ];
+    }
+    return[approvalPlanSheet(modules,room,orderRef),
       approvalElevationSheet(modules,room,orderRef),
-      approvalSectionSheet(modules,room,orderRef)
-    ];
+      approvalSectionSheet(modules,room,orderRef)];
   }
 
   function approvalDrawingHtml(data=current()){
