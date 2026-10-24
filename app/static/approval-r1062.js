@@ -5,7 +5,7 @@
  const PXMM=1120/282,scaleSet=[10,15,20,25,30,40,50,75,100,125,150,200,250,300,400];
  const num=v=>Number.isFinite(Number(v))?Number(v):0;
  const round=v=>Math.round(num(v));
- const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;':'&quot;',"'":'&#39;'}[c]));
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const scale=(w,pxW,h,pxH)=>scaleSet.find(n=>num(w)*PXMM/n<=pxW&&num(h)*PXMM/n<=pxH)||400;
  const dim=(x1,y1,x2,y2,label,offset=0)=>{
   const horizontal=Math.abs(x2-x1)>=Math.abs(y2-y1);
