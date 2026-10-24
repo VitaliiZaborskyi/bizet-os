@@ -254,6 +254,21 @@ function materialIdFor(p){
 }
 function exportEngineering(model,filename,options={}){
  if(!model)return false;
+ const runtime=window.BizetModelRuntime;
+ const geoSource=window.BizetRoomR1063?.source(runtime?.getVisual?.()||{});
+ const led=window.BizetLED1063?.manifest?.(runtime?.getInputs?.()||{},runtime?.getModules?.()||[]);
+ const fridgePanelStops=(model.modules||[]).filter(m=>
+   m.kind==='FRIDGE'&&m.end_panel_edges?.length);
+ if(geoSource==='SCAN'||led?.included||fridgePanelStops.length){
+   const errors=[
+     ...(geoSource==='SCAN'?['STOP_REAL_SCAN_UNVERIFIED_R1063']:[]),
+     ...(led?.included?['STOP_LED_BORING_AND_SUPPLIER_UNVERIFIED_R1063']:[]),
+     ...fridgePanelStops.map(m=>'STOP_FRIDGE_END_PANEL_COMPENSATION_UNVERIFIED:'+m.id)
+   ];
+   const report={ok:false,errors,warnings:[],status:'HUMAN_REVIEW_REQUIRED'};
+   window.dispatchEvent(new CustomEvent('bizet:export-preflight',{detail:{profile:profile().id,report,model:model.name}}));
+   console.warn('R10.6.3 protected factory STOP',report);return false;
+ }
  const customShelves=(model.modules||[]).filter(m=>Array.isArray(m.shelf_z_overrides_mm)&&m.shelf_z_overrides_mm.length);
  const invalidHinges=(model.modules||[]).filter(m=>m.hinge_layout_conflict||window.BizetR10Rules?.planHingePositions?.(m)?.ok===false);
  const unresolvedGrilles=(model.modules||[]).filter(m=>['FRIDGE','TALL_OVEN'].includes(m.kind)&&!m.freestanding);
