@@ -29,11 +29,43 @@
   const along=pt=>(pt[0]-mx)*ux+(pt[1]-mz)*uz;
   const behind=pt=>(pt[0]-mx)*(-uz)+(pt[1]-mz)*ux;
   const points=s.walls.flatMap(w=>[[Number(w.x1_mm),Number(w.z1_mm)],[Number(w.x2_mm),Number(w.z2_mm)]]);
-  const depths=points.map(behind);const spread=Math.max(...depths)-Math.min(...depths);
+  const depths=points.map(behind),minDepth=Math.min(...depths),maxDepth=Math.max(...depths);
+  // The primary wall is always at the BACK of the modeled room. Other walls face inward.
+  const interiorSign=Math.abs(minDepth)>Math.abs(maxDepth)?-1:1;
+  const inward=depths.map(d=>d*interiorSign),spread=Math.max(...inward);
   const available=spread>=900&&spread<=30000?Math.round(spread):null;
   return {lengthMm:Math.round(len),depthMm:available||4200,heightMm:Math.round(Math.max(2000,...s.walls.map(w=>Number(w.height_mm)||2800))),
-   frame:{ux,uz,mx,mz,depthOrigin:available?Math.min(...depths): -4200,along,behind},
+   frame:{ux,uz,mx,mz,depthOrigin:0,interiorSign,along,behind},
    primary:p,source:'SCAN',provisional:!available,rotation_deg:Number(s.rotation_deg)||0};
+ }
+ function wallModuleIntersections(visual,modules){
+  const g=room(visual),scan=live(visual);if(!g||!scan)return [];
+  const {frame,depthMm,lengthMm}=g,primaryId=g.primary.id,out=[];
+  const rects=(modules||[]).filter(m=>!m.freestanding&&m.kind!=='FILLER').map(m=>{
+    const x=Number(m.x),y=Number(m.y),w=Number(m.w),d=Number(m.d);
+    return {id:m.id,minX:x-12,maxX:x+w+12,minY:y-12,maxY:y+d+12};
+  }).filter(r=>[r.minX,r.minY,r.maxX,r.maxY].every(Number.isFinite));
+  function inside(p,r){return p[0]>=r.minX&&p[0]<=r.maxX&&p[1]>=r.minY&&p[1]<=r.maxY}
+  function crosses(a,b,r){
+    if(inside(a,r)||inside(b,r))return true;
+    const corners=[[r.minX,r.minY],[r.maxX,r.minY],[r.maxX,r.maxY],[r.minX,r.maxY]];
+    const orient=(p,q,t)=>(q[0]-p[0])*(t[1]-p[1])-(q[1]-p[1])*(t[0]-p[0]);
+    return corners.some((p,i)=>{
+      const q=corners[(i+1)%4],d1=orient(a,b,p),d2=orient(a,b,q),d3=orient(p,q,a),d4=orient(p,q,b);
+      return d1*d2<=0&&d3*d4<=0;
+    });
+  }
+  scan.walls.forEach(w=>{
+    if(w.id===primaryId)return; // The main wall is the cabinet's rear boundary.
+    const project=(x,z)=>{
+      const pt=[Number(x),Number(z)];
+      return [frame.along(pt)+lengthMm/2,depthMm-frame.behind(pt)*frame.interiorSign];
+    };
+    const a=project(w.x1_mm,w.z1_mm),b=project(w.x2_mm,w.z2_mm);
+    if(![...a,...b].every(Number.isFinite))return;
+    rects.forEach(r=>{if(crosses(a,b,r))out.push({wall_id:w.id,module_id:r.id})});
+  });
+  return out;
  }
  function bend(w,x,h){
   const c=w.curve_mm||{},t=clamp(h/Math.max(1,Number(w.height_mm)||2800),0,1);
@@ -45,7 +77,7 @@
   const {frame,lengthMm,depthMm}=g;
   s.walls.forEach((w,i)=>{
    const a=[Number(w.x1_mm),Number(w.z1_mm)],b=[Number(w.x2_mm),Number(w.z2_mm)];
-   const x1=frame.along(a),x2=frame.along(b),z1=depthMm/2-(frame.behind(a)-frame.depthOrigin),z2=depthMm/2-(frame.behind(b)-frame.depthOrigin);
+   const x1=frame.along(a),x2=frame.along(b),z1=depthMm/2-frame.behind(a)*frame.interiorSign,z2=depthMm/2-frame.behind(b)*frame.interiorSign;
    const len=Math.hypot(x2-x1,z2-z1),h=Number(w.height_mm)||2800,t=clamp(Number(w.thickness_mm)||100,20,1000);
    if(![x1,x2,z1,z2,len,h].every(Number.isFinite)||len<100||len>30000||h<200||h>10000)return;
    const geo=new THREE.BoxGeometry(len,h,t,24,12,1);
@@ -103,11 +135,22 @@
   $('r1061Select')?.addEventListener('change',e=>{choose(Number(e.target.value));rerender()});
   $('r1061Primary')?.addEventListener('change',e=>{edit().primary_wall_id=e.target.value;rt.render()});
   function updateWall(){
-   const w=edit().walls[selected],len=Number($('r1061Length')?.value),h=Number($('r1061Height')?.value),thick=Number($('r1061Thickness')?.value);
+   const state=edit(),w=state.walls[selected],len=Number($('r1061Length')?.value),h=Number($('r1061Height')?.value),thick=Number($('r1061Thickness')?.value);
+    const originalEnd=[Number(w.x2_mm),Number(w.z2_mm)];
    if(Number.isFinite(len)&&len>=100&&len<=30000){
     const prior=length(w)||1,t=len/prior;
     w.x2_mm=Math.round(Number(w.x1_mm)+(Number(w.x2_mm)-Number(w.x1_mm))*t);
     w.z2_mm=Math.round(Number(w.z1_mm)+(Number(w.z2_mm)-Number(w.z1_mm))*t);
+    // Preserve any scan junction originally sharing this endpoint.
+    // The unchanged owner source is still retained as the original scan registration.
+    state.walls.forEach((other,j)=>{
+      if(j===selected)return;
+      for(const point of ['1','2']){
+        if(Math.hypot(Number(other['x'+point+'_mm'])-originalEnd[0],Number(other['z'+point+'_mm'])-originalEnd[1])<=3){
+          other['x'+point+'_mm']=w.x2_mm;other['z'+point+'_mm']=w.z2_mm;
+        }
+      }
+    });
    }
    if(Number.isFinite(h)&&h>=200&&h<=10000)w.height_mm=h;
    if(Number.isFinite(thick)&&thick>=20&&thick<=1000)w.thickness_mm=thick;
@@ -124,5 +167,5 @@
   $('r1061Cancel')?.addEventListener('click',()=>{draft=null;rt.render();rerender()});
   $('r1061Apply')?.addEventListener('click',async()=>{if(draft)await save(rt,draft);rt.render();rerender()});
  }
- window.BizetRoomR1061={source,room,primary,length,renderWalls,markup,bind,choose,current:live,selectIndex:()=>selected,hasUnsavedChanges:()=>!!draft};
+ window.BizetRoomR1061={source,room,primary,length,wallModuleIntersections,renderWalls,markup,bind,choose,current:live,selectIndex:()=>selected,hasUnsavedChanges:()=>!!draft};
 })();
