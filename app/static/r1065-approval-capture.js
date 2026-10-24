@@ -21,7 +21,7 @@
   if(box.isEmpty())return null;
   const center=box.getCenter(new THREE.Vector3());
   // Print-specific camera and WebGLRenderTarget, never create a second WebGL context.
-  const width=900,height=940,aspect=width/height;
+  const width=768,height=1032,aspect=width/height;
   const camera=new THREE.OrthographicCamera(-1,1,1,-1,1,100000);
   camera.position.copy(center).add(new THREE.Vector3(9000,7200,-11000));
   camera.lookAt(center);camera.updateMatrixWorld(true);
@@ -34,6 +34,8 @@
   camera.left=-halfH*aspect;camera.right=halfH*aspect;
   camera.top=halfH;camera.bottom=-halfH;camera.updateProjectionMatrix();
   const renderer=viewer.renderer,oldTarget=renderer.getRenderTarget(),oldBg=viewer.scene.background;
+  const oldViewport=renderer.getViewport(new THREE.Vector4()),oldScissor=renderer.getScissor(new THREE.Vector4()),
+   oldScissorTest=renderer.getScissorTest();
   const vis=[],keep=new Set(selected),pixel=new Uint8Array(width*height*4);
   let target=null,result=null;
   try{
@@ -55,7 +57,8 @@
   }catch(error){console.error('R1065_PRINT_CAPTURE_FAILED',error);result=null}
   finally{
    renderer.setRenderTarget(oldTarget);
-   renderer.setViewport(0,0,renderer.domElement.width,renderer.domElement.height);
+   renderer.setViewport(oldViewport);
+   renderer.setScissor(oldScissor);renderer.setScissorTest(oldScissorTest);
    viewer.scene.background=oldBg;vis.forEach(([n,visible])=>{n.visible=visible});
    target?.dispose();
    try{renderer.render(viewer.scene,viewer.camera)}catch(error){console.warn('R1065_RESTORE_VIEWER',error)}
