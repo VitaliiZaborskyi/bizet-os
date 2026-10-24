@@ -1,0 +1,82 @@
+/* BIZET OS 10.6.3 Protected UI adapter.
+ * Never mutates WebGL canvas, camera, geometry or renderer. */
+body.r8-workspace-body .r8-topbar{
+ display:flex!important;align-items:center!important;flex-wrap:nowrap!important;
+ gap:clamp(3px,.8vw,10px)!important;min-width:0!important;box-sizing:border-box!important;
+ padding-inline:max(10px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-right))!important;
+}
+body.r8-workspace-body .r8-topbar #backButton,
+body.r8-workspace-body .r8-topbar #r1063HelpButton,
+body.r8-workspace-body .r8-topbar #baseInfoButton,
+body.r8-workspace-body .r8-topbar #settingsButton{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ flex:0 0 38px!important;width:38px!important;min-width:38px!important;height:38px!important;
+ margin:0!important;padding:0!important;position:relative!important;transform:none!important;
+ visibility:visible!important;opacity:1!important;box-sizing:border-box!important;
+}
+body.r8-workspace-body .r8-brand{
+ display:inline-flex!important;align-items:center!important;min-width:0!important;
+ flex:0 1 auto!important;max-width:210px!important;white-space:nowrap!important;
+ overflow:hidden!important;text-overflow:ellipsis!important;
+}
+body.r8-workspace-body .r8-project-state{
+ display:flex!important;align-items:center!important;justify-content:flex-end!important;
+ flex:1 1 50px!important;min-width:0!important;gap:5px!important;white-space:nowrap!important;
+}
+body.r8-workspace-body .r8-project-state>span{
+ min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important
+}
+body.r8-workspace-body .settings-wrap{
+ flex:0 0 38px!important;width:38px!important;min-width:38px!important;
+ position:relative!important
+}
+body.r8-workspace-body .settings-panel{
+ max-width:min(360px,calc(100vw - 20px))!important;right:0!important;z-index:1002!important;
+}
+body.r8-workspace-body .r8-topbar button:focus-visible,
+body.r8-workspace-body .r8-topbar a:focus-visible{
+ outline:3px solid #4399ff!important;outline-offset:2px!important;
+}
+/* VIEW keeps standard navigation and fits 3D underneath without repaint hooks. */
+body.r1050-view-full .r8-topbar{
+ position:fixed!important;left:0!important;right:0!important;
+ top:0!important;height:58px!important;min-height:58px!important;
+ z-index:900!important;opacity:1!important;pointer-events:auto!important;
+ transform:none!important;visibility:visible!important;
+ background:var(--r8-panel,#f9f8f4)!important;
+}
+body.r1050-view-full #modelStage{
+ top:58px!important;bottom:0!important;height:calc(100dvh - 58px)!important;
+ min-height:0!important;
+}
+body.r1050-view-full .r8-stage-top{top:max(64px,env(safe-area-inset-top))!important}
+/* Contrast on real dark/light backgrounds, including focus and disabled states. */
+html[data-theme="light"] .r8-topbar,
+html[data-theme="light"] .r8-panel,
+html[data-theme="light"] .r8-section{color:#1a1d20!important}
+html[data-theme="dark"] .r8-topbar,
+html[data-theme="dark"] .r8-panel,
+html[data-theme="dark"] .r8-section{color:#f6f7f8!important}
+html[data-theme="dark"] input:not([type="range"]),html[data-theme="dark"] textarea,
+html[data-theme="dark"] select{background:#262a2f;color:#fafbfc;border-color:#818b98}
+html[data-theme="light"] input:not([type="range"]),html[data-theme="light"] textarea,
+html[data-theme="light"] select{background:#fff;color:#191c1e;border-color:#6f7b82}
+html[data-theme="dark"] .r8-topbar button[disabled],
+html[data-theme="light"] .r8-topbar button[disabled]{opacity:.6}
+@media(max-width:650px){
+ body.r8-workspace-body .r8-topbar{gap:4px!important}
+ body.r8-workspace-body .r8-topbar .r8-master{display:none!important}
+ body.r8-workspace-body .r8-brand{max-width:32vw!important;flex-shrink:1!important}
+ body.r8-workspace-body .r8-project-state>span{display:none!important}
+ body.r8-workspace-body .r8-topbar #backButton,
+ body.r8-workspace-body .r8-topbar #r1063HelpButton,
+ body.r8-workspace-body .r8-topbar #baseInfoButton,
+ body.r8-workspace-body .r8-topbar #settingsButton{
+ flex-basis:34px!important;width:34px!important;min-width:34px!important;height:36px!important
+ }
+ body.r8-workspace-body .settings-wrap{width:34px!important;min-width:34px!important;flex-basis:34px!important}
+}
+@media(max-width:350px){
+ body.r8-workspace-body .r8-brand{max-width:27vw!important}
+ body.r8-workspace-body .r8-topbar{gap:2px!important}
+}

@@ -1,0 +1,18 @@
+{
+  "name": "BIZET OS by ZABORSKY",
+  "short_name": "BIZET OS",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#171716",
+  "theme_color": "#171716",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/static/bizet-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
