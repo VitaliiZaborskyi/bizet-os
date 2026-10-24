@@ -675,11 +675,13 @@
   }
 
   function approvalSheets(modules,room,orderRef=''){
-    return[
-      approvalPlanSheet(modules,room,orderRef),
-      approvalElevationSheet(modules,room,orderRef),
-      approvalSectionSheet(modules,room,orderRef)
+    const set=window.BizetApprovalR1062;
+    if(set)return[
+      set.overview(modules,room,approvalStamp,orderRef),
+      set.elevation(modules,room,approvalStamp,orderRef),
+      set.sections(modules,room,approvalStamp,orderRef)
     ];
+    return[approvalPlanSheet(modules,room,orderRef),approvalElevationSheet(modules,room,orderRef),approvalSectionSheet(modules,room,orderRef)];
   }
 
   function approvalDrawingHtml(data=current()){
