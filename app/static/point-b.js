@@ -676,11 +676,15 @@
 
   function approvalSheets(modules,room,orderRef=''){
     const set=window.BizetApprovalR1062;
-    if(set)return[
-      set.overview(modules,room,approvalStamp,orderRef),
-      set.elevation(modules,room,approvalStamp,orderRef),
-      set.sections(modules,room,approvalStamp,orderRef)
-    ];
+    if(set){
+      const stamp4=(page,title,ref,scaleLabel)=>approvalStamp(page,title,ref,scaleLabel,4);
+      return[
+       set.overview(modules,room,stamp4,orderRef),
+       set.elevation(modules,room,stamp4,orderRef),
+       set.sections(modules,room,stamp4,orderRef),
+       set.detailSheet(modules,room,stamp4,orderRef)
+      ];
+    }
     return[approvalPlanSheet(modules,room,orderRef),approvalElevationSheet(modules,room,orderRef),approvalSectionSheet(modules,room,orderRef)];
   }
 
@@ -690,9 +694,22 @@
     return `<!doctype html><html><head><meta charset="utf-8"><title>BIZET Approval Drawings</title><style>@page{size:A4 landscape;margin:5mm 7.5mm}body{margin:0;background:#ddd;font-family:Arial,sans-serif}.sheet{background:#fff;margin:0 auto 8mm;page-break-after:always}.sheet svg{display:block;width:282mm;height:198.94mm;max-width:100%}body.hidden-lines-off .approval-hidden{display:none}@media print{body{background:#fff}.sheet{margin:0;page-break-after:always}.approval-toolbar{display:none!important}}</style></head><body><div class="approval-toolbar" style="padding:12px;background:white;font:14px Arial"><label><input type="checkbox" checked onchange="document.body.classList.toggle('hidden-lines-off',!this.checked)"> Show hidden lines / Скрытые линии</label> · A4 landscape · Actual-size print (100%)</div>${sheets.map(svg=>`<div class="sheet">${svg}</div>`).join('')}</body></html>`;
   }
   function openApprovalDrawings(){
-    const html=approvalDrawingHtml();if(!html)return;
-    const w=window.open('','_blank');if(!w)return;
-    w.document.open();w.document.write(html+'<script>window.onload=()=>setTimeout(()=>window.print(),220)<\/script>');w.document.close();
+    // Acquire Safari popup synchronously while click activation is still alive.
+    const w=window.open('','_blank');
+    if(!w){window.alert('Safari blocked the drawing window. Allow popups for BIZET OS and retry.');return false;}
+    try{
+      w.document.open();
+      w.document.write('<!doctype html><title>BIZET OS · preparing approval drawings</title><p>Building approval drawings from current project…</p>');
+      w.document.close();
+      const html=approvalDrawingHtml();
+      if(!html)throw new Error('No active engineering model available for drawing export');
+      w.document.open();w.document.write(html+'<script>window.onload=function(){setTimeout(function(){window.print()},450)}<\/script>');
+      w.document.close();return true;
+    }catch(error){
+      console.error('R1062_DRAWING_EXPORT_FAILED',error);
+      try{w.document.body.textContent='BIZET OS export error: '+String(error.message||error)}catch(_){}
+      window.alert('Чертежи не созданы: '+String(error.message||error));return false;
+    }
   }
 
   function csv(rows,headers,map){
@@ -700,7 +717,17 @@
     return '\ufeff'+[headers.map(q).join(';'),...rows.map(r=>map(r).map(q).join(';'))].join('\n');
   }
   function download(name,type,text){
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},300);
+    let href='',a=null;
+    try{
+      const blob=new Blob([text],{type});if(!blob.size)throw new Error('Empty generated file');
+      href=URL.createObjectURL(blob);a=document.createElement('a');a.href=href;a.download=name;
+      a.rel='noopener';a.style.display='none';document.body.appendChild(a);a.click();
+      // Safari may start downloading after the click handler returns.
+      setTimeout(()=>{URL.revokeObjectURL(href);a?.remove()},60000);
+      return true;
+    }catch(error){console.error('R1062_SAFARI_DOWNLOAD_FAILED',error);if(a)a.remove();
+      if(href)URL.revokeObjectURL(href);
+      window.alert('Не удалось сохранить '+name+': '+String(error.message||error));return false}
   }
   function downloadDetail(details){
     const headers=['№','Материал','Уникальный код','Наименование детали','Длина','Ширина','Количество','Ед. изм.','Наименование кромки','Кромка по длинной стороне','Кромка по короткой стороне','Дополнительные обработки','Примечание'];
