@@ -859,7 +859,7 @@ def test_current_workspace_cache_busts_rules_and_renderer_assets():
     assert "/static/kitchen-webgl-r1050.js?v=20261023r1060" in html
     assert "/static/r10-domain-rules.js?v=20261021r1059" in html
     assert "/static/workspace-r8.js?v=20261024r1063" in html
-    assert "/static/point-b.js?v=20261024r106303" in html
+    assert "/static/point-b.js?v=20261024r106505" in html
     assert "/static/pilot-3d.js?v=1051" in html
     assert "/static/workspace-r8.css?v=1051" in html
     assert "/static/model-r5.js?v=175" in html
@@ -1314,8 +1314,11 @@ def test_r1042_approval_drawings_are_three_page_client_documents():
 
 def test_r1042_pdf_builders_emit_real_pdf_bytes():
     from app.services.documents import build_approval_pdf, build_proposal_pdf
-    svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect x="1" y="1" width="98" height="98" fill="none" stroke="black"/></svg>'
-    approval = build_approval_pdf([svg, svg, svg])
+    import pytest
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 790"><text x="10" y="24">SNAPSHOT R1065-0123abcd</text><rect x="1" y="1" width="98" height="98" fill="none" stroke="black"/></svg>'
+    with pytest.raises(ValueError,match="STOP_APPROVAL_PAGE_COUNT_INVALID"):
+        build_approval_pdf([svg,svg,svg])
+    approval = build_approval_pdf([svg,svg,svg,svg])
     proposal = build_proposal_pdf('UA-ODS-TEST', {'price':'100 UAH','manufacturer':'BIZET','configuration':'Linear','features':['18 mm carcass']})
     assert approval.startswith(b'%PDF')
     assert proposal.startswith(b'%PDF')
