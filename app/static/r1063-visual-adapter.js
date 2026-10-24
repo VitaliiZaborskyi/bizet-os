@@ -41,42 +41,70 @@
   front.userData.r1063ThicknessMm=t;
   front.userData.r1063Source='FACIAL_BOARD_THICKNESS';
  }
+ // R10.6.4 #40: ONE physically hinged side for EACH real swinging facade.
+ // 35-mm concealed cup follows the door; stamped arm follows door; base plate remains fixed.
  function hinge(front,module,root){
   const pivot=front.parent;
-  if(pivot?.userData?.type!=='door')return 0;
-  const T=THREE(),side=pivot.userData.side||'left',wall=module.wall||'A';
-  const width=wall==='A'?Number(front.geometry.parameters.width):Number(front.geometry.parameters.depth);
-  const height=Number(front.geometry.parameters.height),fr=height>1100?[.14,.5,.86]:[.17,.83];
-  if(width<70||height<170)return 0;
-  const hue=owned(makeMat({color:0xb2babf})),cupMaterial=owned(makeMat({color:0xd8e0e3}));
-  fr.forEach((percent,i)=>{
-   // Geometry positions track the LIVE door pivot; 35-mm cup follows the door when opened.
-   const horizontal=(side==='left'?-width/2+24:width/2-24);
-   const vertical=-height/2+height*percent;
-   const inner=thickness()/2-6;
-   const local=wall==='A'?new T.Vector3(horizontal,vertical,inner):
-     new T.Vector3(module.wall==='B'?-inner:inner,vertical,horizontal);
-   const world=front.localToWorld(local.clone());
-   const cup=new T.Mesh(new T.CylinderGeometry(17.5,17.5,11,28),cupMaterial.clone());
-   cup.material.userData.r1063Owned=true;cup.position.copy(world);
-   cup.rotation.set(wall==='A'?Math.PI/2:0,0,wall==='A'?0:Math.PI/2);
-   cup.userData={cat:'r1063-real-hinge-cup',moduleId:module.id,spec_mm:35,certified:false};
-   root.add(cup);pivot.attach(cup);attached.push(cup);
-   const arm=new T.Mesh(new T.BoxGeometry(wall==='A'?39:14,11,wall==='A'?14:39),hue.clone());
-   arm.material.userData.r1063Owned=true;
-   arm.position.copy(world).add(new T.Vector3(0,0,wall==='A'?19:0));
-   arm.userData={cat:'r1063-hinge-arm',moduleId:module.id,certified:false};
-   root.add(arm);pivot.attach(arm);attached.push(arm);
-   const cabinetPoint=wall==='A'
-    ?coreWorld(Number(module.x)+((front.position.x<0)?24:Number(module.w)-24),Number(module.y)+20,Number(module.z)+height*percent)
-    :coreWorld(Number(module.x)+Number(module.w)/2,Number(module.y)+((side==='left')?24:Number(module.d)-24),Number(module.z)+height*percent);
-   const plate=new T.Mesh(new T.BoxGeometry(29,33,7),hue.clone());
-   plate.material.userData.r1063Owned=true;plate.position.copy(cabinetPoint);
-   plate.userData={cat:'r1063-hinge-fixed-plate',moduleId:module.id,certified:false};
+  if(pivot?.userData?.type!=='door'||String(pivot.userData.moduleId)!==String(module.id))return 0;
+  const T=THREE(),side=pivot.userData.side==='right'?'right':'left',wall=module.wall||'A';
+  const geo=front.geometry?.parameters||{},width=wall==='A'?Number(geo.width):Number(geo.depth);
+  const height=Number(geo.height),t=thickness();
+  if(!Number.isFinite(width)||!Number.isFinite(height)||width<70||height<170)return 0;
+  const count=height>1100?3:2,levels=count===3?[.13,.5,.87]:[.17,.83];
+  const steel=owned(new T.MeshStandardMaterial({color:0xc2c9cc,metalness:.84,roughness:.27})),
+   rimMat=owned(new T.MeshStandardMaterial({color:0xe0e4e6,metalness:.78,roughness:.23})),
+   screwMat=owned(new T.MeshStandardMaterial({color:0x818c93,metalness:.88,roughness:.33}));
+  const faceNormal=wall==='A'?new T.Vector3(0,0,1):new T.Vector3(wall==='B'?-1:1,0,0);
+  const fastener=(parent,at,rotation)=>{
+   const mesh=new T.Mesh(new T.CylinderGeometry(2.3,2.3,2.4,12),screwMat);
+   mesh.position.copy(at);mesh.rotation.copy(rotation);
+   mesh.userData={cat:'r1064-hinge-screw',moduleId:module.id,visualizationProxy:true};
+   parent.add(mesh);attached.push(mesh);
+  };
+  levels.forEach((fr)=>{
+   const edge=side==='left'?-width/2+22.5:width/2-22.5;
+   const vertical=-height/2+height*fr;
+   const local=wall==='A'?new T.Vector3(edge,vertical,t/2-6):
+     new T.Vector3(wall==='B'?-t/2+6:t/2-6,vertical,edge);
+   // Cup centres measured from the pivot-side edge, never from cabinet left by default.
+   const rotation=new T.Euler(wall==='A'?Math.PI/2:0,0,wall==='A'?0:Math.PI/2);
+   const cup=new T.Mesh(new T.CylinderGeometry(17.5,17.5,11,32),steel);
+   cup.position.copy(local);cup.rotation.copy(rotation);
+   cup.userData={cat:'r1064-35mm-door-cup',moduleId:module.id,hingeSide:side,certified:false};
+   front.add(cup);attached.push(cup);
+   const lip=new T.Mesh(new T.TorusGeometry(18.5,2.1,8,32),rimMat);
+   lip.position.copy(local).addScaledVector(faceNormal,6);
+   lip.rotation.copy(rotation);lip.userData={cat:'r1064-hinge-cup-lip',moduleId:module.id};
+   front.add(lip);attached.push(lip);
+   // Cup flange screw pair on correct door side, invariant under LEFT/RIGHT mirroring.
+   for(const sign of [-1,1]){
+    const offset=wall==='A'?new T.Vector3(sign*24,0,0):new T.Vector3(0,0,sign*24);
+    fastener(front,local.clone().add(offset).addScaledVector(faceNormal,6),rotation);
+   }
+   const arm=new T.Mesh(new T.BoxGeometry(wall==='A'?12:44,10,wall==='A'?44:12),steel);
+   arm.position.copy(local).addScaledVector(faceNormal,22);
+   arm.userData={cat:'r1064-articulating-hinge-arm',moduleId:module.id,hingeSide:side};
+   front.add(arm);attached.push(arm);
+   const knuckle=new T.Mesh(new T.CylinderGeometry(7.5,7.5,19,20),rimMat);
+   knuckle.position.copy(local).addScaledVector(faceNormal,34);
+   knuckle.userData={cat:'r1064-hinge-pivot',moduleId:module.id};
+   front.add(knuckle);attached.push(knuckle);
+   // Mounting plate stays attached to cabinet; world point taken from actual cup.
+   front.updateMatrixWorld(true);
+   const mount=front.localToWorld(local.clone().addScaledVector(faceNormal,61));
+   const plate=new T.Mesh(new T.BoxGeometry(33,35,6),steel);
+   plate.position.copy(mount);plate.userData={cat:'r1064-fixed-cabinet-plate',moduleId:module.id,hingeSide:side};
    root.add(plate);
+   const head=plate.position.clone();
+   for(const dy of [-11,11]){
+    const p=new T.Mesh(new T.CylinderGeometry(2.5,2.5,3,12),screwMat);
+    p.position.copy(head).add(new T.Vector3(0,dy,4));
+    p.rotation.x=Math.PI/2;
+    p.userData={cat:'r1064-plate-fastener',moduleId:module.id};
+    root.add(p);
+   }
   });
-  hue.dispose();cupMaterial.dispose();
-  return fr.length;
+  return count;
  }
  function createLed(root){
   const T=THREE(),schedule=window.BizetLED1063?.manifest?.(inputs(),contents());
