@@ -859,7 +859,7 @@ def test_current_workspace_cache_busts_rules_and_renderer_assets():
     assert "/static/kitchen-webgl-r1050.js?v=20261023r1060" in html
     assert "/static/r10-domain-rules.js?v=20261021r1059" in html
     assert "/static/workspace-r8.js?v=20261024r1063" in html
-    assert "/static/point-b.js?v=20261021r1059" in html
+    assert "/static/point-b.js?v=20261024r106303" in html
     assert "/static/pilot-3d.js?v=1051" in html
     assert "/static/workspace-r8.css?v=1051" in html
     assert "/static/model-r5.js?v=175" in html
