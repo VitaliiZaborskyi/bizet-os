@@ -219,21 +219,28 @@ function addDrawerBox(room,m,spec,index,id,group){
  parts.forEach((p,i)=>{const q=meshBox(room,p,mat.clone(),furnitureGroup,'drawer-box',m.id);q.material.userData.owned=true;q.userData={...q.userData,movableId:id,drawerIndex:index,partRole:['SIDE_A','SIDE_B','REAR','INNER_FRONT','BOTTOM'][i]};group.attach(q)});
  mat.dispose();
 }
+function r1062FacadeThicknessMm(){
+ const visual=window.BizetModelRuntime?.getVisual?.()||{},facade=visual.furniture_materials?.facade||{},
+   inputs=window.BizetModelRuntime?.getInputs?.()||{};
+ const candidate=Number(facade.thickness_mm??facade.board_thickness_mm??inputs.facade_thickness_mm??18);
+ return Number.isFinite(candidate)&&candidate>=10&&candidate<=45?candidate:18;
+}
 function makeFront(room,m,index,count,mat){
+ const facadeThickness=r1062FacadeThicknessMm();
  const wall=String(m.wall||'A'),gap=4,isDrawer=m.kind==='DRAWERS',isLift=m.level==='upper'&&(m.opening==='LIFT'||m.facade_orientation==='HORIZONTAL'||m.upper_opening==='LIFT'),stacked=isDrawer||isLift;
  let spec;
  if(stacked){
    const fh=Math.max(70,(+m.h-gap*(count-1))/count);
    spec={...m,h:fh-2,z:+m.z+index*(fh+gap)};
-   if(wall==='A'){spec.x=+m.x+1;spec.w=Math.max(20,+m.w-2);spec.d=8;spec.y=+m.y-9}
-   else{spec.y=+m.y+1;spec.d=Math.max(20,+m.d-2);spec.w=8;spec.x=wall==='B'?+m.x+ +m.w+1:+m.x-9}
+   if(wall==='A'){spec.x=+m.x+1;spec.w=Math.max(20,+m.w-2);spec.d=facadeThickness;spec.y=+m.y-facadeThickness/2-1}
+   else{spec.y=+m.y+1;spec.d=Math.max(20,+m.d-2);spec.w=facadeThickness;spec.x=wall==='B'?+m.x+ +m.w+1+facadeThickness/2:+m.x-1-facadeThickness/2}
  }else if(wall==='A'){
-   const fw=Math.max(20,(+m.w-gap*(count-1))/count);spec={...m,w:fw-2,d:8,x:+m.x+index*(fw+gap)+1,y:+m.y-9}
+   const fw=Math.max(20,(+m.w-gap*(count-1))/count);spec={...m,w:fw-2,d:facadeThickness,x:+m.x+index*(fw+gap)+1,y:+m.y-facadeThickness/2-1}
  }else{
-   const fd=Math.max(20,(+m.d-gap*(count-1))/count);spec={...m,d:fd-2,w:8,y:+m.y+index*(fd+gap)+1,x:wall==='B'?+m.x+ +m.w+1:+m.x-9}
+   const fd=Math.max(20,(+m.d-gap*(count-1))/count);spec={...m,d:fd-2,w:facadeThickness,y:+m.y+index*(fd+gap)+1,x:wall==='B'?+m.x+ +m.w+1+facadeThickness/2:+m.x-1-facadeThickness/2}
  }
  const mesh=meshBox(room,spec,mat,furnitureGroup,'front',m.id),id=(m.id||'M')+':F'+index;
- mesh.userData.movableId=id;selectable.push(mesh);
+ mesh.userData.movableId=id;mesh.userData.thickness_mm=facadeThickness;mesh.userData.manufacturingSource='facade-material-thickness';selectable.push(mesh);
  const type=isDrawer?'drawer':isLift?'lift':'door',requested=String(m.facade_openings?.[index]||'').toUpperCase(),side=requested==='RIGHT'?'right':requested==='LEFT'?'left':index%2===0?'left':'right';
  let mover=null;
  if(type==='door'){
@@ -597,8 +604,8 @@ function addBaseOvenAssembly(room,m,darkMat,steelMat){
 function addDishwasherFacade(room,m,mat){
  if(m.freestanding)return;
  const wall=m.wall||'A',spec={...m},id=(m.id||'dishwasher')+':FRONT';
- if(wall==='A'){spec.x=+m.x+1;spec.w=Math.max(20,+m.w-2);spec.d=8;spec.y=+m.y-9}
- else{spec.y=+m.y+1;spec.d=Math.max(20,+m.d-2);spec.w=8;spec.x=wall==='B'?+m.x+ +m.w+1:+m.x-9}
+ if(wall==='A'){spec.x=+m.x+1;spec.w=Math.max(20,+m.w-2);spec.d=facadeThickness;spec.y=+m.y-facadeThickness/2-1}
+ else{spec.y=+m.y+1;spec.d=Math.max(20,+m.d-2);spec.w=facadeThickness;spec.x=wall==='B'?+m.x+ +m.w+1+facadeThickness/2:+m.x-1-facadeThickness/2}
  const mesh=meshBox(room,spec,mat,furnitureGroup,'dishwasher-front',m.id);mesh.userData.movableId=id;selectable.push(mesh);
  const pivot=new THREE.Group(),world=mesh.position.clone();furnitureGroup.add(pivot);
  pivot.position.set(world.x,world.y-spec.h/2,world.z);pivot.attach(mesh);pivot.userData={movableId:id,type:'dishwasher',moduleId:m.id,wall};
