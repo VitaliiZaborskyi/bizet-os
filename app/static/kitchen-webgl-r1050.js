@@ -248,6 +248,7 @@ function makeFront(room,m,index,count,mat){
    if(wall==='A')pivot.position.set(world.x+(side==='left'?-half:half),world.y,world.z);else pivot.position.set(world.x,world.y,world.z+(side==='left'?-half:half));
    pivot.attach(mesh);pivot.userData={movableId:id,type,moduleId:m.id,side,wall};
    mover={id,type,pivot,mesh,side,wall,sign:doorOpenSign(wall,side),target:openState.get(id)?1:0,current:openState.get(id)?1:0};movables.push(mover);
+   addDoorHingeCups(room,m,spec,mover);
  }else if(type==='lift'){
    const pivot=new THREE.Group(),world=mesh.position.clone();furnitureGroup.add(pivot);pivot.position.set(world.x,world.y+spec.h/2,world.z);pivot.attach(mesh);pivot.userData={movableId:id,type,moduleId:m.id,side,wall};
    mover={id,type,pivot,mesh,side,wall,target:openState.get(id)?1:0,current:openState.get(id)?1:0};movables.push(mover);
@@ -325,38 +326,68 @@ function addLegs(room,m){
  }
 }
 
+// R10.6.2 mounted European cup hinge: 35 mm cup, articulated arm, cabinet base plate.
+// Geometry is faithful to owner IMG_2404 but remains supplier/boring-profile UNVERIFIED.
+function addDoorHingeCups(room,m,spec,mover){
+ if(!mover?.pivot)return;
+ const wall=m.wall||'A',thickness=r1062FacadeThicknessMm(),run=wall==='A'?Number(spec.w):Number(spec.d);
+ const side=mover.side,heights=Number(spec.h)>1000?[105,Number(spec.h)/2,Number(spec.h)-105]:[Math.min(105,Number(spec.h)*.18),Math.max(105,Number(spec.h)*.82)];
+ const brushed=ownMat({color:0xadb5b9,metalness:.84,roughness:.24,side:THREE.DoubleSide});
+ const cupFinish=ownMat({color:0xd3dade,metalness:.92,roughness:.16,side:THREE.DoubleSide});
+ const place=(mesh,pt,rot,category)=>{
+  mesh.position.copy(pt);if(rot)mesh.rotation.copy(rot);
+  mesh.userData={cat:category,moduleId:m.id,hingeSide:side,visualizationProxy:true,productionProxy:false};
+  hardwareGroup.add(mesh);mover.pivot.attach(mesh);return mesh;
+ };
+ const frontX=side==='left'?-run/2+23:run/2-23;
+ heights.forEach(h=>{
+  const z=Number(spec.z)+h;
+  let cup,armCenter,mountPoint;
+  if(wall==='A'){
+   cup=roomToWorld(room,Number(spec.x)+Number(spec.w)/2+frontX,Number(m.y)-thickness*.48,z);
+   armCenter=cup.clone().add(new THREE.Vector3(0,0,22));
+   mountPoint=armCenter.clone().add(new THREE.Vector3(0,0,22));
+  }else{
+   cup=roomToWorld(room,wall==='B'?Number(m.x)+Number(m.w)+thickness*.48:Number(m.x)-thickness*.48,Number(spec.y)+Number(spec.d)/2+frontX,z);
+   armCenter=cup.clone().add(new THREE.Vector3(wall==='B'?-22:22,0,0));
+   mountPoint=armCenter.clone().add(new THREE.Vector3(wall==='B'?-22:22,0,0));
+  }
+  const rotation=new THREE.Euler(wall==='A'?Math.PI/2:0,0,wall==='A'?0:Math.PI/2);
+  place(new THREE.Mesh(new THREE.CylinderGeometry(17.5,17.5,11,32),cupFinish.clone()),cup,rotation,'hinge-35mm-cup-r1062');
+  const lip=place(new THREE.Mesh(new THREE.CylinderGeometry(20,20,2,32),brushed.clone()),
+    cup.clone().add(wall==='A'?new THREE.Vector3(0,0,7):new THREE.Vector3(wall==='B'?-7:7,0,0)),
+    rotation,'hinge-cup-rim-r1062');
+  const arm=place(new THREE.Mesh(new THREE.BoxGeometry(18,11,48),brushed.clone()),
+    cup.clone().add(mountPoint).multiplyScalar(.5),new THREE.Euler(),
+    'hinge-articulating-arm-r1062');
+  arm.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),mountPoint.clone().sub(cup).normalize());
+  for(const sign of [-1,1]){
+   const screw=place(new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.4,3,12),brushed.clone()),
+      cup.clone().add(wall==='A'?new THREE.Vector3(sign*24,0,6):new THREE.Vector3(0,0,sign*24)),
+      rotation,'hinge-cup-fastener-r1062');
+  }
+ });
+ brushed.dispose();cupFinish.dispose();
+}
 function addHinges(room,m,count){
  if(m.kind==='DRAWERS'||m.kind==='FILLER'||(m.level==='upper'&&(m.opening==='LIFT'||m.facade_orientation==='HORIZONTAL')))return;
- const mat=ownMat({color:'#858b8f',roughness:.3,metalness:.7}),plan=window.BizetR10Rules?.planHingePositions?.(m),ys=plan?.positions?.length?plan.positions.map(v=>(v-(Number(m.z)||0))/Math.max(1,Number(m.h)||1)):[.18,.5,.82],wall=m.wall||'A',run=wall==='A'?+m.w:+m.d;
+ const wall=m.wall||'A',axis=wall==='A'?'w':'d',run=Number(m[axis])||0,heights=Number(m.h)>1000?[105,Number(m.h)/2,Number(m.h)-105]:[Math.min(105,Number(m.h)*.18),Math.max(105,Number(m.h)*.82)];
+ const steel=ownMat({color:0x9ca3a7,metalness:.85,roughness:.27});
+ const plan=window.BizetR10Rules?.planHingePositions?.(m);
  if(plan&&!plan.ok){m.hinge_layout_conflict=plan.reason;window.dispatchEvent(new CustomEvent('bizet:engineering-stop',{detail:{module_id:m.id,reason:plan.reason}}));return}
- ys.forEach(fr=>{for(let i=0;i<count;i++){
-   const requested=String(m.facade_openings?.[i]||'').toUpperCase();
-   const side=requested==='RIGHT'?'right':requested==='LEFT'?'left':i%2===0?'left':'right';
-   const hingeAt=(i+(side==='right'?1:0))*run/count+(side==='right'?-16:14);
-   const z=+m.z+(+m.h)*fr,part=wall==='A'
-     ?{x:+m.x+hingeAt,y:+m.y+8,z,w:22,d:30,h:12}
-     :{x:+m.x+8,y:+m.y+hingeAt,z,w:30,d:22,h:12};
-   // Compact European concealed hinge proxy: 35 mm circular cup, compact
-   // articulated arm and two-point mounting plate (not yet CNC drilling).
-   const isA=wall==='A',frame=part;
-   const hingeCase=meshBox(room,frame,mat.clone(),hardwareGroup,'hinge-cup-housing',m.id);
-   hingeCase.material.userData.owned=true;hingeCase.userData.hingeSide=side;
-   hingeCase.userData.visualizationProxy=true;
-   const cup=new THREE.Mesh(new THREE.CylinderGeometry(15,15,8,16),mat.clone());
-   const centerPos=center(room,frame);cup.rotation.x=Math.PI/2;
-   cup.position.copy(centerPos);cup.position.y+=9;cup.userData={cat:'hinge-35mm-cup',moduleId:m.id,
-     hingeSide:side,visualizationProxy:true,productionProxy:false};hardwareGroup.add(cup);
-   const arm=isA
-    ?{x:frame.x+4,y:frame.y+20,z:frame.z-5,w:14,d:43,h:7}
-    :{x:frame.x+20,y:frame.y+4,z:frame.z-5,w:43,d:14,h:7};
-   const lever=meshBox(room,arm,mat.clone(),hardwareGroup,'hinge-articulating-arm',m.id);
-   lever.material.userData.owned=true;lever.userData.visualizationProxy=true;
-   const plate=isA
-    ?{x:frame.x-3,y:frame.y+52,z:frame.z-10,w:28,d:8,h:30}
-    :{x:frame.x+52,y:frame.y-3,z:frame.z-10,w:8,d:28,h:30};
-   const mount=meshBox(room,plate,mat.clone(),hardwareGroup,'hinge-mounting-plate',m.id);
-   mount.material.userData.owned=true;mount.userData.visualizationProxy=true;
- }});mat.dispose();
+ const norm=Math.max(1,Number(count)||1);
+ for(let i=0;i<norm;i++){
+  const side=String(m.facade_openings?.[i]||((i%2)?'RIGHT':'LEFT')).toUpperCase();
+  const along=Number(m[wall==='A'?'x':'y'])+(i+(side==='RIGHT'?.95:.05))*run/norm;
+  heights.forEach(h=>{
+    // Mounting plate is fixed to cabinet carcass, not to the swinging door.
+    const body=wall==='A'?{x:along-13,y:Number(m.y)+8,z:Number(m.z)+h-15,w:26,d:36,h:30}
+      :{x:Number(m.x)+8,y:along-13,z:Number(m.z)+h-15,w:36,d:26,h:30};
+    const plate=meshBox(room,body,steel.clone(),hardwareGroup,'hinge-cabinet-plate-r1062',m.id);
+    plate.material.userData.owned=true;plate.userData.visualizationProxy=true;plate.userData.manufacturingStatus='STOP_HINGE_BORING_UNVERIFIED';
+  });
+ }
+ steel.dispose();
 }
 function addHardwareRod(room,a,b,radius=6,cat='hardware-proxy',id=''){
  const A=roomToWorld(room,...a),B=roomToWorld(room,...b),mid=A.clone().add(B).multiplyScalar(.5),len=A.distanceTo(B);
