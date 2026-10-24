@@ -12,7 +12,9 @@ html,body{margin:0;padding:0;background:#222;color:#fff;font-family:Arial,sans-s
 <script>
 window.BIZET_KITCHEN_UI_MODE='EDIT';
 window.BizetModelRuntime={
- getVisual:()=>({}),getInputs:()=>({lighting_enabled:'NO',worktop_thickness_mm:38,
+ getVisual:()=>({}),getModules:()=>window.BizetR1063QA?.modules||[],
+ getRoom:()=>window.BizetR1063QA?.options?.room||{lengthMm:6000,depthMm:4200,heightMm:2800},
+ getInputs:()=>({lighting_enabled:'NO',worktop_thickness_mm:38,
  lower_wall_gap_mm:45,plinth_height_mm:100,lower_depth_mm:515})
 };
 window.BizetR1063QA={status:'BOOTING',messages:[]};
@@ -25,6 +27,8 @@ window.addEventListener('unhandledrejection',e=>window.BizetR1063QA.messages.pus
 <script src="/static/kitchen-webgl-r1050.js?v=106300"></script>
 <script src="/static/r1063-led-model.js?v=106301"></script>
 <script src="/static/r1063-visual-adapter.js?v=106301"></script>
+<script src="/static/r1063-approval-capture.js?v=106303"></script>
+<script src="/static/r1063-approval-drawings.js?v=106303"></script>
 <script>
 (()=>{
  const qa=window.BizetR1063QA,room={lengthMm:6000,depthMm:4200,heightMm:2800};
