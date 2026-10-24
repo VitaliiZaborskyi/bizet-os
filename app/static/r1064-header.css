@@ -62,3 +62,19 @@ body.r8-workspace-body .r1064-header-actions #settingsButton{letter-spacing:1px!
  body.r8-workspace-body .r1064-header-actions #settingsButton{width:32px!important;min-width:32px!important;flex-basis:32px!important}
  body.r8-workspace-body .r1064-header-actions .settings-wrap{min-width:32px!important;width:32px!important;flex-basis:32px!important}
 }
+
+/* Screenshot #42 reproduced in Chromium/WebKit: legacy settings button shifted -18px.
+   Keep its own touch target in normal layout flow, not the legacy offset. */
+body.r8-workspace-body .r8-topbar>.r1064-header-actions>.settings-wrap{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ margin:0!important;padding:0!important;position:relative!important;flex-shrink:0!important;
+ transform:none!important;left:auto!important;right:auto!important;
+}
+body.r8-workspace-body .r8-topbar>.r1064-header-actions>.settings-wrap>#settingsButton{
+ position:static!important;inset:auto!important;transform:none!important;
+ left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+ margin:0!important;margin-left:0!important;margin-right:0!important;
+ float:none!important;flex:0 0 40px!important;
+}
+@media(max-width:420px){body.r8-workspace-body .r8-topbar>.r1064-header-actions>.settings-wrap>#settingsButton{flex-basis:35px!important}}
+@media(max-width:340px){body.r8-workspace-body .r8-topbar>.r1064-header-actions>.settings-wrap>#settingsButton{flex-basis:32px!important}}
