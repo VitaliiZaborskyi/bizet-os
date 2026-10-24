@@ -16,7 +16,7 @@ FROZEN={
 def test_frozen_core_sha_matches_owner_verified_1060():
     for name, expected in FROZEN.items():
         payload=(ROOT/name).read_bytes()
-        actual=hashlib.sha1(f"blob {len(payload)}\\0".encode()+payload).hexdigest()
+        actual=hashlib.sha1(f"blob {len(payload)}\0".encode()+payload).hexdigest()
         assert actual==expected, (
           f"3D CORE PROTECTION FAILED: {name} has changed from verified 10.6.0. "
           "STOP: do not merge/deploy without separately proving 3D in real browsers."
