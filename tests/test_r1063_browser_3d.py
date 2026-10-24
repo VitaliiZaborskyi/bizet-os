@@ -135,27 +135,30 @@ def test_real_3d_edit_view_isolation(server,engine,viewport):
             assert {v["module"] for v in hinges}=={"QA1"},f"Drawers incorrectly received hinges: {hinges}"
             # Approval export must use the current 3D scene without a second WebGL context.
             export=page.evaluate("""() => {
-              const source=window.BizetApprovalCaptureR1063,d=window.BizetApprovalR1063;
-              const screenshot=source?.isometric?.();
-              const cuts=source?.sectionSlices?.()||[];
+              const source=window.BizetApprovalCaptureR1065,d=window.BizetApprovalR1065;
               const modules=window.BizetR1063QA.modules;
               const room=window.BizetR1063QA.options.room;
-              const stamp=()=>'<g><text>FOR APPROVAL</text></g>';
-              const sheets=d&&[
-                d.overview(modules,room,stamp,'QA'),
-                d.elevation(modules,room,stamp,'QA'),
-                d.sections(modules,room,stamp,'QA'),
-                d.detailSheet(modules,room,stamp,'QA')
-              ];
+              const stamp=(n,t,r,scale,total)=>'<g><text>FOR APPROVAL '+n+'/'+total+'</text></g>';
+              const screenshot=source?.isometric?.();
+              const cuts=source?.sectionSlices?.(modules,room)||[];
+              const sheets=d?.build?.(modules,room,stamp,'QA')||[];
+              const header=sheets[0]||'';
+              const common=['TOP VIEW','FRONT VIEW','LEFT VIEW']
+                .map(title=>header.match(new RegExp(title+' · 1:(\\\\d+)'))?.[1]);
               return {imageLength:screenshot?.length||0,sections:cuts.length,
                 sectionLines:cuts.reduce((n,s)=>n+(s.section_segments?.length||0),0),
-                sheets:sheets?.length||0,allSvg:sheets?.every(x=>x.includes('</svg>')),
-                sourceLinked:sheets?.[0]?.includes('data:image/png'),webgl:!!window.BizetKitchenWebGL?.renderer.getContext(),
+                sheets:sheets.length,allSvg:sheets.every(x=>x.includes('</svg>')),
+                sourceLinked:header.includes('data:image/png'),sameScale:common.every(x=>x&&x===common[0]),
+                colorPage:(sheets[1]||'').includes('COLOURED MATERIAL ELEVATIONS'),
+                snapshot:(sheets.every(x=>x.includes('SNAPSHOT R1065-'))),
+                noDuplicateFront:!(sheets[1]||'').includes('DIMENSIONED FRONT + LEFT VIEW'),
+                webgl:!!window.BizetKitchenWebGL?.renderer.getContext(),
                 messages:window.BizetR1063QA.messages};
             }""")
             assert export["imageLength"]>5000, f"3D axonometric capture blank: {export}"
             assert export["sectionLines"]>0, f"No real mesh section contours: {export}"
             assert export["sheets"]==4 and export["allSvg"] and export["sourceLinked"],f"Approval pages invalid: {export}"
+            assert export["sameScale"] and export["snapshot"] and export["colorPage"] and export["noDuplicateFront"],f"Approval layout/engineering failure: {export}"
             assert export["webgl"] and not export["messages"],f"WebGL damaged by approval export: {export}"
             # Hardest part of #30: the 3D remains visibly present after the export.
             assert_frame(page,"VIEW")
