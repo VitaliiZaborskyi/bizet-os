@@ -83,7 +83,7 @@ def build_approval_pdf(svg_pages: list[str]) -> bytes:
     for index, svg in enumerate(svg_pages, 1):
         if not isinstance(svg, str) or "<svg" not in svg or "</svg>" not in svg:
             raise ValueError(f"STOP_APPROVAL_SVG_MISSING_PAGE_{index}")
-        match = re.search(r"SNAPSHOT\\s+(R1065-[0-9a-f]{8})", svg)
+        match = re.search(r"SNAPSHOT\s+(R1065-[0-9a-f]{8})", svg)
         if match is None:
             raise ValueError(f"STOP_APPROVAL_STATE_HASH_MISSING_PAGE_{index}")
         hashes.append(match.group(1))
