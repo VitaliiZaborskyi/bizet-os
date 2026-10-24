@@ -173,7 +173,7 @@
  $('kitchenEditMode')?.addEventListener('click',()=>setKitchenUiMode('EDIT'));
  // Presentation-first invariant: every workspace entry starts in VIEW.
  setKitchenUiMode('EDIT');
- $('workspaceLanguageSelect')?.addEventListener('change',e=>{const v=['ua','ru','en'].includes(e.target.value)?e.target.value:'ua';localStorage.setItem(LANG_KEY,v);location.reload()});
+ $('workspaceLanguageSelect')?.addEventListener('change',e=>{const v=['ua','ru','en'].includes(e.target.value)?e.target.value:'ua';localStorage.setItem(LANG_KEY,v);window.dispatchEvent(new CustomEvent('bizet:languagechange',{detail:{language:v}}))});
  function option(value,label){return '<option value="'+esc(value)+'">'+esc(ui(label))+'</option>'}
  function field(label,key,choices){const current=rt.getInputs()[key];return '<label class="r8-field" data-setting-key="'+key+'"><span>'+esc(ui(label))+'</span><select data-input="'+key+'">'+choices.map(x=>option(x[0],x[1])).join('')+'</select></label>'}
  function numberField(label,key,def,min){const current=Number(rt.getInputs()[key]??def);return '<label class="r8-field" data-setting-key="'+key+'"><span>'+esc(ui(label))+'</span><input type="number" min="'+(min||0)+'" step="1" value="'+current+'" data-number="'+key+'"></label>'}
@@ -355,7 +355,7 @@
  }
  let activePanel=null;
  function renderPanel(panel){
-   activePanel=panel;const h=panelTitle(panel);$('panelKicker').textContent=h[0];$('panelTitle').textContent=h[1];let html='';
+   activePanel=panel;const h=panelTitle(panel);$('panelKicker').textContent=h[0];$('panelTitle').textContent=h[1];$('panelKicker').hidden=panel==='materials';$('panelTitle').hidden=panel==='materials';let html='';
    const I=rt.getInputs(),C=rt.getContext();
    if(panel==='room'){
      const room=rt.getRoom(),importState=rt.getVisual().room_import||{};
@@ -423,9 +423,7 @@
      html='<section class="r8-section"><h3>Добавить элемент стены</h3>'+field('Тип','__element_type',[['WINDOW','Окно'],['DOOR','Дверь'],['RADIATOR','Радиатор'],['CURTAIN_RECESS','Подшторник / карниз'],['NICHE','Ниша'],['COLUMN','Колонна'],['PROJECTION','Выступ'],['BEAM','Балка'],['OTHER','Другое']])+field('Стена','__element_wall',[['A','A'],['B','B'],['C','C'],['D','D']])+'<div class="r8-two">'+numberField('Ширина, мм','__element_width',900,100)+numberField('Высота, мм','__element_height',1200,100)+'</div>'+numberField('Глубина / выступ, мм','__element_depth',0,0)+'<div class="r8-two">'+numberField('От левого края, мм','__element_x',500,0)+numberField('От пола, мм','__element_z',900,0)+'</div><button class="r8-save" data-action="add-element">Добавить к модели</button></section><section class="r8-section"><h3>Добавлено</h3><div id="elementList"></div></section>';
    }
    if(panel==='materials'){
-     const dir=rt.getVisual().r8_palette||C.visual_direction||'LIGHT';
-     html='<section class="r8-section"><h3>Визуальное направление</h3><p>Выбрано на стартовом экране: <strong>'+esc(dir==='DARK'?'Тёмное':dir==='OTHER'?'Другое':'Светлое')+'</strong>.</p><div class="r8-choice-row"><button data-action="palette-light">Светлое</button><button data-action="palette-dark">Тёмное</button><button data-action="palette-other">Другое</button></div></section>';
-     html+='<section class="r8-section"><h3>Материалы мебели</h3><p>Тестовый набор для связки модель → спецификация → будущая визуализация.</p><div class="r104-surface-buttons">'+materialButton('facade')+materialButton('carcass')+materialButton('worktop')+'</div></section>';
+     html='<section class="r8-section"><h3>Материалы мебели</h3><p>Тестовый набор для связки модель → спецификация → будущая визуализация.</p><div class="r104-surface-buttons">'+materialButton('facade')+materialButton('carcass')+materialButton('worktop')+'</div></section>';
      html+='<section class="r8-section"><h3>'+(uiLang()==='en'?'Room materials':uiLang()==='ua'?'Матеріали приміщення':'Материалы помещения')+'</h3><div class="r104-surface-buttons">'+materialButton('floor')+materialButton('walls')+materialButton('ceiling')+'</div></section>';
      html+='<section class="r8-section"><h3>'+(uiLang()==='en'?'Lighting color':uiLang()==='ua'?'Температура підсвітки':'Температура подсветки')+'</h3><label class="r8-field"><span>Kelvin</span><select data-input="lighting_kelvin"><option value="2700">2700 K</option><option value="3000">3000 K</option><option value="4000">4000 K</option></select></label></section>';
      html+='<section class="r8-section"><h3>Подтверждение</h3><button class="r8-save" data-action="confirm-materials">Подтвердить текущий вариант</button></section>';
