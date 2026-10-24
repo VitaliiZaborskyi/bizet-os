@@ -1,0 +1,32 @@
+name: BIZET OS 10.6.3 — Protected 3D Browser Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [pilot-10.6.3-protected-rebuild]
+  workflow_dispatch:
+
+jobs:
+  visible-3d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project and browser QA dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install playwright==1.55.0 pillow==11.3.0
+          python -m playwright install --with-deps chromium webkit
+          mkdir -p /tmp/bizet-3d-deps
+          npm install --prefix /tmp/bizet-3d-deps --no-save --no-audit --no-fund three@0.128.0
+      - name: Real rendered pixels, furniture mesh count, EDIT / VIEW / ISOLATION
+        env:
+          BIZET_THREE_NODE_MODULES: /tmp/bizet-3d-deps/node_modules
+        run: pytest -v tests/test_r1063_browser_3d.py
