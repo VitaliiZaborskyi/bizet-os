@@ -304,7 +304,8 @@
 
   function detailsFor(modules){
     const all=[];let no=1;
-    modules.filter(m=>m.wall==='A').forEach(m=>{
+    modules.filter(m=>m.wall==='A').forEach(original=>{
+      const m=window.BizetPanelsR1063?.body(original)||original;
       let rows=[];
       if(m.kind==='FILLER')rows=fillerDetail(m,no);
       else if(m.kind==='DISHWASHER')rows=dishwasher(m,no);
@@ -318,7 +319,7 @@
       else if(m.tall)rows=tall(m,no,false,false);
       else if(m.kind==='FRIDGE'&&m.freestanding)rows=[];
       else rows=ordinaryBase(m,no);
-      const endRows=endPanelDetails(m,no+rows.length);
+      const endRows=endPanelDetails(original,no+rows.length);
       all.push(...rows,...endRows);no+=rows.length+endRows.length;
     });
     return all.map((r,i)=>({...r,no:i+1}));
@@ -474,6 +475,14 @@
     add('Работы','Сборка',panelArea,'м²',PRICES.ASSEMBLY_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     add('Работы','Упаковка',panelArea,'м²',PRICES.PACKING_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
     add('Работы','Установка',panelArea,'м²',PRICES.INSTALL_M2,'OPEN / NOT INCLUDED — тариф не заморожен');
+    const ledSchedule=window.BizetLED1063?.manifest?.(window.BizetModelRuntime?.getInputs?.()||{},modules);
+    if(ledSchedule?.included){
+      ledSchedule.materials.forEach(item=>add('LED · ПРЕДВАРИТЕЛЬНО',item.item,item.qty,item.unit,item.price,
+        'OWNER UA MARKET REFERENCE / price & source UNVERIFIED / verify supplier before quotation'));
+      add('LED · ИНЖЕНЕРИЯ','Зоны LED / мощность / БП',1,'компл',0,
+        ledSchedule.segments.map(z=>z.id+':'+z.length_mm+'mm').join(', ')+
+        ' · '+ledSchedule.watts+' W · PSU +25% · монтажные пазы и артикулы STOP');
+    }
     const cost=rows.reduce((s,r)=>s+r.total,0),client=cost*2;
     return{rows,cost,client,areas,plinthEndReturns,cutM,edgeM,worktopSlabs,worktopJoints,worktopJointMap,worktopBlockedByCriticalZone,plinthPieces,plinthConnectors,plinthJointMap,unpriced:rows.filter(r=>r.rate===0&&r.qty>0)};
   }
@@ -654,8 +663,8 @@
     return `<!doctype html><html><head><meta charset="utf-8"><title>BIZET Approval Drawings</title><style>@page{size:A4 landscape;margin:5mm}body{margin:0;background:#ddd;font-family:Arial,sans-serif}.sheet{background:#fff;margin:0 auto 8mm;page-break-after:always}.sheet svg{display:block;width:100%;height:auto}@media print{body{background:#fff}.sheet{margin:0;page-break-after:always}}</style></head><body>${sheets.map(svg=>`<div class="sheet">${svg}</div>`).join('')}</body></html>`;
   }
   function openApprovalDrawings(){
-    const html=approvalDrawingHtml();if(!html)return;
-    const w=window.open('','_blank');if(!w)return;
+    const w=window.open('','_blank');if(!w){window.alert('Разрешите всплывающие окна для экспорта BIZET OS.');return false;}
+    const html=approvalDrawingHtml();if(!html){w.close();return false;}
     w.document.open();w.document.write(html+'<script>window.onload=()=>setTimeout(()=>window.print(),220)<\/script>');w.document.close();
   }
 
@@ -664,7 +673,7 @@
     return '\ufeff'+[headers.map(q).join(';'),...rows.map(r=>map(r).map(q).join(';'))].join('\n');
   }
   function download(name,type,text){
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},300);
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},60000);
   }
   function downloadDetail(details){
     const headers=['№','Материал','Уникальный код','Наименование детали','Длина','Ширина','Количество','Ед. изм.','Наименование кромки','Кромка по длинной стороне','Кромка по короткой стороне','Дополнительные обработки','Примечание'];
