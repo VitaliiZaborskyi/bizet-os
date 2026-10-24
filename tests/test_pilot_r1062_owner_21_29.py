@@ -10,8 +10,9 @@ def js(n):return (ROOT/n).read_text(encoding="utf-8")
 
 def test_21_header_controls_stay_individually_accessible():
     css=js("r1062.css");html=js("workspace-r8.html")
-    for x in ("#backButton","#r1061TopbarHelp","#baseInfoButton","#settingsButton",".r8-project-state"):
+    for x in ("#backButton","#r1061TopbarHelp","#baseInfoButton","#settingsButton"):
         assert x in css and ('id="'+x.lstrip('#')+'"') in html
+    assert ".r8-project-state" in css and 'class="r8-project-state"' in html
     assert "column-gap:4px" in css and "min-width:32px" in css
     assert "r1062.css?v=106201" in html
 
