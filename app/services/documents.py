@@ -113,7 +113,11 @@ def build_approval_pdf(svg_pages: list[str]) -> bytes:
     final = fitz.open()
     for index in range(output.page_count):
         page = final.new_page(width=841.8898, height=595.2756)
-        page.show_pdf_page(page.rect, output, index, keep_proportion=True)
+        # Match browser's 282 mm wide SVG print area, not a 297 mm bleed.
+        x0 = (297 - 282) / 2 * 72 / 25.4
+        y0 = (210 - 198.94) / 2 * 72 / 25.4
+        target = fitz.Rect(x0, y0, 841.8898 - x0, 595.2756 - y0)
+        page.show_pdf_page(target, output, index, keep_proportion=True)
     if final.page_count != len(svg_pages):
         raise ValueError("STOP_APPROVAL_A4_LAYOUT_MISMATCH")
     return final.tobytes(garbage=4, deflate=True)
