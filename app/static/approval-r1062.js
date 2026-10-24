@@ -173,34 +173,86 @@
   svg+=stamp(2,'FRONT CHAINS + LEFT VIEW',ref,'VARIES',3);
   return svg+'</svg>';
  }
+ function sourceSections(){return window.BizetKitchenWebGL?.captureApprovalSections?.()||[]}
+ function sectionSegmentsHtml(segments,x,y,width,height,range,fill=false){
+  const minD=range.minD,maxD=range.maxD,minH=range.minH,maxH=range.maxH;
+  const dx=Math.max(1,maxD-minD),dy=Math.max(1,maxH-minH);
+  const ratio=Math.min(width/dx,height/dy)*.9;
+  const x0=x+(width-dx*ratio)/2,y0=y+(height-dy*ratio)/2;
+  let svg='';
+  for(const q of segments){
+   const x1=x0+(num(q.depth0)-minD)*ratio,x2=x0+(num(q.depth1)-minD)*ratio,
+     y1=y0+(maxH-num(q.height0))*ratio,y2=y0+(maxH-num(q.height1))*ratio;
+   if(![x1,x2,y1,y2].every(Number.isFinite))continue;
+   if(Math.abs(x1-x2)<.02&&Math.abs(y1-y2)<.02)continue;
+   const wall=/room|wall/i.test(q.cat||'');
+   const hardware=/foot|hinge|handle/i.test(q.cat||'');
+   svg+='<line x1="'+x1.toFixed(2)+'" y1="'+y1.toFixed(2)+'" x2="'+x2.toFixed(2)+'" y2="'+y2.toFixed(2)+'" stroke="'+(wall?'#888':hardware?'#555':'#141414')+'" stroke-width="'+(wall?.7:hardware?.9:1.2)+'"/>';
+  }
+  return svg;
+ }
+ function getRange(segments){
+  const d=segments.flatMap(q=>[num(q.depth0),num(q.depth1)]),h=segments.flatMap(q=>[num(q.height0),num(q.height1)]);
+  return{minD:Math.min(...d),maxD:Math.max(...d),minH:Math.min(...h),maxH:Math.max(...h)};
+ }
  function sections(modules,room,stamp,ref){
-  const groups=unique(modulesA(modules)).slice(0,6);
-  let svg=sheetStart('UNIQUE SECTION DETAILS');
-  const cols=3,boxW=335,boxH=280;
+  const modelSlices=sourceSections(),groups=unique(modulesA(modules)).slice(0,6);
+  let svg=sheetStart('REAL MESH SECTIONS / FOR APPROVAL');
   groups.forEach((g,i)=>{
-   const m=g.module,x=52+i%cols*348,y=80+Math.floor(i/cols)*302;
-   const d=Math.max(80,num(m.d)),h=Math.max(120,num(m.h)),t=num(m.board_thickness_mm)||18;
-   const n=scale(d,225,h,190),s=PXMM/n,w=d*s,height=h*s;
-   const ax=x+35,ay=y+height+20;
-   const A=String.fromCharCode(65+i)+'–'+String.fromCharCode(65+i);
-   svg+='<text x="'+x+'" y="'+(y-22)+'" font-size="12" font-weight="800">SECTION '+A+'</text>';
-   svg+='<text x="'+x+'" y="'+(y-8)+'" font-size="10">'+esc(g.members.join(', '))+' · 1:'+n+'</text>';
-   svg+='<rect x="'+(ax+w+8)+'" y="'+(ay-height)+'" width="11" height="'+height+'" fill="url(#r1062Hatch)" stroke="#111"/>';
-   svg+='<rect x="'+ax+'" y="'+(ay-height)+'" width="'+w+'" height="'+height+'" fill="#fff" stroke="#111" stroke-width="1.7"/>';
-   // Show source-derived top/bottom panel thickness; ventilation gaps not invented.
-   const panel=Math.max(2,t*s);
-   svg+='<rect x="'+ax+'" y="'+(ay-height)+'" width="'+w+'" height="'+panel+'" fill="#e8e8e8" stroke="#222"/>'+
-      '<rect x="'+ax+'" y="'+(ay-panel)+'" width="'+w+'" height="'+panel+'" fill="#e8e8e8" stroke="#222"/>';
-   for(let k=1;k<=Math.min(5,num(m.shelf_count));k++){
-    const yy=ay-height+k*height/(num(m.shelf_count)+1);
-    svg+='<line x1="'+ax+'" y1="'+yy+'" x2="'+(ax+w)+'" y2="'+yy+'" stroke="#666" stroke-width="2"/>';
-   }
-   svg+=dim(ax,ay+15,ax+w,ay+15,round(d))+dim(ax-18,ay,ax-18,ay-height,round(h));
-   svg+='<text x="'+ax+'" y="'+(ay+33)+'" font-size="9">Board '+round(t)+' mm</text>';
+    const m=g.module,found=modelSlices.find(q=>String(q.module_id)===String(m.id)),segments=found?.section_segments||[];
+    const x=52+(i%3)*348,y=82+Math.floor(i/3)*302,letter=String.fromCharCode(65+i);
+    svg+='<text x="'+x+'" y="'+(y-11)+'" font-size="12" font-weight="800">SECTION '+letter+'–'+letter+'</text>'+
+      '<text x="'+(x+132)+'" y="'+(y-11)+'" font-size="10">'+esc(g.members.join(', '))+'</text>';
+    if(segments.length){
+      const range=getRange(segments),den=scale(Math.max(100,range.maxD-range.minD),290,Math.max(100,range.maxH-range.minH),220);
+      svg+=sectionSegmentsHtml(segments,x+4,y+10,290,219,range)+
+       '<text x="'+(x+4)+'" y="'+(y+246)+'" font-size="9">CUT REAL 3D MESH TRIANGLES · 1:'+den+' nominal</text>'+
+       '<text x="'+(x+4)+'" y="'+(y+260)+'" font-size="9" fill="#b1242b">D '+round(range.maxD-range.minD)+' · H '+round(range.maxH-range.minH)+' mm</text>';
+    }else svg+='<text x="'+(x+3)+'" y="'+(y+83)+'" font-size="12" fill="#a11">LIVE MESH SECTION UNAVAILABLE — STOP</text>';
   });
-  if(groups.length<6)svg+='<text x="65" y="683" fill="#777" font-size="10">Only unique construction signatures generate sections. Repeated modules are listed above.</text>';
-  svg+=stamp(3,'SECTIONS · CONSTRUCTION PROFILES UNVERIFIED',ref,'VARIES',3);
+  svg+='<text x="51" y="704" font-size="9" fill="#666">Intersections of current rendered construction meshes at module centre planes. NOMINAL scales require printed calibration.</text>';
+  svg+=stamp(3,'REAL MESH SECTIONS · PRODUCTION STOP',ref,'VARIES',4);
   return svg+'</svg>';
  }
- window.BizetApprovalR1062={overview,elevation,sections,scale,unique,dim,version:'10.6.2'};
+ function detailSheet(modules,room,stamp,ref){
+  const chosen=sourceSections().find(q=>q.has_geometry&&q.section_segments.length),segments=chosen?.section_segments||[];
+  const inputs=window.BizetModelRuntime?.getInputs?.()||{},visual=window.BizetModelRuntime?.getVisual?.()||{};
+  const number=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key)&&Number.isFinite(Number(obj[key]))?round(obj[key]):null;
+  const rear=number(inputs,'lower_wall_gap_mm');
+  const topT=number(inputs,'worktop_thickness_mm');
+  const facadeT=number(visual.furniture_materials?.facade||{},'thickness_mm')??number(inputs,'facade_thickness_mm');
+  const plinth=number(inputs,'plinth_height_mm');
+  let svg=sheetStart('ENLARGED CONSTRUCTION NODES 38.A / 38.B / 38.C');
+  const details=[
+   {id:'38.A',label:'REAR TECHNOLOGICAL / VENTILATION GAP',cat:'wall',
+    notes:['Rear wall clearance: '+(rear===null?'UNVERIFIED':rear+' mm'),'Wall and cabinet rear must be checked in actual scan']},
+   {id:'38.B',label:'WORKTOP / FACADE JUNCTURE',cat:'worktop',
+    notes:['Worktop thickness: '+(topT===null?'UNVERIFIED':topT+' mm'),
+      'Facade thickness: '+(facadeT===null?'UNVERIFIED':facadeT+' mm'),
+      'Actual front overhang / vertical clearance: VERIFY FROM MESH']},
+   {id:'38.C',label:'ADJUSTABLE FOOT / PLINTH RECESS',cat:'foot',
+    notes:['Plinth height: '+(plinth===null?'UNVERIFIED':plinth+' mm'),
+      'Foot position / plinth recess: VERIFY FROM MESH']}];
+  details.forEach((item,i)=>{
+   const x=58+i*349,y=99,ringX=x+134,ringY=y+177,r=114;
+   svg+='<text x="'+x+'" y="'+(y-28)+'" font-size="12" font-weight="800">'+item.id+' · '+esc(item.label)+'</text>';
+   svg+='<circle cx="'+ringX+'" cy="'+ringY+'" r="'+r+'" fill="#fff" stroke="#111" stroke-width="1.5"/>';
+   const feature=segments.filter(q=>new RegExp(item.cat,'i').test(q.cat||''));
+   const showing=feature.length?feature:segments;
+   if(showing.length){
+     const range=getRange(showing),dx=range.maxD-range.minD,dy=range.maxH-range.minH;
+     const padding=Math.max(dx,dy,65)*.18;const focus={minD:range.minD-padding,maxD:range.maxD+padding,minH:range.minH-padding,maxH:range.maxH+padding};
+     const id='detail-clip-'+i;
+     svg+='<defs><clipPath id="'+id+'"><circle cx="'+ringX+'" cy="'+ringY+'" r="'+(r-3)+'"/></clipPath></defs>'+
+       '<g clip-path="url(#'+id+')">'+sectionSegmentsHtml(showing,ringX-r,ringY-r,r*2,r*2,focus)+'</g>';
+   }else svg+='<text x="'+(ringX-99)+'" y="'+ringY+'" font-size="10" fill="#a11">SECTION MESH UNAVAILABLE</text>';
+   const nx=x+7,ny=425;
+   svg+='<path d="M '+(ringX+65)+' '+(ringY+92)+' L '+(x+260)+' '+(ny-12)+'" stroke="#b21e27" stroke-width="1.1" fill="none"/>';
+   item.notes.forEach((note,j)=>svg+='<text x="'+nx+'" y="'+(ny+j*22)+'" font-size="10">'+esc(note)+'</text>');
+  });
+  svg+='<text x="52" y="665" font-size="10" fill="#a11">PARAMETERS NOT PRESENT IN LIVE MODEL ARE UNVERIFIED — NO BORROWED DIMENSIONS FROM QUINTESSENTIAL.</text>';
+  svg+=stamp(4,'ENLARGED NODES · FOR APPROVAL REVIEW',ref,'NTS DETAILS',4);
+  return svg+'</svg>';
+ }
+ window.BizetApprovalR1062={overview,elevation,sections,detailSheet,scale,unique,dim,version:'10.6.2-r30-39'};
 })();
