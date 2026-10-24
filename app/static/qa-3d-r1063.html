@@ -23,6 +23,8 @@ window.addEventListener('unhandledrejection',e=>window.BizetR1063QA.messages.pus
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="/static/pilot-3d.js?v=106300"></script>
 <script src="/static/kitchen-webgl-r1050.js?v=106300"></script>
+<script src="/static/r1063-led-model.js?v=106301"></script>
+<script src="/static/r1063-visual-adapter.js?v=106301"></script>
 <script>
 (()=>{
  const qa=window.BizetR1063QA,room={lengthMm:6000,depthMm:4200,heightMm:2800};
@@ -42,6 +44,7 @@ window.addEventListener('unhandledrejection',e=>window.BizetR1063QA.messages.pus
     modules:mode==='ISOLATION'?[mods[0]]:mods};
   const target=document.getElementById(mode==='ISOLATION'?'focusCanvas':'modelCanvas');
   window.BizetPilot3D.drawKitchenScene(target,opts);
+  window.BizetVisualR1063?.refresh?.();
   qa.status='READY';qa.mode=mode;qa.optionsCurrent=opts;return true;
  };
  try{qa.draw('EDIT');document.getElementById('qaStatus').textContent='3D core fixture ready';}
