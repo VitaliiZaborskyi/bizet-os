@@ -76,19 +76,44 @@ def build_proposal_pdf(order_ref: str, payload: dict[str, Any]) -> bytes:
 
 
 def build_approval_pdf(svg_pages: list[str]) -> bytes:
+    """Fail-closed 10.6.5 approval PDF. No silently omitted sheets / placeholder PDFs."""
+    if not isinstance(svg_pages, list) or not 4 <= len(svg_pages) <= 30:
+        raise ValueError("STOP_APPROVAL_PAGE_COUNT_INVALID")
+    hashes = []
+    for index, svg in enumerate(svg_pages, 1):
+        if not isinstance(svg, str) or "<svg" not in svg or "</svg>" not in svg:
+            raise ValueError(f"STOP_APPROVAL_SVG_MISSING_PAGE_{index}")
+        match = re.search(r"SNAPSHOT\\s+(R1065-[0-9a-f]{8})", svg)
+        if match is None:
+            raise ValueError(f"STOP_APPROVAL_STATE_HASH_MISSING_PAGE_{index}")
+        hashes.append(match.group(1))
+    if len(set(hashes)) != 1:
+        raise ValueError("STOP_APPROVAL_MIXED_STATE_HASHES")
     output = fitz.open()
-    for svg in svg_pages[:12]:
-        if not isinstance(svg, str) or "<svg" not in svg:
-            continue
+    for index, svg in enumerate(svg_pages, 1):
         try:
             source = fitz.open("svg", svg.encode("utf-8"))
             pdf_bytes = source.convert_to_pdf()
             pdf_doc = fitz.open("pdf", pdf_bytes)
+            if pdf_doc.page_count != 1:
+                raise ValueError(f"SVG produced {pdf_doc.page_count} pages")
+            page = pdf_doc[0]
+            # HTML/print paths are A4 landscape; adjust each converted SVG to A4.
+            page.set_cropbox(page.rect)
             output.insert_pdf(pdf_doc)
-        except Exception:
-            continue
-    if output.page_count == 0:
-        page = output.new_page(width=842, height=595)
-        page.insert_text((40, 60), "BIZET Approval Drawings", fontsize=20, fontname="helv")
-        page.insert_text((40, 90), "Drawing payload could not be converted.", fontsize=10, fontname="helv")
-    return output.tobytes(garbage=4, deflate=True)
+            actual = output[-1].rect
+            if actual.width <= 0 or actual.height <= 0:
+                raise ValueError("Invalid geometry or missing page box")
+        except Exception as exc:
+            raise ValueError(f"STOP_APPROVAL_CONVERSION_FAILED_PAGE_{index}: {exc}") from exc
+    if output.page_count != len(svg_pages):
+        raise ValueError("STOP_APPROVAL_INCOMPLETE_PDF")
+    # The artwork is 1120 × 790 SVG units; scale all exported sheets uniformly
+    # into exact 297 × 210 mm PDF physical paper (841.8898 × 595.2756 pt).
+    final = fitz.open()
+    for index in range(output.page_count):
+        page = final.new_page(width=841.8898, height=595.2756)
+        page.show_pdf_page(page.rect, output, index, keep_proportion=True)
+    if final.page_count != len(svg_pages):
+        raise ValueError("STOP_APPROVAL_A4_LAYOUT_MISMATCH")
+    return final.tobytes(garbage=4, deflate=True)
