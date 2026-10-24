@@ -1,0 +1,80 @@
+/* BIZET 10.6.4 owner #42 — three explicit header columns, zero overlapping hit areas. */
+body.r8-workspace-body .r8-topbar,
+body.r1050-view-full .r8-topbar{
+ display:grid!important;grid-template-columns:44px minmax(0,1fr) auto!important;
+ align-items:center!important;justify-content:stretch!important;
+ column-gap:clamp(4px,1.2vw,14px)!important;
+ width:100%!important;min-width:0!important;box-sizing:border-box!important;
+ padding:0 max(8px,env(safe-area-inset-right)) 0 max(8px,env(safe-area-inset-left))!important;
+}
+body.r8-workspace-body .r8-topbar>.r8-brand{
+ grid-column:2!important;max-width:none!important;width:max-content!important;
+ max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;
+ font-size:inherit!important;white-space:nowrap!important;
+}
+body.r8-workspace-body .r8-topbar>#backButton{
+ grid-column:1!important;width:40px!important;min-width:40px!important;max-width:40px!important;
+ height:42px!important;min-height:42px!important;margin:0!important;
+}
+body.r8-workspace-body .r8-topbar>.r1064-header-actions{
+ grid-column:3!important;display:flex!important;align-items:center!important;
+ justify-content:flex-end!important;gap:6px!important;
+ position:relative!important;flex:none!important;min-width:0!important;
+ width:max-content!important;max-width:100%!important;
+}
+body.r8-workspace-body .r1064-header-actions #r1063HelpButton,
+body.r8-workspace-body .r1064-header-actions #baseInfoButton,
+body.r8-workspace-body .r1064-header-actions #settingsButton{
+ position:relative!important;inset:auto!important;transform:none!important;
+ display:inline-flex!important;justify-content:center!important;align-items:center!important;
+ width:40px!important;height:42px!important;min-width:40px!important;flex:0 0 40px!important;
+ margin:0!important;padding:0!important;border-radius:14px!important;
+ visibility:visible!important;opacity:1!important;z-index:auto!important;
+ box-sizing:border-box!important;
+}
+body.r8-workspace-body .r1064-header-actions .settings-wrap{
+ display:block!important;position:relative!important;margin:0!important;
+ min-width:40px!important;width:40px!important;flex:0 0 40px!important;
+}
+body.r8-workspace-body .r8-topbar>.r8-project-state{
+ display:none!important;
+}
+body.r8-workspace-body .r1064-header-actions button:focus-visible{
+ outline:3px solid #3684ff!important;outline-offset:2px!important;
+}
+body.r8-workspace-body .r1064-header-actions #settingsButton{letter-spacing:1px!important}
+@media(max-width:420px){
+ body.r8-workspace-body .r8-topbar{grid-template-columns:40px minmax(0,1fr) auto!important;column-gap:3px!important}
+ body.r8-workspace-body .r8-topbar .r8-brand strong{font-size:clamp(18px,5.4vw,22px)!important;letter-spacing:-.05em!important}
+ body.r8-workspace-body .r1064-header-actions{gap:2px!important}
+ body.r8-workspace-body .r1064-header-actions #r1063HelpButton,
+ body.r8-workspace-body .r1064-header-actions #baseInfoButton,
+ body.r8-workspace-body .r1064-header-actions #settingsButton{
+  width:35px!important;min-width:35px!important;flex-basis:35px!important;height:40px!important
+ }
+ body.r8-workspace-body .r1064-header-actions .settings-wrap{min-width:35px!important;flex-basis:35px!important;width:35px!important}
+}
+@media(max-width:340px){
+ body.r8-workspace-body .r8-topbar{grid-template-columns:36px minmax(0,1fr) auto!important;column-gap:1px!important}
+ body.r8-workspace-body .r8-topbar .r8-brand strong{font-size:17px!important}
+ body.r8-workspace-body .r1064-header-actions #r1063HelpButton,
+ body.r8-workspace-body .r1064-header-actions #baseInfoButton,
+ body.r8-workspace-body .r1064-header-actions #settingsButton{width:32px!important;min-width:32px!important;flex-basis:32px!important}
+ body.r8-workspace-body .r1064-header-actions .settings-wrap{min-width:32px!important;width:32px!important;flex-basis:32px!important}
+}
+
+/* Screenshot #42 reproduced in Chromium/WebKit: legacy settings button shifted -18px.
+   Keep its own touch target in normal layout flow, not the legacy offset. */
+body.r8-workspace-body .r8-topbar>.r1064-header-actions>.settings-wrap{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ margin:0!important;padding:0!important;position:relative!important;flex-shrink:0!important;
+ transform:none!important;left:auto!important;right:auto!important;
+}
+body.r8-workspace-body .r8-topbar>.r1064-header-actions>.settings-wrap>#settingsButton{
+ position:static!important;inset:auto!important;transform:none!important;
+ left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+ margin:0!important;margin-left:0!important;margin-right:0!important;
+ float:none!important;flex:0 0 40px!important;
+}
+@media(max-width:420px){body.r8-workspace-body .r8-topbar>.r1064-header-actions>.settings-wrap>#settingsButton{flex-basis:35px!important}}
+@media(max-width:340px){body.r8-workspace-body .r8-topbar>.r1064-header-actions>.settings-wrap>#settingsButton{flex-basis:32px!important}}

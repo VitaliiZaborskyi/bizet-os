@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 from .versioning import PROJECT_FORMAT_VERSION, RULE_SET_VERSION
 
@@ -33,21 +33,40 @@ class MeasuredValue(BaseModel):
 
 class IdentityState(BaseModel):
     internal_id: str = Field(default_factory=lambda: str(uuid4()))
+    session_id: str = Field(default_factory=lambda: f"SID-{uuid4().hex[:8].upper()}")
     order_no: str | None = None
+    order_stage: Literal["A", "B", "C"] = "A"
+    order_country_code: str | None = None
+    order_city_code: str | None = None
+    order_assigned_at: datetime | None = None
+    sold_at: datetime | None = None
     project_format_version: str = PROJECT_FORMAT_VERSION
     rule_set_version: str = RULE_SET_VERSION
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @model_validator(mode="after")
+    def normalize_order_stage(self):
+        if self.order_no and self.order_stage == "A":
+            self.order_stage = "B"
+        return self
 
     @property
     def application_no(self) -> str | None:
         """Compatibility alias; new client/domain terminology is order_no."""
         return self.order_no
 
+    @property
+    def display_reference(self) -> str:
+        base = self.order_no or self.session_id
+        return f"{base} /{self.order_stage}"
+
 
 class ContextState(BaseModel):
     object_type: str | None = None
     product_type: str | None = None
+    country_code: str | None = None
+    city_code: str | None = None
     complexity_category: str | None = None
     visual_direction: str | None = None
 
@@ -128,6 +147,18 @@ class PricingState(BaseModel):
     calculation_trace: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class CommerceState(BaseModel):
+    contact: str | None = None
+    proposal_status: Literal["NOT_REQUESTED", "DRAFT_READY", "CONTACT_CAPTURED", "QUEUED", "SENT", "FAILED"] = "NOT_REQUESTED"
+    proposal_delivery_status: Literal["NOT_CONFIGURED", "READY", "SENT", "FAILED"] = "NOT_CONFIGURED"
+    proposal_provider: str | None = None
+    proposal_message_id: str | None = None
+    proposal_recipient: str | None = None
+    proposal_sent_at: datetime | None = None
+    selected_manufacturer: str | None = None
+    payment_status: Literal["NOT_STARTED", "FORM_OPEN", "PAYMENT_PROVIDER_REQUIRED", "PAID"] = "NOT_STARTED"
+
+
 class SceneState(BaseModel):
     camera: dict[str, Any] = Field(default_factory=dict)
     visual_settings: dict[str, Any] = Field(default_factory=dict)
@@ -200,6 +231,7 @@ class ProjectState(BaseModel):
     materials: MaterialsState = Field(default_factory=MaterialsState)
     preferences: PreferencesState = Field(default_factory=PreferencesState)
     pricing: PricingState = Field(default_factory=PricingState)
+    commerce: CommerceState = Field(default_factory=CommerceState)
     scene: SceneState = Field(default_factory=SceneState)
     quest: QuestState = Field(default_factory=QuestState)
     validation: ValidationState = Field(default_factory=ValidationState)
