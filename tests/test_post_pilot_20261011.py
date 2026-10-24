@@ -12,10 +12,12 @@ def read(name):
 def test_fix_01_end_panels_stay_inside_module_envelope():
     viewer=read("kitchen-webgl-r1050.js")
     block=viewer[viewer.index("function addEndPanels"):viewer.index("function lowerRuns")]
-    assert "edge==='START'?+m.x:+m.x+ +m.w-t" in block
-    assert "edge==='START'?+m.y:+m.y+ +m.d-t" in block
-    assert "+m.x-t" not in block
-    assert "+m.y-t" not in block
+    # Owner 10.6.1 supersedes the old fridge exception: regular panels remain
+    # inside their outer module width; fridge remains >=600 mm and its panel is external.
+    assert "m.kind==='FRIDGE'?+m.x-t:+m.x" in block
+    assert "m.kind==='FRIDGE'?+m.x+ +m.w:+m.x+ +m.w-t" in block
+    assert "m.kind==='FRIDGE'?+m.y-t:+m.y" in block
+    assert "m.kind==='FRIDGE'?+m.y+ +m.d:+m.y+ +m.d-t" in block
 
 def test_fix_02_oven_is_visible_as_real_3d_visual_group():
     viewer=read("kitchen-webgl-r1050.js")
