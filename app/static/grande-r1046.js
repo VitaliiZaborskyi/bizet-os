@@ -98,7 +98,7 @@
     if(name==='shelves')html='<div class="section">'+input(t('shelvesLeft'),'shelvesL',S.shelvesL,0,12,1)+input(t('shelvesRight'),'shelvesR',S.shelvesR,0,12,1)+'</div>';
     if(name==='equipment')html='<div class="section">'+select(t('rod'),'rod',[['0',t('none')],['1',t('installed')]],S.rod?'1':'0')+input(t('rodTop'),'rodTop',S.rodTop,100,1800)+'</div>';
     if(name==='materials')html='<div class="section"><label class="field"><span>'+t('bodyMat')+'</span><input data-key="body" type="color" value="'+S.body+'"></label><label class="field"><span>'+t('accentMat')+'</span><input data-key="accent" type="color" value="'+S.accent+'"></label></div>';
-    if(name==='output')html='<div class="out"><button id="projectExport">'+t('project')+'</button></div><p class="note">'+t('projectNote')+'</p><p class="note">'+t('source')+'</p>';
+    if(name==='output')html='<div class="out"><button type="button" id="grandeApprovalR1063">'+(lang==='en'?'For Approval Drawings':lang==='ua'?'Креслення на погодження':'Чертежи на согласование')+'</button><button id="projectExport">'+t('project')+'</button></div><p class="note">'+t('projectNote')+'</p><p class="note">'+t('source')+'</p>';
     $('panelBody').innerHTML=html+'<button class="primary" id="apply">'+t('apply')+'</button>';
     $('panelBody').querySelectorAll('[data-key]').forEach(el=>{
       el.addEventListener('input',()=>{
@@ -114,6 +114,7 @@
       });
     });
     const ex=$('projectExport');if(ex)ex.onclick=()=>{ex.textContent=t('project')+' · schema check';ex.disabled=true};
+    $('grandeApprovalR1063')?.addEventListener('click',()=>window.BizetGrandeApprovalR1063?.open?.(model(),'GRANDE'));
     $('apply').onclick=closePanel;
     requestAnimationFrame(()=>render(true));
   }
