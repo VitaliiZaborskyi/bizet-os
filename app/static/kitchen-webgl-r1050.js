@@ -663,12 +663,16 @@ function addAppliance(room,m){
 }
 
 function addEndPanels(room,m,bodyMat,frontMat){
- const edges=Array.isArray(m.end_panel_edges)?m.end_panel_edges:[];if(!edges.length||m.kind==='FRIDGE')return;
- const wall=m.wall||'A',t=Math.max(8,Number(m.end_panel_width_mm)||18),mat=(m.end_panel_material==='FACADE'?frontMat:bodyMat);
+ const edges=Array.isArray(m.end_panel_edges)?m.end_panel_edges:[];if(!edges.length)return;
+ const wall=m.wall||'A',t=m.end_panel_shape==='L_SHAPE'?Math.max(8,Number(m.end_panel_width_mm)||40)
+   :(window.BizetPanelsR1061?.panelThickness(m)||Math.max(8,Number(m.end_panel_width_mm)||18)),
+   mat=(m.end_panel_material==='FACADE'?frontMat:bodyMat);
  edges.forEach(edge=>{
    let p;
-   if(wall==='A')p={x:edge==='START'?+m.x:+m.x+ +m.w-t,y:+m.y-9,z:+m.z,w:t,d:+m.d+9,h:+m.h};
-   else{const frontX=wall==='B'?+m.x:+m.x-9,depth=+m.w+9;p={x:frontX,y:edge==='START'?+m.y:+m.y+ +m.d-t,z:+m.z,w:depth,d:t,h:+m.h}}
+   if(wall==='A')p={x:edge==='START'?(m.kind==='FRIDGE'?+m.x-t:+m.x)
+   :(m.kind==='FRIDGE'?+m.x+ +m.w:+m.x+ +m.w-t),y:+m.y-9,z:+m.z,w:t,d:+m.d+9,h:+m.h};
+   else{const frontX=wall==='B'?+m.x:+m.x-9,depth=+m.w+9;p={x:frontX,y:edge==='START'?(m.kind==='FRIDGE'?+m.y-t:+m.y)
+   :(m.kind==='FRIDGE'?+m.y+ +m.d:+m.y+ +m.d-t),z:+m.z,w:depth,d:t,h:+m.h}}
    const q=meshBox(room,p,mat.clone(),furnitureGroup,'end-panel',m.id);q.material.userData.owned=true;q.userData.frontFlush=true;
  });
 }
