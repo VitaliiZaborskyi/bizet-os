@@ -18,6 +18,13 @@
    '<text x="'+labelX+'" y="'+labelY+'" fill="#c41b22" font-size="10" text-anchor="middle" font-weight="700">'+esc(label)+'</text>';
  };
  const defs='<defs><pattern id="r1062Hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#666" stroke-width="1"/></pattern></defs>';
+ const premiumShade=()=>{
+   const source=window.BizetModelRuntime?.getVisual?.()?.furniture_materials?.facade||{};
+   const raw=String(source.color||source.hex||source.value||'');
+   if(!/^#[0-9a-fA-F]{6}$/.test(raw))return '#f7f7f6';
+   const val=parseInt(raw.slice(1),16),parts=[(val>>16)&255,(val>>8)&255,val&255];
+   return '#'+parts.map(x=>Math.round(248*.9+x*.1).toString(16).padStart(2,'0')).join('');
+ };
  const sheetStart=(name)=>'<svg viewBox="0 0 1120 790" xmlns="http://www.w3.org/2000/svg">'+defs+
   '<rect x="5" y="5" width="1110" height="780" fill="white" stroke="#111" stroke-width="1.5"/>'+
   '<text x="42" y="38" font-size="17" font-weight="800" fill="#111">BIZET OS · '+esc(name)+'</text>';
@@ -82,7 +89,7 @@
   ordered.forEach((m,i)=>{
    const x=ox+(num(m.x)-zoneX1)*s,y=oy+(zoneY2-(num(m.y)+num(m.d)))*s;
    const w=num(m.w)*s,d=num(m.d)*s;
-   svg+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+d+'" fill="#f9f9f9" stroke="#111" stroke-width="1.25"/>'+
+   svg+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+d+'" fill="'+premiumShade()+'" stroke="#111" stroke-width="1.25"/>'+
     '<text x="'+(x+w/2)+'" y="'+(y+d/2+3)+'" text-anchor="middle" font-size="9">M'+esc(m.number)+'</text>';
    if(w>=20)svg+=dim(x,y+d+12,x+w,y+d+12,round(m.w));
   });
@@ -102,7 +109,7 @@
   const items=selected.map(m=>{
    const x=bx+(num(m.x)-left)*s,y=base-(num(m.z)+num(m.h))*s,w=Math.max(3,num(m.w)*s),h=Math.max(4,num(m.h)*s);
    const z=num(m.z),p=num(m.end_panel_width_mm)||18;
-   let out='<g><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#fcfcfc" stroke="#111" stroke-width="1.65"/>';
+   let out='<g><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+premiumShade()+'" stroke="#111" stroke-width="1.65"/>';
    if(m.kind==='FILLER')out+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="url(#r1062Hatch)" stroke="#111"/>';
    else out+=facades(m,x,y,w,h);
    for(const side of (m.end_panel_edges||[])){
@@ -149,14 +156,14 @@
  function overview(modules,room,stamp,ref){
   const image=window.BizetKitchenWebGL?.captureApprovalIsometric?.();
   let svg=sheetStart('EXTERIOR VIEWS / FOR APPROVAL');
-  svg+=top(modules,room,{x:52,y:71,w:478,h:280});
-  svg+=front(modules,room,{x:52,y:369,w:490,h:306},true);
-  svg+='<text x="574" y="82" font-size="14" font-weight="800">AXONOMETRIC · ORTHOGRAPHIC</text>';
-  svg+=image?'<image x="572" y="98" width="520" height="492" preserveAspectRatio="xMidYMid meet" href="'+image+'"/>':
-   '<text x="580" y="178" font-size="15">LIVE 3D CAPTURE UNAVAILABLE — NOT APPROVED</text>';
-  svg+='<text x="575" y="603" font-size="10">Actual scene exterior: fronts, handles, worktop, plinth and end panels.</text>';
-  svg+='<text x="575" y="621" font-size="10">No hidden-line overlay in axonometry · geometry not redrawn by hand.</text>';
-  svg+='<text x="575" y="639" font-size="9" fill="#a11">NTS AXO — orthographic projection, printable scales in TOP and FRONT views.</text>';
+  svg+=top(modules,room,{x:52,y:71,w:659,h:258});
+  svg+=front(modules,room,{x:52,y:354,w:659,h:326},true);
+  svg+='<text x="742" y="82" font-size="13" font-weight="800">AXONOMETRIC · ORTHOGRAPHIC</text>';
+  svg+=image?'<image x="738" y="106" width="345" height="474" preserveAspectRatio="xMidYMid meet" href="'+image+'"/>':
+   '<text x="741" y="178" font-size="15">LIVE 3D CAPTURE UNAVAILABLE — NOT APPROVED</text>';
+  svg+='<text x="739" y="603" font-size="10">Actual scene exterior: fronts, handles, worktop, plinth and end panels.</text>';
+  svg+='<text x="739" y="621" font-size="10">No hidden-line overlay in axonometry · geometry not redrawn by hand.</text>';
+  svg+='<text x="739" y="639" font-size="9" fill="#a11">NTS AXO — orthographic projection, printable scales in TOP and FRONT views.</text>';
   svg+=stamp(1,'EXTERIOR: TOP + FRONT + AXONOMETRIC',ref,'TOP/FRONT NUMERIC',3);
   return svg+'</svg>';
  }
