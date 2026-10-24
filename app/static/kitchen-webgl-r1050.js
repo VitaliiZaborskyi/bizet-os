@@ -378,7 +378,7 @@ function addHinges(room,m,count){
  const norm=Math.max(1,Number(count)||1);
  for(let i=0;i<norm;i++){
   const side=String(m.facade_openings?.[i]||((i%2)?'RIGHT':'LEFT')).toUpperCase();
-  const along=Number(m[wall==='A'?'x':'y'])+(i+(side==='RIGHT'?.95:.05))*run/norm;
+  const along=Number(m[wall==='A'?'x':'y'])+(i+(side==='RIGHT'?0.95:0.05))*run/norm;
   heights.forEach(h=>{
     // Mounting plate is fixed to cabinet carcass, not to the swinging door.
     const body=wall==='A'?{x:along-13,y:Number(m.y)+8,z:Number(m.z)+h-15,w:26,d:36,h:30}
@@ -940,12 +940,27 @@ function buildLighting(room,mods){
  const brightness=Math.max(0,Math.min(100,Number(window.BizetModelRuntime?.getVisual?.().led_brightness_pct_r1061??75)))/100;
  (scheduled?.segments||[]).filter(x=>['WORKTOP','PLINTH','UPPER_INSIDE'].includes(x.zone)).slice(0,10).forEach(segment=>{
   const m=mods.find(q=>q.id===segment.module_id);if(!m)return;
-  const point=new THREE.PointLight(kelvin<=3000?0xffddaa:0xf4f7ff,brightness*1.55,
-    Math.max(950,Math.min(2900,segment.length_mm*1.5)),2);
-  const elev=segment.zone==='PLINTH'?Number(m.z)+65:segment.zone==='WORKTOP'?Number(m.z)+40:Number(m.z)+Number(m.h)*.5;
-  point.position.copy(roomToWorld(room,Number(m.x)+Number(m.w)/2,Number(m.y)+Number(m.d)/2,elev));
-  point.userData={cat:'led-photometric-preview',ledId:segment.id,productionReady:false};
+  // Millimetre scene units. decaying 1/r^2 with tiny nominal intensity was invisible.
+  // A bounded decay=0 / finite range preview provides legible light on worktop/apron.
+  const point=new THREE.PointLight(kelvin<=3000?0xffd8a2:0xf3f8ff,brightness*2.7,
+    Math.max(1300,Math.min(3600,segment.length_mm*2)),0);
+  const elev=segment.zone==='PLINTH'?Number(m.z)+75:segment.zone==='WORKTOP'?Number(m.z)+8:Number(m.z)+Number(m.h)*.52;
+  const wall=m.wall||'A',midX=Number(m.x)+Number(m.w)/2,midY=Number(m.y)+Number(m.d)/2;
+  if(wall==='A')point.position.copy(roomToWorld(room,midX,segment.zone==='WORKTOP'?Number(m.y)-55:midY,elev));
+  else point.position.copy(roomToWorld(room,wall==='B'?Number(m.x)+Number(m.w)+55:Number(m.x)-55,midY,elev));
+  point.userData={cat:'led-photometric-preview-r1062',ledId:segment.id,productionReady:false};
   lightingGroup.add(point);
+  // Physical emissive segment is separately toggled with VIEW LIGHT; does NOT control BOM.
+  const width=Math.max(70,segment.length_mm),mat=ownMat({
+    color:kelvin<=3000?0xffebbb:0xe5f3ff,emissive:kelvin<=3000?0xffd49e:0xeff5ff,
+    emissiveIntensity:Math.max(.05,brightness*3),roughness:.55,metalness:0
+  });
+  const ledSpec=wall==='A'
+    ?{x:Number(m.x)+18,y:Number(m.y)-13,z:elev-4,w:width,d:9,h:8}
+    :{x:wall==='B'?Number(m.x)+Number(m.w)+4:Number(m.x)-13,y:Number(m.y)+18,z:elev-4,w:9,d:width,h:8};
+  const emitter=meshBox(room,ledSpec,mat,lightingGroup,'led-emissive-line-r1062',m.id);
+  emitter.userData.ledId=segment.id;emitter.userData.visualizationProxy=true;
+  emitter.userData.isVisualSwitchOnly=true;
  });
 }
 function addR1056CornerFalseFront(room,m,frontMaterial){
