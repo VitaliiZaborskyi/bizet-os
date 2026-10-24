@@ -173,7 +173,10 @@ def download_offer_document(project_id: str, document_kind: Literal["proposal", 
         pdf = build_proposal_pdf(order_ref, payload.model_dump())
         filename = f"BIZET_OFFER_{safe_ref}.pdf"
     else:
-        pdf = build_approval_pdf(payload.approval_svg_pages)
+        try:
+            pdf = build_approval_pdf(payload.approval_svg_pages)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
         filename = f"BIZET_APPROVAL_{safe_ref}.pdf"
     return Response(
         content=pdf,
@@ -200,7 +203,11 @@ def send_project_proposal(project_id: str, payload: SendProposalRequest):
     if payload.include_proposal:
         attachments.append((f"BIZET_OFFER_{order_ref.replace('/', '-')}.pdf", build_proposal_pdf(order_ref, payload_data)))
     if payload.include_approval_drawings:
-        attachments.append((f"BIZET_APPROVAL_{order_ref.replace('/', '-')}.pdf", build_approval_pdf(payload.approval_svg_pages)))
+        try:
+            approval_pdf = build_approval_pdf(payload.approval_svg_pages)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        attachments.append((f"BIZET_APPROVAL_{order_ref.replace('/', '-')}.pdf", approval_pdf))
     try:
         message_id = send_with_resend(
             recipient,
