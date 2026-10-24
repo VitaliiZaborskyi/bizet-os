@@ -650,19 +650,13 @@
   }
 
   function approvalSheets(modules,room,orderRef=''){
-    const engine=window.BizetApprovalR1063;
-    if(engine){
-      const stamp=(page,title,ref,scaleLabel)=>approvalStamp(page,title,ref,scaleLabel,4);
-      return[
-       engine.overview(modules,room,stamp,orderRef),
-       engine.elevation(modules,room,stamp,orderRef),
-       engine.sections(modules,room,stamp,orderRef),
-       engine.detailSheet(modules,room,stamp,orderRef)
-      ];
-    }
-    return[approvalPlanSheet(modules,room,orderRef),
-      approvalElevationSheet(modules,room,orderRef),
-      approvalSectionSheet(modules,room,orderRef)];
+    const engine=window.BizetApprovalR1065;
+    if(!engine?.build)throw new Error('STOP_R1065_APPROVAL_ENGINE_UNAVAILABLE');
+    const stamp=(page,title,ref,scaleLabel,total)=>approvalStamp(page,title,ref,scaleLabel,total);
+    const pages=engine.build(modules,room,stamp,orderRef);
+    if(!Array.isArray(pages)||pages.length<4||pages.some(svg=>typeof svg!=='string'||!svg.includes('</svg>')))
+      throw new Error('STOP_R1065_APPROVAL_SET_INCOMPLETE');
+    return pages;
   }
 
   function approvalDrawingHtml(data=current()){
