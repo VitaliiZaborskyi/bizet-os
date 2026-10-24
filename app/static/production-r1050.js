@@ -256,9 +256,11 @@ function exportEngineering(model,filename,options={}){
  if(!model)return false;
  const rt=window.BizetModelRuntime,src=window.BizetRoomR1061?.source(rt?.getVisual?.()||{}),
    led=window.BizetLED1061?.manifest(rt?.getInputs?.()||{},rt?.getModules?.()||[]);
- if(src==='SCAN'||led?.included){
+ const fridgePanelStop=(model.modules||[]).filter(m=>m.fridge_end_panel_compensation_status==='STOP_UNRESOLVED');
+ if(src==='SCAN'||led?.included||fridgePanelStop.length){
    const errors=[...(src==='SCAN'?['STOP_SCAN_GEOMETRY_UNVERIFIED_R1061']:[]),
-      ...(led?.included?['STOP_LED_MACHINING_AND_SUPPLIER_PROFILE_UNVERIFIED_R1061']:[])];
+      ...(led?.included?['STOP_LED_MACHINING_AND_SUPPLIER_PROFILE_UNVERIFIED_R1061']:[]),
+      ...fridgePanelStop.map(m=>'STOP_FRIDGE_PANEL_COMPENSATION:'+m.id)];
    const report={ok:false,errors,warnings:[],status:'HUMAN_REVIEW_REQUIRED'};
    window.dispatchEvent(new CustomEvent('bizet:export-preflight',{detail:{profile:profile().id,report,model:model.name}}));
    console.warn('R10.6.1 engineering export STOP',report);return false;
