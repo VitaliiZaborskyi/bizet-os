@@ -46,7 +46,7 @@ let r1056LightingVisible=true;
 const openState=new Map();
 
 function ownMat(p){const m=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,...p});m.userData.owned=true;return m}
-function clearGroup(g){while(g.children.length){const c=g.children.pop();c.traverse?.(n=>{n.geometry?.dispose?.();const ms=n.material?(Array.isArray(n.material)?n.material:[n.material]):[];ms.forEach(m=>{if(m?.userData?.owned){m.map?.dispose?.();m.dispose?.()}})})}}
+function clearGroup(g){while(g.children.length){const c=g.children[g.children.length-1];g.remove(c);c.traverse?.(n=>{n.geometry?.dispose?.();const ms=n.material?(Array.isArray(n.material)?n.material:[n.material]):[];ms.forEach(m=>{if(m?.userData?.owned){m.map?.dispose?.();m.dispose?.()}})})}}
 function roomToWorld(room,x,y,z){return new THREE.Vector3(Number(x)-Number(room.lengthMm||6000)/2,Number(z),Number(y)-Number(room.depthMm||4200)/2)}
 function center(room,m){return roomToWorld(room,Number(m.x||0)+Number(m.w||0)/2,Number(m.y||0)+Number(m.d||0)/2,Number(m.z||0)+Number(m.h||0)/2)}
 function addVisibleEdges(mesh,cat,id){
@@ -1007,14 +1007,38 @@ function buildFurniture(options){clearGroup(furnitureGroup);clearGroup(hardwareG
  else{const L=+room.lengthMm||6000,D=+room.depthMm||4200,H=+room.heightMm||2800,safe=520;addDimension(room,[0,D+safe,80],[L,D+safe,80],Math.round(L)+' mm',[L/2,D+safe+180,180]);addDimension(room,[L+safe,D+safe*.35,0],[L+safe,D+safe*.35,H],Math.round(H)+' mm',[L+safe+200,D+safe*.35,H/2])}}
  body.dispose();front.dispose();
 }
-function frame(options,force=false){const room=options.room||{},mods=options.modules||[],mode=options.focusMode?'focus':'normal',key=[room.lengthMm,room.depthMm,room.heightMm,mode,options.focusMode?mods.map(m=>[m.id,m.w,m.d,m.h].join('/')).join('|'):''].join(':');if(!force&&lastMode===mode&&lastRoomKey===key)return;lastMode=mode;lastRoomKey=key;if(!mods.length)return;const minX=Math.min(...mods.map(m=>+m.x||0)),maxX=Math.max(...mods.map(m=>(+m.x||0)+(+m.w||0))),minY=Math.min(...mods.map(m=>+m.y||0)),maxY=Math.max(...mods.map(m=>(+m.y||0)+(+m.d||0))),minZ=Math.min(...mods.map(m=>+m.z||0)),maxZ=Math.max(...mods.map(m=>(+m.z||0)+(+m.h||0))),ct=roomToWorld(room,(minX+maxX)/2,(minY+maxY)/2,(minZ+maxZ)/2),span=Math.max(maxX-minX,maxY-minY,maxZ-minZ,1200),dist=options.focusMode?Math.max(1500,span*1.55):Math.max(2600,span*1.25);controls.target.copy(ct);camera.position.set(ct.x+dist*.78,ct.y+dist*.38,ct.z-dist*.96);camera.updateProjectionMatrix();controls.update()}
+function frame(options,force=false){
+ const mods=(options.modules||[]).filter(m=>Number.isFinite(Number(m.x))&&Number.isFinite(Number(m.w)));
+ const mode=options.focusMode?'focus':'normal',
+  key=[mode,mods.map(m=>[m.id,m.x,m.y,m.z,m.w,m.d,m.h].join(':')).join('|')].join('/');
+ if(!force&&lastMode===mode&&lastRoomKey===key)return;
+ lastMode=mode;lastRoomKey=key;
+ if(!mods.length)return;
+ furnitureGroup.updateMatrixWorld(true);hardwareGroup.updateMatrixWorld(true);
+ const bbox=new THREE.Box3().setFromObject(furnitureGroup);
+ if(bbox.isEmpty()||![bbox.min.x,bbox.min.y,bbox.min.z,bbox.max.x,bbox.max.y,bbox.max.z].every(Number.isFinite))return;
+ const center=bbox.getCenter(new THREE.Vector3()),size=bbox.getSize(new THREE.Vector3());
+ const span=Math.max(size.x,size.y,size.z,600),fov=camera.fov*Math.PI/180;
+ const aspect=Math.max(.45,camera.aspect||1);
+ const distance=Math.max(950,(Math.max(size.y,size.x/aspect)/2)/Math.tan(fov/2)*1.48,span*.95);
+ controls.target.copy(center);
+ camera.position.copy(center).add(new THREE.Vector3(distance*.45,distance*.37,-distance*.95));
+ camera.near=Math.max(1,distance/1000);camera.far=Math.max(18000,distance*6,span*7);
+ camera.updateProjectionMatrix();controls.update();
+}
 function resize(){const r=host.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(r.width,r.height,false);composer?.setSize(r.width,r.height);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();controls.update()}
 new ResizeObserver(resize).observe(host);addEventListener('resize',resize);
 function draw(options){
    lastOptions=options;setDeepShadow(false);buildRoom(options);buildFurniture(options);
    const spin=scanActive()?Number(window.BizetRoomR1061?.current(window.BizetModelRuntime?.getVisual?.())?.rotation_deg||0)*Math.PI/180:0;
    [roomGroup,furnitureGroup,hardwareGroup,annotationGroup,lightingGroup].forEach(group=>group.rotation.y=spin);
-   frame(options,false);resize();normalCanvas.style.opacity='0';focusCanvas.style.opacity='0'
+   resize();frame(options,false);
+    const meshCount=options.modules?.length||0;
+    window.BizetR1062GeometryHealth={mode:options.focusMode?'ISOLATION':(window.BIZET_KITCHEN_UI_MODE||'VIEW'),
+      modules:meshCount,furnitureMeshes:0,visible:true};
+    furnitureGroup.traverse(o=>{if(o.isMesh)window.BizetR1062GeometryHealth.furnitureMeshes++});
+    if(meshCount>0&&window.BizetR1062GeometryHealth.furnitureMeshes===0)throw Error('R1062_RENDER_EMPTY_MESH_SCENE');
+    normalCanvas.style.opacity='0';focusCanvas.style.opacity='0'
  }
 // #27: the viewer only starts shelf editing after a hold in EDIT/isolation.
 let shelfHoldTimer=0,shelfHoldDown=null;
@@ -1068,58 +1092,62 @@ renderer.domElement.addEventListener('pointerup',e=>{
  }
  if(window.BIZET_KITCHEN_UI_MODE!=='VIEW'&&!lastOptions?.focusMode&&id){document.querySelector('#moduleStrip [data-module="'+CSS.escape(moduleId)+'"]')?.click()}
 });
-function animate(){requestAnimationFrame(animate);controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});renderer.render(scene,camera)}animate();
-window.BizetPilot3D.drawKitchenScene=(canvas,options={})=>{const legacy=legacyDraw(canvas,options);try{draw(options)}catch(e){console.error('R10.5.1 kitchen WebGL fallback',e);host.style.display='none';canvas.style.opacity='1'}return legacy};
+let r1062WebglLost=false;
+ renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();r1062WebglLost=true;host.style.display='none';normalCanvas.style.opacity='1';focusCanvas.style.opacity='1';window.BizetR1062GeometryHealth={visible:false,reason:'WEBGL_CONTEXT_LOST'};});
+ renderer.domElement.addEventListener('webglcontextrestored',()=>{r1062WebglLost=false;host.style.display='';if(lastOptions)try{draw(lastOptions)}catch(e){console.error('R1062_CONTEXT_RESTORE_FAILED',e)}});
+ function animate(){requestAnimationFrame(animate);if(r1062WebglLost)return;controls.update();movables.forEach(m=>{m.current+=(m.target-m.current)*.12;if(m.type==='door'){m.pivot.rotation.y=(m.sign??doorOpenSign(m.wall,m.side))*m.current*Math.PI*.58}else if(m.type==='lift'){if(m.pivot){if(m.wall==='A')m.pivot.rotation.x=m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}}else if(m.type==='dishwasher'){if(m.wall==='A')m.pivot.rotation.x=-m.current*Math.PI*.48;else m.pivot.rotation.z=(m.wall==='B'?-1:1)*m.current*Math.PI*.48}else if(m.type==='drawer'){const fv=frontVector(m.wall),base=m.base||new THREE.Vector3();m.group.position.copy(base).add(fv.multiplyScalar(360*m.current))}});try{renderer.render(scene,camera)}catch(error){console.error('R1062_WEBGL_RENDER_FAILED',error);r1062WebglLost=true;host.style.display='none';normalCanvas.style.opacity='1';focusCanvas.style.opacity='1';window.BizetR1062GeometryHealth={visible:false,reason:String(error)}}}animate();
+window.BizetPilot3D.drawKitchenScene=(canvas,options={})=>{const legacy=legacyDraw(canvas,options);try{draw(options)}catch(e){console.error('R10.6.2 kitchen WebGL fallback',e);window.BizetR1062GeometryHealth={visible:false,reason:String(e)};host.style.display='none';canvas.style.opacity='1';focusCanvas.style.opacity='1'}return legacy};
 function captureApprovalIsometric(){
- if(!lastOptions||!furnitureGroup.children.length)return null;
- // Actual current 3D exterior, no illustration or dummy cabinet geometry.
- const box=new THREE.Box3().setFromObject(furnitureGroup);box.expandByObject(hardwareGroup);
- if(box.isEmpty())return null;
- const center=box.getCenter(new THREE.Vector3()),view=new THREE.Vector3(1,1,1).normalize();
- const cameraIso=new THREE.OrthographicCamera(-1,1,1,-1,1,65000);
- cameraIso.position.copy(center).addScaledVector(view,16000);cameraIso.lookAt(center);cameraIso.updateMatrixWorld(true);
- const projected=[];
- const corners=[[box.min.x,box.min.y,box.min.z],[box.min.x,box.min.y,box.max.z],
-  [box.min.x,box.max.y,box.min.z],[box.min.x,box.max.y,box.max.z],
-  [box.max.x,box.min.y,box.min.z],[box.max.x,box.min.y,box.max.z],
-  [box.max.x,box.max.y,box.min.z],[box.max.x,box.max.y,box.max.z]];
- corners.forEach(p=>projected.push(new THREE.Vector3(...p).applyMatrix4(cameraIso.matrixWorldInverse)));
+ if(!lastOptions?.modules?.length)return null;
+ furnitureGroup.updateMatrixWorld(true);hardwareGroup.updateMatrixWorld(true);
+ const bbox=new THREE.Box3().setFromObject(furnitureGroup);bbox.expandByObject(hardwareGroup);
+ if(bbox.isEmpty())return null;
+ const center=bbox.getCenter(new THREE.Vector3()), corners=[];
+ for(const x of [bbox.min.x,bbox.max.x])for(const y of [bbox.min.y,bbox.max.y])for(const z of [bbox.min.z,bbox.max.z])
+   corners.push(new THREE.Vector3(x,y,z));
+ // FRONT plane derives from actual module walls. A faces -Z; B faces +X; C faces -X.
+ const fronts=lastOptions.modules.reduce((s,m)=>{
+  const run=Math.max(0,Number(m.wall==='A'?m.w:m.d)||0);
+  if(m.wall==='B')s.x+=run;else if(m.wall==='C')s.x-=run;else s.z-=run;
+  return s;
+ },{x:0,z:0});
+ const yaw=new THREE.Vector3(fronts.x,0,fronts.z);
+ if(yaw.length()<1)yaw.set(.4,0,-1);
+ yaw.normalize();yaw.x+=yaw.z<0?.18:0;yaw.normalize();
+ const axis=new THREE.Vector3(yaw.x,.85,yaw.z).normalize();
+ const cameraIso=new THREE.OrthographicCamera(-1,1,1,-1,1,100000);
+ cameraIso.position.copy(center).addScaledVector(axis,18000);cameraIso.lookAt(center);cameraIso.updateMatrixWorld(true);
+ const projected=corners.map(p=>p.applyMatrix4(cameraIso.matrixWorldInverse));
  const minX=Math.min(...projected.map(p=>p.x)),maxX=Math.max(...projected.map(p=>p.x));
  const minY=Math.min(...projected.map(p=>p.y)),maxY=Math.max(...projected.map(p=>p.y));
- const width=1000,height=900,aspect=width/height;
- const span=Math.max((maxY-minY)/.89,(maxX-minX)/(.89*aspect),700);
- cameraIso.left=-span*aspect/2;cameraIso.right=span*aspect/2;
- cameraIso.top=span/2;cameraIso.bottom=-span/2;cameraIso.updateProjectionMatrix();
- const offsetX=(maxX+minX)/2,offsetY=(maxY+minY)/2;
- cameraIso.position.add(cameraIso.localToWorld(new THREE.Vector3(offsetX,offsetY,0)).sub(cameraIso.position).multiplyScalar(1));
- cameraIso.updateMatrixWorld(true);
+ const width=1120,height=840,aspect=width/height;
+ const halfH=Math.max(430,(maxY-minY)*.58,(maxX-minX)*.58/aspect);
+ // Camera stays aimed at the real world-bounding-box center. Fit covers ALL module corners.
+ cameraIso.left=-halfH*aspect;cameraIso.right=halfH*aspect;
+ cameraIso.top=halfH;cameraIso.bottom=-halfH;cameraIso.updateProjectionMatrix();
  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
- let isoRenderer=null;
- const hiddenGroups=[roomGroup,annotationGroup,lightingGroup],oldVisibility=hiddenGroups.map(g=>g.visible);
- const oldBackground=scene.background,oldMaterials=[],tempMaterials=[];
+ const groupVisibility=[roomGroup,annotationGroup,lightingGroup].map(g=>g.visible);
+ const oldMaterials=[],tempMaterials=[],oldBackground=scene.background;
+ let renderIso;
  try{
-  isoRenderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'low-power'});
-  isoRenderer.setPixelRatio(1);isoRenderer.setSize(width,height,false);
-  isoRenderer.outputEncoding=THREE.sRGBEncoding;
-  hiddenGroups.forEach(g=>g.visible=false);scene.background=new THREE.Color(0xffffff);
-  // High-contrast outline print without lying about the actual exterior geometry.
-  const shell=new THREE.MeshBasicMaterial({color:0xf6f7f7});
-  const front=new THREE.MeshBasicMaterial({color:0xe9eced});
-  const metal=new THREE.MeshBasicMaterial({color:0x747a80});
-  tempMaterials.push(shell,front,metal);
-  for(const group of [furnitureGroup,hardwareGroup])group.traverse(n=>{
-   if(!n.isMesh||!n.material)return;
-   oldMaterials.push([n,n.material]);
-   const cat=String(n.userData?.cat||'');
-   n.material=group===hardwareGroup?metal:cat==='front'?front:shell;
-  });
-  isoRenderer.render(scene,cameraIso);
+  renderIso=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'low-power'});
+  renderIso.setPixelRatio(1);renderIso.setSize(width,height,false);renderIso.outputEncoding=THREE.sRGBEncoding;
+  [roomGroup,annotationGroup,lightingGroup].forEach(g=>g.visible=false);scene.background=new THREE.Color(0xffffff);
+  const shell=new THREE.MeshBasicMaterial({color:0xf8f8f7});
+  const facade=new THREE.MeshBasicMaterial({color:0xedeeeb});
+  const metal=new THREE.MeshBasicMaterial({color:0x93989b});tempMaterials.push(shell,facade,metal);
+  [furnitureGroup,hardwareGroup].forEach(g=>g.traverse(n=>{
+    if(!n.isMesh||!n.material)return;
+    oldMaterials.push([n,n.material]);
+    n.material=g===hardwareGroup?metal:n.userData.cat==='front'?facade:shell;
+  }));
+  renderIso.render(scene,cameraIso);
   return canvas.toDataURL('image/png');
- }catch(error){console.warn('R10.6.2 isometric capture failed',error);return null}
+ }catch(e){console.error('R1062_FULL_AXONOMETRIC_CAPTURE_FAILED',e);return null}
  finally{
-  oldMaterials.forEach(([n,mat])=>n.material=mat);
-  hiddenGroups.forEach((g,i)=>g.visible=oldVisibility[i]);
-  scene.background=oldBackground;tempMaterials.forEach(m=>m.dispose());isoRenderer?.dispose();
+  oldMaterials.forEach(([n,m])=>n.material=m);
+  [roomGroup,annotationGroup,lightingGroup].forEach((g,i)=>g.visible=groupVisibility[i]);
+  tempMaterials.forEach(m=>m.dispose());scene.background=oldBackground;renderIso?.dispose();
  }
 }
  window.BizetKitchenWebGL={version:'R10.6.2',setLightingVisible:v=>{r1056LightingVisible=!!v;lightingGroup.visible=r1056LightingVisible;},isLightingVisible:()=>r1056LightingVisible,renderer,scene,camera,controls,host,composer,saoPass,captureApprovalIsometric,redraw:()=>lastOptions&&draw(lastOptions),frame:()=>lastOptions&&frame(lastOptions,true),setDeepShadow,isDeepShadow:()=>false,setMotion:()=>{motionEnabled=true},isMotion:()=>true};
