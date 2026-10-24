@@ -560,7 +560,7 @@
     </svg>`;
   }
 
-  function approvalStamp(pageNo,title,orderRef=''){
+  function approvalStamp(pageNo,title,orderRef='',scaleLabel='NTS',totalPages=3){
     const stampX=760,stampY=700,stampW=340,stampH=72;
     return `
       <g class="stamp">
@@ -572,8 +572,8 @@
         <text x="${stampX+10}" y="${stampY+58}" font-size="9">${esc(orderRef||'PROJECT')} · Rev A</text>
         <text x="${stampX+220}" y="${stampY+18}" font-size="9">FOR APPROVAL</text>
         <text x="${stampX+220}" y="${stampY+34}" font-size="8">NOT FOR PRODUCTION</text>
-        <text x="${stampX+220}" y="${stampY+50}" font-size="8">Scale: NTS</text>
-        <text x="${stampX+220}" y="${stampY+65}" font-size="8">Page ${pageNo}/3</text>
+        <text x="${stampX+220}" y="${stampY+50}" font-size="8">Scale: ${esc(scaleLabel)}</text>
+        <text x="${stampX+220}" y="${stampY+65}" font-size="8">Page ${pageNo}/${totalPages}</text>
       </g>`;
   }
 
@@ -652,7 +652,7 @@
   function approvalSheets(modules,room,orderRef=''){
     const engine=window.BizetApprovalR1063;
     if(engine){
-      const stamp=(page,title,ref,scaleLabel)=>approvalStamp(page,title,ref,scaleLabel);
+      const stamp=(page,title,ref,scaleLabel)=>approvalStamp(page,title,ref,scaleLabel,4);
       return[
        engine.overview(modules,room,stamp,orderRef),
        engine.elevation(modules,room,stamp,orderRef),
@@ -668,7 +668,7 @@
   function approvalDrawingHtml(data=current()){
     if(!data)return'';
     const sheets=approvalSheets(data.modules,data.room,data.orderRef);
-    return `<!doctype html><html><head><meta charset="utf-8"><title>BIZET Approval Drawings</title><style>@page{size:A4 landscape;margin:5mm}body{margin:0;background:#ddd;font-family:Arial,sans-serif}.sheet{background:#fff;margin:0 auto 8mm;page-break-after:always}.sheet svg{display:block;width:100%;height:auto}@media print{body{background:#fff}.sheet{margin:0;page-break-after:always}}</style></head><body>${sheets.map(svg=>`<div class="sheet">${svg}</div>`).join('')}</body></html>`;
+    return `<!doctype html><html><head><meta charset="utf-8"><title>BIZET Approval Drawings</title><style>@page{size:A4 landscape;margin:5mm}body{margin:0;background:#ddd;font-family:Arial,sans-serif}.sheet{background:#fff;margin:0 auto 8mm;break-after:page;page-break-after:always}.sheet svg{display:block;width:282mm;height:198.94mm;max-width:100%}@media print{body{background:#fff}.sheet{margin:0;break-after:page;page-break-after:always}.sheet:last-child{break-after:auto;page-break-after:auto}}</style></head><body>${sheets.map(svg=>`<div class="sheet">${svg}</div>`).join('')}</body></html>`;
   }
   function openApprovalDrawings(){
     const w=window.open('','_blank');if(!w){window.alert('Разрешите всплывающие окна для экспорта BIZET OS.');return false;}
