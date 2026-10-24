@@ -10,8 +10,10 @@ import statistics
 import subprocess
 import time
 from urllib.request import urlopen
-from PIL import Image, ImageStat
 import pytest
+pytest.importorskip('PIL', reason='Visual browser tests run in the dedicated protected 3D workflow')
+pytest.importorskip('playwright', reason='Visual browser tests run in the dedicated protected 3D workflow')
+from PIL import Image, ImageStat
 from playwright.sync_api import sync_playwright
 
 ROOT=Path(__file__).resolve().parents[1]
