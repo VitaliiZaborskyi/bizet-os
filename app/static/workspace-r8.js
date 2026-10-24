@@ -20,6 +20,18 @@
  const uiLang=()=>{const v=String(localStorage.getItem(LANG_KEY)||document.documentElement.lang||'ua').toLowerCase();return v.startsWith('en')?'en':(v.startsWith('ua')||v.startsWith('uk'))?'ua':'ru'};
  const tr=(ru,en)=>uiLang()==='en'?en:uiLang()==='ua'?(UA_I18N[ru]||ru):ru;
  const PROJECT_I18N={
+   'Для воды':'For water','Белый мрамор · чёрные прожилки':'White marble · black veins',
+   'Красные стены показаны в 3D только для проверки.':'Red walls in 3D are for review only.',
+   'Вода':'Water','Настройка':'Settings','Редактировать':'Edit','Просмотр':'View',
+   'Поверхности':'Surfaces','Освещение':'Lighting','Подсветка':'Lighting',
+   'Доступно после выбора':'Available after selection','Сохранить изменения':'Save changes',
+   'Сохранить':'Save','Загрузить':'Load','Вернуться':'Back','Применить и сохранить':'Apply and save',
+   'Настройки помещения':'Room settings','Кривая стена':'Curved wall','Толщина стены, мм':'Wall thickness, mm',
+   'Повернуть помещение':'Rotate room','Основная стена':'Primary wall','Реальный скан':'Real scan',
+   'Стены реального скана':'Real scan walls','Импортированный файл':'Imported file',
+   'Активный источник геометрии':'Active geometry source','Тестовая модель':'Pilot model',
+   'Длина стены, мм':'Wall length, mm','Высота, мм':'Height, mm','Яркость LED в 3D, %':'3D LED brightness, %',
+   'Система ожидает':'Required utility points','Производство заблокировано':'Manufacturing blocked',
    'Общие':'General','Как задать помещение':'How to define the room','Шаблон':'Template','Скан':'Scan','Загрузить файл':'Upload file',
    'Три входа приводятся к единой Room Model.':'All three methods create the same Room Model.','Геометрия':'Geometry',
    'Длина основной стены, мм':'Main wall length, mm','Глубина помещения, мм':'Room depth, mm','Высота помещения, мм':'Room height, mm','Высота цоколя, мм':'Plinth height, mm',
@@ -128,6 +140,11 @@
      if(light)light.textContent=tr('Светлая','Light');if(dark)dark.textContent=tr('Тёмная','Dark');
    }
    const languageSelect=$('workspaceLanguageSelect');if(languageSelect)languageSelect.value=lang;
+   const scanLink=$('workspaceScanLink');if(scanLink)scanLink.textContent=tr('Открыть скан помещения ↗','Open room scan ↗');
+   const fileLink=$('workspaceFileImport');if(fileLink)fileLink.textContent=tr('Импортировать PDF / фото','Import PDF / photo');
+   const back=$('backButton');if(back)back.setAttribute('aria-label',tr('Назад','Back'));
+   const help=$('r1061TopbarHelp');if(help){help.title=tr('Справка','Help');help.setAttribute('aria-label',help.title)}
+   const settings=$('settingsButton');if(settings)settings.setAttribute('aria-label',tr('Настройки','Settings'));
    const projectState=document.querySelector('.r8-project-state>span');if(projectState)projectState.textContent=tr('Базовый вариант','Base variant');
    const baseInfo=$('baseInfoButton');if(baseInfo)baseInfo.setAttribute('aria-label',tr('О базовом варианте','About base variant'));
    const panelClose=$('panelClose');if(panelClose)panelClose.setAttribute('aria-label',tr('Свернуть','Collapse'));
