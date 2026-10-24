@@ -814,7 +814,12 @@
     if(collision.length)pushWarning('HARD_MODULE_INTERSECTION_STOP','STOP: физические пересечения модулей: '+collision.slice(0,4).map(c=>c.first+' / '+c.second).join('; ')+'. Экспорт недоступен.');
   }
     const room=roomValues(),lower=buildLower(),upper=upperFromLower(lower),all=numbered(applyEndPanelRules(applyTemplateOpeningRules(lower.concat(upper))));
-    if(room.source==='SCAN')pushWarning('SCAN_ROOM_UNVERIFIED_R1061','STOP: размещение кухни построено по предварительной основной стене скана. Контуры, точность и столкновения требуют измерений и подтверждения до производства.');
+    if(room.source==='SCAN'){
+      pushWarning('SCAN_ROOM_UNVERIFIED_R1061','STOP: размеры предварительного скана требуют проверки перед производством.');
+      const wallCollisions=window.BizetRoomR1061?.wallModuleIntersections(visual,all)||[];
+      window.BizetR1061WallCollisions=wallCollisions;
+      if(wallCollisions.length)pushWarning('STOP_SCANNED_WALL_MODULE_INTERSECTION','STOP: кухня пересекается со стенами скана: '+wallCollisions.slice(0,4).map(q=>q.module_id+'/'+q.wall_id).join('; '));
+    }else window.BizetR1061WallCollisions=[];
     inspectPhysicalIntersections(all);
     evaluateErgonomics(all);
     const standardPackageH=lowerTotalHeight()+Math.max(300,Number(inputs.upper_gap_mm)||600)+upperConfiguredHeight();
