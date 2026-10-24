@@ -415,6 +415,7 @@
   svg+=orthoFront(L,{x:52,y:95,w:700,h:490},true,false);
   svg+=orthoLeft(L,{x:773,y:95,w:300,h:490},true);
   svg+=orthoTop(L,{x:52,y:586,w:700,h:90},true);
+  svg+=title('COLOURED TECHNICAL MATERIALS / FINISH SCHEDULE',770,588);
   const rows=[['FACADE',rawFinish('facade')],['CARCASS',rawFinish('carcass')],['WORKTOP',rawFinish('worktop')]];
   rows.forEach(([name,col],i)=>{
    const y=605+i*23;
