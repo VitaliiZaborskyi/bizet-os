@@ -77,7 +77,7 @@
    const html='<!doctype html><html><head><meta charset="utf-8"><title>Grande · BIZET For Approval</title>'+
     '<style>@page{size:A4 landscape;margin:5mm 7.5mm}body{margin:0;color:#111;background:#ddd;font-family:Arial}.sheet{background:white;margin-bottom:10mm;page-break-after:always}.sheet svg{display:block;width:282mm;height:198.94mm;max-width:100%}@media print{body{background:white}.sheet{margin:0}}</style></head><body>'+
     pages.map(p=>'<div class="sheet">'+p+'</div>').join('')+
-    '<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\\/script></body></html>';
+    '<script>window.onload=function(){setTimeout(function(){window.print()},300)}</script></body></html>';
    popup.document.open();popup.document.write(html);popup.document.close();return true;
   }catch(error){console.error('GRANDE_FOR_APPROVAL_EXPORT_FAILED',error);popup.document.body.textContent='Export error: '+error.message;return false}
  }
