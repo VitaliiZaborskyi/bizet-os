@@ -106,28 +106,54 @@
   });
   return count;
  }
+ // R10.6.4 #43: model-linked LOCAL task light, not a room fill light.
  function createLed(root){
-  const T=THREE(),schedule=window.BizetLED1063?.manifest?.(inputs(),contents());
-  if(!schedule?.included)return schedule;
+  const T=THREE(),manifest=window.BizetLED1063?.manifest?.(inputs(),contents());
+  if(!manifest?.included)return manifest;
   const i=inputs(),v=visual(),bright=clamp(Number(v.led_brightness_pct_r1063??75),0,100)/100;
-  const kelvin=Number(i.lighting_kelvin)||3000,color=kelvin<=3000?0xffd19a:0xf2f7ff;
-  let count=0;
-  for(const seg of schedule.segments.slice(0,28)){
-   const m=contents().find(q=>q.id===seg.module_id);if(!m||!seg.length_mm)continue;
-   const wall=m.wall||'A', upper=m.level==='upper';
-   const z=seg.zone==='PLINTH'?Number(m.z)+70:seg.zone==='WORKTOP'?Number(m.z)+5:
-    Number(m.z)+Number(m.h)*.5;
-   const px=Number(m.x)+Number(m.w)/2,py=Number(m.y)+(seg.zone==='WORKTOP'?-40:Number(m.d)/2);
-   const point=coreWorld(px,py,z),light=new T.PointLight(color,bright*2.6,Math.max(1000,Math.min(3600,seg.length_mm*2)),0);
-   light.position.copy(point);light.userData={cat:'r1063-led-light',moduleId:m.id,segmentId:seg.id};root.add(light);
-   const spec=wall==='A'?[Math.max(70,seg.length_mm),9,9]:[9,9,Math.max(70,seg.length_mm)];
-   const mat=owned(new T.MeshBasicMaterial({color,transparent:true,opacity:clamp(bright*1.3,.07,1)}));
-   const line=new T.Mesh(new T.BoxGeometry(...spec),mat);
-   line.position.copy(point);line.userData={cat:'r1063-led-emissive-line',moduleId:m.id,segmentId:seg.id};root.add(line);
-   count++;
+  const kelvin=Number(i.lighting_kelvin)||3000,color=kelvin<=3000?0xffd49b:0xf1f5ff;
+  let emitted=0,localSources=0;
+  for(const seg of manifest.segments.slice(0,42)){
+   const m=contents().find(q=>String(q.id)===String(seg.module_id));
+   if(!m||!Number.isFinite(Number(seg.length_mm)))continue;
+   const zone=seg.zone,wall=m.wall||'A',length=Math.max(70,Number(seg.length_mm));
+   // Worktop segment is physically UNDER the upper box. Other zones remain zoned.
+   const worktop=zone==='WORKTOP'&&m.level==='upper';
+   const plinth=zone==='PLINTH',inside=/INSIDE/.test(zone);
+   const height=worktop?Number(m.z)-5:
+    plinth?Number(m.z)+42:Number(m.z)+Number(m.h)*.46;
+   const atFront=wall==='A'?Number(m.y)-9:wall==='B'?Number(m.x)+Number(m.w)+9:Number(m.x)-9;
+   const pos=wall==='A'
+     ?coreWorld(Number(m.x)+Number(m.w)/2,atFront,height)
+     :coreWorld(atFront,Number(m.y)+Number(m.d)/2,height);
+   const lineLength=Math.min(length,wall==='A'?Number(m.w)-24:Number(m.d)-24);
+   if(lineLength<=40)continue;
+   // 5x6mm luminous diffuser: no light source above the cupboards.
+   const material=owned(new T.MeshBasicMaterial({color,transparent:true,
+     opacity:bright===0?0:Math.min(.95,.28+bright*.57),depthTest:true,depthWrite:false}));
+   const dimensions=wall==='A'?[lineLength,5,6]:[6,5,lineLength];
+   const strip=new T.Mesh(new T.BoxGeometry(...dimensions),material);
+   strip.position.copy(pos);
+   strip.userData={cat:'r1064-led-recessed-line',moduleId:m.id,segmentId:seg.id,kelvin};
+   root.add(strip);emitted++;
+   // LOCAL finite-range sources. Never decay=0 with multi-metre radius.
+   // Limit GPU lights on mobile; all segments keep their visible diffusers.
+   if(worktop&&bright>.01&&localSources<10){
+    const samples=length>950?2:1;
+    for(let j=0;j<samples&&localSources<10;j++){
+     const shift=(j-(samples-1)/2)*(lineLength/samples);
+     const origin=pos.clone().add(new T.Vector3(wall==='A'?shift:0,0,wall==='A'?0:shift));
+     const light=new T.SpotLight(color,bright*.72,690,Math.PI/3,0.72,1.0);
+     light.position.copy(origin);light.target.position.copy(origin).add(
+      new T.Vector3(wall==='A'?0:(wall==='B'?115:-115),-395,wall==='A'?-110:0));
+     light.userData={cat:'r1064-local-led-cone',moduleId:m.id,segmentId:seg.id,rangeMm:690};
+     root.add(light);root.add(light.target);localSources++;
+    }
+   }
   }
-  root.userData={cat:'r1063-led-visual-group',segments:count,priceUnverified:true};
-  return schedule;
+  root.userData={cat:'r1064-zoned-local-light',lines:emitted,spotlights:localSources,
+   rangeMm:690,brightnessPct:Math.round(bright*100),priceUnverified:true};
+  return manifest;
  }
  function addControls(){
   const panel=document.getElementById('panelBody');
@@ -182,7 +208,7 @@
     bound=v;
    }
    window.BizetVisualR1063.status={hinges,fronts:fronts.length,
-     leds:manifest?.segments?.length||0,thicknessMm:thickness(),
+     leds:manifest?.segments?.length||0,localSources:lights.userData.spotlights||0,thicknessMm:thickness(),
      protectedCore:true,productionReady:false};
   }catch(error){console.error('R1063_PROTECTED_VISUAL_EXTENSION_FAILED',error);
     window.BizetVisualR1063.status={ok:false,error:String(error),protectedCore:true};
