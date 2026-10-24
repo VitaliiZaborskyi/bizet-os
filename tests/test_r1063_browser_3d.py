@@ -80,16 +80,29 @@ def assert_frame(page,mode,minimum=.008):
     assert state["width"]>=280 and state["height"]>=280,f"{mode} zero stage: {state}"
     assert state["furnitureCount"]>=3,f"{mode} no actual furniture meshes: {state}"
     assert not state["messages"],f"{mode} browser exception: {state}"
-    png=page.locator("#r1050KitchenWebGL canvas").screenshot()
-    image=Image.open(io.BytesIO(png)).convert("RGB")
-    # More than an empty flat background; pixels must contain real rendered furniture.
-    small=image.resize((96,70))
-    stat=ImageStat.Stat(small)
-    contrast=sum(stat.stddev)/3
-    bg=(52,56,61)
-    different=sum(1 for pixel in small.getdata() if sum(abs(pixel[i]-bg[i]) for i in range(3))>65)
-    fraction=different/(96*70)
-    assert contrast>9 and fraction>=minimum,f"{mode} scene looks empty: std={contrast}, changed={fraction}, state={state}"
+    # Differential pixel proof: keep SAME camera, room and GPU but temporarily hide
+    # only the actual construction meshes. A non-blank static background cannot pass.
+    canvas=page.locator("#r1050KitchenWebGL canvas")
+    with_furniture=Image.open(io.BytesIO(canvas.screenshot())).convert("RGB").resize((128,96))
+    hidden=page.evaluate("""() => {
+      const v=window.BizetKitchenWebGL,items=[];
+      v.scene.traverse(o=>{
+        if(o.isMesh&&(o.userData?.moduleId==='QA1'||o.userData?.moduleId==='QA2')){
+          items.push(o);o.visible=false;
+        }
+      });
+      window.BizetR1063QA.hidden=items;return items.length;
+    }""")
+    assert hidden>=3, f"{mode}: no furniture available for image differential"
+    page.wait_for_timeout(250)
+    no_furniture=Image.open(io.BytesIO(canvas.screenshot())).convert("RGB").resize((128,96))
+    page.evaluate("() => {for(const m of window.BizetR1063QA.hidden||[])m.visible=true;window.BizetR1063QA.hidden=[]}")
+    page.wait_for_timeout(200)
+    delta=[sum(abs(a[i]-b[i]) for i in range(3)) for a,b in zip(with_furniture.getdata(),no_furniture.getdata())]
+    contrast_fraction=sum(v>35 for v in delta)/len(delta)
+    contrast_mean=sum(delta)/len(delta)
+    assert contrast_fraction>=minimum and contrast_mean>1,(
+        f"{mode} no visible furniture difference from blank camera: pixels={contrast_fraction:.4f}, mean={contrast_mean:.2f}, state={state}")
     return state
 
 @pytest.mark.parametrize("engine,viewport",[
